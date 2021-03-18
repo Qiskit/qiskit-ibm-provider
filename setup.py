@@ -14,7 +14,7 @@
 
 import os
 
-from setuptools import setup
+import setuptools
 
 REQUIREMENTS = [
     "nest-asyncio>=1.0.0,!=1.1.0",
@@ -29,7 +29,7 @@ REQUIREMENTS = [
 
 # Handle version.
 VERSION_PATH = os.path.join(os.path.dirname(__file__),
-                            "qiskit", "providers", "ibmq", "VERSION.txt")
+                            "qiskit_ibm", "VERSION.txt")
 with open(VERSION_PATH, "r") as version_file:
     VERSION = version_file.read().strip()
 
@@ -40,14 +40,14 @@ with open(README_PATH) as readme_file:
     README = readme_file.read()
 
 
-setup(
-    name="qiskit-ibmq-provider",
+setuptools.setup(
+    name="qiskit-ibm",
     version=VERSION,
     description="Qiskit provider for accessing the quantum devices and "
-                "simulators at IBMQ",
+                "simulators at IBM",
     long_description=README,
     long_description_content_type='text/markdown',
-    url="https://github.com/Qiskit/qiskit-ibmq-provider",
+    url="https://github.com/Qiskit-Partners/qiskit-ibm",
     author="Qiskit Development Team",
     author_email="hello@qiskit.org",
     license="Apache 2.0",
@@ -67,21 +67,7 @@ setup(
         "Topic :: Scientific/Engineering",
     ],
     keywords="qiskit sdk quantum api ibmq",
-    packages=['qiskit.providers.ibmq',
-              'qiskit.providers.ibmq.api',
-              'qiskit.providers.ibmq.api.clients',
-              'qiskit.providers.ibmq.api.rest',
-              'qiskit.providers.ibmq.api.rest.utils',
-              'qiskit.providers.ibmq.credentials',
-              'qiskit.providers.ibmq.job',
-              'qiskit.providers.ibmq.managed',
-              'qiskit.providers.ibmq.utils',
-              'qiskit.providers.ibmq.visualization',
-              'qiskit.providers.ibmq.visualization.interactive',
-              'qiskit.providers.ibmq.jupyter',
-              'qiskit.providers.ibmq.jupyter.dashboard',
-              'qiskit.providers.ibmq.random',
-              'qiskit.providers.ibmq.experiment'],
+    packages=setuptools.find_packages(exclude=['test*']),
     install_requires=REQUIREMENTS,
     include_package_data=True,
     python_requires=">=3.6",
@@ -92,8 +78,8 @@ setup(
                                       "ipython>=5.0.0", "traitlets!=5.0.5",
                                       "ipyvue>=1.4.1"]},
     project_urls={
-        "Bug Tracker": "https://github.com/Qiskit/qiskit-ibmq-provider/issues",
+        "Bug Tracker": "https://github.com/Qiskit-Partners/qiskit-ibm/issues",
         "Documentation": "https://qiskit.org/documentation/",
-        "Source Code": "https://github.com/Qiskit/qiskit-ibmq-provider",
+        "Source Code": "https://github.com/Qiskit-Partners/qiskit-ibm",
     },
 )

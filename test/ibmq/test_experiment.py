@@ -18,14 +18,14 @@ from unittest import mock, SkipTest, skipIf
 from datetime import datetime, timedelta
 from typing import Optional, Union
 
-from qiskit.providers.ibmq.experiment.experiment import Experiment
-from qiskit.providers.ibmq.experiment.analysis_result import AnalysisResult, Fit, DeviceComponent
-from qiskit.providers.ibmq.experiment.exceptions import (ExperimentNotFoundError,
-                                                         AnalysisResultNotFoundError,
-                                                         PlotNotFoundError)
-from qiskit.providers.ibmq.experiment.constants import ResultQuality, ExperimentShareLevel
-from qiskit.providers.ibmq.exceptions import IBMQNotAuthorizedError
-from qiskit.providers.ibmq import IBMQ
+from qiskit_ibm.experiment.experiment import Experiment
+from qiskit_ibm.experiment.analysis_result import AnalysisResult, Fit, DeviceComponent
+from qiskit_ibm.experiment.exceptions import (ExperimentNotFoundError,
+                                              AnalysisResultNotFoundError,
+                                              PlotNotFoundError)
+from qiskit_ibm.experiment.constants import ResultQuality, ExperimentShareLevel
+from qiskit_ibm.exceptions import IBMQNotAuthorizedError
+from qiskit_ibm import IBMQ
 
 
 from ..ibmqtestcase import IBMQTestCase

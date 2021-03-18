@@ -22,10 +22,10 @@ import threading
 
 import websockets
 
-from qiskit.providers.ibmq.api.exceptions import (
+from qiskit_ibm.api.exceptions import (
     WebsocketError, WebsocketTimeoutError, WebsocketIBMQProtocolError)
-from qiskit.providers.ibmq.api.clients.websocket import WebsocketClient
-from qiskit.providers.ibmq.utils.utils import RefreshQueue
+from qiskit_ibm.api.clients.websocket import WebsocketClient
+from qiskit_ibm.utils.utils import RefreshQueue
 
 from ...ibmqtestcase import IBMQTestCase
 
@@ -56,7 +56,7 @@ class TestWebsocketClient(IBMQTestCase):
 
         def _import_websocket():
             try:
-                importlib.reload(sys.modules["qiskit.providers.ibmq.api.clients.websocket"])
+                importlib.reload(sys.modules["qiskit_ibm.api.clients.websocket"])
             except RuntimeError:
                 self.fail("Importing websocket in new thread failed due to asyncio!")
 

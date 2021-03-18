@@ -19,8 +19,8 @@ from unittest import SkipTest
 
 from qiskit import transpile, assemble
 from qiskit.test.reference_circuits import ReferenceCircuits
-from qiskit.providers.ibmq.ibmqbackend import IBMQBackend
-from qiskit.providers.ibmq.ibmqbackendservice import IBMQBackendService
+from qiskit_ibm.ibmqbackend import IBMQBackend
+from qiskit_ibm.ibmqbackendservice import IBMQBackendService
 
 from ..ibmqtestcase import IBMQTestCase
 from ..decorators import requires_device, requires_provider

@@ -17,8 +17,8 @@ from contextlib import ContextDecorator
 from tempfile import NamedTemporaryFile
 from unittest.mock import patch
 
-from qiskit.providers.ibmq.credentials import configrc
-from qiskit.providers.ibmq.credentials.environ import VARIABLES_MAP
+from qiskit_ibm.credentials import configrc
+from qiskit_ibm.credentials.environ import VARIABLES_MAP
 
 CREDENTIAL_ENV_VARS = VARIABLES_MAP.keys()
 

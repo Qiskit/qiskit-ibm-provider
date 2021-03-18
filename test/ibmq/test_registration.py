@@ -21,13 +21,13 @@ from unittest import skipIf
 from unittest.mock import patch
 from requests_ntlm import HttpNtlmAuth
 
-from qiskit.providers.ibmq import IBMQ, IBMQFactory
-from qiskit.providers.ibmq.credentials import (
+from qiskit_ibm import IBMQ, IBMQFactory
+from qiskit_ibm.credentials import (
     Credentials, discover_credentials,
     read_credentials_from_qiskitrc, store_credentials)
-from qiskit.providers.ibmq.credentials.updater import (
+from qiskit_ibm.credentials.updater import (
     update_credentials, QE2_AUTH_URL, QE2_URL, QE_URL)
-from qiskit.providers.ibmq.exceptions import IBMQAccountError
+from qiskit_ibm.exceptions import IBMQAccountError
 
 from ..ibmqtestcase import IBMQTestCase
 from ..contextmanagers import custom_envs, no_envs, custom_qiskitrc, CREDENTIAL_ENV_VARS
