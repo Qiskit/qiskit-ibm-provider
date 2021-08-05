@@ -13,8 +13,7 @@
 """IBM Quantum Experience visualization library."""
 
 import pkg_resources
-installed_packages = pkg_resources.working_set
-installed_packages_list = sorted(["%s" % (i.key) for i in installed_packages])
+INSTALLED_PACKAGES = sorted(["%s" % (i.key) for i in set(pkg_resources.working_set)])
 
 try:
     import plotly.graph_objects as go
@@ -22,8 +21,7 @@ try:
 except ImportError:
     HAS_PLOTLY = False
 
-
-if ('ipykernel' in installed_packages_list) and ('spyder' not in installed_packages_list):
+if ('ipykernel' in INSTALLED_PACKAGES) and ('spyder' not in INSTALLED_PACKAGES):
     if HAS_PLOTLY:
         from .error_map import iplot_error_map
         from .gate_map import iplot_gate_map
