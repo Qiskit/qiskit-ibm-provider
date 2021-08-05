@@ -13,6 +13,7 @@
 """IBM Quantum Experience visualization library."""
 
 import pkg_resources
+# pylint: disable=not-an-iterable
 INSTALLED_PACKAGES = [package.key for package in pkg_resources.working_set]
 
 try:
