@@ -56,6 +56,9 @@ class TestBasicServerPaths(IBMQTestCase):
                 qobj_downloaded = backend.retrieve_job(job.job_id()).qobj()
                 self.assertEqual(qobj_downloaded.to_dict(), job.qobj().to_dict())
 
+                # Cancel the job
+                cancel_job(job)
+
     def test_job_backend_properties_and_status(self):
         """Test the backend properties and status of a job."""
         for desc, provider in self.providers.items():
@@ -114,8 +117,7 @@ class TestBasicServerPaths(IBMQTestCase):
         transpiled = transpile(circs, backend)
         for _ in range(max_retry):
             try:
-                job = backend.run(transpiled)
-                return job
+                return backend.run(transpiled)
             except IBMQBackendJobLimitError as err:
                 limit_error = err
                 time.sleep(1)
