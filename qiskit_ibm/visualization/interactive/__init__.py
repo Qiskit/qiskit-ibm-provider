@@ -13,7 +13,7 @@
 """IBM Quantum Experience visualization library."""
 
 import pkg_resources
-INSTALLED_PACKAGES = sorted(["%s" % (i.key) for i in set(pkg_resources.working_set)])
+INSTALLED_PACKAGES = [package.key for package in pkg_resources.working_set]
 
 try:
     import plotly.graph_objects as go
