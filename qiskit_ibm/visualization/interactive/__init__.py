@@ -14,8 +14,7 @@
 
 import pkg_resources
 installed_packages = pkg_resources.working_set
-installed_packages_list = sorted(["%s" % (i.key)
-   for i in installed_packages])
+installed_packages_list = sorted(["%s" % (i.key) for i in installed_packages])
 
 try:
     import plotly.graph_objects as go
