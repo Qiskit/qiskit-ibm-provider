@@ -40,6 +40,7 @@ from .experiment import IBMExperimentService  # pylint: disable=cyclic-import
 from .runtime.ibm_runtime_service import IBMRuntimeService  # pylint: disable=cyclic-import
 from .exceptions import IBMQNotAuthorizedError, IBMQInputValueError
 from .runner_result import RunnerResult  # pylint: disable=cyclic-import
+from .utils.utils import to_python_identifier
 
 logger = logging.getLogger(__name__)
 
@@ -139,6 +140,7 @@ class AccountProvider(Provider):
         """
         if not self.__backends:
             self.__backends = self._discover_remote_backends()
+            self._backend.discover_backends()
         return self.__backends
 
     @_backends.setter
@@ -180,18 +182,25 @@ class AccountProvider(Provider):
         # replaced by a `IBMQBackendService` instance.
         pass
 
-    def _discover_remote_backends(self, timeout: Optional[float] = None) -> Dict[str, IBMQBackend]:
+    def _discover_remote_backends(self,
+                                  backend_names: List[str] = None,
+                                  timeout: Optional[float] = None) -> Dict[str, IBMQBackend]:
         """Return the remote backends available for this provider.
 
         Args:
             timeout: Maximum number of seconds to wait for the discovery of
                 remote backends.
+            backend_names: The backends to retrieve. If not specified, retrieves all.
 
         Returns:
             A dict of the remote backend instances, keyed by backend name.
         """
         ret = OrderedDict()  # type: ignore[var-annotated]
-        configs_list = self._api_client.list_backends(timeout=timeout)
+        if backend_names:
+            configs_list = [self._api_client.backend_config(
+                backend_name) for backend_name in backend_names]
+        else:
+            configs_list = self._api_client.list_backends(timeout=timeout)
         for raw_config in configs_list:
             # Make sure the raw_config is of proper type
             if not isinstance(raw_config, dict):
@@ -206,11 +215,13 @@ class AccountProvider(Provider):
                 except (KeyError, TypeError):
                     config = QasmBackendConfiguration.from_dict(raw_config)
                 backend_cls = IBMQSimulator if config.simulator else IBMQBackend
-                ret[config.backend_name] = backend_cls(
+                back = backend_cls(
                     configuration=config,
                     provider=self,
                     credentials=self.credentials,
                     api_client=self._api_client)
+                ret[config.backend_name] = back
+                setattr(self._backend, to_python_identifier(config.backend_name), back)
             except Exception:  # pylint: disable=broad-except
                 logger.warning(
                     'Remote backend "%s" for provider %s could not be instantiated due to an '
@@ -219,6 +230,14 @@ class AccountProvider(Provider):
                     repr(self), traceback.format_exc())
 
         return ret
+
+    def get_backend(self, name: str = None, **kwargs: Dict[str, Any]) -> Union[IBMQBackend, Any]:
+        try:
+            return self.__backends[name]
+        except KeyError:
+            # Backend has not yet been loaded.
+            self._discover_remote_backends(backend_names=[name])
+            return super().get_backend(name=name, **kwargs)
 
     def run_circuits(
             self,
