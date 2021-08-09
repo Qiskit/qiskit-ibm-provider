@@ -71,7 +71,7 @@ class TestWebsocketIntegration(IBMQTestCase):
 
     def test_websockets_simulator(self):
         """Test checking status of a job via websockets for a simulator."""
-        job = self._sim_job(shots=1)
+        job = self._run_job(shots=1)
 
         # Manually disable the non-websocket polling.
         job._api_client._job_final_status_polling = self._job_final_status_polling
@@ -84,21 +84,18 @@ class TestWebsocketIntegration(IBMQTestCase):
     @requires_device
     def test_websockets_device(self, backend):
         """Test checking status of a job via websockets for a device."""
-        job = self._sim_job(backend=backend, shots=1)
+        job = self._run_job(backend=backend, shots=1)
 
         # Manually disable the non-websocket polling.
         job._api_client._job_final_status_polling = self._job_final_status_polling
         job.wait_for_final_state(wait=300, callback=self.simple_job_callback)
         result = job.result()
-        job.wait_for_final_state()
 
         self.assertTrue(result.success)
 
     def test_websockets_job_final_state(self):
         """Test checking status of a job in a final state via websockets."""
-        job = self._sim_job()
-
-        job._wait_for_completion()
+        job = self._run_job()
 
         # Manually disable the non-websocket polling.
         job._api_client._job_final_status_polling = self._job_final_status_polling
@@ -111,7 +108,7 @@ class TestWebsocketIntegration(IBMQTestCase):
 
     def test_websockets_retry_bad_url(self):
         """Test http retry after websocket error due to an invalid URL."""
-        job = self._sim_job()
+        job = self._run_job()
         saved_websocket_url = job._api_client._credentials.websockets_url
 
         try:
@@ -128,7 +125,7 @@ class TestWebsocketIntegration(IBMQTestCase):
 
     def test_websockets_retry_bad_auth(self):
         """Test http retry after websocket error due to a failed authentication."""
-        job = self._sim_job()
+        job = self._run_job()
         with mock.patch.object(websocket.WebsocketAuthenticationMessage, 'as_json',
                                return_value='foo'), \
             mock.patch.object(AccountClient, 'job_status',
@@ -146,7 +143,7 @@ class TestWebsocketIntegration(IBMQTestCase):
             job._job_id = saved_job_id
             return saved_job_status(saved_job_id)
 
-        job = self._sim_job()
+        job = self._run_job()
         # Save the originals.
         saved_job_id = job._job_id
         saved_job_status = job._api_client.job_status
@@ -164,7 +161,7 @@ class TestWebsocketIntegration(IBMQTestCase):
     def test_websockets_timeout(self):
         """Test timeout checking status of a job via websockets."""
         backend = most_busy_backend(self.provider)
-        job = self._sim_job(shots=backend.configuration().max_shots)
+        job = self._run_job(shots=backend.configuration().max_shots)
 
         try:
             with self.assertRaises(JobTimeoutError):
@@ -178,7 +175,7 @@ class TestWebsocketIntegration(IBMQTestCase):
 
         def _run_job_get_result(q):
             """Run a job and get its result."""
-            job = self._sim_job()
+            job = self._run_job()
             # Manually disable the non-websocket polling.
             job._api_client._job_final_status_polling = self._job_final_status_polling
             job._wait_for_completion()
@@ -206,7 +203,7 @@ class TestWebsocketIntegration(IBMQTestCase):
     def test_websocket_proxy(self):
         """Test connecting to websocket via a proxy."""
         MockProxyServer(self, self.log).start()
-        job = self._sim_job(shots=1)
+        job = self._run_job(shots=1)
 
         # Manually disable the non-websocket polling.
         job._api_client._job_final_status_polling = self._job_final_status_polling
@@ -228,7 +225,7 @@ class TestWebsocketIntegration(IBMQTestCase):
 
         self.assertIn("retrying using HTTP", ','.join(log_cm.output))
 
-    def _sim_job(self, backend: Backend = None, max_retries: int = 10,
+    def _run_job(self, backend: Backend = None, max_retries: int = 10,
                  qc: Union[QuantumCircuit, List[QuantumCircuit]] = None, **kwargs) -> IBMQJob:
         # Default to the bell circuit
         qc = qc or self.bell

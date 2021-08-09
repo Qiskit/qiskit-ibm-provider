@@ -86,6 +86,8 @@ class TestBasicServerPaths(IBMQTestCase):
                 self.assertGreaterEqual(len(retrieved_jobs), 1)
                 retrieved_job_ids = {job.job_id() for job in retrieved_jobs}
                 self.assertIn(job_id, retrieved_job_ids)
+                # Cancel job so it doesn't consume more resources.
+                cancel_job(job, verify=True)
 
     def test_device_properties_and_defaults(self):
         """Test the properties and defaults for an open pulse device."""
