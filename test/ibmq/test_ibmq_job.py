@@ -214,9 +214,9 @@ class TestIBMQJob(IBMQTestCase):
             raise SkipTest('Skipping test that requires multiple backends')
 
         job_1 = self._run_job(backend=backend_1, qc=self.bell)
-        job_1.cancel()
+        cancel_job(job_1)
         job_2 = self._run_job(backend=backend_2, qc=self.bell)
-        job_2.cancel()
+        cancel_job(job_2)
 
         # test a retrieved job's backend is the same as the queried backend
         self.assertEqual(backend_1.retrieve_job(job_1.job_id()).backend().name(),
@@ -267,7 +267,12 @@ class TestIBMQJob(IBMQTestCase):
 
         job_to_cancel = submit_and_cancel(backend=self.sim_backend)
         job_to_fail = submit_job_bad_shots(backend=self.sim_backend)
-        job_to_fail.cancel()
+
+        # Ensure failing job finishes before querying
+        job_to_fail.wait_for_final_state()
+
+        self.assertIs(job_to_cancel.status(), JobStatus.CANCELLED)
+        self.assertIs(job_to_fail.status(), JobStatus.ERROR)
 
         for status_filter in status_filters:
             with self.subTest(status_filter=status_filter):
@@ -302,9 +307,6 @@ class TestIBMQJob(IBMQTestCase):
             self.assertTrue(active_job._status in active_job_statuses,
                             "status for job {} is '{}' but it should be '{}'."
                             .format(active_job.job_id(), active_job._status, active_job_statuses))
-
-        # Cancel job so it doesn't consume more resources.
-        cancel_job(job)
 
     def test_retrieve_jobs_queued(self):
         """Test retrieving jobs that are queued."""
@@ -413,11 +415,11 @@ class TestIBMQJob(IBMQTestCase):
         qc.h(0)
         qc.measure([0, 1, 2], [0, 1, 2])
         job = self._run_job(qc=qc)
-        cancel_job(job)
+        job.wait_for_final_state()
 
         my_filter = {'backend.name': self.sim_backend.name(),
                      'summaryData.summary.qobj_config.n_qubits': 3,
-                     'status': 'CANCELED'}
+                     'status': 'COMPLETED'}
 
         job_list = self.provider.backend.jobs(backend_name=self.sim_backend.name(),
                                               limit=2, skip=0, db_filter=my_filter,
@@ -454,7 +456,8 @@ class TestIBMQJob(IBMQTestCase):
     def test_retrieve_jobs_order(self):
         """Test retrieving jobs with different orders."""
         job = self._run_job()
-        cancel_job(job)
+        job.wait_for_final_state()
+        self.assertIs(job.status(), JobStatus.DONE)
 
         newest_jobs = self.sim_backend.jobs(
             limit=10, status=JobStatus.DONE, descending=True, start_datetime=self.last_month)
@@ -599,7 +602,6 @@ class TestIBMQJob(IBMQTestCase):
             # Ensure all threads ended.
             for thread in job._executor._threads:
                 thread.join(0.1)
-            cancel_job(job)
 
     def test_job_submit_partial_fail(self):
         """Test job submit partial fail."""

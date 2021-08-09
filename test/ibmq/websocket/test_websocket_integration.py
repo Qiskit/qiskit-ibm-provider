@@ -36,7 +36,7 @@ from qiskit_ibm.job.ibmqjob import IBMQJob
 from ...decorators import requires_device, requires_provider
 from ...ibmqtestcase import IBMQTestCase
 from ...proxy_server import MockProxyServer, use_proxies
-from ...utils import cancel_job, most_busy_backend
+from ...utils import most_busy_backend
 
 logger = logging.getLogger(__name__)
 
@@ -163,11 +163,8 @@ class TestWebsocketIntegration(IBMQTestCase):
         backend = most_busy_backend(self.provider)
         job = self._run_job(shots=backend.configuration().max_shots)
 
-        try:
-            with self.assertRaises(JobTimeoutError):
-                job.result(timeout=0.1)
-        finally:
-            cancel_job(job)
+        with self.assertRaises(JobTimeoutError):
+            job.result(timeout=0.1)
 
     @skipIf(os.environ.get('LIMIT_CONCURRENT_JOBS', ''), 'Protects concurrent job limit')
     def test_websockets_multi_job(self):

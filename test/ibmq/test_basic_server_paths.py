@@ -70,7 +70,7 @@ class TestBasicServerPaths(IBMQTestCase):
                 self.assertIsNotNone(job.properties())
                 self.assertTrue(job.status())
                 # Cancel job so it doesn't consume more resources.
-                cancel_job(job, verify=True)
+                cancel_job(job)
 
     def test_retrieve_jobs(self):
         """Test retrieving jobs."""
@@ -87,7 +87,7 @@ class TestBasicServerPaths(IBMQTestCase):
                 retrieved_job_ids = {job.job_id() for job in retrieved_jobs}
                 self.assertIn(job_id, retrieved_job_ids)
                 # Cancel job so it doesn't consume more resources.
-                cancel_job(job, verify=True)
+                cancel_job(job)
 
     def test_device_properties_and_defaults(self):
         """Test the properties and defaults for an open pulse device."""

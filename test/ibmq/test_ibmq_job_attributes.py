@@ -157,7 +157,6 @@ class TestIBMQJobAttributes(IBMQTestCase):
         self.assertEqual(job_ids, retrieved_job_ids)
         for job in retrieved_jobs:
             self.assertEqual(job.name(), job_name)
-            cancel_job(job)
 
     @slow_test
     @requires_device
@@ -343,7 +342,6 @@ class TestIBMQJobAttributes(IBMQTestCase):
             setattr(self.sim_backend._configuration, "measure_esp_enabled", True)
             job = self._run_job()
             self.assertEqual(job.backend_options()["use_measure_esp"], True)
-            cancel_job(job)
         finally:
             delattr(self.sim_backend._configuration, "measure_esp_enabled")
             self.sim_backend._api_client = saved_api
@@ -357,7 +355,6 @@ class TestIBMQJobAttributes(IBMQTestCase):
             setattr(self.sim_backend._configuration, "measure_esp_enabled", True)
             job = self._run_job(use_measure_esp=False)
             self.assertEqual(job.backend_options()["use_measure_esp"], False)
-            cancel_job(job)
         finally:
             delattr(self.sim_backend._configuration, "measure_esp_enabled")
             self.sim_backend._api_client = saved_api
