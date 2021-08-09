@@ -15,7 +15,6 @@
 from unittest import mock
 
 from qiskit import ClassicalRegister, QuantumCircuit, QuantumRegister
-from qiskit.exceptions import QiskitError
 from qiskit.compiler import transpile, assemble
 from qiskit.test.reference_circuits import ReferenceCircuits
 from qiskit.providers.aer.noise import NoiseModel
@@ -132,21 +131,14 @@ class TestIbmqQasmSimulator(IBMQTestCase):
         backend._configuration._data['simulation_method'] = 'extended_stabilizer'
         backend._submit_job = _new_submit
 
-        error = None
-
         try:
             circ = transpile(ReferenceCircuits.bell(), backend=backend)
             backend.run(circ, header={'test': 'circuits'})
             qobj = assemble(circ, backend=backend, header={'test': 'qobj'})
             backend.run(qobj)
-        except QiskitError as err:
-            error = err
         finally:
             backend._configuration._data['simulation_method'] = sim_method
             backend._submit_job = submit_fn
-
-        if error:
-            raise error
 
     def test_new_sim_method_no_overwrite(self):
         """Test custom method option is not overwritten."""
@@ -163,21 +155,14 @@ class TestIbmqQasmSimulator(IBMQTestCase):
         backend._configuration._data['simulation_method'] = 'extended_stabilizer'
         backend._submit_job = _new_submit
 
-        error = None
-
         try:
             circ = transpile(ReferenceCircuits.bell(), backend=backend)
             backend.run(circ, method='my_method', header={'test': 'circuits'})
             qobj = assemble(circ, backend=backend, method='my_method', header={'test': 'qobj'})
             backend.run(qobj)
-        except QiskitError as err:
-            error = err
         finally:
             backend._configuration._data['simulation_method'] = sim_method
             backend._submit_job = submit_fn
-
-        if error:
-            raise error
 
     @requires_device
     def test_simulator_with_noise_model(self, backend):
