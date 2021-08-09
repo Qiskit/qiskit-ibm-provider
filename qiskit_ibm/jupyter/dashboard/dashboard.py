@@ -12,35 +12,30 @@
 
 """The core IBM Quantum Experience dashboard launcher."""
 
-from abc import abstractmethod
-from qiskit_ibm.exceptions import IBMQNotAuthorizedError
-from typing import Callable, List, Tuple, Dict, Optional
-
 import threading
-import ipywidgets as wid
-from IPython.core.magic import line_magic, Magics, magics_class
-from IPython.display import display, Javascript
-from ipywidgets import widgets
-from ipywidgets import Layout, VBox, Accordion, HBox
-from qiskit.providers.job import JobV1 as Job
+from abc import abstractmethod
+from typing import Callable, Dict, List, Optional, Tuple
 
-from qiskit.tools.events.pubsub import Subscriber
+import ipywidgets as wid
+from IPython.core.magic import Magics, line_magic, magics_class
+from IPython.display import Javascript, display
+from ipywidgets import Accordion, HBox, Layout, VBox, widgets
 from qiskit.exceptions import QiskitError
+from qiskit.providers.job import JobV1 as Job
+from qiskit.tools.events.pubsub import Subscriber
+from qiskit_ibm.exceptions import IBMQNotAuthorizedError
 from qiskit_ibm.job.exceptions import IBMQJobApiError
 
-from .runtime_program_widget import make_labels as make_program_labels, create_program_widget
-from .constants import EXP_JOB_STATUS_LIST, EXP_JOB_STATUS_COLORS_LIST
-from .utils import BackendWithProviders, JobType, get_job_type
-from .backend_widget import make_backend_widget
-from .backend_update import update_backend_info
-from .watcher_monitor import job_monitor
-
 from ... import IBMQ
-from .job_widgets import (
-    make_clear_button,
-    make_labels,
-    updated_widget_str,
-    create_job_widget)
+from .backend_update import update_backend_info
+from .backend_widget import make_backend_widget
+from .constants import EXP_JOB_STATUS_COLORS_LIST, EXP_JOB_STATUS_LIST
+from .job_widgets import (create_job_widget, make_clear_button, make_labels,
+                          updated_widget_str)
+from .runtime_program_widget import create_program_widget
+from .runtime_program_widget import make_labels as make_program_labels
+from .utils import BackendWithProviders, JobType, get_job_type
+from .watcher_monitor import job_monitor
 
 
 def _add_device_to_list(backend: BackendWithProviders,

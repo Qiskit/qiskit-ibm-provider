@@ -15,8 +15,8 @@
 from collections import namedtuple
 from enum import Enum
 
-from qiskit.providers.ibmq.runtime.runtime_job import RuntimeJob
 from qiskit.providers.job import JobV1 as Job
+from qiskit_ibm.runtime.runtime_job import RuntimeJob
 
 
 class JobType(Enum):

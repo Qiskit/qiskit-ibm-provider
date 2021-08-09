@@ -15,8 +15,7 @@
 
 import ipywidgets as widgets
 
-# from qiskit.providers.ibmq.job.ibmqjob import IBMQJob
-from qiskit.providers.ibmq.runtime import RuntimeProgram
+from qiskit_ibm.runtime import RuntimeProgram
 from .constants import LIST_STYLE_WIDGET
 
 
