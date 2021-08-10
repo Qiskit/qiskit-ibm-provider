@@ -12,22 +12,22 @@
 
 """IBMQBackend Test."""
 
-from inspect import getfullargspec
-from datetime import timedelta, datetime
 import warnings
+from datetime import datetime, timedelta
+from inspect import getfullargspec
 from unittest import SkipTest
 from unittest.mock import patch
 
-from qiskit import QuantumCircuit, transpile, assemble
+from qiskit import QuantumCircuit, assemble, transpile
 from qiskit.providers.exceptions import QiskitBackendNotFoundError
 from qiskit.providers.models import QasmBackendConfiguration
 from qiskit.test.reference_circuits import ReferenceCircuits
 from qiskit_ibm.ibmqbackend import IBMQBackend
 from qiskit_ibm.ibmqbackendservice import IBMQBackendService
 
-from ..ibmqtestcase import IBMQTestCase
 from ..decorators import requires_device, requires_provider
-from ..utils import get_pulse_schedule, cancel_job
+from ..ibmqtestcase import IBMQTestCase
+from ..utils import cancel_job, get_pulse_schedule
 
 
 class TestIBMQBackend(IBMQTestCase):
