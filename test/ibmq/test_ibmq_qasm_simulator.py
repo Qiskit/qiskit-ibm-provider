@@ -128,10 +128,9 @@ class TestIbmqQasmSimulator(IBMQTestCase):
         sim_method = backend._configuration._data.get('simulation_method', None)
         submit_fn = backend._submit_job
 
-        backend._configuration._data['simulation_method'] = 'extended_stabilizer'
-        backend._submit_job = _new_submit
-
         try:
+            backend._configuration._data['simulation_method'] = 'extended_stabilizer'
+            backend._submit_job = _new_submit
             circ = transpile(ReferenceCircuits.bell(), backend=backend)
             backend.run(circ, header={'test': 'circuits'})
             qobj = assemble(circ, backend=backend, header={'test': 'qobj'})
@@ -152,10 +151,9 @@ class TestIbmqQasmSimulator(IBMQTestCase):
         sim_method = backend._configuration._data.get('simulation_method', None)
         submit_fn = backend._submit_job
 
-        backend._configuration._data['simulation_method'] = 'extended_stabilizer'
-        backend._submit_job = _new_submit
-
         try:
+            backend._configuration._data['simulation_method'] = 'extended_stabilizer'
+            backend._submit_job = _new_submit
             circ = transpile(ReferenceCircuits.bell(), backend=backend)
             backend.run(circ, method='my_method', header={'test': 'circuits'})
             qobj = assemble(circ, backend=backend, method='my_method', header={'test': 'qobj'})
