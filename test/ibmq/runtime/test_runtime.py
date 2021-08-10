@@ -220,6 +220,8 @@ class TestRuntime(IBMQTestCase):
                 self.assertIsInstance(encoded, str)
                 decoded = json.loads(encoded, cls=RuntimeDecoder)
                 self.assertTrue(isinstance(decoded, opt_cls))
+                if settings.get('fidelity'):
+                    settings.pop('fidelity')
                 for key, value in settings.items():
                     self.assertEqual(decoded.settings[key], value)
 
