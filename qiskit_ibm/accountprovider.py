@@ -264,10 +264,10 @@ class AccountProvider(Provider):
         """
         # Load backends by criteria
         backends = self.backends(name, **kwargs)
-        # Discover by name (Only API solution) if none exist.
+        # Discover by name if no corresponding backends have already been loaded.
         # TODO: API Implement discover by filters.
-        if name and not backends:
-            self._discover_remote_backends(backend_names=[name])
+        if not backends:
+            self._discover_remote_backends(backend_names=([name] if name else None))
             backends = self.backends(name, **kwargs)
         if len(backends) > 1:
             raise QiskitBackendNotFoundError("More than one backend matches the criteria")
