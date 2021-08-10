@@ -626,7 +626,7 @@ class TestIBMQJob(IBMQTestCase):
         self.assertEqual(str(self.bell), str(self.sim_job.circuits()[0]))
 
     def test_job_delete(self):
-        """Test job circuits."""
+        """Test job delete job."""
         job = self.sim_backend.run(self.bell)
         self.assertTrue(job.delete(), 'Job should be deleted')
 
