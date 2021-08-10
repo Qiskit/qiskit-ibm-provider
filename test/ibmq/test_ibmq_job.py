@@ -12,13 +12,13 @@
 
 """IBMQJob Test."""
 
-import os
+# import os
 import time
 import copy
 import logging
 from datetime import datetime, timedelta
 from typing import List, Union
-from unittest import SkipTest, mock, skipIf
+from unittest import SkipTest, mock  #, skipIf
 from threading import Thread, Event
 
 from dateutil import tz
@@ -83,7 +83,7 @@ class TestIBMQJob(IBMQTestCase):
         # guaranteed to have them.
         self.assertIsNotNone(job.properties())
 
-    @skipIf(os.environ.get('LIMIT_CONCURRENT_JOBS', ''), 'Protects concurrent job limit')
+    # @skipIf(os.environ.get('LIMIT_CONCURRENT_JOBS', ''), 'Protects concurrent job limit')
     def test_run_multiple_simulator(self):
         """Test running multiple jobs in a simulator."""
         num_qubits = 8
