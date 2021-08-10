@@ -50,7 +50,7 @@ from qiskit.providers.jobstatus import JobStatus
 from qiskit_ibm.exceptions import IBMQInputValueError
 from qiskit_ibm.accountprovider import AccountProvider
 from qiskit_ibm.credentials import Credentials
-from qiskit_ibm.runtime.utils import RuntimeEncoder, RuntimeDecoder
+from qiskit_ibm.runtime.utils import RuntimeEncoder, RuntimeDecoder, uses_int_keys
 from qiskit_ibm.runtime import IBMRuntimeService, RuntimeJob
 from qiskit_ibm.runtime.constants import API_TO_JOB_ERROR_MESSAGE
 from qiskit_ibm.runtime.exceptions import RuntimeProgramNotFound, RuntimeJobFailureError
@@ -142,14 +142,14 @@ class TestRuntime(IBMQTestCase):
     def test_coder_on_integer_dicts(self):
         """Test runtime encoder and decoder on integer keys."""
         subtests = (
-            ({1: 23, 4: 56}, True),
-            ({'1': 23, '4': 56}, False)
+            {1: 23, 4: 56},
+            {1: 23, 4: 56, 7: {8: 10, 9: 10}},
+            {'1': 23, '4': 56}
         )
 
-        for obj, use_int_keys in subtests:
+        for obj in subtests:
             encoded = json.dumps(obj, cls=RuntimeEncoder)
             self.assertIsInstance(encoded, str)
-            RuntimeDecoder.USE_INT_KEYS = use_int_keys
             decoded = json.loads(encoded, cls=RuntimeDecoder)
             self.assertEqual(decoded, obj)
 
@@ -168,7 +168,6 @@ class TestRuntime(IBMQTestCase):
         isqrt2 = 1 / np.sqrt(2)
         sparse = scipy.sparse.csr_matrix([[0, isqrt2, 0, isqrt2]])
 
-        RuntimeDecoder.USE_INT_KEYS = False
         subtests = (
             PauliSumOp(SparsePauliOp(Pauli("XYZX"), coeffs=[2]), coeff=3),
             PauliSumOp(SparsePauliOp(Pauli("XYZX"), coeffs=[1]), coeff=y),
@@ -214,7 +213,6 @@ class TestRuntime(IBMQTestCase):
             (L_BFGS_B, {}),
             (NELDER_MEAD, {}),
         )
-        RuntimeDecoder.USE_INT_KEYS = True
         for opt_cls, settings in subtests:
             with self.subTest(opt_cls=opt_cls):
                 optimizer = opt_cls(**settings)
@@ -222,11 +220,8 @@ class TestRuntime(IBMQTestCase):
                 self.assertIsInstance(encoded, str)
                 decoded = json.loads(encoded, cls=RuntimeDecoder)
                 self.assertTrue(isinstance(decoded, opt_cls))
-                if settings.get('fidelity'):
-                    settings.pop('fidelity')
                 for key, value in settings.items():
                     self.assertEqual(decoded.settings[key], value)
-        RuntimeDecoder.USE_INT_KEYS = False
 
     def test_encoder_callable(self):
         """Test encoding a callable."""
@@ -648,3 +643,27 @@ if __name__ == '__main__':
             jobs.append(self._run_program(program_id, final_status='CANCELLED'))
             returned_jobs_count += 1
         return (jobs, pending_jobs_count, returned_jobs_count)
+
+
+class IntKeysTest(IBMQTestCase):
+    """Tests the helper function for checking integer keys in a JSON object"""
+
+    def test_with_int_keys_small(self):
+        """Test a small object containing int keys"""
+        data = {1: 23, 4: 56}
+        self.assertTrue(uses_int_keys(data))
+
+    def test_with_int_keys_large(self):
+        """Test a larger object containing nested int keys"""
+        data = {'1': 23, '4': {56: {78: 90}}}
+        self.assertTrue(uses_int_keys(data))
+
+    def test_with_int_keys_list(self):
+        """Test a larger object containing int keys in a list"""
+        data = {'1': 23, '4': 56, '7': [{8: 90}]}
+        self.assertTrue(uses_int_keys(data))
+
+    def test_with_no_int_keys(self):
+        """Test an object containing no int keys"""
+        data = {'1': 23, '4': 56}
+        self.assertFalse(uses_int_keys(data))

@@ -14,14 +14,16 @@
 
 """Utility functions for the runtime service."""
 
+import re
 import json
-from typing import Any, Callable, Dict, List
+from typing import Any, Callable, Dict, List, Union
 import base64
 import io
 import zlib
 import inspect
 import importlib
 import warnings
+from contextlib import suppress
 
 import numpy as np
 try:
@@ -34,6 +36,9 @@ from qiskit.result import Result
 from qiskit.circuit import QuantumCircuit, qpy_serialization
 from qiskit.circuit import ParameterExpression, Instruction
 from qiskit.circuit.library import BlueprintCircuit
+
+FLAGS = re.VERBOSE | re.MULTILINE | re.DOTALL
+WHITESPACE = re.compile(r'[ \t\n\r]*', FLAGS)
 
 
 def _serialize_and_encode(
@@ -106,6 +111,27 @@ def deserialize_from_settings(mod_name: str, class_name: str, settings: Dict) ->
     raise ValueError(f"Unable to find class {class_name} in module {mod_name}")
 
 
+def uses_int_keys(json_input: Union[Dict, List]) -> bool:
+    """Recursively determines if a dictionary uses integer keys
+
+    Args:
+        json_input: the json dictionary
+
+    Returns:
+        whether the dictionary uses integer keys
+    """
+
+    if isinstance(json_input, dict):
+        for k, v in json_input.items():
+            if isinstance(k, int) or uses_int_keys(v):
+                return True
+    elif isinstance(json_input, list):
+        for item in json_input:
+            if uses_int_keys(item):
+                return True
+    return False
+
+
 class RuntimeEncoder(json.JSONEncoder):
     """JSON Encoder used by runtime service."""
 
@@ -142,12 +168,11 @@ class RuntimeEncoder(json.JSONEncoder):
                 data=obj, serializer=qpy_serialization._write_instruction, compress=False)
             return {'__type__': 'Instruction', '__value__': value}
         if hasattr(obj, "settings"):
-            return {'__type__': 'settings',
+            return {'__uses_int_keys__': uses_int_keys(obj.settings),
+                    '__type__': 'settings',
                     '__module__': obj.__class__.__module__,
                     '__class__': obj.__class__.__name__,
-                    '__value__': {
-                        **obj.settings,
-                        'fidelity': obj.fidelity} if hasattr(obj, 'fidelity') else obj.settings}
+                    '__value__': obj.settings}
         if callable(obj):
             warnings.warn(f"Callable {obj} is not JSON serializable and will be set to None.")
             return None
@@ -156,15 +181,22 @@ class RuntimeEncoder(json.JSONEncoder):
             return {'__type__': 'spmatrix', '__value__': value}
         return super().default(obj)
 
+    def encode(self, o: Any) -> str:
+        if isinstance(o, dict):
+            o['__uses_int_keys__'] = uses_int_keys(o)
+        encoded = super().encode(o)
+        if isinstance(o, dict):
+            del o['__uses_int_keys__']
+
+        return encoded
+
 
 class RuntimeDecoder(json.JSONDecoder):
     """JSON Decoder used by runtime service."""
 
-    USE_INT_KEYS = False
-    """Force conversion from int strings to integers"""
-
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(object_hook=self.object_hook, *args, **kwargs)
+        self._use_int_keys = False  # Force conversion from int strings to integers
 
     def object_hook(self, obj: Any) -> Any:
         """Called to decode object."""
@@ -198,7 +230,7 @@ class RuntimeDecoder(json.JSONDecoder):
                 return _decode_and_deserialize(obj_val, scipy.sparse.load_npz, False)
             if obj_type == 'to_json':
                 return obj_val
-        if isinstance(obj, dict) and self.USE_INT_KEYS:
+        if isinstance(obj, dict) and self._use_int_keys:
             keys_to_add: List[int] = []
             # Cast integer keys disguised as strings back to integer keys
             for key in obj.keys():
@@ -206,9 +238,21 @@ class RuntimeDecoder(json.JSONDecoder):
                     keys_to_add.insert(0, int(key))
                 except ValueError:
                     pass
+
             # Remove string keys and replace with int keys
             while len(keys_to_add) > 0:
                 key = keys_to_add.pop()
                 obj[key] = obj[str(key)]
                 obj.pop(str(key))
         return obj
+
+    def decode(self, s: Any, _w: Any = WHITESPACE.match) -> Any:  # pylint: disable=arguments-differ
+        """Return the Python representation of ``s`` (a ``str`` instance
+        containing a JSON document).
+
+        """
+        self._use_int_keys = s.find('"__uses_int_keys__": true') > 0
+        decoded = super(RuntimeDecoder, self).decode(s, _w)
+        with suppress(KeyError, TypeError):
+            del decoded['__uses_int_keys__']
+        return decoded
