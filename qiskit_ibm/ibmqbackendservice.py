@@ -529,6 +529,9 @@ class IBMQBackendService:
             'ibmq_20_austin': 'QS1_1'
             }
 
+    def __getattr__(self, item):  # type: ignore
+        return self._provider.get_backend(name=item)
+
 
 def _issue_warning(func):  # type: ignore
     @wraps(func)
@@ -561,6 +564,9 @@ class IBMQDeprecatedBackendService:
     @_issue_warning
     def my_reservations(self, *args, **kwargs):  # type: ignore
         return self._backend_service.my_reservations(*args, **kwargs)
+
+    def __getattr__(self, item):  # type: ignore
+        return self._provider.get_backend(name=item)
 
     def __getattribute__(self, item):  # type: ignore
         if item in ['_backend_service', '_backends_warning_issued']:

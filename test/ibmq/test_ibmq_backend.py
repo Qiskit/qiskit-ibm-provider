@@ -19,6 +19,7 @@ from unittest import SkipTest
 from unittest.mock import patch
 
 from qiskit import QuantumCircuit, transpile, assemble
+from qiskit.providers.exceptions import QiskitBackendNotFoundError
 from qiskit.providers.models import QasmBackendConfiguration
 from qiskit.test.reference_circuits import ReferenceCircuits
 from qiskit_ibm.ibmqbackend import IBMQBackend
@@ -230,6 +231,27 @@ class TestIBMQBackendService(IBMQTestCase):
                 self.assertIsNotNone(
                     getattr(reserv, attr),
                     "Reservation {} is missing attribute {}".format(reserv, attr))
+
+    def test_backend_as_attribute_valid(self):
+        """Test retrieving a backend as an attribute"""
+        sim = self.provider.backend.ibmq_qasm_simulator
+        self.assertIsNotNone(sim)
+
+    def test_backend_as_attribute_invalid(self):
+        """Test retrieving a backend as an attribute for an invalid backend name"""
+        with self.assertRaises(QiskitBackendNotFoundError):
+            self.provider.backend.fake_simulator  # pylint:disable=pointless-statement
+
+    def test_get_backend_valid(self):
+        """Test retrieving a backend from `get_backend`"""
+        sim = self.provider.get_backend('ibmq_qasm_simulator')
+        self.assertIsNotNone(sim)
+
+    def test_retrieve_all_backends(self):
+        """Test retrieving all backends"""
+        backs = self.provider.backend.backends()
+        self.assertIsNotNone(backs)
+        self.assertGreater(len(backs), 0)
 
     def test_deprecated_service(self):
         """Test deprecated backend service module."""
