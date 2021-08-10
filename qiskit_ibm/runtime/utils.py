@@ -14,30 +14,31 @@
 
 """Utility functions for the runtime service."""
 
-import re
-import json
-from typing import Any, Callable, Dict, List, Union
 import base64
-import io
-import zlib
-import inspect
 import importlib
+import inspect
+import io
+import json
+import re
 import warnings
+import zlib
 from contextlib import suppress
 from datetime import date
-import dateutil.parser
+from typing import Any, Callable, Dict, List, Union
 
+import dateutil.parser
 import numpy as np
+
 try:
     import scipy.sparse
     HAS_SCIPY = True
 except ImportError:
     HAS_SCIPY = False
 
-from qiskit.result import Result
-from qiskit.circuit import QuantumCircuit, qpy_serialization
-from qiskit.circuit import ParameterExpression, Instruction
+from qiskit.circuit import (Instruction, ParameterExpression, QuantumCircuit,
+                            qpy_serialization)
 from qiskit.circuit.library import BlueprintCircuit
+from qiskit.result import Result
 
 FLAGS = re.VERBOSE | re.MULTILINE | re.DOTALL
 WHITESPACE = re.compile(r'[ \t\n\r]*', FLAGS)
