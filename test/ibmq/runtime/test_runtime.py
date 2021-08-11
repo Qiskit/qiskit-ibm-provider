@@ -209,7 +209,7 @@ class TestRuntime(IBMQTestCase):
             (IMFIL, {"maxiter": 20}),
             (SPSA, {"maxiter": 10, "learning_rate": 0.01, "perturbation": 0.1}),
             (SNOBFIT, {"maxiter": 200, "maxfail": 20}),
-            (QNSPSA, {"fidelity": lambda: 123, "maxiter": 25, "resamplings": {1: 100, 2: 50}}),
+            (QNSPSA, {"fidelity": 123, "maxiter": 25, "resamplings": {1: 100, 2: 50}}),
             # some SciPy optimizers only work with default arguments due to Qiskit/qiskit-terra#6682
             (L_BFGS_B, {}),
             (NELDER_MEAD, {}),
@@ -221,8 +221,6 @@ class TestRuntime(IBMQTestCase):
                 self.assertIsInstance(encoded, str)
                 decoded = json.loads(encoded, cls=RuntimeDecoder)
                 self.assertTrue(isinstance(decoded, opt_cls))
-                if settings.get('fidelity'):
-                    settings.pop('fidelity')
                 for key, value in settings.items():
                     self.assertEqual(decoded.settings[key], value)
 
