@@ -12,8 +12,11 @@
 
 """Test IBM Quantum online QASM simulator."""
 
+import time
 from unittest import mock
 import copy
+
+from test.utils import JobExecutor, cancel_job
 
 from qiskit import ClassicalRegister, QuantumCircuit, QuantumRegister
 from qiskit.compiler import transpile, assemble
@@ -34,6 +37,8 @@ class TestIbmqQasmSimulator(IBMQTestCase):
         super().setUp()
         self.provider = provider
         self.sim_backend = self.provider.get_backend('ibmq_qasm_simulator')
+        self.executor = JobExecutor(self.sim_backend)
+        self.run_job = self.executor.run_job
 
     def test_execute_one_circuit_simulator_online(self):
         """Test execute_one_circuit_simulator_online."""
@@ -44,7 +49,7 @@ class TestIbmqQasmSimulator(IBMQTestCase):
         qc.measure(qr[0], cr[0])
         circs = transpile(qc, backend=self.sim_backend, seed_transpiler=73846087)
         shots = 1024
-        job = self.sim_backend.run(circs, shots=shots)
+        job = self.run_job(qc=circs, shots=shots)
         result = job.result()
         counts = result.get_counts(qc)
         target = {'0': shots / 2, '1': shots / 2}
@@ -66,7 +71,7 @@ class TestIbmqQasmSimulator(IBMQTestCase):
         qcr2.measure(qr[1], cr[1])
         shots = 1024
         circs = transpile([qcr1, qcr2], backend=self.sim_backend, seed_transpiler=73846087)
-        job = self.sim_backend.run(circs, shots=shots)
+        job = self.run_job(qc=circs, shots=shots)
         result = job.result()
         counts1 = result.get_counts(qcr1)
         counts2 = result.get_counts(qcr2)
@@ -96,7 +101,7 @@ class TestIbmqQasmSimulator(IBMQTestCase):
         qcr2.measure(qr2[0], cr2[0])
         qcr2.measure(qr2[1], cr2[1])
         circs = transpile([qcr1, qcr2], self.sim_backend, seed_transpiler=8458)
-        job = self.sim_backend.run(circs, shots=1024)
+        job = self.run_job(qc=circs, shots=1024)
         result = job.result()
         result1 = result.get_counts(qcr1)
         result2 = result.get_counts(qcr2)
@@ -113,7 +118,7 @@ class TestIbmqQasmSimulator(IBMQTestCase):
         circuit.measure(qr[0], cr[0])
         circuit.x(qr[0]).c_if(cr, 1)
 
-        result = self.sim_backend.run(transpile(circuit, backend=self.sim_backend)).result()
+        result = self.run_job(qc=transpile(circuit)).result()
         self.assertEqual(result.get_counts(circuit), {'0001': 1024})
 
     def test_new_sim_method(self):
@@ -129,9 +134,13 @@ class TestIbmqQasmSimulator(IBMQTestCase):
         backend._submit_job = _new_submit
 
         circ = transpile(ReferenceCircuits.bell(), backend=backend)
-        backend.run(circ, header={'test': 'circuits'})
+        job = self.run_job(qc=circ, header={'test': 'circuits'})
         qobj = assemble(circ, backend=backend, header={'test': 'qobj'})
-        backend.run(qobj)
+        # Stop running job (via cancel or wait)
+        time.sleep(1)
+        cancel_job(job) or job.wait_for_final_state()  # pylint: disable=expression-not-assigned
+        # Run next job
+        self.run_job(qc=qobj)
 
     def test_new_sim_method_no_overwrite(self):
         """Test custom method option is not overwritten."""
@@ -145,15 +154,15 @@ class TestIbmqQasmSimulator(IBMQTestCase):
         backend._submit_job = _new_submit
 
         circ = transpile(ReferenceCircuits.bell(), backend=backend)
-        backend.run(circ, method='my_method', header={'test': 'circuits'})
+        job = self.run_job(qc=circ, method='my_method', header={'test': 'circuits'})
+        time.sleep(1)
+        cancel_job(job)
         qobj = assemble(circ, backend=backend, method='my_method', header={'test': 'qobj'})
-        backend.run(qobj)
+        self.run_job(qc=qobj)
 
     @requires_device
     def test_simulator_with_noise_model(self, backend):
         """Test using simulator with a noise model."""
         noise_model = NoiseModel.from_backend(backend)
-        result = self.sim_backend.run(
-            transpile(ReferenceCircuits.bell(), backend=self.sim_backend),
-            noise_model=noise_model).result()
+        result = self.run_job(noise_model=noise_model).result()
         self.assertTrue(result)

@@ -292,7 +292,7 @@ class JobExecutor:
         # Run circuit
         while max_retries >= 0:
             try:
-                return backend.run(self.bell, **kwargs)
+                return backend.run(qc, **kwargs)
             except IBMQBackendJobLimitError:
                 UTILS_LOGGER.info(
                     'Cannot submit job, trying again.. %d attempts remaining.', max_retries)
