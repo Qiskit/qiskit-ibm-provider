@@ -214,7 +214,7 @@ class TestWebsocketIntegration(IBMQTestCase):
         invalid_proxy = {'https': 'http://{}:{}'.format(MockProxyServer.PROXY_IP_ADDRESS,
                                                         MockProxyServer.INVALID_PROXY_PORT)}
         with use_proxies(self.provider, invalid_proxy):
-            with self.assertLogs('qiskit.providers.ibmq', 'INFO') as log_cm:
+            with self.assertLogs('qiskit_ibm', 'INFO') as log_cm:
                 job.wait_for_final_state()
 
         self.assertIn("retrying using HTTP", ','.join(log_cm.output))
