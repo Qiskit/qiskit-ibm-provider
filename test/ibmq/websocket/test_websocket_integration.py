@@ -13,13 +13,11 @@
 """Test for the Websocket client integration."""
 
 import logging
-#import os
 import time
 from queue import Queue
 from threading import Thread
 from typing import List, Union
 from unittest import mock
-# from unittest.case import skipIf
 
 from qiskit import transpile
 from qiskit.circuit.quantumcircuit import QuantumCircuit
@@ -166,7 +164,6 @@ class TestWebsocketIntegration(IBMQTestCase):
         with self.assertRaises(JobTimeoutError):
             job.result(timeout=0.1)
 
-    # @skipIf(os.environ.get('LIMIT_CONCURRENT_JOBS', ''), 'Protects concurrent job limit')
     def test_websockets_multi_job(self):
         """Test checking status of multiple jobs in parallel via websockets."""
 

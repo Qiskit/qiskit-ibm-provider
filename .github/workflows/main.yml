@@ -70,7 +70,6 @@ jobs:
       LOG_LEVEL: DEBUG
       STREAM_LOG: True
       QISKIT_IN_PARALLEL: True
-      LIMIT_CONCURRENT_JOBS: True
     steps:
       - uses: actions/checkout@v2
       - name: Set up Python ${{ matrix.python-version }}
