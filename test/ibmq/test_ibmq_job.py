@@ -212,9 +212,7 @@ class TestIBMQJob(IBMQTestCase):
             raise SkipTest('Skipping test that requires multiple backends')
 
         job_1 = self._run_job(backend=backend_1, qc=self.bell)
-        cancel_job(job_1)
         job_2 = self._run_job(backend=backend_2, qc=self.bell)
-        cancel_job(job_2)
 
         # test a retrieved job's backend is the same as the queried backend
         self.assertEqual(backend_1.retrieve_job(job_1.job_id()).backend().name(),
@@ -595,7 +593,7 @@ class TestIBMQJob(IBMQTestCase):
         job = self._run_job(backend=backend)
 
         try:
-            self.assertRaises(IBMQJobTimeoutError, job.wait_for_final_state, timeout=0.1)
+            self.assertRaises(IBMQJobTimeoutError, job.wait_for_final_state, timeout=0.01)
         finally:
             # Ensure all threads ended.
             for thread in job._executor._threads:
