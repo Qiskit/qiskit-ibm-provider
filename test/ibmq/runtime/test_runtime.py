@@ -22,7 +22,6 @@ import uuid
 import warnings
 from datetime import datetime
 from io import StringIO
-from test.utils import cancel_job
 from unittest import mock, skipIf
 from unittest.mock import patch
 
@@ -501,7 +500,7 @@ if __name__ == '__main__':
         """Test canceling a job."""
         job = self._run_program(job_classes=CancelableRuntimeJob)
         time.sleep(1)
-        cancel_job(job)
+        job.cancel()
         self.assertEqual(job.status(), JobStatus.CANCELLED)
         rjob = self.runtime.job(job.job_id())
         self.assertEqual(rjob.status(), JobStatus.CANCELLED)

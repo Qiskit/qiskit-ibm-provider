@@ -14,9 +14,7 @@
 
 import time
 import copy
-import logging
 from datetime import datetime, timedelta
-from typing import List, Union
 from unittest import SkipTest, mock
 from threading import Thread, Event
 
@@ -32,21 +30,18 @@ from qiskit.providers.jobstatus import JobStatus, JOB_FINAL_STATES
 from qiskit_ibm import least_busy
 from qiskit_ibm.apiconstants import ApiJobStatus, API_JOB_FINAL_STATES
 from qiskit_ibm.ibmqbackend import IBMQRetiredBackend
-from qiskit_ibm.exceptions import IBMQBackendError, IBMQBackendApiError, IBMQBackendJobLimitError
+from qiskit_ibm.exceptions import IBMQBackendError, IBMQBackendApiError
 from qiskit_ibm.utils.utils import api_status_to_job_status
 from qiskit_ibm.job.exceptions import IBMQJobTimeoutError
-from qiskit_ibm.job.ibmqjob import IBMQJob
 from qiskit_ibm.utils.converters import local_to_utc
 from qiskit_ibm.api.rest.job import Job as RestJob
 from qiskit_ibm.api.exceptions import RequestsApiError
 
 from ..ibmqtestcase import IBMQTestCase
 from ..decorators import (requires_provider, requires_device)
-from ..utils import (most_busy_backend, cancel_job,
+from ..utils import (JobExecutor, most_busy_backend, cancel_job,
                      submit_job_bad_shots, submit_and_cancel, submit_job_one_bad_instr)
 from ..fake_account_client import BaseFakeAccountClient, CancelableFakeJob
-
-logger = logging.getLogger(__name__)
 
 
 class TestIBMQJob(IBMQTestCase):
@@ -64,13 +59,15 @@ class TestIBMQJob(IBMQTestCase):
         cls.sim_job = cls.sim_backend.run(cls.bell)
         cls.sim_job.wait_for_final_state()
         cls.last_month = datetime.now() - timedelta(days=30)
+        cls.executor = JobExecutor(cls.sim_backend)
+        cls.run_job = cls.executor.run_job
 
     @slow_test
     @requires_device
     def test_run_device(self, backend):
         """Test running in a real device."""
         shots = 8192
-        job = self._run_job(backend=backend, shots=shots)
+        job = self.run_job(backend=backend, shots=shots)
 
         job.wait_for_final_state(wait=300, callback=self.simple_job_callback)
         result = job.result()
@@ -92,7 +89,7 @@ class TestIBMQJob(IBMQTestCase):
             qc.cx(qr[i], qr[i + 1])
         qc.measure(qr, cr)
         num_jobs = 3
-        job_array = [self._run_job(qc=transpile([qc] * 20), shots=512)
+        job_array = [self.run_job(qc=transpile([qc] * 20), shots=512)
                      for _ in range(num_jobs)]
         timeout = 30
         start_time = time.time()
@@ -139,7 +136,7 @@ class TestIBMQJob(IBMQTestCase):
             qc.cx(qr[i], qr[i + 1])
         qc.measure(qr, cr)
         num_jobs = 3
-        job_array = [self._run_job(qc=transpile(qc, backend=backend))
+        job_array = [self.run_job(qc=transpile(qc, backend=backend))
                      for _ in range(num_jobs)]
         time.sleep(3)  # give time for jobs to start (better way?)
         job_status = [job.status() for job in job_array]
@@ -211,8 +208,8 @@ class TestIBMQJob(IBMQTestCase):
         if not backend_2:
             raise SkipTest('Skipping test that requires multiple backends')
 
-        job_1 = self._run_job(backend=backend_1, qc=self.bell)
-        job_2 = self._run_job(backend=backend_2, qc=self.bell)
+        job_1 = self.run_job(backend=backend_1, qc=self.bell)
+        job_2 = self.run_job(backend=backend_2, qc=self.bell)
 
         # test a retrieved job's backend is the same as the queried backend
         self.assertEqual(backend_1.retrieve_job(job_1.job_id()).backend().name(),
@@ -293,7 +290,7 @@ class TestIBMQJob(IBMQTestCase):
         active_job_statuses = {api_status_to_job_status(status) for status in ApiJobStatus
                                if status not in API_JOB_FINAL_STATES}
 
-        job = self._run_job(backend=backend)
+        job = self.run_job(backend=backend)
 
         active_jobs = backend.active_jobs()
         if not job.in_final_state():    # Job is still active.
@@ -307,7 +304,7 @@ class TestIBMQJob(IBMQTestCase):
     def test_retrieve_jobs_queued(self):
         """Test retrieving jobs that are queued."""
         backend = most_busy_backend(self.provider)
-        job = self._run_job(backend=backend)
+        job = self.run_job(backend=backend)
 
         # Wait for the job to queue, run, or reach a final state.
         leave_states = list(JOB_FINAL_STATES) + [JobStatus.QUEUED, JobStatus.RUNNING]
@@ -332,7 +329,7 @@ class TestIBMQJob(IBMQTestCase):
 
     def test_retrieve_jobs_running(self):
         """Test retrieving jobs that are running."""
-        job = self._run_job()
+        job = self.run_job()
 
         # Wait for the job to run, or reach a final state.
         leave_states = list(JOB_FINAL_STATES) + [JobStatus.RUNNING]
@@ -410,7 +407,7 @@ class TestIBMQJob(IBMQTestCase):
         qc = QuantumCircuit(3, 3)
         qc.h(0)
         qc.measure([0, 1, 2], [0, 1, 2])
-        job = self._run_job(qc=qc)
+        job = self.run_job(qc=qc)
         job.wait_for_final_state()
 
         my_filter = {'backend.name': self.sim_backend.name(),
@@ -451,7 +448,7 @@ class TestIBMQJob(IBMQTestCase):
 
     def test_retrieve_jobs_order(self):
         """Test retrieving jobs with different orders."""
-        job = self._run_job()
+        job = self.run_job()
         job.wait_for_final_state()
         self.assertIs(job.status(), JobStatus.DONE)
 
@@ -491,7 +488,7 @@ class TestIBMQJob(IBMQTestCase):
         excited_sched = x | measure
         schedules = [ground_sched, excited_sched]
 
-        job = self._run_job(qc=schedules, meas_level=1, shots=256)
+        job = self.run_job(qc=schedules, meas_level=1, shots=256)
         job.wait_for_final_state(wait=300, callback=self.simple_job_callback)
 
         self.assertTrue(job.done(), "Job {} didn't complete successfully.".format(job.job_id()))
@@ -570,7 +567,7 @@ class TestIBMQJob(IBMQTestCase):
                     # Put callback data in a dictionary to make it mutable.
                     callback_info = {'called': False, 'last call time': 0.0, 'last data': {}}
                     cancel_event = Event()
-                    job = self._run_job()
+                    job = self.run_job()
 
                     # Cancel the job after a while.
                     Thread(target=job_canceller, args=(job, cancel_event, 7), daemon=True).start()
@@ -590,7 +587,7 @@ class TestIBMQJob(IBMQTestCase):
     def test_wait_for_final_state_timeout(self):
         """Test waiting for job to reach final state times out."""
         backend = most_busy_backend(self.provider)
-        job = self._run_job(backend=backend)
+        job = self.run_job(backend=backend)
 
         try:
             self.assertRaises(IBMQJobTimeoutError, job.wait_for_final_state, timeout=0.01)
@@ -615,7 +612,7 @@ class TestIBMQJob(IBMQTestCase):
                 with mock.patch.object(RestJob, fail_method,
                                        side_effect=_side_effect, autospec=True):
                     with self.assertRaises(IBMQBackendApiError):
-                        self._run_job()
+                        self.run_job()
 
                 self.assertTrue(job_id, "Job ID not saved.")
                 job = self.sim_backend.retrieve_job(job_id[0])
@@ -629,23 +626,8 @@ class TestIBMQJob(IBMQTestCase):
     def test_job_backend_options(self):
         """Test job backend options."""
         run_config = {'shots': 2048, 'memory': True}
-        job = self._run_job(**run_config)
+        job = self.run_job(**run_config)
         self.assertLessEqual(run_config.items(), job.backend_options().items())
 
     def test_job_header(self):
         """Test job header."""
-
-    def _run_job(self, backend: Backend = None, max_retries: int = 10,
-                 qc: Union[QuantumCircuit, List[QuantumCircuit]] = None, **kwargs) -> IBMQJob:
-        # Default to the bell circuit
-        qc = qc or self.bell
-        backend = backend or self.sim_backend
-        # Simulate circuit
-        while max_retries >= 0:
-            try:
-                return backend.run(self.bell, **kwargs)
-            except IBMQBackendJobLimitError:
-                logger.info('Cannot submit job, trying again.. %d attempts remaining.', max_retries)
-            time.sleep(5)
-            max_retries -= 1
-        return None

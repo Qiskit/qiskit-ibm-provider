@@ -12,36 +12,28 @@
 
 """Test IBMQJob attributes."""
 
-import logging
 import re
 import time
 import uuid
 from datetime import datetime, timedelta
-from typing import List, Union
 from unittest import mock, skip
 
 from dateutil import tz
-from qiskit.circuit.quantumcircuit import QuantumCircuit
 from qiskit.compiler import transpile
-from qiskit.providers.backend import Backend
 from qiskit.providers.jobstatus import JOB_FINAL_STATES, JobStatus
 from qiskit.test import slow_test
 from qiskit.test.reference_circuits import ReferenceCircuits
 from qiskit_ibm.api.clients.account import AccountClient
 from qiskit_ibm.exceptions import (IBMQBackendApiProtocolError,
-                                   IBMQBackendJobLimitError,
                                    IBMQBackendValueError)
 from qiskit_ibm.job.exceptions import IBMQJobFailureError
-from qiskit_ibm.job.ibmqjob import IBMQJob
 
 from ..decorators import requires_device, requires_provider
 from ..fake_account_client import BaseFakeAccountClient, MissingFieldFakeJob
 from ..ibmqtestcase import IBMQTestCase
-from ..utils import (cancel_job, get_large_circuit, most_busy_backend,
+from ..utils import (JobExecutor, cancel_job, get_large_circuit, most_busy_backend,
                      submit_job_bad_shots, submit_job_one_bad_instr,
                      update_job_tags_and_verify)
-
-logger = logging.getLogger(__name__)
 
 
 class TestIBMQJobAttributes(IBMQTestCase):
@@ -59,6 +51,8 @@ class TestIBMQJobAttributes(IBMQTestCase):
         cls.sim_job = cls.sim_backend.run(cls.bell)
         cls.sim_job.wait_for_final_state()
         cls.last_week = datetime.now() - timedelta(days=7)
+        cls.executor = JobExecutor(cls.sim_backend)
+        cls.run_job = cls.executor.run_job
 
     def setUp(self):
         """Initial test setup."""
@@ -85,7 +79,7 @@ class TestIBMQJobAttributes(IBMQTestCase):
 
         job_properties = [None]
         large_qx = get_large_circuit(backend=backend)
-        job = self._run_job(qc=transpile(large_qx, backend=backend), backend=backend)
+        job = self.run_job(qc=transpile(large_qx, backend=backend), backend=backend)
 
         job.wait_for_final_state(wait=None, callback=_job_callback)
         self.assertIsNotNone(job_properties[0])
@@ -94,7 +88,7 @@ class TestIBMQJobAttributes(IBMQTestCase):
         """Test using job names on a simulator."""
         # Use a unique job name
         job_name = str(time.time()).replace('.', '')
-        job = self._run_job(job_name=job_name)
+        job = self.run_job(job_name=job_name)
         job_id = job.job_id()
         rjob = self.provider.backend.retrieve_job(job_id)
         self.assertEqual(rjob.name(), job_name)
@@ -120,7 +114,7 @@ class TestIBMQJobAttributes(IBMQTestCase):
         """Test changing the name associated with a job."""
         # Use a unique job name
         initial_job_name = str(time.time()).replace('.', '')
-        job = self._run_job(job_name=initial_job_name)
+        job = self.run_job(job_name=initial_job_name)
 
         new_names_to_test = [
             '',  # empty string as name.
@@ -143,7 +137,7 @@ class TestIBMQJobAttributes(IBMQTestCase):
         job_name = str(time.time()).replace('.', '')
         job_ids = set()
         for _ in range(2):
-            job = self._run_job(job_name=job_name)
+            job = self.run_job(job_name=job_name)
             job_ids.add(job.job_id())
             cancel_job(job)
 
@@ -219,7 +213,7 @@ class TestIBMQJobAttributes(IBMQTestCase):
         """Test retrieving creation date, while ensuring it is in local time."""
         # datetime, before running the job, in local time.
         start_datetime = datetime.now().replace(tzinfo=tz.tzlocal()) - timedelta(seconds=1)
-        job = self._run_job()
+        job = self.run_job()
         job.result()
         # datetime, after the job is done running, in local time.
         end_datetime = datetime.now().replace(tzinfo=tz.tzlocal()) + timedelta(seconds=1)
@@ -233,7 +227,7 @@ class TestIBMQJobAttributes(IBMQTestCase):
         """Test retrieving time per step, while ensuring the date times are in local time."""
         # datetime, before running the job, in local time.
         start_datetime = datetime.now().replace(tzinfo=tz.tzlocal()) - timedelta(seconds=1)
-        job = self._run_job()
+        job = self.run_job()
         job.result()
         # datetime, after the job is done running, in local time.
         end_datetime = datetime.now().replace(tzinfo=tz.tzlocal()) + timedelta(seconds=1)
@@ -259,7 +253,7 @@ class TestIBMQJobAttributes(IBMQTestCase):
         original_submit = self.sim_backend._api_client.job_submit
         with mock.patch.object(AccountClient, 'job_submit',
                                side_effect=_mocked__api_job_submit):
-            job = self._run_job()
+            job = self.run_job()
 
         self.assertEqual(job.batman_, 'bruce')
 
@@ -268,7 +262,7 @@ class TestIBMQJobAttributes(IBMQTestCase):
         # Find the most busy backend.
         backend = most_busy_backend(self.provider)
         leave_states = list(JOB_FINAL_STATES) + [JobStatus.RUNNING]
-        job = self._run_job(backend=backend)
+        job = self.run_job(backend=backend)
 
         queue_info = None
         for _ in range(20):
@@ -304,7 +298,7 @@ class TestIBMQJobAttributes(IBMQTestCase):
             self.sim_backend._api_client = BaseFakeAccountClient()
             # sim backend does not have ``measure_esp_enabled`` flag: defaults to ``False``
             with self.assertRaises(IBMQBackendValueError) as context_manager:
-                self._run_job(use_measure_esp=True)
+                self.run_job(use_measure_esp=True)
             self.assertIn(
                 "ESP readout not supported on this device. Please make sure the flag "
                 "'use_measure_esp' is unset or set to 'False'.",
@@ -319,7 +313,7 @@ class TestIBMQJobAttributes(IBMQTestCase):
         try:
             self.sim_backend._api_client = BaseFakeAccountClient()
             setattr(self.sim_backend._configuration, "measure_esp_enabled", True)
-            job = self._run_job(use_measure_esp=True)
+            job = self.run_job(use_measure_esp=True)
 
             self.assertEqual(job.backend_options()["use_measure_esp"], True)
             cancel_job(job)
@@ -335,12 +329,12 @@ class TestIBMQJobAttributes(IBMQTestCase):
             self.sim_backend._api_client = BaseFakeAccountClient()
             # ESP readout not enabled on backend
             setattr(self.sim_backend._configuration, "measure_esp_enabled", False)
-            job = self._run_job()
+            job = self.run_job()
             self.assertEqual(job.backend_options()["use_measure_esp"], False)
             cancel_job(job)
             # ESP readout enabled on backend
             setattr(self.sim_backend._configuration, "measure_esp_enabled", True)
-            job = self._run_job()
+            job = self.run_job()
             self.assertEqual(job.backend_options()["use_measure_esp"], True)
         finally:
             delattr(self.sim_backend._configuration, "measure_esp_enabled")
@@ -353,7 +347,7 @@ class TestIBMQJobAttributes(IBMQTestCase):
         try:
             self.sim_backend._api_client = BaseFakeAccountClient()
             setattr(self.sim_backend._configuration, "measure_esp_enabled", True)
-            job = self._run_job(use_measure_esp=False)
+            job = self.run_job(use_measure_esp=False)
             self.assertEqual(job.backend_options()["use_measure_esp"], False)
         finally:
             delattr(self.sim_backend._configuration, "measure_esp_enabled")
@@ -363,7 +357,7 @@ class TestIBMQJobAttributes(IBMQTestCase):
         """Test using job tags with an or operator."""
         # Use a unique tag.
         job_tags = [uuid.uuid4().hex, uuid.uuid4().hex, uuid.uuid4().hex]
-        job = self._run_job(job_tags=job_tags)
+        job = self.run_job(job_tags=job_tags)
 
         rjobs = self.sim_backend.jobs(
             job_tags=['phantom_tag'], start_datetime=self.last_week)
@@ -384,7 +378,7 @@ class TestIBMQJobAttributes(IBMQTestCase):
         """Test using job tags with an and operator."""
         # Use a unique tag.
         job_tags = [uuid.uuid4().hex, uuid.uuid4().hex, uuid.uuid4().hex]
-        job = self._run_job(job_tags=job_tags)
+        job = self.run_job(job_tags=job_tags)
 
         no_rjobs_tags = [job_tags[0:1]+['phantom_tags'], ['phantom_tag']]
         for tags in no_rjobs_tags:
@@ -406,7 +400,7 @@ class TestIBMQJobAttributes(IBMQTestCase):
     def test_job_tags_replace(self):
         """Test updating job tags by replacing a job's existing tags."""
         initial_job_tags = [uuid.uuid4().hex]
-        job = self._run_job(job_tags=initial_job_tags)
+        job = self.run_job(job_tags=initial_job_tags)
 
         tags_to_replace_subtests = [
             [],  # empty tags.
@@ -421,7 +415,7 @@ class TestIBMQJobAttributes(IBMQTestCase):
     def test_job_tags_add(self):
         """Test updating job tags by adding to a job's existing tags."""
         initial_job_tags = [uuid.uuid4().hex]
-        job = self._run_job(job_tags=initial_job_tags)
+        job = self.run_job(job_tags=initial_job_tags)
 
         tags_to_add_subtests = [
             [],  # empty tags.
@@ -436,7 +430,7 @@ class TestIBMQJobAttributes(IBMQTestCase):
     def test_job_tags_remove(self):
         """Test updating job tags by removing from a job's existing tags."""
         initial_job_tags = [uuid.uuid4().hex, uuid.uuid4().hex, uuid.uuid4().hex]
-        job = self._run_job(job_tags=initial_job_tags)
+        job = self.run_job(job_tags=initial_job_tags)
 
         tags_to_remove_subtests = [
             [],
@@ -459,7 +453,7 @@ class TestIBMQJobAttributes(IBMQTestCase):
 
     def test_job_tags_replace_and_remove(self):
         """Test updating job tags by replacing and removing tags."""
-        job = self._run_job(job_tags=[uuid.uuid4().hex])
+        job = self.run_job(job_tags=[uuid.uuid4().hex])
 
         replacement_tags = [uuid.uuid4().hex, uuid.uuid4().hex]
         # Remove the first tag in `replacement_tags`
@@ -474,7 +468,7 @@ class TestIBMQJobAttributes(IBMQTestCase):
 
     def test_job_tags_all_parameters(self):
         """Test updating job tags by replacing, adding, and removing tags."""
-        job = self._run_job(job_tags=[uuid.uuid4().hex])
+        job = self.run_job(job_tags=[uuid.uuid4().hex])
 
         replacement_tags = [uuid.uuid4().hex, uuid.uuid4().hex]
         additional_tags = [uuid.uuid4().hex, uuid.uuid4().hex]
@@ -524,7 +518,7 @@ class TestIBMQJobAttributes(IBMQTestCase):
     def test_experiment_id(self):
         """Test job experiment id."""
         exp_id = uuid.uuid4().hex
-        job = self._run_job(experiment_id=exp_id)
+        job = self.run_job(experiment_id=exp_id)
 
         self.assertEqual(job.experiment_id, exp_id)
         rjob = self.provider.backend.retrieve_job(job.job_id())
@@ -534,18 +528,3 @@ class TestIBMQJobAttributes(IBMQTestCase):
             self.assertEqual(rjob.experiment_id, exp_id,
                              f"Job {rjob.job_id()} has experiment ID {rjob.experiment_id} "
                              f"instead of {exp_id}")
-
-    def _run_job(self, backend: Backend = None, max_retries: int = 10,
-                 qc: Union[QuantumCircuit, List[QuantumCircuit]] = None, **kwargs) -> IBMQJob:
-        # Default to the bell circuit
-        qc = qc or self.bell
-        backend = backend or self.sim_backend
-        # Simulate circuit
-        while max_retries >= 0:
-            try:
-                return backend.run(self.bell, **kwargs)
-            except IBMQBackendJobLimitError:
-                logger.info('Cannot submit job, trying again.. %d attempts remaining.', max_retries)
-            time.sleep(5)
-            max_retries -= 1
-        return None
