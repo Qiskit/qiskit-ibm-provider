@@ -14,7 +14,6 @@
 
 import time
 from unittest import mock
-import copy
 
 from test.utils import JobExecutor, cancel_job
 
@@ -129,18 +128,25 @@ class TestIbmqQasmSimulator(IBMQTestCase):
                              f"qobj header={qobj.header}")
             return mock.MagicMock()
 
-        backend = copy.deepcopy(self.sim_backend)
-        backend._configuration._data['simulation_method'] = 'extended_stabilizer'
-        backend._submit_job = _new_submit
+        backend = self.sim_backend
 
-        circ = transpile(ReferenceCircuits.bell(), backend=backend)
-        job = self.run_job(qc=circ, header={'test': 'circuits'})
-        qobj = assemble(circ, backend=backend, header={'test': 'qobj'})
-        # Stop running job (via cancel or wait)
-        time.sleep(1)
-        cancel_job(job) or job.wait_for_final_state()  # pylint: disable=expression-not-assigned
-        # Run next job
-        self.run_job(qc=qobj)
+        sim_method = backend._configuration._data.get('simulation_method', None)
+        submit_fn = backend._submit_job
+
+        try:
+            backend._configuration._data['simulation_method'] = 'extended_stabilizer'
+            backend._submit_job = _new_submit
+            circ = transpile(ReferenceCircuits.bell(), backend=backend)
+            job = self.run_job(qc=circ, header={'test': 'circuits'})
+            qobj = assemble(circ, backend=backend, header={'test': 'qobj'})
+            # Stop running job (via cancel or wait)
+            time.sleep(1)
+            cancel_job(job) or job.wait_for_final_state()  # pylint: disable=expression-not-assigned
+            # Run next job
+            self.run_job(qc=qobj)
+        finally:
+            backend._configuration._data['simulation_method'] = sim_method
+            backend._submit_job = submit_fn
 
     def test_new_sim_method_no_overwrite(self):
         """Test custom method option is not overwritten."""
@@ -149,16 +155,25 @@ class TestIbmqQasmSimulator(IBMQTestCase):
             self.assertEqual(qobj.config.method, 'my_method', f"qobj header={qobj.header}")
             return mock.MagicMock()
 
-        backend = copy.deepcopy(self.sim_backend)
-        backend._configuration._data['simulation_method'] = 'extended_stabilizer'
-        backend._submit_job = _new_submit
+        backend = self.sim_backend
 
-        circ = transpile(ReferenceCircuits.bell(), backend=backend)
-        job = self.run_job(qc=circ, method='my_method', header={'test': 'circuits'})
-        time.sleep(1)
-        cancel_job(job)
-        qobj = assemble(circ, backend=backend, method='my_method', header={'test': 'qobj'})
-        self.run_job(qc=qobj)
+        sim_method = backend._configuration._data.get('simulation_method', None)
+        submit_fn = backend._submit_job
+
+        try:
+            backend._configuration._data['simulation_method'] = 'extended_stabilizer'
+            backend._submit_job = _new_submit
+            circ = transpile(ReferenceCircuits.bell(), backend=backend)
+            job = self.run_job(qc=circ, method='my_method', header={'test': 'circuits'})
+            # Stop running job (via cancel or wait)
+            time.sleep(1)
+            cancel_job(job) or job.wait_for_final_state()  # pylint: disable=expression-not-assigned
+            # Run next job
+            qobj = assemble(circ, backend=backend, method='my_method', header={'test': 'qobj'})
+            self.run_job(qc=qobj)
+        finally:
+            backend._configuration._data['simulation_method'] = sim_method
+            backend._submit_job = submit_fn
 
     @requires_device
     def test_simulator_with_noise_model(self, backend):
