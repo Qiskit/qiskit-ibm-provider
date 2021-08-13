@@ -15,7 +15,7 @@
 import time
 import copy
 from datetime import datetime, timedelta
-from unittest import SkipTest, mock, skip
+from unittest import SkipTest, mock
 from threading import Thread, Event
 
 from dateutil import tz
@@ -31,7 +31,7 @@ from qiskit_ibm.apiconstants import ApiJobStatus, API_JOB_FINAL_STATES
 from qiskit_ibm.ibmqbackend import IBMQRetiredBackend
 from qiskit_ibm.exceptions import IBMQBackendError, IBMQBackendApiError
 from qiskit_ibm.utils.utils import api_status_to_job_status
-from qiskit_ibm.job.exceptions import IBMQJobTimeoutError
+from qiskit_ibm.job.exceptions import IBMQJobTimeoutError, IBMQJobNotFoundError
 from qiskit_ibm.utils.converters import local_to_utc
 from qiskit_ibm.api.rest.job import Job as RestJob
 from qiskit_ibm.api.exceptions import RequestsApiError
@@ -230,7 +230,7 @@ class TestIBMQJob(IBMQTestCase):
 
     def test_retrieve_job_error(self):
         """Test retrieving an invalid job."""
-        self.assertRaises(IBMQBackendError,
+        self.assertRaises(IBMQJobNotFoundError,
                           self.provider.backend.retrieve_job, 'BAD_JOB_ID')
 
     def test_retrieve_jobs_status(self):
@@ -427,7 +427,8 @@ class TestIBMQJob(IBMQTestCase):
 
     def test_pagination_filter(self):
         """Test db_filter that could conflict with pagination."""
-        jobs = self.sim_backend.jobs(limit=25, start_datetime=self.last_month)
+        jobs = self.sim_backend.jobs(limit=25, start_datetime=self.last_month,
+                                     ignore_composite_jobs=True)
         job = jobs[3]
         job_utc = local_to_utc(job.creation_date()).isoformat()
 
@@ -439,7 +440,8 @@ class TestIBMQJob(IBMQTestCase):
         ]
         for db_filter in db_filters:
             with self.subTest(filter=db_filter):
-                job_list = self.sim_backend.jobs(limit=25, db_filter=db_filter)
+                job_list = self.sim_backend.jobs(limit=25, db_filter=db_filter,
+                                                 ignore_composite_jobs=True)
                 self.assertTrue(job_list)
                 self.assertNotIn(job.job_id(), [rjob.job_id() for rjob in job_list],
                                  "Job {} with creation date {} should not be returned".format(
@@ -457,7 +459,6 @@ class TestIBMQJob(IBMQTestCase):
             limit=10, status=JobStatus.DONE, descending=False, start_datetime=self.last_month)
         self.assertNotIn(job.job_id(), [rjob.job_id() for rjob in oldest_jobs])
 
-    @skip("Skip until aer issue 1214 is fixed")
     def test_retrieve_failed_job_simulator_partial(self):
         """Test retrieving partial results from a simulator backend."""
         job = submit_job_one_bad_instr(self.sim_backend)

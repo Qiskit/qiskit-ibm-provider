@@ -31,7 +31,13 @@ logger = logging.getLogger(__name__)
 
 
 class IBMQJobManager:
-    """Job Manager for IBM Quantum Experience.
+    """Job Manager for IBM Quantum (DEPRECATED).
+
+    This class has been deprecated. You can now pass a long list of circuits
+    to :meth:`qiskit_ibm.IBMQBackend.run`, which will automatically divide
+    the circuits into multiple jobs if needed and return an
+    :class:`qiskit_ibm.job.IBMCompositeJob` instance. You can use this
+    ``IBMCompositeJob`` instance the same way you used ``IBMQJob``.
 
     The Job Manager is a higher level mechanism for handling
     :class:`jobs<qiskit_ibm.job.IBMQJob>` composed of
@@ -83,6 +89,13 @@ class IBMQJobManager:
         """IBMQJobManager constructor."""
         self._job_sets = []  # type: List[ManagedJobSet]
         self._executor = futures.ThreadPoolExecutor()
+        warnings.warn("IBMQJobManager is deprecated and will be removed in "
+                      "a future release. You can now pass a long list of circuits "
+                      "to IBMQBackend.run(), which will automatically divide "
+                      "the circuits into multiple jobs if needed and return an "
+                      "IBMCompositeJob. You can use the returned IBMCompositeJob "
+                      "instance the same way you used IBMQJob.",
+                      DeprecationWarning, stacklevel=2)
 
     def run(
             self,

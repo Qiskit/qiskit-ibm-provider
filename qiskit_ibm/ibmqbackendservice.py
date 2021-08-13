@@ -1,6 +1,6 @@
 # This code is part of Qiskit.
 #
-# (C) Copyright IBM 2019, 2020.
+# (C) Copyright IBM 2019, 2021.
 #
 # This code is licensed under the Apache License, Version 2.0. You may
 # obtain a copy of this license in the LICENSE.txt file in the root directory
@@ -30,7 +30,8 @@ from .apiconstants import ApiJobStatus
 from .exceptions import (IBMQBackendValueError, IBMQBackendApiError, IBMQBackendApiProtocolError)
 from .ibmqbackend import IBMQBackend, IBMQRetiredBackend
 from .backendreservation import BackendReservation
-from .job import IBMQJob
+from .job import IBMQJob, IBMCompositeJob, IBMCircuitJob
+from .job.exceptions import IBMQJobNotFoundError
 from .utils.utils import to_python_identifier, validate_job_tags, filter_data
 from .utils.converters import local_to_utc
 from .utils.backend import convert_reservation_data
@@ -147,7 +148,7 @@ class IBMQBackendService:
 
     def jobs(
             self,
-            limit: int = 10,
+            limit: Optional[int] = 10,
             skip: int = 0,
             backend_name: Optional[str] = None,
             status: Optional[Union[JobStatus, str, List[Union[JobStatus, str]]]] = None,
@@ -158,6 +159,7 @@ class IBMQBackendService:
             job_tags_operator: Optional[str] = "OR",
             experiment_id: Optional[str] = None,
             descending: bool = True,
+            ignore_composite_jobs: bool = False,
             db_filter: Optional[Dict[str, Any]] = None
     ) -> List[IBMQJob]:
         """Return a list of jobs, subject to optional filtering.
@@ -168,7 +170,7 @@ class IBMQBackendService:
         making several calls to the server.
 
         Args:
-            limit: Number of jobs to retrieve.
+            limit: Number of jobs to retrieve. ``None`` means no limit.
             skip: Starting index for the job retrieval.
             backend_name: Name of the backend to retrieve jobs from.
             status: Only get jobs with this status or one of the statuses.
@@ -195,6 +197,9 @@ class IBMQBackendService:
             experiment_id: Filter by job experiment ID.
             descending: If ``True``, return the jobs in descending order of the job
                 creation date (i.e. newest first) until the limit is reached.
+            ignore_composite_jobs: If ``True``, sub-jobs of a single
+                :class:`~qiskit_ibm.job.IBMCompositeJob` will be
+                returned as individual jobs instead of merged together.
             db_filter: A `loopback-based filter
                 <https://loopback.io/doc/en/lb2/Querying-data.html>`_.
                 This is an interface to a database ``where`` filter.
@@ -263,9 +268,52 @@ class IBMQBackendService:
             # Argument filters takes precedence over db_filter for same keys
             api_filter = {**db_filter, **api_filter}
 
+        # Retrieve all requested jobs.
+        job_responses = self._get_jobs(api_filter=api_filter, limit=limit,
+                                       skip=skip, descending=descending)
+        job_list = []
+        composite_ids = set()
+        for job_info in job_responses:
+            # Check if it's a composite job.
+            job_tags = job_info.get("tags", [])
+            composite_job_id = [tag for tag in job_tags
+                                if tag.startswith(IBMCompositeJob._id_prefix)]
+            if composite_job_id and not ignore_composite_jobs:
+                if composite_job_id[0] not in composite_ids:
+                    composite_ids.add(composite_job_id[0])
+                    job_list.append(self.retrieve_job(composite_job_id[0]))
+            else:
+                job = self._restore_circuit_job(job_info, raise_error=False)
+                if job is None:
+                    logger.warning('Discarding job "%s" because it contains invalid data.',
+                                   job_info.get("job_id", ""))
+                    continue
+                job_list.append(job)
+
+        return job_list
+
+    def _get_jobs(
+            self,
+            api_filter: Dict,
+            limit: Optional[int] = 10,
+            skip: int = 0,
+            descending: bool = True
+    ) -> List:
+        """Retrieve the requested number of jobs from the server using pagination.
+
+        Args:
+            api_filter: Filter used for querying.
+            limit: limit: Number of jobs to retrieve. ``None`` means no limit.
+            skip: skip: Starting index for the job retrieval.
+            descending: If ``True``, return the jobs in descending order of the job
+                creation date (i.e. newest first) until the limit is reached.
+
+        Returns:
+            A list of raw API response.
+        """
         # Retrieve the requested number of jobs, using pagination. The server
         # might limit the number of jobs per request.
-        job_responses = []  # type: List[Dict[str, Any]]
+        job_responses: List[Dict[str, Any]] = []
         current_page_limit = limit or 20
         initial_filter = copy.deepcopy(api_filter)
 
@@ -276,11 +324,12 @@ class IBMQBackendService:
             if logger.getEffectiveLevel() is logging.DEBUG:
                 filtered_data = [filter_data(job) for job in job_page]
                 logger.debug("jobs() response data is %s", filtered_data)
-            job_responses += job_page
 
             if not job_page:
                 # Stop if there are no more jobs returned by the server.
                 break
+
+            job_responses += job_page
 
             if limit:
                 if len(job_responses) >= limit:
@@ -314,27 +363,40 @@ class IBMQBackendService:
                                          {'id': api_filter.pop('id')}]}
                 self._merge_logical_filters(api_filter, new_id_filter)
 
-        job_list = []
-        for job_info in job_responses:
-            job_id = job_info.get('job_id', "")
-            # Recreate the backend used for this job.
-            backend_name = job_info.get('_backend_info', {}).get('name', 'unknown')
-            try:
-                backend = self._provider.get_backend(backend_name)
-            except QiskitBackendNotFoundError:
-                backend = IBMQRetiredBackend.from_name(backend_name,
-                                                       self._provider,
-                                                       self._provider.credentials,
-                                                       self._provider._api_client)
-            try:
-                job = IBMQJob(backend=backend, api_client=self._provider._api_client, **job_info)
-            except TypeError:
-                logger.warning('Discarding job "%s" because it contains invalid data.', job_id)
-                continue
+        return job_responses
 
-            job_list.append(job)
+    def _restore_circuit_job(self, job_info: Dict, raise_error: bool) -> Optional[IBMCircuitJob]:
+        """Restore a circuit job from the API response.
 
-        return job_list
+        Args:
+            job_info: Job info in dictionary format.
+            raise_error: Whether to raise an exception if `job_info` is in
+                an invalid format.
+
+        Returns:
+            Circuit job restored from the data, or ``None`` if format is invalid.
+        """
+        job_id = job_info.get('job_id', "")
+        # Recreate the backend used for this job.
+        backend_name = job_info.get('_backend_info', {}).get('name', 'unknown')
+        try:
+            backend = self._provider.get_backend(backend_name)
+        except QiskitBackendNotFoundError:
+            backend = IBMQRetiredBackend.from_name(backend_name,
+                                                   self._provider,
+                                                   self._provider.credentials,
+                                                   self._provider._api_client)
+        try:
+            job = IBMCircuitJob(backend=backend,
+                                 api_client=self._provider._api_client, **job_info)
+            return job
+        except TypeError as ex:
+            if raise_error:
+                raise IBMQBackendApiProtocolError(
+                    f'Unexpected return value received from the server '
+                    f'when retrieving job {job_id}: {ex}') from ex
+
+        return None
 
     def _merge_logical_filters(self, cur_filter: Dict, new_filter: Dict) -> None:
         """Merge the logical operators in the input filters.
@@ -478,28 +540,27 @@ class IBMQBackendService:
             IBMQBackendApiProtocolError: If unexpected return value received
                  from the server.
         """
+        if job_id.startswith(IBMCompositeJob._id_prefix):
+            job_responses = self._get_jobs(api_filter={'tags': job_id}, limit=None)
+            sub_jobs = []
+            for job_info in job_responses:
+                sub_job = self._restore_circuit_job(job_info, raise_error=True)
+                if sub_job:
+                    sub_jobs.append(sub_job)
+
+            if not sub_jobs:
+                raise IBMQJobNotFoundError(f"Job {job_id} not found.")
+            return IBMCompositeJob.from_jobs(job_id=job_id, jobs=sub_jobs,
+                                              api_client=self._provider._api_client)
+
         try:
             job_info = self._provider._api_client.job_get(job_id)
         except ApiError as ex:
+            if 'Error code: 3250.' in str(ex):
+                raise IBMQJobNotFoundError(f"Job {job_id} not found.")
             raise IBMQBackendApiError('Failed to get job {}: {}'
                                       .format(job_id, str(ex))) from ex
-
-        # Recreate the backend used for this job.
-        backend_name = job_info.get('_backend_info', {}).get('name', 'unknown')
-        try:
-            backend = self._provider.get_backend(backend_name)
-        except QiskitBackendNotFoundError:
-            backend = IBMQRetiredBackend.from_name(backend_name,
-                                                   self._provider,
-                                                   self._provider.credentials,
-                                                   self._provider._api_client)
-        try:
-            job = IBMQJob(backend=backend, api_client=self._provider._api_client, **job_info)
-        except TypeError as ex:
-            raise IBMQBackendApiProtocolError(
-                'Unexpected return value received from the server '
-                'when retrieving job {}: {}'.format(job_id, str(ex))) from ex
-
+        job = self._restore_circuit_job(job_info, raise_error=True)
         return job
 
     def my_reservations(self) -> List[BackendReservation]:

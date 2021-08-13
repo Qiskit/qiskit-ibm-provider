@@ -1,6 +1,6 @@
 # This code is part of Qiskit.
 #
-# (C) Copyright IBM 2017, 2020.
+# (C) Copyright IBM 2017, 2021.
 #
 # This code is licensed under the Apache License, Version 2.0. You may
 # obtain a copy of this license in the LICENSE.txt file in the root directory
@@ -47,7 +47,7 @@ from .credentials import Credentials
 from .exceptions import (IBMQBackendError, IBMQBackendValueError,
                          IBMQBackendApiError, IBMQBackendApiProtocolError,
                          IBMQBackendJobLimitError)
-from .job import IBMQJob  # pylint: disable=cyclic-import
+from .job import IBMQJob, IBMCircuitJob, IBMCompositeJob
 from .utils import validate_job_tags
 from .utils.converters import utc_to_local_all, local_to_utc
 from .utils.json_decoder import decode_pulse_defaults, decode_backend_properties
@@ -154,6 +154,7 @@ class IBMQBackend(Backend):
             job_share_level: Optional[str] = None,
             job_tags: Optional[List[str]] = None,
             experiment_id: Optional[str] = None,
+            max_circuits_per_job: Optional[int] = None,
             header: Optional[Dict] = None,
             shots: Optional[int] = None,
             memory: Optional[bool] = None,
@@ -176,6 +177,12 @@ class IBMQBackend(Backend):
 
         If a keyword specified here is also present in the ``options`` attribute/object,
         the value specified here will be used for this run.
+
+        If the length of the input circuits exceeds the maximum allowed by
+        the backend, or if `max_circuits_per_job` is not ``None``, then the
+        input circuits will be divided into multiple jobs, and an
+        :class:`~qiskit_ibm.job.IBMCompositeJob` instance is
+        returned.
 
         Args:
             circuits: An individual or a
@@ -202,6 +209,7 @@ class IBMQBackend(Backend):
                 as a filter in the :meth:`jobs()` function call.
             experiment_id: Used to add a job to an "experiment", which is a collection
                 of jobs and additional metadata.
+            max_circuits_per_job: Maximum number of circuits to have in a single job.
 
             The following arguments are NOT applicable if a Qobj is passed in.
 
@@ -322,6 +330,25 @@ class IBMQBackend(Backend):
                 run_config_dict['parameter_binds'] = parameter_binds
             if sim_method and 'method' not in run_config_dict:
                 run_config_dict['method'] = sim_method
+
+            if isinstance(circuits, list):
+                chunk_size = None
+                if hasattr(self.configuration(), 'max_experiments'):
+                    backend_max = self.configuration().max_experiments
+                    chunk_size = backend_max if max_circuits_per_job is None \
+                        else min(backend_max, max_circuits_per_job)
+                elif max_circuits_per_job:
+                    chunk_size = max_circuits_per_job
+
+                if chunk_size and len(circuits) > chunk_size:
+                    circuits_list = [circuits[x:x + chunk_size]
+                                     for x in range(0, len(circuits), chunk_size)]
+                    return IBMCompositeJob(backend=self, api_client=self._api_client,
+                                            circuits_list=circuits_list,
+                                            run_config=run_config_dict,
+                                            name=job_name,
+                                            tags=job_tags, experiment_id=experiment_id)
+
             qobj = assemble(circuits, self, **run_config_dict)
 
         return self._submit_job(qobj, job_name, job_tags, experiment_id)
@@ -392,7 +419,8 @@ class IBMQBackend(Backend):
 
         # Submission success.
         try:
-            job = IBMQJob(backend=self, api_client=self._api_client, qobj=qobj, **submit_info)
+            job = IBMCircuitJob(backend=self, api_client=self._api_client,
+                                 qobj=qobj, **submit_info)
             logger.debug('Job %s was successfully submitted.', job.job_id())
         except TypeError as err:
             logger.debug("Invalid job data received: %s", submit_info)
@@ -582,6 +610,7 @@ class IBMQBackend(Backend):
             job_tags_operator: Optional[str] = "OR",
             experiment_id: Optional[str] = None,
             descending: bool = True,
+            ignore_composite_jobs: bool = False,
             db_filter: Optional[Dict[str, Any]] = None
     ) -> List[IBMQJob]:
         """Return the jobs submitted to this backend, subject to optional filtering.
@@ -619,6 +648,9 @@ class IBMQBackend(Backend):
             experiment_id: Filter by job experiment ID.
             descending: If ``True``, return the jobs in descending order of the job
                 creation date (newest first). If ``False``, return in ascending order.
+            ignore_composite_jobs: If ``True``, sub-jobs of a single
+                :class:`~qiskit_ibm.job.IBMCompositeJob` will be
+                returned as individual jobs instead of merged together.
             db_filter: A `loopback-based filter
                 <https://loopback.io/doc/en/lb2/Querying-data.html>`_.
                 This is an interface to a database ``where`` filter. Some
@@ -643,7 +675,8 @@ class IBMQBackend(Backend):
             limit=limit, skip=skip, backend_name=self.name(), status=status,
             job_name=job_name, start_datetime=start_datetime, end_datetime=end_datetime,
             job_tags=job_tags, job_tags_operator=job_tags_operator,
-            experiment_id=experiment_id, descending=descending, db_filter=db_filter)
+            experiment_id=experiment_id, descending=descending,
+            ignore_composite_jobs=ignore_composite_jobs, db_filter=db_filter)
 
     def active_jobs(self, limit: int = 10) -> List[IBMQJob]:
         """Return the unfinished jobs submitted to this backend.
