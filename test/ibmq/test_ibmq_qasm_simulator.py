@@ -133,8 +133,6 @@ class TestIbmqQasmSimulator(IBMQTestCase):
             backend._submit_job = _new_submit
             circ = transpile(ReferenceCircuits.bell(), backend=backend)
             backend.run(circ, header={'test': 'circuits'})
-            qobj = assemble(circ, backend=backend, header={'test': 'qobj'})
-            backend.run(qobj)
         finally:
             backend._configuration._data['simulation_method'] = sim_method
             backend._submit_job = submit_fn
@@ -156,8 +154,6 @@ class TestIbmqQasmSimulator(IBMQTestCase):
             backend._submit_job = _new_submit
             circ = transpile(ReferenceCircuits.bell(), backend=backend)
             backend.run(circ, method='my_method', header={'test': 'circuits'})
-            qobj = assemble(circ, backend=backend, method='my_method', header={'test': 'qobj'})
-            backend.run(qobj)
         finally:
             backend._configuration._data['simulation_method'] = sim_method
             backend._submit_job = submit_fn
