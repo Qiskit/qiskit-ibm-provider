@@ -14,6 +14,7 @@
 
 from typing import Optional, Union
 import threading
+from concurrent.futures import Future
 
 from qiskit.qobj import QasmQobj, PulseQobj
 from qiskit.result import Result
@@ -55,8 +56,8 @@ class SubJob:
         self._qobj = qobj
         self._job = job
         self.event = threading.Event()
-        self._submit_error = None
-        self.future = None
+        self._submit_error: Optional[Exception] = None
+        self.future: Optional[Future] = None
 
     def format_tag(self, tag_template: str) -> str:
         """Format the the job tag using indexes.
@@ -124,7 +125,7 @@ class SubJob:
         """
         self._submit_error = error
 
-    def reset(self):
+    def reset(self) -> None:
         """Clear job and error data."""
         self.future = None
         self.job = None
@@ -148,7 +149,7 @@ class SubJob:
         except (IBMQJobFailureError, IBMQJobInvalidStateError):
             return None
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         job_id = self.job.job_id() if self.job else None
         return f"<{self.__class__.__name__}> {self.job_index} (job ID {job_id}) " \
                f" for circuits {self.start_index}-{self.end_index}"

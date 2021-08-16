@@ -12,7 +12,7 @@
 
 """Utilities for working with IBM Quantum Experience jobs."""
 
-from typing import Dict, List, Generator, Any, Callable, Optional, NamedTuple
+from typing import Dict, List, Generator, Any, Callable, Optional, NamedTuple, Tuple
 from contextlib import contextmanager
 
 from qiskit.providers.jobstatus import JobStatus
@@ -72,7 +72,7 @@ def api_to_job_error() -> Generator[None, None, None]:
         raise IBMQJobApiError(str(api_err)) from api_err
 
 
-def auto_retry(func: Callable, *args, **kwargs) -> Any:
+def auto_retry(func: Callable, *args: Any, **kwargs: Any) -> Any:
     """Retry the function if encountered server error.
 
     Args:
@@ -118,11 +118,12 @@ def last_job_stat_pos(jobs: List[JobStatusQueueInfo]) -> JobStatusQueueInfo:
         Status and queue information of the job last to finish.
     """
 
-    def sort_3_keys(elem: JobStatusQueueInfo):
+    def sort_3_keys(elem: JobStatusQueueInfo) -> Tuple:
         """Sort by job status, queue position, and est completion time."""
         queue_info = elem.queue_info
         queue_pos = queue_info.position if queue_info else None
         est_comp = queue_info.estimated_complete_time if queue_info else None
-        return JOB_STATUS_TO_INT[elem.status]*-1, queue_pos is None, queue_pos, est_comp is None, est_comp
+        return JOB_STATUS_TO_INT[elem.status] * -1, queue_pos is None, \
+               queue_pos, est_comp is None, est_comp
 
     return sorted(jobs, key=sort_3_keys)[-1]

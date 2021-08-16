@@ -30,7 +30,7 @@ from qiskit.providers.jobstatus import JOB_FINAL_STATES, JobStatus
 from qiskit.providers.models import BackendProperties
 from qiskit.qobj import QasmQobj, PulseQobj
 from qiskit.result import Result
-from qiskit.providers.ibmq import ibmqbackend  # pylint: disable=unused-import
+from qiskit_ibm import ibmqbackend  # pylint: disable=unused-import
 from qiskit.assembler.disassemble import disassemble
 from qiskit.circuit.quantumcircuit import QuantumCircuit
 from qiskit.pulse import Schedule
@@ -155,19 +155,19 @@ class IBMCompositeJob(IBMQJob):
         # Properties used for caching.
         self._user_cancelled = False
         self._job_error_msg: Optional[str] = None
-        self._properties = None
+        self._properties: Optional[List] = None
         self._queue_info = None
         self._qobj = None
-        self._result = None
+        self._result: Optional[Result] = None
         self._circuits = None
 
         # Properties used for wait_for_final_state callback.
         self._callback_lock = threading.Lock()
-        self._user_callback = None
-        self._user_wait_value = None
+        self._user_callback: Optional[Callable] = None
+        self._user_wait_value: Optional[float] = None
         self._last_reported_stat = (None, None)  # type: Tuple[Optional[JobStatus], Optional[int]]
-        self._last_reported_time = 0
-        self._job_statuses = {}
+        self._last_reported_time = 0.0
+        self._job_statuses: Dict[str, JobStatusQueueInfo] = {}
 
         if circuits_list is not None:
             self._circuits = [circ for sublist in circuits_list for circ in sublist]
@@ -206,6 +206,7 @@ class IBMCompositeJob(IBMQJob):
         Returns:
             An instance of this class.
         """
+        logger.debug("Restoring IBMCompositeJob from jobs %s", [job.job_id() for job in jobs])
         ref_job = jobs[0]
         return cls(backend=ref_job.backend(),
                    api_client=api_client,
@@ -627,7 +628,7 @@ class IBMCompositeJob(IBMQJob):
         report = [f"Composite Job {self.job_id()}:",
                   "  Summary report:"]
 
-        status_counts = defaultdict(int)
+        status_counts: Dict[JobStatus, int] = defaultdict(int)
         status_by_id = {}  # Used to save status to keep things in sync.
         for job in self._get_circuit_jobs():
             status = job.status()
@@ -992,7 +993,7 @@ class IBMCompositeJob(IBMQJob):
 
         return None
 
-    def rerun_failed(self):
+    def rerun_failed(self) -> None:
         """Re-submit all failed sub-jobs.
 
         Note:
@@ -1049,7 +1050,7 @@ class IBMCompositeJob(IBMQJob):
 
             self._last_reported_stat = (status, pos)
             self._last_reported_time = cur_time
-            if report:
+            if report and self._user_callback:
                 logger.debug("Invoking callback function, job status=%s, queue_info=%s",
                              status, queue_info)
                 self._user_callback(self.job_id(), status, self, queue_info=queue_info)
@@ -1066,7 +1067,7 @@ class IBMCompositeJob(IBMQJob):
         if self._status is JobStatus.ERROR and self._job_error_msg:
             return
 
-        statuses = defaultdict(list)
+        statuses: Dict[JobStatus, List[SubJob]] = defaultdict(list)
         for sub_job in self._sub_jobs:
             if sub_job.job:
                 statuses[sub_job.job.status()].append(sub_job)
@@ -1104,8 +1105,7 @@ class IBMCompositeJob(IBMQJob):
                 self._status = stat
                 return
 
-        bad_stats = {k: [j.job_id() for j in v] for k, v in statuses.items()
-                     if k not in JobStatus}
+        bad_stats = {k: v for k, v in statuses.items() if k not in JobStatus}
         raise IBMQJobInvalidStateError("Invalid job status found: " + str(bad_stats))
 
     def _build_error_report(self, failed_jobs: List[SubJob]) -> None:

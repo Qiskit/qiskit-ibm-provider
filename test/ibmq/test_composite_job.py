@@ -687,7 +687,7 @@ class TestIBMCompositeJob(IBMQTestCase):
             circs.append(random_circuit(num_qubits=2, depth=3, measure=True))
         job_set = self.fake_backend.run(circs, max_circuits_per_job=max_circs)
         job_set.block_for_submit()
-        circ_idx = random.randint(0, len(circs))
+        circ_idx = random.randint(0, len(circs)-1)
         self.assertIn(circs[circ_idx], job_set.sub_job(circ_idx).circuits())
 
 

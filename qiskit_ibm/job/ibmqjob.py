@@ -21,7 +21,7 @@ import warnings
 from qiskit.providers.job import JobV1 as Job
 from qiskit.providers.models import BackendProperties
 from qiskit.result import Result
-from qiskit.providers.ibmq import ibmqbackend  # pylint: disable=unused-import
+from qiskit_ibm import ibmqbackend  # pylint: disable=unused-import
 from qiskit.circuit.quantumcircuit import QuantumCircuit
 from qiskit.pulse import Schedule
 from qiskit.qobj import QasmQobj, PulseQobj
@@ -123,12 +123,26 @@ class IBMQJob(Job, ABC):
         pass
 
     @abstractmethod
-    def update_tags(self, new_tags: List[str]) -> None:
+    def update_tags(
+            self,
+            replacement_tags: Optional[List[str]] = None,
+            additional_tags: Optional[List[str]] = None,
+            removal_tags: Optional[List[str]] = None
+    ) -> List[str]:
         """Update the tags associated with this job.
 
         Args:
-            new_tags: New tags to be assigned to the job.
+            replacement_tags: The tags that should replace the current tags
+                associated with this job.
+            additional_tags: The new tags that should be added to the current tags
+                associated with this job.
+            removal_tags: The tags that should be removed from the current tags
+                associated with this job.
+
+        Returns:
+            The new tags associated with this job.
         """
+        # TODO: This can probably be simplified to take just a list of new tags.
         pass
 
     @abstractmethod

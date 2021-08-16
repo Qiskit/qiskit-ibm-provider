@@ -164,7 +164,7 @@ class TestIBMQJobManager(IBMQTestCase):
 
     def test_async_submit_exception(self):
         """Test asynchronous job submit failed."""
-        self.fake_api_backend._api_client = JobSubmitFailClient(max_fail_count=1)
+        self.fake_api_backend._api_client = JobSubmitFailClient(failed_indexes=0)
 
         job_set = self._jm.run([self._qc]*2, backend=self.fake_api_backend,
                                max_experiments_per_job=1)
