@@ -3,4 +3,4 @@ deprecations:
   - |
     :class:`qiskit.providers.ibmq.IBMQBackendService.IBMQDeprecatedBackendService` was deprecated
     five months ago and has now been removed. Backends can still be returned with 
-    :meth:`qiskit.providers.ibmq.IBMBackendService.backends`.
+    :meth:`qiskit.providers.ibmq.IBMQBackendService.backends`.
