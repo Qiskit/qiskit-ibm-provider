@@ -116,7 +116,7 @@ class AccountProvider(Provider):
         # Initialize the internal list of backends.
         self.__backends: Dict[str, IBMQBackend] = {}
         self._backend = IBMQBackendService(self)
-        self.backends = IBMQBackendService(self).backends  # type: ignore[assignment]
+        self.backends = self._backend.backends  # type: ignore[assignment]
 
         # Initialize other services.
         self._random = IBMQRandomService(self) if credentials.extractor_url else None
