@@ -36,15 +36,11 @@ from qiskit_ibm.runtime import runtime_job  # pylint: disable=unused-import
 from .api.clients import AccountClient
 from .credentials import Credentials
 from .exceptions import IBMQInputValueError, IBMQNotAuthorizedError
-from .ibmqbackendservice import IBMQBackendService  # pylint: disable=cyclic-import
-from .utils.json_decoder import decode_backend_configuration
-from .random.ibmqrandomservice import IBMQRandomService  # pylint: disable=cyclic-import
 from .experiment import IBMExperimentService  # pylint: disable=cyclic-import
-from .ibmqbackend import (IBMQBackend,  # pylint: disable=cyclic-import
-                          IBMQSimulator)
+from .ibmqbackend import IBMQBackend  # pylint: disable=cyclic-import
+from .ibmqbackend import IBMQSimulator
 from .ibmqbackendservice import \
     IBMQBackendService  # pylint: disable=cyclic-import
-from .ibmqbackendservice import IBMQDeprecatedBackendService
 from .random.ibmqrandomservice import \
     IBMQRandomService  # pylint: disable=cyclic-import
 from .runner_result import RunnerResult  # pylint: disable=cyclic-import
