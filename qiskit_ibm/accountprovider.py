@@ -36,6 +36,9 @@ from qiskit_ibm.runtime import runtime_job  # pylint: disable=unused-import
 from .api.clients import AccountClient
 from .credentials import Credentials
 from .exceptions import IBMQInputValueError, IBMQNotAuthorizedError
+from .ibmqbackendservice import IBMQBackendService  # pylint: disable=cyclic-import
+from .utils.json_decoder import decode_backend_configuration
+from .random.ibmqrandomservice import IBMQRandomService  # pylint: disable=cyclic-import
 from .experiment import IBMExperimentService  # pylint: disable=cyclic-import
 from .ibmqbackend import (IBMQBackend,  # pylint: disable=cyclic-import
                           IBMQSimulator)
@@ -126,7 +129,7 @@ class AccountProvider(Provider):
         # Initialize the internal list of backends.
         self.__backends: Dict[str, IBMQBackend] = {}
         self._backend = IBMQBackendService(self)
-        self.backends = IBMQDeprecatedBackendService(self.backend)  # type: ignore[assignment]
+        self.backends = self._backend.backends  # type: ignore[assignment]
 
         # Initialize other services.
         self._random = IBMQRandomService(self) if credentials.extractor_url else None

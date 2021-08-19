@@ -13,8 +13,8 @@
 """IBMQBackend Test."""
 
 import warnings
-from datetime import datetime, timedelta
 from inspect import getfullargspec
+from datetime import timedelta, datetime
 from unittest import SkipTest
 from unittest.mock import patch
 
