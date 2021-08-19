@@ -18,7 +18,7 @@ from unittest import mock
 from test.utils import JobExecutor, cancel_job
 
 from qiskit import ClassicalRegister, QuantumCircuit, QuantumRegister
-from qiskit.compiler import transpile, assemble
+from qiskit.compiler import transpile
 from qiskit.test.reference_circuits import ReferenceCircuits
 from qiskit.providers.aer.noise import NoiseModel
 
