@@ -37,8 +37,7 @@ from qiskit_ibm.api.exceptions import RequestsApiError
 
 from ..ibmqtestcase import IBMQTestCase
 from ..decorators import (requires_provider, requires_device)
-from ..utils import (most_busy_backend, cancel_job,
-                     submit_job_bad_shots)
+from ..utils import (most_busy_backend, cancel_job)
 from ..fake_account_client import BaseFakeAccountClient, CancelableFakeJob
 
 
@@ -251,8 +250,6 @@ class TestIBMQJob(IBMQTestCase):
             {'status': [JobStatus.ERROR],
              'db_filter': {'or': [{'status': 'CANCELLED'}]}}
         ]
-        job_to_fail = submit_job_bad_shots(backend=self.sim_backend)
-        job_to_fail.wait_for_final_state()
 
         for status_filter in status_filters:
             with self.subTest(status_filter=status_filter):
@@ -261,8 +258,6 @@ class TestIBMQJob(IBMQTestCase):
                     db_filter=status_filter['db_filter'],
                     start_datetime=self.last_month)
                 job_list_ids = [_job.job_id() for _job in job_list]
-
-                self.assertIn(job_to_fail.job_id(), job_list_ids)
 
                 for filtered_job in job_list:
                     self.assertIn(filtered_job._status, statuses_to_filter,

@@ -32,7 +32,7 @@ from qiskit_ibm.exceptions import IBMQBackendValueError, IBMQBackendApiProtocolE
 from ..ibmqtestcase import IBMQTestCase
 from ..decorators import requires_provider, requires_device
 from ..utils import (most_busy_backend, cancel_job, get_large_circuit,
-                     update_job_tags_and_verify, submit_job_bad_shots)
+                     update_job_tags_and_verify)
 from ..fake_account_client import BaseFakeAccountClient, MissingFieldFakeJob
 
 
@@ -146,21 +146,6 @@ class TestIBMQJobAttributes(IBMQTestCase):
         self.assertEqual(job_ids, retrieved_job_ids)
         for job in retrieved_jobs:
             self.assertEqual(job.name(), job_name)
-
-    def test_error_message_validation(self):
-        """Test retrieving job error message for a validation error."""
-        job = submit_job_bad_shots(self.sim_backend)
-        rjob = self.sim_backend.retrieve_job(job.job_id())
-
-        for q_job, partial in [(job, False), (rjob, True)]:
-            with self.subTest(partial=partial):
-                with self.assertRaises(IBMQJobFailureError) as err_cm:
-                    q_job.result(partial=partial)
-                for msg in (err_cm.exception.message, q_job.error_message()):
-                    self.assertNotIn("Unknown", msg)
-                    self.assertIsNotNone(re.search(r'Error code: [0-9]{4}\.$', msg), msg)
-
-        self.assertEqual(job.error_message(), rjob.error_message())
 
     def test_refresh(self):
         """Test refreshing job data."""
