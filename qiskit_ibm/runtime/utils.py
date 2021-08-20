@@ -23,7 +23,6 @@ import json
 import re
 import warnings
 import zlib
-from contextlib import suppress
 from datetime import date
 from typing import Any, Callable, Dict, List, Union
 
@@ -115,60 +114,60 @@ def deserialize_from_settings(mod_name: str, class_name: str, settings: Dict) ->
     raise ValueError(f"Unable to find class {class_name} in module {mod_name}")
 
 
-def _set_int_keys_flag(input: Union[Dict, List]) -> Union[Dict, List]:
+def _set_int_keys_flag(obj: Union[Dict, List]) -> Union[Dict, List]:
     """Recursively sets '__int_keys__' flag if dictionary uses integer keys
 
     Args:
-        input: dictionary or list
+        obj: dictionary or list
 
     Returns:
-        input with the '__int_keys__' flag set if dictionary uses integer key
+        obj with the '__int_keys__' flag set if dictionary uses integer key
     """
-    if isinstance(input, dict):
-        for k, v in list(input.items()):
+    if isinstance(obj, dict):
+        for k, v in list(obj.items()):
             if isinstance(k, int):
-                input['__int_keys__'] = True
+                obj['__int_keys__'] = True
             _set_int_keys_flag(v)
-    elif isinstance(input, list):
-        for item in input:
+    elif isinstance(obj, list):
+        for item in obj:
             _set_int_keys_flag(item)
-    return input
+    return obj
 
 
-def _remove_int_keys_flag(input: Union[Dict, List]) -> Union[Dict, List]:
+def _remove_int_keys_flag(obj: Union[Dict, List]) -> Union[Dict, List]:
     """Recursively removes '__int_keys__' flag
 
     Args:
-        input: dictionary or list
+        obj: dictionary or list
 
     Returns:
-        input without the '__int_keys__' flag
+        obj without the '__int_keys__' flag
     """
-    if isinstance(input, dict):
-        if '__int_keys__' in input:
-            del input['__int_keys__']
-        for k, v in list(input.items()):
+    if isinstance(obj, dict):
+        if '__int_keys__' in obj:
+            del obj['__int_keys__']
+        for _, v in list(obj.items()):
             _remove_int_keys_flag(v)
-    elif isinstance(input, list):
-        for item in input:
+    elif isinstance(obj, list):
+        for item in obj:
             _remove_int_keys_flag(item)
-    return input
+    return obj
 
 
-def _cast_strings_keys_to_int(input: Dict) -> Dict:
+def _cast_strings_keys_to_int(obj: Dict) -> Dict:
     """Casts string to int keys in dictionary when '__int_keys__' flag is set
 
     Args:
-        input: dictionary
+        obj: dictionary
 
     Returns:
-        input with string keys cast to int keys and '__int_keys__' flags removed
+        obj with string keys cast to int keys and '__int_keys__' flags removed
     """
-    if '__int_keys__' in input:
-        del input['__int_keys__']
+    if '__int_keys__' in obj:
+        del obj['__int_keys__']
         keys_to_add: List[int] = []
         # Cast integer keys disguised as strings back to integer keys
-        for key in input.keys():
+        for key in obj.keys():
             try:
                 keys_to_add.insert(0, int(key))
             except ValueError:
@@ -177,9 +176,10 @@ def _cast_strings_keys_to_int(input: Dict) -> Dict:
         # Remove string keys and replace with int keys
         while len(keys_to_add) > 0:
             key = keys_to_add.pop()
-            input[key] = input[str(key)]
-            input.pop(str(key))
-    return input
+            obj[key] = obj[str(key)]
+            obj.pop(str(key))
+    return obj
+
 
 class RuntimeEncoder(json.JSONEncoder):
     """JSON Encoder used by runtime service."""
@@ -231,7 +231,7 @@ class RuntimeEncoder(json.JSONEncoder):
             return {'__type__': 'spmatrix', '__value__': value}
         return super().default(obj)
 
-    def encode(self, obj: Any) -> str:
+    def encode(self, obj: Any) -> str:  # pylint: disable=arguments-differ
         if isinstance(obj, (dict, list)):
             obj = _set_int_keys_flag(obj)
         encoded = super().encode(obj)
