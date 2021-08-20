@@ -19,7 +19,6 @@ import time
 import logging
 import uuid
 import threading
-import warnings
 
 from qiskit.circuit import QuantumCircuit
 from qiskit.pulse import Schedule

@@ -13,7 +13,6 @@
 """Job Manager used to manage jobs for IBM Quantum Experience."""
 
 import logging
-import warnings
 from typing import List, Optional, Union, Any
 from concurrent import futures
 
