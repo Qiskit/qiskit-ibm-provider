@@ -148,7 +148,7 @@ class IBMQBackend(Backend):
     @deprecate_arguments({'qobj': 'circuits'})
     def run(
             self,
-            circuits: Union[QasmQobj, PulseQobj, QuantumCircuit, Schedule,
+            circuits: Union[QuantumCircuit, Schedule,
                             List[Union[QuantumCircuit, Schedule]]],
             job_name: Optional[str] = None,
             job_share_level: Optional[str] = None,

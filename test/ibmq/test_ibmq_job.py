@@ -257,7 +257,6 @@ class TestIBMQJob(IBMQTestCase):
                     status=status_filter['status'],
                     db_filter=status_filter['db_filter'],
                     start_datetime=self.last_month)
-                job_list_ids = [_job.job_id() for _job in job_list]
 
                 for filtered_job in job_list:
                     self.assertIn(filtered_job._status, statuses_to_filter,

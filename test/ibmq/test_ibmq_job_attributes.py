@@ -15,7 +15,7 @@
 import time
 from unittest import mock
 from datetime import datetime, timedelta
-import re
+
 import uuid
 
 from dateutil import tz
@@ -25,7 +25,6 @@ from qiskit.test.reference_circuits import ReferenceCircuits
 from qiskit.providers.jobstatus import JobStatus, JOB_FINAL_STATES
 from qiskit.compiler import transpile
 
-from qiskit_ibm.job.exceptions import IBMQJobFailureError
 from qiskit_ibm.api.clients.account import AccountClient
 from qiskit_ibm.exceptions import IBMQBackendValueError, IBMQBackendApiProtocolError
 
