@@ -15,7 +15,7 @@
 import time
 import copy
 from datetime import datetime, timedelta
-from unittest import SkipTest, mock, skip
+from unittest import SkipTest, mock
 from threading import Thread, Event
 
 from dateutil import tz
@@ -24,7 +24,6 @@ from qiskit import ClassicalRegister, QuantumCircuit, QuantumRegister
 from qiskit.test import slow_test
 from qiskit.test.reference_circuits import ReferenceCircuits
 from qiskit.compiler import transpile
-from qiskit.result import Result
 from qiskit.providers.jobstatus import JobStatus, JOB_FINAL_STATES
 from qiskit_ibm import least_busy
 from qiskit_ibm.apiconstants import ApiJobStatus, API_JOB_FINAL_STATES
@@ -39,7 +38,7 @@ from qiskit_ibm.api.exceptions import RequestsApiError
 from ..ibmqtestcase import IBMQTestCase
 from ..decorators import (requires_provider, requires_device)
 from ..utils import (most_busy_backend, cancel_job,
-                     submit_job_bad_shots, submit_and_cancel, submit_job_one_bad_instr)
+                     submit_job_bad_shots)
 from ..fake_account_client import BaseFakeAccountClient, CancelableFakeJob
 
 
@@ -170,12 +169,6 @@ class TestIBMQJob(IBMQTestCase):
         job_ids = [job.job_id() for job in job_array]
         self.assertEqual(sorted(job_ids), sorted(list(set(job_ids))))
 
-    def test_cancel(self):
-        """Test job cancellation."""
-        # Find the most busy backend
-        backend = most_busy_backend(self.provider)
-        submit_and_cancel(backend)
-
     def test_retrieve_jobs(self):
         """Test retrieving jobs."""
         job_list = self.provider.backend.jobs(
@@ -258,8 +251,6 @@ class TestIBMQJob(IBMQTestCase):
             {'status': [JobStatus.ERROR],
              'db_filter': {'or': [{'status': 'CANCELLED'}]}}
         ]
-
-        job_to_cancel = submit_and_cancel(backend=self.sim_backend)
         job_to_fail = submit_job_bad_shots(backend=self.sim_backend)
         job_to_fail.wait_for_final_state()
 
@@ -270,8 +261,7 @@ class TestIBMQJob(IBMQTestCase):
                     db_filter=status_filter['db_filter'],
                     start_datetime=self.last_month)
                 job_list_ids = [_job.job_id() for _job in job_list]
-                if job_to_cancel.status() is JobStatus.CANCELLED:
-                    self.assertIn(job_to_cancel.job_id(), job_list_ids)
+
                 self.assertIn(job_to_fail.job_id(), job_list_ids)
 
                 for filtered_job in job_list:
@@ -456,16 +446,6 @@ class TestIBMQJob(IBMQTestCase):
         oldest_jobs = self.sim_backend.jobs(
             limit=10, status=JobStatus.DONE, descending=False, start_datetime=self.last_month)
         self.assertNotIn(job.job_id(), [rjob.job_id() for rjob in oldest_jobs])
-
-    @skip("Skip until aer issue 1214 is fixed")
-    def test_retrieve_failed_job_simulator_partial(self):
-        """Test retrieving partial results from a simulator backend."""
-        job = submit_job_one_bad_instr(self.sim_backend)
-        result = job.result(partial=True)
-
-        self.assertIsInstance(result, Result)
-        self.assertTrue(result.results[0].success)
-        self.assertFalse(result.results[1].success)
 
     @slow_test
     def test_pulse_job(self):

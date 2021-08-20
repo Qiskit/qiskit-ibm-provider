@@ -13,7 +13,7 @@
 """Test IBMQJob attributes."""
 
 import time
-from unittest import mock, skip
+from unittest import mock
 from datetime import datetime, timedelta
 import re
 import uuid
@@ -32,8 +32,7 @@ from qiskit_ibm.exceptions import IBMQBackendValueError, IBMQBackendApiProtocolE
 from ..ibmqtestcase import IBMQTestCase
 from ..decorators import requires_provider, requires_device
 from ..utils import (most_busy_backend, cancel_job, get_large_circuit,
-                     update_job_tags_and_verify, submit_job_bad_shots,
-                     submit_job_one_bad_instr)
+                     update_job_tags_and_verify, submit_job_bad_shots)
 from ..fake_account_client import BaseFakeAccountClient, MissingFieldFakeJob
 
 
@@ -147,37 +146,6 @@ class TestIBMQJobAttributes(IBMQTestCase):
         self.assertEqual(job_ids, retrieved_job_ids)
         for job in retrieved_jobs:
             self.assertEqual(job.name(), job_name)
-
-    @slow_test
-    @requires_device
-    def test_error_message_device(self, backend):
-        """Test retrieving job error messages from a device backend."""
-        job = submit_job_one_bad_instr(backend)
-        job.wait_for_final_state(wait=300, callback=self.simple_job_callback)
-
-        rjob = backend.retrieve_job(job.job_id())
-
-        for q_job, partial in [(job, False), (rjob, True)]:
-            with self.subTest(partial=partial):
-                with self.assertRaises(IBMQJobFailureError) as err_cm:
-                    q_job.result(partial=partial)
-                for msg in (err_cm.exception.message, q_job.error_message()):
-                    self.assertIn('bad_instruction', msg)
-                    self.assertIsNotNone(re.search(r'Error code: [0-9]{4}\.$', msg), msg)
-
-    @skip("Skip until aer issue 1214 is fixed")
-    def test_error_message_simulator(self):
-        """Test retrieving job error messages from a simulator backend."""
-        job = submit_job_one_bad_instr(self.sim_backend)
-        with self.assertRaises(IBMQJobFailureError) as err_cm:
-            job.result()
-        self.assertNotIn('bad_instruction', err_cm.exception.message)
-
-        message = job.error_message()
-        self.assertIn('Experiment 1: ERROR', message)
-
-        r_message = self.provider.backend.retrieve_job(job.job_id()).error_message()
-        self.assertIn('Experiment 1: ERROR', r_message)
 
     def test_error_message_validation(self):
         """Test retrieving job error message for a validation error."""
