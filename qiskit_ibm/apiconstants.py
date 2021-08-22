@@ -14,6 +14,8 @@
 
 import enum
 
+QISKIT_IBM_API_URL = 'https://auth.quantum-computing.ibm.com/api'
+
 
 class ApiJobStatus(enum.Enum):
     """Possible values used by the API for a job status.
@@ -57,12 +59,3 @@ class ApiJobKind(enum.Enum):
     QOBJECT = 'q-object'
     QOBJECT_STORAGE = 'q-object-external-storage'
     CIRCUIT = 'q-circuit'
-
-
-class ApiJobShareLevel(enum.Enum):
-    """Possible values used by the API for job share levels."""
-    GLOBAL = 'global'
-    HUB = 'hub'
-    GROUP = 'group'
-    PROJECT = 'project'
-    NONE = 'none'
