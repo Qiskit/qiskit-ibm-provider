@@ -174,16 +174,13 @@ class IBMQBackend(Backend):
     ) -> IBMQJob:
         """Run on the backend.
 
-        If a keyword specified here is also present in the ``options`` attribute/object,
+        If a keyword specified here is also present in the ``options`` attribute/object, 
         the value specified here will be used for this run.
 
         Args:
             circuits: An individual or a
                 list of :class:`~qiskit.circuits.QuantumCircuit` or
                 :class:`~qiskit.pulse.Schedule` objects to run on the backend.
-                A :class:`~qiskit.qobj.QasmQobj` or a
-                :class:`~qiskit.qobj.PulseQobj` object is also supported but
-                is deprecated.
             job_name: Custom name to be assigned to the job. This job
                 name can subsequently be used as a filter in the
                 :meth:`jobs()` method. Job names do not need to be unique.
