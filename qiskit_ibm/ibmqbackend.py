@@ -934,6 +934,15 @@ class IBMQRetiredBackend(IBMQBackend):
     ) -> List[BackendReservation]:
         return []
 
+    def run(    # type: ignore[override]
+            self,
+            *args: Any,
+            **kwargs: Any
+    ) -> None:
+        """Run a Qobj."""
+        # pylint: disable=arguments-differ
+        raise IBMQBackendError('This backend ({}) is no longer available.'.format(self.name()))
+
     @classmethod
     def from_name(
             cls,

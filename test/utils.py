@@ -135,6 +135,45 @@ def cancel_job(job: IBMQJob, verify: bool = False) -> bool:
     return cancelled
 
 
+def submit_job_bad_shots(backend: IBMQBackend) -> IBMQJob:
+    """Submit a job that will fail due to too many shots.
+    Args:
+        backend: Backend to submit the job to.
+    Returns:
+        Submitted job.
+    """
+    qobj = get_large_circuit(backend=backend)
+    job_to_fail = backend.run(qobj, shots=10000)
+    return job_to_fail
+
+
+def submit_job_one_bad_instr(backend: IBMQBackend) -> IBMQJob:
+    """Submit a job that contains one good and one bad instruction.
+    Args:
+        backend: Backend to submit the job to.
+    Returns:
+        Submitted job.
+    """
+    qc_new = transpile(ReferenceCircuits.bell(), backend)
+    qobj = assemble([qc_new]*2, backend=backend)
+    qobj.experiments[1].instructions[1].name = 'bad_instruction'
+    job = backend.run(qobj)
+    return job
+
+
+def submit_and_cancel(backend: IBMQBackend) -> IBMQJob:
+    """Submit and cancel a job.
+    Args:
+        backend: Backend to submit the job to.
+    Returns:
+        Cancelled job.
+    """
+    qobj = bell_in_qobj(backend=backend)
+    job = backend.run(qobj)
+    cancel_job(job, True)
+    return job
+
+
 def get_pulse_schedule(backend: IBMQBackend) -> Schedule:
     """Return a pulse schedule."""
     config = backend.configuration()
