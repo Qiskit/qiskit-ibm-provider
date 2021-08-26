@@ -369,6 +369,27 @@ class TestIBMQJob(IBMQTestCase):
                                  'job {} creation date {} not within range'
                                  .format(job.job_id(), job.creation_date()))
 
+    def test_retrieve_jobs_between_datetimes(self):
+        """Test retrieving jobs created between two specified datetimes."""
+        date_today = datetime.now()
+        past_month = date_today - timedelta(30)
+        past_two_month = date_today - timedelta(60)
+
+        # Add local tz in order to compare to `creation_date` which is tz aware.
+        past_month_tz_aware = past_month.replace(tzinfo=tz.tzlocal())
+        past_two_month_tz_aware = past_two_month.replace(tzinfo=tz.tzlocal())
+
+        with self.subTest():
+            job_list = self.provider.backend.jobs(
+                backend_name=self.sim_backend.name(), limit=2,
+                start_datetime=past_two_month, end_datetime=past_month)
+            self.assertTrue(job_list)
+            for job in job_list:
+                self.assertTrue(
+                    (past_two_month_tz_aware <= job.creation_date() <= past_month_tz_aware),
+                    'job {} creation date {} not within range'.format(
+                        job.job_id(), job.creation_date()))
+
     def test_retrieve_jobs_order(self):
         """Test retrieving jobs with different orders."""
         job = self.sim_backend.run(self.bell)
