@@ -137,20 +137,27 @@ def cancel_job(job: IBMQJob, verify: bool = False) -> bool:
 
 def submit_job_bad_shots(backend: IBMQBackend) -> IBMQJob:
     """Submit a job that will fail due to too many shots.
+
     Args:
         backend: Backend to submit the job to.
+
     Returns:
         Submitted job.
     """
-    qobj = get_large_circuit(backend=backend)
-    job_to_fail = backend.run(qobj, shots=10000)
+    # wip just cancelling the job for now
+    circuit = transpile(ReferenceCircuits.bell(), backend)
+    job_to_fail = backend.run(circuit)
+    job_to_fail.cancel()
+
     return job_to_fail
 
 
 def submit_job_one_bad_instr(backend: IBMQBackend) -> IBMQJob:
     """Submit a job that contains one good and one bad instruction.
+
     Args:
         backend: Backend to submit the job to.
+
     Returns:
         Submitted job.
     """
@@ -163,13 +170,15 @@ def submit_job_one_bad_instr(backend: IBMQBackend) -> IBMQJob:
 
 def submit_and_cancel(backend: IBMQBackend) -> IBMQJob:
     """Submit and cancel a job.
+
     Args:
         backend: Backend to submit the job to.
+
     Returns:
         Cancelled job.
     """
-    qobj = bell_in_qobj(backend=backend)
-    job = backend.run(qobj)
+    circuit = transpile(ReferenceCircuits.bell(), backend=backend)
+    job = backend.run(circuit)
     cancel_job(job, True)
     return job
 
