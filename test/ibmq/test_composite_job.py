@@ -24,12 +24,13 @@ from qiskit import transpile
 from qiskit.exceptions import QiskitError
 from qiskit.circuit.random import random_circuit
 from qiskit.providers.models import BackendProperties
-
 from qiskit.providers.jobstatus import JobStatus, JOB_FINAL_STATES
 from qiskit.test.reference_circuits import ReferenceCircuits
+
 from qiskit_ibm.job.exceptions import (IBMQJobFailureError, IBMQJobInvalidStateError,
-                                                  IBMQJobNotFoundError, IBMQJobTimeoutError)
+                                       IBMQJobNotFoundError, IBMQJobTimeoutError)
 from qiskit_ibm.job import IBMCompositeJob
+from qiskit_ibm.job.constants import IBM_COMPOSITE_JOB_TAG_PREFIX, IBM_COMPOSITE_JOB_ID_PREFIX
 from qiskit_ibm.apiconstants import ApiJobStatus
 
 from ..ibmqtestcase import IBMQTestCase
@@ -84,7 +85,7 @@ class TestIBMCompositeJob(IBMQTestCase):
 
         self.assertEqual(len(job_set.sub_jobs()), 2)
         self.assertEqual(len(result.results), max_circs+2)
-        self.assertTrue(job_set.job_id().startswith(IBMCompositeJob._id_prefix))
+        self.assertTrue(job_set.job_id().startswith(IBM_COMPOSITE_JOB_ID_PREFIX))
 
     def test_custom_split_circuits(self):
         """Test having circuits split with custom slices."""
@@ -344,11 +345,11 @@ class TestIBMCompositeJob(IBMQTestCase):
         job_set.block_for_submit()
         tag_prefix = uuid.uuid4().hex
         replacement_tags = ['{}_new_tag_{}'.format(tag_prefix, i) for i in range(2)]
-        job_set.update_tags(replacement_tags=replacement_tags)
+        job_set.update_tags(new_tags=replacement_tags)
         for job in job_set.sub_jobs():
             job.refresh()
             job_set_tags = \
-                {tag for tag in job.tags() if tag.startswith(IBMCompositeJob._tag_prefix)}
+                {tag for tag in job.tags() if tag.startswith(IBM_COMPOSITE_JOB_TAG_PREFIX)}
             self.assertEqual(set(job.tags())-job_set_tags, set(replacement_tags), job.tags())
             self.assertIn(job_set.job_id(), job_set_tags, job.tags())
             self.assertEqual(len(job_set_tags), 2, job.tags())
@@ -357,7 +358,7 @@ class TestIBMCompositeJob(IBMQTestCase):
         """Test updating subjob tags."""
         job_set = self.fake_backend.run([self._qc] * 2, max_circuits_per_job=1)
         job = job_set.sub_jobs()[0]
-        job.update_tags(replacement_tags=[])
+        job.update_tags(new_tags=[])
         self.assertIn(job_set.job_id(), job.tags())
 
     def test_skipped_result(self):
@@ -528,21 +529,10 @@ class TestIBMCompositeJob(IBMQTestCase):
         rjob_set = self.fake_backend.retrieve_job(job_set.job_id())
         self.assertEqual(rjob_set.client_version, client_version)
 
-    def test_experiment_id(self):
-        """Test job experiment id."""
-        experiment_id = 12345
-        job_set = self.fake_backend.run([self._qc] * 2, max_circuits_per_job=1,
-                                        experiment_id=experiment_id)
-        job_set.block_for_submit()
-        self.assertTrue(job_set.experiment_id)
-        self.assertEqual(job_set.experiment_id, experiment_id)
-        rjob_set = self.fake_backend.retrieve_job(job_set.job_id())
-        self.assertEqual(rjob_set.experiment_id, experiment_id)
-
     def test_retrieve_job_error(self):
         """Test retrieving an invalid job."""
         with self.assertRaises(IBMQJobNotFoundError):
-            self.fake_backend.retrieve_job(IBMCompositeJob._id_prefix + '1234')
+            self.fake_backend.retrieve_job(IBM_COMPOSITE_JOB_ID_PREFIX + '1234')
 
     def test_missing_required_fields(self):
         """Test response data is missing required fields."""
@@ -746,7 +736,7 @@ class TestIBMCompositeJobIntegration(IBMQTestCase):
         rjobs = self.provider.backend.jobs(job_tags=job_tags, start_datetime=self.last_week)
         self.assertEqual(len(rjobs), 2)
         for job in rjobs:
-            if job.job_id().startswith(IBMCompositeJob._id_prefix):
+            if job.job_id().startswith(IBM_COMPOSITE_JOB_ID_PREFIX):
                 self.assertEqual(job.job_id(), job_set.job_id())
                 self.assertEqual(len(job.sub_jobs()), len(job_set.sub_jobs()))
                 self.assertEqual({rsub.job_id() for rsub in job.sub_jobs()},

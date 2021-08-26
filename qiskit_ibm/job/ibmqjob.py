@@ -44,7 +44,6 @@ class IBMQJob(Job, ABC):
             job_id: str,
             name: Optional[str] = None,
             tags: Optional[List[str]] = None,
-            experiment_id: Optional[str] = None,
             **kwargs: Any
     ) -> None:
         """IBMQJob constructor.
@@ -55,14 +54,12 @@ class IBMQJob(Job, ABC):
             job_id: Job ID.
             name: Job name.
             tags: Job tags.
-            experiment_id: ID of the experiment this job is part of.
             kwargs: Additional job attributes.
         """
         Job.__init__(self, backend, job_id)
         self._api_client = api_client
         self._name = name
         self._tags = tags or []
-        self._experiment_id = experiment_id
 
         self._data = {}
         for key, value in kwargs.items():
@@ -125,24 +122,16 @@ class IBMQJob(Job, ABC):
     @abstractmethod
     def update_tags(
             self,
-            replacement_tags: Optional[List[str]] = None,
-            additional_tags: Optional[List[str]] = None,
-            removal_tags: Optional[List[str]] = None
+            new_tags: List[str]
     ) -> List[str]:
         """Update the tags associated with this job.
 
         Args:
-            replacement_tags: The tags that should replace the current tags
-                associated with this job.
-            additional_tags: The new tags that should be added to the current tags
-                associated with this job.
-            removal_tags: The tags that should be removed from the current tags
-                associated with this job.
+            new_tags: New tags to assign to the job.
 
         Returns:
             The new tags associated with this job.
         """
-        # TODO: This can probably be simplified to take just a list of new tags.
         pass
 
     @abstractmethod

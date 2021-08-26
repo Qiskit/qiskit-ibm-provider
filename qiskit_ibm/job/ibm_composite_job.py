@@ -14,7 +14,7 @@
 
 import re
 import logging
-from typing import Dict, Optional, Tuple, Any, List, Callable, Union, Set
+from typing import Dict, Optional, Tuple, Any, List, Callable, Union
 import uuid
 from datetime import datetime
 from concurrent import futures
@@ -36,9 +36,6 @@ from qiskit.circuit.quantumcircuit import QuantumCircuit
 from qiskit.pulse import Schedule
 from qiskit.result.models import ExperimentResult
 
-from ..apiconstants import API_JOB_FINAL_STATES
-from ..api.clients import AccountClient
-from ..utils.utils import validate_job_tags, api_status_to_job_status
 from .exceptions import (IBMQJobApiError, IBMQJobFailureError, IBMQJobTimeoutError,
                          IBMQJobInvalidStateError)
 from .queueinfo import QueueInfo
@@ -46,6 +43,12 @@ from .utils import auto_retry, JOB_STATUS_TO_INT, JobStatusQueueInfo, last_job_s
 from .ibmqjob import IBMQJob
 from .ibm_circuit_job import IBMCircuitJob
 from .sub_job import SubJob
+from .constants import (IBM_COMPOSITE_JOB_ID_PREFIX, IBM_COMPOSITE_JOB_INDEX_PREFIX,
+                        IBM_COMPOSITE_JOB_TAG_PREFIX)
+from ..apiconstants import API_JOB_FINAL_STATES
+from ..api.clients import AccountClient
+from ..utils.utils import validate_job_tags, api_status_to_job_status
+
 from ..exceptions import IBMQBackendJobLimitError
 
 logger = logging.getLogger(__name__)
@@ -96,12 +99,11 @@ class IBMCompositeJob(IBMQJob):
     start with ``ibmq_composite_job_``.
     """
 
-    _tag_prefix = "ibmq_composite_job_"
-    _id_prefix = _tag_prefix + "id_"
     _id_suffix = "_"
-    _index_prefix = _tag_prefix + "indexes:"
-    _index_tag = _index_prefix + "{job_index}:{total_jobs}:{start_index}:{end_index}"
-    _index_pattern = re.compile(rf"{_index_prefix}(?P<job_index>\d+):(?P<total_jobs>\d+):"
+    _index_tag = IBM_COMPOSITE_JOB_INDEX_PREFIX + \
+        "{job_index}:{total_jobs}:{start_index}:{end_index}"
+    _index_pattern = re.compile(rf"{IBM_COMPOSITE_JOB_INDEX_PREFIX}"
+                                r"(?P<job_index>\d+):(?P<total_jobs>\d+):"
                                 r"(?P<start_index>\d+):(?P<end_index>\d+)")
 
     _executor = futures.ThreadPoolExecutor()
@@ -118,7 +120,6 @@ class IBMCompositeJob(IBMQJob):
             run_config: Optional[Dict] = None,
             name: Optional[str] = None,
             tags: Optional[List[str]] = None,
-            experiment_id: Optional[str] = None,
             client_version: Optional[Dict] = None
     ) -> None:
         """IBMCompositeJob constructor.
@@ -133,18 +134,16 @@ class IBMCompositeJob(IBMQJob):
             run_config: Runtime configuration for this job.
             name: Job name.
             tags: Job tags.
-            experiment_id: ID of the experiment this job is part of.
             client_version: Client used for the job.
         """
         if jobs is None and circuits_list is None:
             raise IBMQJobInvalidStateError('"jobs" and "circuits_list" cannot both be None.')
 
-        self._job_id = job_id or self._id_prefix + uuid.uuid4().hex + self._id_suffix
+        self._job_id = job_id or IBM_COMPOSITE_JOB_ID_PREFIX + uuid.uuid4().hex + self._id_suffix
         tags = tags or []
-        filtered_tags = [tag for tag in tags if not tag.startswith(self._tag_prefix)]
+        filtered_tags = [tag for tag in tags if not tag.startswith(IBM_COMPOSITE_JOB_TAG_PREFIX)]
         super().__init__(backend=backend, api_client=api_client, job_id=self._job_id,
-                         name=name, tags=filtered_tags,
-                         experiment_id=experiment_id)
+                         name=name, tags=filtered_tags)
         self._status = JobStatus.INITIALIZING
         self._creation_date = creation_date
         self._client_version = client_version
@@ -217,7 +216,6 @@ class IBMCompositeJob(IBMQJob):
                    run_config=None,
                    name=ref_job.name(),
                    tags=ref_job.tags(),
-                   experiment_id=ref_job.experiment_id,
                    client_version=ref_job.client_version)
 
     def _submit_circuits(
@@ -241,7 +239,7 @@ class IBMCompositeJob(IBMQJob):
                 SubJob(start_index=exp_index, end_index=exp_index+len(circs)-1,
                        job_index=idx, total=len(circuit_lists), qobj=qobj))
             exp_index += len(circs)
-        self._sub_jobs[0].event.set()
+        self._sub_jobs[0].event.set()  # Tell the first job it can now be submitted.
 
         for sub_job in self._sub_jobs:
             sub_job.future = self._executor.submit(self._async_submit, sub_job=sub_job)
@@ -270,7 +268,7 @@ class IBMCompositeJob(IBMQJob):
                 try:
                     job = auto_retry(self.backend()._submit_job,
                                      qobj=sub_job.qobj, job_name=self._name,
-                                     job_tags=tags, experiment_id=self._experiment_id)
+                                     job_tags=tags, composite_job_id=self.job_id())
                 except IBMQBackendJobLimitError:
                     final_states = [state.value for state in API_JOB_FINAL_STATES]
                     oldest_running = self.backend().jobs(
@@ -480,39 +478,15 @@ class IBMCompositeJob(IBMQJob):
     @_requires_submit
     def update_tags(
             self,
-            replacement_tags: Optional[List[str]] = None,
-            additional_tags: Optional[List[str]] = None,
-            removal_tags: Optional[List[str]] = None
+            new_tags: List[str]
     ) -> List[str]:
         """Update the tags associated with this job.
-
-        When multiple parameters are specified, the parameters are processed in the
-        following order:
-
-            1. replacement_tags
-            2. additional_tags
-            3. removal_tags
-
-        For example, if 'new_tag' is specified for both `additional_tags` and `removal_tags`,
-        then it is added and subsequently removed from the tags list, making it a "do nothing"
-        operation.
-
-        Note:
-            * Some tags, such as those starting with ``ibmq_composite_job_``, are used
-              internally by `ibmq-provider` and therefore cannot be modified.
-            * When removing tags, if the job does not have a specified tag, it
-              will be ignored.
 
         Note:
             This method blocks until all sub-jobs are submitted.
 
         Args:
-            replacement_tags: The tags that should replace the current tags
-                associated with this job.
-            additional_tags: The new tags that should be added to the current tags
-                associated with this job.
-            removal_tags: The tags that should be removed from the current tags
-                associated with this job.
+            new_tags: New tags to assign to the job.
 
         Returns:
             The new tags associated with this job.
@@ -523,62 +497,15 @@ class IBMCompositeJob(IBMQJob):
             IBMQJobInvalidStateError: If none of the input parameters are specified or
                 if any of the input parameters are invalid.
         """
-        if (replacement_tags is None) and (additional_tags is None) and (removal_tags is None):
-            raise IBMQJobInvalidStateError(
-                'The tags cannot be updated since none of the parameters are specified.')
+        new_tags = set(new_tags)
+        validate_job_tags(new_tags, IBMQJobInvalidStateError)
 
-        # Get the list of tags to update.
-        new_tags = self._get_tags_to_update(replacement_tags=replacement_tags,
-                                            additional_tags=additional_tags,
-                                            removal_tags=removal_tags)
         for job in self._get_circuit_jobs():
             tags_to_update = new_tags.union(
-                {tag for tag in job.tags() if tag.startswith(self._tag_prefix)})
+                {tag for tag in job.tags() if tag.startswith(IBM_COMPOSITE_JOB_TAG_PREFIX)})
             auto_retry(job.update_tags, list(tags_to_update))
         self._tags = list(new_tags)
         return self._tags
-
-    def _get_tags_to_update(self,
-                            replacement_tags: Optional[List[str]],
-                            additional_tags: Optional[List[str]],
-                            removal_tags: Optional[List[str]]) -> Set[str]:
-        """Create the list of tags to update for this job.
-
-        Args:
-            replacement_tags: The tags that should replace the current tags
-                associated with this job.
-            additional_tags: The new tags that should be added to the current tags
-                associated with this job.
-            removal_tags: The tags that should be removed from the current tags
-                associated with this job.
-
-        Returns:
-            The new tags to associate with this job.
-
-        Raises:
-            IBMQJobInvalidStateError: If any of the input parameters are invalid.
-        """
-        tags_to_update = set(self._tags or [])  # Get the current job tags.
-        if isinstance(replacement_tags, list):  # `replacement_tags` could be an empty list.
-            # Replace the current tags and re-add those associated with a job set.
-            validate_job_tags(replacement_tags, IBMQJobInvalidStateError)
-            tags_to_update = set(replacement_tags)
-        if additional_tags:
-            # Add the specified tags to the tags to update.
-            validate_job_tags(additional_tags, IBMQJobInvalidStateError)
-            tags_to_update.update(additional_tags)
-        if removal_tags:
-            # Remove the specified tags, except those related to a job set,
-            # from the tags to update.
-            validate_job_tags(removal_tags, IBMQJobInvalidStateError)
-            for tag_to_remove in removal_tags:
-                if tag_to_remove in tags_to_update:
-                    tags_to_update.remove(tag_to_remove)
-                else:
-                    logger.warning('The tag "%s" for job %s will not be removed, because it was '
-                                   'not found in the job tags to update %s',
-                                   tag_to_remove, self.job_id(), tags_to_update)
-        return tags_to_update
 
     def status(self) -> JobStatus:
         """Query the server for the latest job status.
@@ -837,15 +764,6 @@ class IBMCompositeJob(IBMQJob):
             self._client_version = circuit_jobs[0].client_version
 
         return self._client_version
-
-    @property
-    def experiment_id(self) -> str:
-        """Return the experiment ID.
-
-        Returns:
-            ID of the experiment this job is part of.
-        """
-        return self._experiment_id
 
     def refresh(self) -> None:
         """Obtain the latest job information from the server.
@@ -1138,7 +1056,7 @@ class IBMCompositeJob(IBMQJob):
         Returns:
             A list of job index, total jobs, start index, and end index.
         """
-        index_tag = [tag for tag in job.tags() if tag.startswith(self._index_prefix)]
+        index_tag = [tag for tag in job.tags() if tag.startswith(IBM_COMPOSITE_JOB_INDEX_PREFIX)]
         match = None
         if index_tag:
             match = re.match(self._index_pattern, index_tag[0])

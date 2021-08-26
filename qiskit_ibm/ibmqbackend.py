@@ -153,7 +153,6 @@ class IBMQBackend(Backend):
             job_name: Optional[str] = None,
             job_share_level: Optional[str] = None,
             job_tags: Optional[List[str]] = None,
-            experiment_id: Optional[str] = None,
             max_circuits_per_job: Optional[int] = None,
             header: Optional[Dict] = None,
             shots: Optional[int] = None,
@@ -207,8 +206,6 @@ class IBMQBackend(Backend):
                 If the job share level is not specified, the job is not shared at any level.
             job_tags: Tags to be assigned to the job. The tags can subsequently be used
                 as a filter in the :meth:`jobs()` function call.
-            experiment_id: Used to add a job to an "experiment", which is a collection
-                of jobs and additional metadata.
             max_circuits_per_job: Maximum number of circuits to have in a single job.
 
             The following arguments are NOT applicable if a Qobj is passed in.
@@ -344,14 +341,14 @@ class IBMQBackend(Backend):
                     circuits_list = [circuits[x:x + chunk_size]
                                      for x in range(0, len(circuits), chunk_size)]
                     return IBMCompositeJob(backend=self, api_client=self._api_client,
-                                            circuits_list=circuits_list,
-                                            run_config=run_config_dict,
-                                            name=job_name,
-                                            tags=job_tags, experiment_id=experiment_id)
+                                           circuits_list=circuits_list,
+                                           run_config=run_config_dict,
+                                           name=job_name,
+                                           tags=job_tags)
 
             qobj = assemble(circuits, self, **run_config_dict)
 
-        return self._submit_job(qobj, job_name, job_tags, experiment_id)
+        return self._submit_job(qobj, job_name, job_tags)
 
     def _get_run_config(self, **kwargs: Any) -> Dict:
         """Return the consolidated runtime configuration."""
@@ -369,7 +366,7 @@ class IBMQBackend(Backend):
             qobj: Union[QasmQobj, PulseQobj],
             job_name: Optional[str] = None,
             job_tags: Optional[List[str]] = None,
-            experiment_id: Optional[str] = None
+            composite_job_id: Optional[str] = None
     ) -> IBMQJob:
         """Submit the Qobj to the backend.
 
@@ -380,7 +377,7 @@ class IBMQBackend(Backend):
                 ``jobs()``method.
                 Job names do not need to be unique.
             job_tags: Tags to be assigned to the job.
-            experiment_id: Used to add a job to an experiment.
+            composite_job_id: Composite job ID, if this Qobj belongs to a composite job.
 
         Returns:
             The job to be executed.
@@ -405,7 +402,7 @@ class IBMQBackend(Backend):
                 qobj_dict=qobj_dict,
                 job_name=job_name,
                 job_tags=job_tags,
-                experiment_id=experiment_id)
+                experiment_id=composite_job_id)
         except ApiError as ex:
             if 'Error code: 3458' in str(ex):
                 raise IBMQBackendJobLimitError('Error submitting job: {}'.format(str(ex))) from ex
@@ -608,7 +605,6 @@ class IBMQBackend(Backend):
             end_datetime: Optional[python_datetime] = None,
             job_tags: Optional[List[str]] = None,
             job_tags_operator: Optional[str] = "OR",
-            experiment_id: Optional[str] = None,
             descending: bool = True,
             ignore_composite_jobs: bool = False,
             db_filter: Optional[Dict[str, Any]] = None
@@ -645,7 +641,6 @@ class IBMQBackend(Backend):
                       specified in ``job_tags`` to be included.
                     * If "OR" is specified, then a job only needs to have any
                       of the tags specified in ``job_tags`` to be included.
-            experiment_id: Filter by job experiment ID.
             descending: If ``True``, return the jobs in descending order of the job
                 creation date (newest first). If ``False``, return in ascending order.
             ignore_composite_jobs: If ``True``, sub-jobs of a single
@@ -675,7 +670,7 @@ class IBMQBackend(Backend):
             limit=limit, skip=skip, backend_name=self.name(), status=status,
             job_name=job_name, start_datetime=start_datetime, end_datetime=end_datetime,
             job_tags=job_tags, job_tags_operator=job_tags_operator,
-            experiment_id=experiment_id, descending=descending,
+            descending=descending,
             ignore_composite_jobs=ignore_composite_jobs, db_filter=db_filter)
 
     def active_jobs(self, limit: int = 10) -> List[IBMQJob]:
@@ -887,7 +882,6 @@ class IBMQSimulator(IBMQBackend):
             job_name: Optional[str] = None,
             job_share_level: Optional[str] = None,
             job_tags: Optional[List[str]] = None,
-            experiment_id: Optional[str] = None,
             backend_options: Optional[Dict] = None,
             noise_model: Any = None,
             **kwargs: Dict
@@ -908,8 +902,6 @@ class IBMQSimulator(IBMQBackend):
                 global level (see :meth:`IBMQBackend.run()<IBMQBackend.run>` for more details).
             job_tags: Tags to be assigned to the jobs. The tags can subsequently be used
                 as a filter in the :meth:`IBMQBackend.jobs()<IBMQBackend.jobs>` method.
-            experiment_id: Used to add a job to an "experiment", which is a collection
-                of jobs and additional metadata.
             backend_options: DEPRECATED dictionary of backend options for the execution.
             noise_model: Noise model.
             kwargs: Additional runtime configuration options. They take
@@ -938,7 +930,7 @@ class IBMQSimulator(IBMQBackend):
                 pass
         run_config.update(kwargs)
         return super().run(circuits, job_name=job_name,
-                           job_tags=job_tags, experiment_id=experiment_id,
+                           job_tags=job_tags,
                            noise_model=noise_model, **run_config)
 
 

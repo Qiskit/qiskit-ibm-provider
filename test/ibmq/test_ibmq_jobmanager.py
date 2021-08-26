@@ -327,30 +327,11 @@ class TestIBMQJobManager(IBMQTestCase):
 
         tag_prefix = uuid.uuid4().hex
         replacement_tags = ['{}_new_tag_{}'.format(tag_prefix, i) for i in range(2)]
-        _ = job_set.update_tags(replacement_tags=replacement_tags)
+        _ = job_set.update_tags(new_tags=replacement_tags)
 
         for job in job_set.jobs():
             job.refresh()
             self.assertEqual(set(job.tags()), set(replacement_tags + [job_set._id_long]))
-
-    def test_job_tags_remove(self):
-        """Test updating job tags by removing the job set's existing tags."""
-        initial_job_tags = [uuid.uuid4().hex]
-        job_set = self._jm.run([self._qc] * 2, backend=self.fake_api_backend,
-                               max_experiments_per_job=1, job_tags=initial_job_tags)
-
-        # Wait for jobs to be submitted.
-        while JobStatus.INITIALIZING in job_set.statuses():
-            time.sleep(1)
-
-        initial_job_tags_with_id_long = initial_job_tags + [job_set._id_long]
-
-        # Update the job tags
-        _ = job_set.update_tags(removal_tags=initial_job_tags_with_id_long)
-
-        for job in job_set.jobs():
-            job.refresh()
-            self.assertEqual(job.tags(), [job_set._id_long])
 
     def test_index_by_number(self):
         """Test indexing results by number."""

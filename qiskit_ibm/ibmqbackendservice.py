@@ -35,6 +35,7 @@ from .job.exceptions import IBMQJobNotFoundError
 from .utils.utils import to_python_identifier, validate_job_tags, filter_data
 from .utils.converters import local_to_utc
 from .utils.backend import convert_reservation_data
+from .job.constants import IBM_COMPOSITE_JOB_ID_PREFIX
 
 logger = logging.getLogger(__name__)
 
@@ -157,7 +158,6 @@ class IBMQBackendService:
             end_datetime: Optional[datetime] = None,
             job_tags: Optional[List[str]] = None,
             job_tags_operator: Optional[str] = "OR",
-            experiment_id: Optional[str] = None,
             descending: bool = True,
             ignore_composite_jobs: bool = False,
             db_filter: Optional[Dict[str, Any]] = None
@@ -194,7 +194,6 @@ class IBMQBackendService:
                       specified in ``job_tags`` to be included.
                     * If "OR" is specified, then a job only needs to have any
                       of the tags specified in ``job_tags`` to be included.
-            experiment_id: Filter by job experiment ID.
             descending: If ``True``, return the jobs in descending order of the job
                 creation date (i.e. newest first) until the limit is reached.
             ignore_composite_jobs: If ``True``, sub-jobs of a single
@@ -256,9 +255,6 @@ class IBMQBackendService:
                     '"{}" is not a valid job_tags_operator value. '
                     'Valid values are "AND" and "OR"'.format(job_tags_operator))
 
-        if experiment_id:
-            api_filter['experimentTag'] = experiment_id
-
         if db_filter:
             # Rather than overriding the logical operators `and`/`or`, first
             # check to see if the `api_filter` query should be extended with the
@@ -277,7 +273,7 @@ class IBMQBackendService:
             # Check if it's a composite job.
             job_tags = job_info.get("tags", [])
             composite_job_id = [tag for tag in job_tags
-                                if tag.startswith(IBMCompositeJob._id_prefix)]
+                                if tag.startswith(IBM_COMPOSITE_JOB_ID_PREFIX)]
             if composite_job_id and not ignore_composite_jobs:
                 if composite_job_id[0] not in composite_ids:
                     composite_ids.add(composite_job_id[0])
@@ -389,7 +385,7 @@ class IBMQBackendService:
                                                    self._provider._api_client)
         try:
             job = IBMCircuitJob(backend=backend,
-                                 api_client=self._provider._api_client, **job_info)
+                                api_client=self._provider._api_client, **job_info)
             return job
         except TypeError as ex:
             if raise_error:
@@ -541,8 +537,8 @@ class IBMQBackendService:
             IBMQBackendApiProtocolError: If unexpected return value received
                  from the server.
         """
-        if job_id.startswith(IBMCompositeJob._id_prefix):
-            job_responses = self._get_jobs(api_filter={'tags': job_id}, limit=None)
+        if job_id.startswith(IBM_COMPOSITE_JOB_ID_PREFIX):
+            job_responses = self._get_jobs(api_filter={'experimentTag': job_id}, limit=None)
             sub_jobs = []
             for job_info in job_responses:
                 sub_job = self._restore_circuit_job(job_info, raise_error=True)
@@ -552,7 +548,7 @@ class IBMQBackendService:
             if not sub_jobs:
                 raise IBMQJobNotFoundError(f"Job {job_id} not found.")
             return IBMCompositeJob.from_jobs(job_id=job_id, jobs=sub_jobs,
-                                              api_client=self._provider._api_client)
+                                             api_client=self._provider._api_client)
 
         try:
             job_info = self._provider._api_client.job_get(job_id)

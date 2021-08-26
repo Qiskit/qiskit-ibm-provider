@@ -477,36 +477,16 @@ class ManagedJobSet:
 
     def update_tags(
             self,
-            replacement_tags: List[str] = None,
-            additional_tags: List[str] = None,
-            removal_tags: List[str] = None
+            new_tags: List[str]
     ) -> List[str]:
         """Update the tags assigned to this job set.
-
-        When multiple parameters are specified, the parameters are processed in the
-        following order:
-
-            1. replacement_tags
-            2. additional_tags
-            3. removal_tags
-
-        For example, if 'new_tag' is specified for both `additional_tags` and `removal_tags`,
-        then it is added and subsequently removed from the tags list, making it a "do nothing"
-        operation.
 
         Note:
             * Some tags, such as those starting with ``ibmq_jobset``, are used
               internally by `ibmq-provider` and therefore cannot be modified.
-            * When removing tags, if the job does not have a specified tag, it
-              will be ignored.
 
         Args:
-            replacement_tags: The tags that should replace the current tags
-                associated with this job set.
-            additional_tags: The new tags that should be added to the current tags
-                associated with this job set.
-            removal_tags: The tags that should be removed from the current tags
-                associated with this job set.
+            new_tags: New tags to assign to the job.
 
         Returns:
             The new tags associated with this job set.
@@ -514,17 +494,12 @@ class ManagedJobSet:
         Raises:
             IBMQJobManagerInvalidStateError: If none of the input parameters are specified.
         """
-        if (replacement_tags is None) and (additional_tags is None) and (removal_tags is None):
-            raise IBMQJobManagerInvalidStateError(
-                'The tags cannot be updated since none of the parameters are specified.')
 
         updated_tags = []  # type: List[str]
         for job in self.jobs():
             if job:
                 try:
-                    updated_tags = job.update_tags(replacement_tags=replacement_tags,
-                                                   additional_tags=additional_tags,
-                                                   removal_tags=removal_tags)
+                    updated_tags = job.update_tags(new_tags=new_tags)
                 except IBMQJobApiError as ex:
                     # Log a warning with the job that failed to update.
                     logger.warning('There was an error updating the tags for job %s, '

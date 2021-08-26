@@ -41,6 +41,7 @@ from .exceptions import (IBMQJobApiError, IBMQJobFailureError,
 from .queueinfo import QueueInfo
 from .utils import build_error_report, api_to_job_error, get_cancel_status
 from .ibmqjob import IBMQJob
+from .constants import IBM_COMPOSITE_JOB_TAG_PREFIX, IBM_MANAGED_JOB_ID_PREFIX
 
 logger = logging.getLogger(__name__)
 
@@ -118,7 +119,6 @@ class IBMCircuitJob(IBMQJob):
             tags: Optional[List[str]] = None,
             run_mode: Optional[str] = None,
             client_info: Optional[Dict[str, str]] = None,
-            experiment_id: Optional[str] = None,
             **kwargs: Any
     ) -> None:
         """IBMCircuitJob constructor.
@@ -138,12 +138,10 @@ class IBMCircuitJob(IBMQJob):
             tags: Job tags.
             run_mode: Scheduling mode the job runs in.
             client_info: Client information from the API.
-            experiment_id: ID of the experiment this job is part of.
             kwargs: Additional job attributes.
         """
         super().__init__(backend=backend, api_client=api_client, job_id=job_id,
-                         name=name, tags=tags,
-                         experiment_id=experiment_id)
+                         name=name, tags=tags)
         self._creation_date = dateutil.parser.isoparse(creation_date)
         self._api_status = status
         self._kind = ApiJobKind(kind) if kind else None
@@ -331,36 +329,12 @@ class IBMCircuitJob(IBMQJob):
 
     def update_tags(
             self,
-            replacement_tags: Optional[List[str]] = None,
-            additional_tags: Optional[List[str]] = None,
-            removal_tags: Optional[List[str]] = None
+            new_tags: List[str]
     ) -> List[str]:
         """Update the tags associated with this job.
 
-        When multiple parameters are specified, the parameters are processed in the
-        following order:
-
-            1. replacement_tags
-            2. additional_tags
-            3. removal_tags
-
-        For example, if 'new_tag' is specified for both `additional_tags` and `removal_tags`,
-        then it is added and subsequently removed from the tags list, making it a "do nothing"
-        operation.
-
-        Note:
-            * Some tags, such as those starting with ``ibmq_jobset``, are used
-              internally by `ibmq-provider` and therefore cannot be modified.
-            * When removing tags, if the job does not have a specified tag, it
-              will be ignored.
-
         Args:
-            replacement_tags: The tags that should replace the current tags
-                associated with this job.
-            additional_tags: The new tags that should be added to the current tags
-                associated with this job.
-            removal_tags: The tags that should be removed from the current tags
-                associated with this job.
+            new_tags: New tags to assign to the job.
 
         Returns:
             The new tags associated with this job.
@@ -371,18 +345,18 @@ class IBMCircuitJob(IBMQJob):
             IBMQJobInvalidStateError: If none of the input parameters are specified or
                 if any of the input parameters are invalid.
         """
-        if (replacement_tags is None) and (additional_tags is None) and (removal_tags is None):
-            raise IBMQJobInvalidStateError(
-                'The tags cannot be updated since none of the parameters are specified.')
+        # Tags prefix that denotes a job belongs to a jobset or composite job.
+        filter_tags = (IBM_MANAGED_JOB_ID_PREFIX, IBM_COMPOSITE_JOB_TAG_PREFIX)
+        tags_to_keep = set(filter(lambda x: x.startswith(filter_tags), self._tags))
 
-        # Get the list of tags to update.
-        tags_to_update = self._get_tags_to_update(replacement_tags=replacement_tags,
-                                                  additional_tags=additional_tags,
-                                                  removal_tags=removal_tags)
+        tags_to_update = set(new_tags)
+        validate_job_tags(new_tags, IBMQJobInvalidStateError)
+        tags_to_update = tags_to_update.union(tags_to_keep)
 
         with api_to_job_error():
             response = self._api_client.job_update_attribute(
-                job_id=self.job_id(), attr_name='tags', attr_value=tags_to_update)
+                job_id=self.job_id(), attr_name='tags',
+                attr_value=list(tags_to_update))
 
         # Get the tags from the response and check if the update was successful.
         updated_tags = response.get('tags', None)
@@ -395,59 +369,6 @@ class IBMCircuitJob(IBMQJob):
         self._tags = updated_tags
 
         return self._tags
-
-    def _get_tags_to_update(self,
-                            replacement_tags: Optional[List[str]],
-                            additional_tags: Optional[List[str]],
-                            removal_tags: Optional[List[str]]) -> List[str]:
-        """Create the list of tags to update for this job.
-
-        Args:
-            replacement_tags: The tags that should replace the current tags
-                associated with this job.
-            additional_tags: The new tags that should be added to the current tags
-                associated with this job.
-            removal_tags: The tags that should be removed from the current tags
-                associated with this job.
-
-        Returns:
-            The new tags to associate with this job.
-
-        Raises:
-            IBMQJobInvalidStateError: If any of the input parameters are invalid.
-        """
-        # Tags prefix that denotes a job belongs to a jobset or composite job.
-        filter_tags = ('ibmq_jobset_', "ibmq_composite_job_")
-
-        tags_to_update = set(self._tags or [])  # Get the current job tags.
-        if isinstance(replacement_tags, list):  # `replacement_tags` could be an empty list.
-            # Replace the current tags and re-add those associated with a job set.
-            validate_job_tags(replacement_tags, IBMQJobInvalidStateError)
-            tags_to_update = set(replacement_tags)
-            tags_to_update.update(
-                filter(lambda old_tag: old_tag.startswith(filter_tags), self._tags))
-        if additional_tags:
-            # Add the specified tags to the tags to update.
-            validate_job_tags(additional_tags, IBMQJobInvalidStateError)
-            tags_to_update.update(additional_tags)
-        if removal_tags:
-            # Remove the specified tags, except those related to a job set,
-            # from the tags to update.
-            validate_job_tags(removal_tags, IBMQJobInvalidStateError)
-            for tag_to_remove in removal_tags:
-                if tag_to_remove.startswith(filter_tags):
-                    logger.warning('The tag "%s" for job %s will not be removed, because '
-                                   'it is used internally by the ibmq-provider.',
-                                   tag_to_remove, self.job_id())
-                    continue
-                if tag_to_remove in tags_to_update:
-                    tags_to_update.remove(tag_to_remove)
-                else:
-                    logger.warning('The tag "%s" for job %s will not be removed, because it was '
-                                   'not found in the job tags to update %s',
-                                   tag_to_remove, self.job_id(), tags_to_update)
-
-        return list(tags_to_update)
 
     def status(self) -> JobStatus:
         """Query the server for the latest job status.
@@ -637,17 +558,6 @@ class IBMCircuitJob(IBMQJob):
             self.refresh()
         return self._client_version
 
-    @property
-    def experiment_id(self) -> str:
-        """Return the experiment ID.
-
-        Returns:
-            ID of the experiment this job is part of.
-        """
-        if not self._experiment_id and not self._refreshed:
-            self.refresh()
-        return self._experiment_id
-
     def refresh(self) -> None:
         """Obtain the latest job information from the server.
 
@@ -683,7 +593,6 @@ class IBMCircuitJob(IBMQJob):
             self._get_status_position(self._api_status, api_response.pop('info_queue', None))
         self._client_version = self._extract_client_version(api_response.pop('client_info', None))
         self._set_result(api_response.pop('result', None))
-        self._experiment_id = api_response.pop('experiment_id', None)
 
         for key, value in api_response.items():
             self._data[key + '_'] = value
