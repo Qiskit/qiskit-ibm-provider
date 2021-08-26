@@ -38,8 +38,8 @@ from qiskit_ibm.api.exceptions import RequestsApiError
 
 from ..ibmqtestcase import IBMQTestCase
 from ..decorators import (requires_provider, requires_device)
-from ..utils import (most_busy_backend, cancel_job, submit_job_bad_shots,
-                     submit_and_cancel, submit_job_one_bad_instr)
+from ..utils import (most_busy_backend, cancel_job,
+                     submit_job_bad_shots, submit_and_cancel, submit_job_one_bad_instr)
 from ..fake_account_client import BaseFakeAccountClient, CancelableFakeJob
 
 
