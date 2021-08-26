@@ -176,20 +176,6 @@ class IBMQJob(Job, ABC):
         """
         pass
 
-    def share_level(self) -> str:
-        """Return the share level of the job.
-
-        The share level is one of ``global``, ``hub``, ``group``, ``project``, and ``none``.
-
-        Returns:
-            The share level of the job.
-        """
-        warnings.warn("`IBMQJob.share_level()` method is no longer supported "
-                      "and will be removed in a future release.",
-                      Warning, stacklevel=2)
-        return 'none'
-
-    @abstractmethod
     def time_per_step(self) -> Optional[Dict]:
         """Return the date and time information on each step of the job processing.
 
