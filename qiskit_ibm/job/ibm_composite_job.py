@@ -14,7 +14,7 @@
 
 import re
 import logging
-from typing import Dict, Optional, Tuple, Any, List, Callable, Union
+from typing import Dict, Optional, Tuple, Any, List, Callable, Union, Set
 import uuid
 from datetime import datetime
 from concurrent import futures
@@ -96,7 +96,7 @@ class IBMCompositeJob(IBMQJob):
 
     ``IBMCompositeJob`` uses job tags to identify sub-jobs. It is therefore
     important to preserve these tags. All tags used internally by ``IBMCompositeJob``
-    start with ``ibmq_composite_job_``.
+    start with ``ibm_composite_job_``.
     """
 
     _id_suffix = "_"
@@ -164,7 +164,8 @@ class IBMCompositeJob(IBMQJob):
         self._callback_lock = threading.Lock()
         self._user_callback: Optional[Callable] = None
         self._user_wait_value: Optional[float] = None
-        self._last_reported_stat = (None, None)  # type: Tuple[Optional[JobStatus], Optional[int]]
+        # A tuple of status and queue position.
+        self._last_reported_stat: Tuple[Optional[JobStatus], Optional[int]] = (None, None)
         self._last_reported_time = 0.0
         self._job_statuses: Dict[str, JobStatusQueueInfo] = {}
 
@@ -256,7 +257,7 @@ class IBMCompositeJob(IBMQJob):
         tags = self._tags.copy()
         tags.append(sub_job.format_tag(self._index_tag))
         tags.append(self.job_id())
-        job = None
+        job: Optional[IBMCircuitJob] = None
         logger.debug(f"Submitting job {sub_job.job_index} for "
                      f"circuits {sub_job.start_index}-{sub_job.end_index}.")
         sub_job.event.wait()
@@ -497,14 +498,14 @@ class IBMCompositeJob(IBMQJob):
             IBMQJobInvalidStateError: If none of the input parameters are specified or
                 if any of the input parameters are invalid.
         """
-        new_tags = set(new_tags)
         validate_job_tags(new_tags, IBMQJobInvalidStateError)
+        new_tags_set = set(new_tags)
 
         for job in self._get_circuit_jobs():
-            tags_to_update = new_tags.union(
+            tags_to_update = new_tags_set.union(  # type: ignore[attr-defined]
                 {tag for tag in job.tags() if tag.startswith(IBM_COMPOSITE_JOB_TAG_PREFIX)})
             auto_retry(job.update_tags, list(tags_to_update))
-        self._tags = list(new_tags)
+        self._tags = new_tags
         return self._tags
 
     def status(self) -> JobStatus:

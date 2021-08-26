@@ -10,6 +10,8 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
+"""Job related constants."""
+
 IBM_COMPOSITE_JOB_TAG_PREFIX = "ibm_composite_job_"
 IBM_COMPOSITE_JOB_ID_PREFIX = IBM_COMPOSITE_JOB_TAG_PREFIX + "id_"
 IBM_COMPOSITE_JOB_INDEX_PREFIX = IBM_COMPOSITE_JOB_TAG_PREFIX + "indexes:"

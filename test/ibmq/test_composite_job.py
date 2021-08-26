@@ -118,7 +118,8 @@ class TestIBMCompositeJob(IBMQTestCase):
                     for i in range(job_count):
                         self.assertIn(f"Circuits {i}-{i}:", report)
                         self.assertIn(f"Job index: {i}", report)
-                    for stat in [JobStatus.DONE, JobStatus.ERROR, JobStatus.CANCELLED, JobStatus.RUNNING,
+                    for stat in [JobStatus.DONE, JobStatus.ERROR,
+                                 JobStatus.CANCELLED, JobStatus.RUNNING,
                                  JobStatus.VALIDATING]:
                         self.assertIn(f"Status: {stat}", report)
                 else:
@@ -141,7 +142,7 @@ class TestIBMCompositeJob(IBMQTestCase):
                 stat_job = job_set.sub_jobs()[1]
                 while stat_job.status() != job_status:
                     time.sleep(1)
-                time.sleep(1)  # Let the other job advance.
+                time.sleep(2)  # Let the other job advance.
                 self.assertEqual(job_set.status(), job_status)
                 self.assertNotEqual(job_set.sub_jobs()[0].status(), job_status)
                 self.assertEqual(stat_job.status(), job_status)
@@ -318,7 +319,7 @@ class TestIBMCompositeJob(IBMQTestCase):
 
             for job in job_set.sub_jobs(block_for_submit=False):
                 job.cancel()
-            time.sleep(0.5)
+            time.sleep(1)
             self.assertNotIn('Job not yet submitted', job_set.report())
         finally:
             job_set.cancel()
@@ -761,7 +762,7 @@ class TestIBMCompositeJobIntegration(IBMQTestCase):
                         job_id=job.job_id(), attr_name='tags', attr_value=[])
                     with self.assertRaises(IBMQJobInvalidStateError) as err_cm:
                         self.sim_backend.retrieve_job(job_set.job_id())
-                    self.assertIn(f"indexes {subjob_idx}", str(err_cm.exception))
+                    self.assertIn(f"tags", str(err_cm.exception))
                 finally:
                     job._api_client.job_update_attribute(
                         job_id=job.job_id(), attr_name='tags', attr_value=saved_tags)

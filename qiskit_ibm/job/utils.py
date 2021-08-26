@@ -124,6 +124,6 @@ def last_job_stat_pos(jobs: List[JobStatusQueueInfo]) -> JobStatusQueueInfo:
         queue_pos = queue_info.position if queue_info else None
         est_comp = queue_info.estimated_complete_time if queue_info else None
         return JOB_STATUS_TO_INT[elem.status] * -1, queue_pos is None, \
-               queue_pos, est_comp is None, est_comp
+            queue_pos, est_comp is None, est_comp
 
     return sorted(jobs, key=sort_3_keys)[-1]

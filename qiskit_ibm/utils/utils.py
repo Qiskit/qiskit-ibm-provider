@@ -83,9 +83,7 @@ def to_python_identifier(name: str) -> str:
     return name
 
 
-def validate_job_tags(
-        job_tags: Optional[Union[List[str], Set[str]]],
-        exception: Type[Exception]) -> None:
+def validate_job_tags(job_tags: Optional[List[str]], exception: Type[Exception]) -> None:
     """Validates input job tags.
 
     Args:
@@ -95,7 +93,7 @@ def validate_job_tags(
     Raises:
         Exception: If the job tags are invalid.
     """
-    if job_tags and (not isinstance(job_tags, (list, set)) or
+    if job_tags and (not isinstance(job_tags, list) or
                      not all(isinstance(tag, str) for tag in job_tags)):
         raise exception("job_tags needs to be a list or strings.")
 
