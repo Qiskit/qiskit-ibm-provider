@@ -262,7 +262,7 @@ class FailedFakeJob(BaseFakeJob):
 
     def _save_bad_result(self):
         if self._failure_type != 'partial':
-            return super()._save_bad_result()
+            super()._save_bad_result()
         new_result = copy.deepcopy(VALID_RESULT_RESPONSE)
         new_result['job_id'] = self._job_id
         new_result['backend_name'] = self._backend_name

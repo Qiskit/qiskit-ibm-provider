@@ -83,6 +83,10 @@ def auto_retry(func: Callable, *args: Any, **kwargs: Any) -> Any:
 
     Returns:
         function return value.
+
+    Raises:
+        IBMQJobApiError: If an unexpected error occurred when communicating
+            with the server.
     """
     max_retry = kwargs.pop('max_retry', 3)
     while True:

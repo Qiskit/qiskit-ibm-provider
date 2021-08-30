@@ -17,7 +17,7 @@ import re
 import logging
 import keyword
 import copy
-from typing import List, Optional, Type, Any, Dict, Union, Tuple, Set
+from typing import List, Optional, Type, Any, Dict, Union, Tuple
 from threading import Condition
 from queue import Queue
 

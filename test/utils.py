@@ -13,9 +13,7 @@
 """General utility functions for testing."""
 
 import os
-import time
 import logging
-from typing import List, Optional
 
 from qiskit import QuantumCircuit
 from qiskit.qobj import QasmQobj

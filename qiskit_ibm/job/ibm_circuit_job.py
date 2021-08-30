@@ -24,11 +24,11 @@ from qiskit.providers.jobstatus import JOB_FINAL_STATES, JobStatus
 from qiskit.providers.models import BackendProperties
 from qiskit.qobj import QasmQobj, PulseQobj
 from qiskit.result import Result
-from qiskit_ibm import ibmqbackend  # pylint: disable=unused-import
 from qiskit.assembler.disassemble import disassemble
 from qiskit.circuit.quantumcircuit import QuantumCircuit
 from qiskit.pulse import Schedule
 
+from qiskit_ibm import ibmqbackend  # pylint: disable=unused-import
 from ..apiconstants import ApiJobStatus, ApiJobKind
 from ..api.clients import AccountClient
 from ..api.exceptions import ApiError, UserTimeoutExceededError
@@ -941,6 +941,20 @@ class IBMCircuitJob(IBMQJob):
 
             return {data.get('name', 'unknown'): data.get('version', 'unknown')}
         return {}
+
+    def submit(self) -> None:
+        """Unsupported method.
+
+        Note:
+            This method is not supported, please use
+            :meth:`~qiskit_ibm.ibmqbackend.IBMQBackend.run`
+            to submit a job.
+
+        Raises:
+            NotImplementedError: Upon invocation.
+        """
+        raise NotImplementedError("job.submit() is not supported. Please use "
+                                  "IBMQBackend.run() to submit a job.")
 
     def __getattr__(self, name: str) -> Any:
         try:

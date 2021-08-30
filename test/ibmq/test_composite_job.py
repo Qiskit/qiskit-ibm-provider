@@ -607,7 +607,7 @@ class TestIBMCompositeJob(IBMQTestCase):
         max_circs = self.fake_backend.configuration().max_experiments
         circs = []
         count = 3
-        for i in range(max_circs*(count-1)+1):
+        for _ in range(max_circs*(count-1)+1):
             circs.append(random_circuit(num_qubits=2, depth=3, measure=True))
         sub_tests = [[0], [1, 2], [0, 2]]
 
@@ -638,7 +638,7 @@ class TestIBMCompositeJob(IBMQTestCase):
         max_circs = 3
         num_jobs = 3
         circs = []
-        for i in range(max_circs*(num_jobs-1)+1):
+        for _ in range(max_circs*(num_jobs-1)+1):
             circs.append(random_circuit(num_qubits=2, depth=3, measure=True))
         sub_tests = [[FailedFakeJob, BaseFakeJob, BaseFakeJob],
                      [BaseFakeJob, FailedFakeJob, CancelableFakeJob],
@@ -674,7 +674,7 @@ class TestIBMCompositeJob(IBMQTestCase):
         max_circs = 3
         num_jobs = 3
         circs = []
-        for i in range(max_circs*(num_jobs-1)+1):
+        for _ in range(max_circs*(num_jobs-1)+1):
             circs.append(random_circuit(num_qubits=2, depth=3, measure=True))
         job_set = self.fake_backend.run(circs, max_circuits_per_job=max_circs)
         job_set.block_for_submit()
@@ -683,6 +683,7 @@ class TestIBMCompositeJob(IBMQTestCase):
 
 
 class TestIBMCompositeJobIntegration(IBMQTestCase):
+    """Integration tests for IBMCompositeJob."""
 
     @classmethod
     @requires_provider
@@ -703,7 +704,7 @@ class TestIBMCompositeJobIntegration(IBMQTestCase):
         for count in circs_counts:
             with self.subTest(count=count):
                 circs = []
-                for i in range(count):
+                for _ in range(count):
                     circs.append(random_circuit(num_qubits=2, depth=3, measure=True))
                 circs = transpile(circs, backend=self.sim_backend)
                 job_set = self.sim_backend.run(circs, max_circuits_per_job=2, job_tags=tags)
@@ -722,9 +723,8 @@ class TestIBMCompositeJobIntegration(IBMQTestCase):
                 rjob_circuits = rjob_set.circuits()
                 self.assertEqual(len(job_circuits), count)
                 self.assertEqual(len(job_circuits), len(rjob_circuits))
-                print(job_circuits[0].data)
-                for i in range(len(job_circuits)):
-                    self.assertEqual(job_circuits[i].data, rjob_circuits[i].data)
+                for job_circ, rjob_circ in zip(job_circuits, rjob_circuits):
+                    self.assertEqual(job_circ.data, rjob_circ.data)
 
     def test_jobs(self):
         """Test retrieving a composite job using jobs."""

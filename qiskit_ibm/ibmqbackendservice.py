@@ -363,6 +363,10 @@ class IBMQBackendService:
 
         Returns:
             Circuit job restored from the data, or ``None`` if format is invalid.
+
+        Raises:
+            IBMQBackendApiProtocolError: If unexpected return value received
+                 from the server.
         """
         job_id = job_info.get('job_id', "")
         # Recreate the backend used for this job.
@@ -527,6 +531,7 @@ class IBMQBackendService:
                 the job.
             IBMQBackendApiProtocolError: If unexpected return value received
                  from the server.
+            IBMQJobNotFoundError: If job cannot be found.
         """
         if job_id.startswith(IBM_COMPOSITE_JOB_ID_PREFIX):
             job_responses = self._get_jobs(api_filter={'experimentTag': job_id}, limit=None)

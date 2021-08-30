@@ -21,11 +21,12 @@ import warnings
 from qiskit.providers.job import JobV1 as Job
 from qiskit.providers.models import BackendProperties
 from qiskit.result import Result
-from qiskit_ibm import ibmqbackend  # pylint: disable=unused-import
 from qiskit.circuit.quantumcircuit import QuantumCircuit
 from qiskit.pulse import Schedule
 from qiskit.qobj import QasmQobj, PulseQobj
 
+# from qiskit_ibm import ibmqbackend  # pylint: disable=unused-import
+import qiskit_ibm.ibmqbackend as ibmqbackend
 from ..api.clients import AccountClient
 from .queueinfo import QueueInfo
 
@@ -96,6 +97,7 @@ class IBMQJob(Job, ABC):
         Returns:
             Job result.
         """
+        # pylint: disable=arguments-differ
         pass
 
     @abstractmethod
@@ -244,20 +246,6 @@ class IBMQJob(Job, ABC):
             Tags assigned to this job.
         """
         return self._tags.copy()
-
-    def submit(self) -> None:
-        """Unsupported method.
-
-        Note:
-            This method is not supported, please use
-            :meth:`~qiskit_ibm.ibmqbackend.IBMQBackend.run`
-            to submit a job.
-
-        Raises:
-            NotImplementedError: Upon invocation.
-        """
-        raise NotImplementedError("job.submit() is not supported. Please use "
-                                  "IBMQBackend.run() to submit a job.")
 
     def qobj(self) -> Optional[Union[QasmQobj, PulseQobj]]:
         """Return the Qobj for this job.

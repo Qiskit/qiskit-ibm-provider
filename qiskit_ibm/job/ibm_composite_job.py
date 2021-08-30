@@ -14,7 +14,7 @@
 
 import re
 import logging
-from typing import Dict, Optional, Tuple, Any, List, Callable, Union, Set
+from typing import Dict, Optional, Tuple, Any, List, Callable, Union
 import uuid
 from datetime import datetime
 from concurrent import futures
@@ -30,12 +30,12 @@ from qiskit.providers.jobstatus import JOB_FINAL_STATES, JobStatus
 from qiskit.providers.models import BackendProperties
 from qiskit.qobj import QasmQobj, PulseQobj
 from qiskit.result import Result
-from qiskit_ibm import ibmqbackend  # pylint: disable=unused-import
 from qiskit.assembler.disassemble import disassemble
 from qiskit.circuit.quantumcircuit import QuantumCircuit
 from qiskit.pulse import Schedule
 from qiskit.result.models import ExperimentResult
 
+from qiskit_ibm import ibmqbackend  # pylint: disable=unused-import
 from .exceptions import (IBMQJobApiError, IBMQJobFailureError, IBMQJobTimeoutError,
                          IBMQJobInvalidStateError)
 from .queueinfo import QueueInfo
@@ -135,6 +135,9 @@ class IBMCompositeJob(IBMQJob):
             name: Job name.
             tags: Job tags.
             client_version: Client used for the job.
+
+        Raises:
+            IBMQJobInvalidStateError: If one or more subjobs is missing.
         """
         if jobs is None and circuits_list is None:
             raise IBMQJobInvalidStateError('"jobs" and "circuits_list" cannot both be None.')
@@ -253,13 +256,16 @@ class IBMCompositeJob(IBMQJob):
 
         Args:
             sub_job: A sub job.
+
+        Raises:
+            Exception: If submit failed.
         """
         tags = self._tags.copy()
         tags.append(sub_job.format_tag(self._index_tag))
         tags.append(self.job_id())
         job: Optional[IBMCircuitJob] = None
-        logger.debug(f"Submitting job {sub_job.job_index} for "
-                     f"circuits {sub_job.start_index}-{sub_job.end_index}.")
+        logger.debug("Submitting job %s for circuits %s-%s.",
+                     sub_job.job_index, sub_job.start_index, sub_job.end_index)
         sub_job.event.wait()
 
         try:
@@ -289,15 +295,15 @@ class IBMCompositeJob(IBMQJob):
                                          "job %s to finish: %s", oldest_running.job_id(), err)
                 except Exception as err:  # pylint: disable=broad-except
                     sub_job.submit_error = err
-                    logger.debug(f"An error occurred submitting sub-job {sub_job.job_index}: " +
-                                 traceback.format_exc())
+                    logger.debug("An error occurred submitting sub-job %s: %s",
+                                 sub_job.job_index, traceback.format_exc())
                     raise
 
             if self._user_cancelled:
                 job.cancel()
             sub_job.job = job
-            logger.debug(f"Job {job.job_id()} submitted for circuits "
-                         f"{sub_job.start_index}-{sub_job.end_index}.")
+            logger.debug("Job %s submitted for circuits %s-%s.",
+                         job.job_id(), sub_job.start_index, sub_job.end_index)
         finally:
             try:
                 # Wake up the next submit.
@@ -943,7 +949,7 @@ class IBMCompositeJob(IBMQJob):
             self,
             job_id: str,
             job_status: JobStatus,
-            job: IBMCircuitJob,
+            job: IBMCircuitJob,  # pylint: disable=unused-argument
             queue_info: QueueInfo
     ) -> None:
         """Callback function used when a sub-job status changes.
@@ -976,6 +982,7 @@ class IBMCompositeJob(IBMQJob):
 
     def _update_status_queue_info_error(self) -> None:
         """Update the status, queue information, and error message of this composite job."""
+        # pylint: disable=too-many-return-statements
 
         if self._has_pending_submit():
             self._status = JobStatus.INITIALIZING
@@ -1056,6 +1063,9 @@ class IBMCompositeJob(IBMQJob):
 
         Returns:
             A list of job index, total jobs, start index, and end index.
+
+        Raises:
+            IBMQJobInvalidStateError: If a sub-job is missing proper tags.
         """
         index_tag = [tag for tag in job.tags() if tag.startswith(IBM_COMPOSITE_JOB_INDEX_PREFIX)]
         match = None
@@ -1084,6 +1094,10 @@ class IBMCompositeJob(IBMQJob):
         Args:
             refresh: If ``True``, re-query the server for the result.
                Otherwise return the cached value.
+            partial: Whether partial result should be collected.
+
+        Returns:
+            Combined job result, or ``None`` if not all sub-jobs have finished.
 
         Raises:
             IBMQJobApiError: If an unexpected error occurred when communicating
@@ -1159,3 +1173,17 @@ class IBMCompositeJob(IBMQJob):
             A list of circuit jobs.
         """
         return [sub_job.job for sub_job in self._sub_jobs if sub_job.job]
+
+    def submit(self) -> None:
+        """Unsupported method.
+
+        Note:
+            This method is not supported, please use
+            :meth:`~qiskit_ibm.ibmqbackend.IBMQBackend.run`
+            to submit a job.
+
+        Raises:
+            NotImplementedError: Upon invocation.
+        """
+        raise NotImplementedError("job.submit() is not supported. Please use "
+                                  "IBMQBackend.run() to submit a job.")

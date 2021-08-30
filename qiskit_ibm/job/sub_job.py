@@ -48,6 +48,7 @@ class SubJob:
             job_index: Job index.
             total: Total number of jobs.
             qobj: Qobj for this job.
+            job: Circuit job.
         """
         self.start_index = start_index
         self.end_index = end_index
