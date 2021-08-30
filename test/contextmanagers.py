@@ -117,12 +117,12 @@ class no_file(ContextDecorator):
 
 
 def _mocked_initialize_provider(
-        self,
+        cls,
         credentials: Credentials,
         preferences: Optional[Dict] = None
 ) -> None:
     """Mock ``_initialize_provider()``, just storing the credentials."""
-    self._credentials = credentials
+    cls._credentials = credentials
     if preferences:
         credentials.preferences = preferences.get(credentials.unique_id(), {})
 

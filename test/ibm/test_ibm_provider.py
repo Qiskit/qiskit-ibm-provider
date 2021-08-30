@@ -196,11 +196,11 @@ class TestIBMProviderAccounts(IBMTestCase):
 
     @requires_qe_access
     def test_provider_init_saved_account(self, qe_token, qe_url):
+        """Test initializing IBMProvider with credentials from qiskitrc file."""
         if qe_url != QISKIT_IBM_API_URL:
             # save expects an auth production URL.
             self.skipTest('Test requires production auth URL')
 
-        """Test initializing IBMProvider with credentials from qiskitrc file."""
         with custom_qiskitrc(), no_envs(CREDENTIAL_ENV_VARS):
             provider = IBMProvider(qe_token, url=qe_url, save=True)
 
@@ -285,7 +285,8 @@ class TestIBMProviderAccounts(IBMTestCase):
         self.assertEqual(saved_provider.credentials.api_url, qe_url)
         self.assertEqual(saved_provider.credentials.hub, non_default_provider.credentials.hub)
         self.assertEqual(saved_provider.credentials.group, non_default_provider.credentials.group)
-        self.assertEqual(saved_provider.credentials.project, non_default_provider.credentials.project)
+        self.assertEqual(saved_provider.credentials.project,
+                         non_default_provider.credentials.project)
 
     @requires_qe_access
     def test_load_account_saved_provider_invalid_hgp(self, qe_token, qe_url):
@@ -393,8 +394,9 @@ class TestIBMProviderProvider(IBMTestCase):
 
     def test_providers_no_filter(self):
         """Test providers() without a filter."""
-        providers = IBMProvider.providers()
-        self.assertIn(self.provider, providers)
+        providers_list = IBMProvider.providers()
+        self.assertIn(self.provider, providers_list)
+
 
 class TestIBMProvider(IBMTestCase, providers.ProviderTestCase):
     """Tests for the IBMProvider class."""
