@@ -76,12 +76,11 @@ class IBMProvider(Provider):
 
     If parameters are not passed and environment variables are not set then this class looks
     for credentials (token / url) and default provider (hub / group / project) saved in the
-    qiskitrc file. Credentials can be saved by passing the `save=True` option when initializing
-    the provider.
+    qiskitrc file. Credentials can be saved by calling the `save_account()` method.
 
         from qiskit_ibm import IBMProvider
-        provider = IBMProvider(token=<INSERT_IBM_QUANTUM_TOKEN>, hub='ibm-q', group='open',
-                               project='main', save=True)
+        IBMProvider.save_account(token=<INSERT_IBM_QUANTUM_TOKEN>, hub='ibm-q', group='open',
+                               project='main')
 
     `token` is the only required attribute that needs to be set using one of the above methods.
     If no `url` is set, it defaults to 'https://auth.quantum-computing.ibm.com/api'.
@@ -141,13 +140,9 @@ class IBMProvider(Provider):
             hub: Optional[str] = None,
             group: Optional[str] = None,
             project: Optional[str] = None,
-            save: Optional[bool] = False,
             account: Optional[Dict] = None,
             **kwargs: Any
     ) -> 'IBMProvider':
-        if save:
-            cls._save_account(token, url, hub, group, project, True, **kwargs)
-
         account_credentials, account_preferences, hub, group, project = cls._resolve_credentials(
             token=token,
             url=url,
@@ -186,7 +181,6 @@ class IBMProvider(Provider):
             hub: Optional[str] = None,
             group: Optional[str] = None,
             project: Optional[str] = None,
-            save: Optional[bool] = False,
             account: Optional[Dict] = None,
             **kwargs: Any
     ) -> None:
@@ -198,7 +192,6 @@ class IBMProvider(Provider):
             hub: Name of the hub to use.
             group: Name of the group to use.
             project: Name of the project to use.
-            save: Set to True to save the account to disk
             account: Dictionary containing account credentials
             **kwargs: Additional settings for the connection:
 
@@ -788,7 +781,7 @@ class IBMProvider(Provider):
         return providers
 
     @staticmethod
-    def _save_account(
+    def save_account(
             token: str,
             url: str = QISKIT_IBM_API_URL,
             hub: Optional[str] = None,

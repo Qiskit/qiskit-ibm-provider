@@ -188,7 +188,7 @@ class TestIBMProviderAccounts(IBMTestCase):
     def test_save_account(self, qe_token, qe_url):
         """Test saving an account."""
         with custom_qiskitrc():
-            IBMProvider(qe_token, url=qe_url, save=True)
+            IBMProvider.save_account(qe_token, url=qe_url)
             stored_cred = IBMProvider.saved_account()
 
         self.assertEqual(stored_cred['token'], qe_token)
@@ -202,7 +202,8 @@ class TestIBMProviderAccounts(IBMTestCase):
             self.skipTest('Test requires production auth URL')
 
         with custom_qiskitrc(), no_envs(CREDENTIAL_ENV_VARS):
-            provider = IBMProvider(qe_token, url=qe_url, save=True)
+            IBMProvider.save_account(qe_token, url=qe_url)
+            provider = IBMProvider()
 
         self.assertIsInstance(provider, IBMProvider)
         self.assertEqual(provider.credentials.token, qe_token)
@@ -218,8 +219,8 @@ class TestIBMProviderAccounts(IBMTestCase):
 
         with custom_qiskitrc() as custom_qiskitrc_cm:
             hgp = HubGroupProject.from_stored_format(default_hgp_to_save)
-            IBMProvider(token=qe_token, url=qe_url,
-                        hub=hgp.hub, group=hgp.group, project=hgp.project, save=True)
+            IBMProvider.save_account(token=qe_token, url=qe_url,
+                                     hub=hgp.hub, group=hgp.group, project=hgp.project)
 
             # Ensure the `default_provider` name was written to the config file.
             config_parser = ConfigParser()
@@ -238,12 +239,11 @@ class TestIBMProviderAccounts(IBMTestCase):
         for invalid_hgp in invalid_hgps_to_save:
             with self.subTest(invalid_hgp=invalid_hgp), custom_qiskitrc():
                 with self.assertRaises(IBMProviderValueError) as context_manager:
-                    IBMProvider(token=qe_token,
-                                url=qe_url,
-                                hub=invalid_hgp.hub,
-                                group=invalid_hgp.group,
-                                project=invalid_hgp.project,
-                                save=True)
+                    IBMProvider.save_account(token=qe_token,
+                                             url=qe_url,
+                                             hub=invalid_hgp.hub,
+                                             group=invalid_hgp.group,
+                                             project=invalid_hgp.project)
                 self.assertIn('The hub, group, and project parameters must all be specified',
                               str(context_manager.exception))
 
@@ -251,7 +251,7 @@ class TestIBMProviderAccounts(IBMTestCase):
     def test_delete_account(self, qe_token, qe_url):
         """Test deleting an account."""
         with custom_qiskitrc():
-            IBMProvider(qe_token, url=qe_url, save=True)
+            IBMProvider.save_account(qe_token, url=qe_url)
             IBMProvider.delete_account()
             stored_cred = IBMProvider.saved_account()
 
@@ -268,11 +268,11 @@ class TestIBMProviderAccounts(IBMTestCase):
         non_default_provider = get_provider(qe_token, qe_url, default=False)
 
         with custom_qiskitrc(), no_envs(CREDENTIAL_ENV_VARS):
-            saved_provider = IBMProvider(token=qe_token, url=qe_url,
-                                         hub=non_default_provider.credentials.hub,
-                                         group=non_default_provider.credentials.group,
-                                         project=non_default_provider.credentials.project,
-                                         save=True)
+            IBMProvider.save_account(token=qe_token, url=qe_url,
+                                     hub=non_default_provider.credentials.hub,
+                                     group=non_default_provider.credentials.group,
+                                     project=non_default_provider.credentials.project)
+            saved_provider = IBMProvider()
             if saved_provider != non_default_provider:
                 # Prevent tokens from being logged.
                 saved_provider.credentials.token = None
@@ -300,9 +300,9 @@ class TestIBMProviderAccounts(IBMTestCase):
         with custom_qiskitrc(), no_envs(CREDENTIAL_ENV_VARS):
             hgp = HubGroupProject.from_stored_format(invalid_hgp_to_store)
             with self.assertRaises(IBMProviderError) as context_manager:
-                IBMProvider(token=qe_token, url=qe_url,
-                            hub=hgp.hub, group=hgp.group, project=hgp.project,
-                            save=True)
+                IBMProvider.save_account(token=qe_token, url=qe_url,
+                                         hub=hgp.hub, group=hgp.group, project=hgp.project)
+                IBMProvider()
 
             self.assertIn('No provider matches the specified criteria',
                           str(context_manager.exception))
@@ -322,7 +322,7 @@ class TestIBMProviderAccounts(IBMTestCase):
                 with custom_qiskitrc() as temp_qiskitrc, \
                         no_envs(CREDENTIAL_ENV_VARS):
                     # Save the account.
-                    IBMProvider(token=qe_token, url=qe_url, save=True)
+                    IBMProvider.save_account(token=qe_token, url=qe_url)
                     # Add an invalid provider field to the account stored.
                     with open(temp_qiskitrc.tmp_file.name, 'a') as _file:
                         _file.write('default_provider = {}'.format(invalid_hgp))
@@ -356,7 +356,7 @@ class TestIBMProviderAccounts(IBMTestCase):
         for invalid_token in invalid_tokens:
             with self.subTest(invalid_token=invalid_token):
                 with self.assertRaises(IBMProviderCredentialsInvalidToken) as context_manager:
-                    IBMProvider(token=invalid_token, url=QISKIT_IBM_API_URL, save=True)
+                    IBMProvider.save_account(token=invalid_token, url=QISKIT_IBM_API_URL)
                 self.assertIn('Invalid IBM Quantum token found',
                               str(context_manager.exception))
 
