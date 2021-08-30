@@ -157,7 +157,7 @@ class IBMProvider(Provider):
             if cls._providers:
                 logger.warning('Credentials are already in use. The existing '
                                'account in the session will be replaced.')
-                cls.disable_account()
+                cls._disable_account()
             cls._initialize_providers(credentials=account_credentials,
                                       preferences=account_preferences)
             instance = cls._get_provider(hub=hub, group=group, project=project)
@@ -723,7 +723,7 @@ class IBMProvider(Provider):
             self.__class__.__name__, credentials_info)
 
     @classmethod
-    def disable_account(cls) -> None:
+    def _disable_account(cls) -> None:
         """Disable the account currently in use for the session.
 
         Raises:

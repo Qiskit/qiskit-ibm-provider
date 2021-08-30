@@ -219,7 +219,7 @@ def get_provider(
             if provider != provider_to_return:
                 provider_to_return = provider
                 break
-    IBMProvider.disable_account()
+    IBMProvider._disable_account()
 
     return provider_to_return
 

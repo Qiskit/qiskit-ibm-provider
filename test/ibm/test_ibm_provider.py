@@ -261,7 +261,7 @@ class TestIBMProviderAccounts(IBMTestCase):
     def test_load_account_saved_provider(self, qe_token, qe_url):
         """Test loading an account that contains a saved provider."""
         if qe_url != QISKIT_IBM_API_URL:
-            # .save() expects an auth production URL.
+            # .save_account() expects an auth production URL.
             self.skipTest('Test requires production auth URL')
 
         # Get a non default provider.
@@ -292,7 +292,7 @@ class TestIBMProviderAccounts(IBMTestCase):
     def test_load_account_saved_provider_invalid_hgp(self, qe_token, qe_url):
         """Test loading an account that contains a saved provider that does not exist."""
         if qe_url != QISKIT_IBM_API_URL:
-            # .save() expects an auth production URL.
+            # .save_account() expects an auth production URL.
             self.skipTest('Test requires production auth URL')
 
         # Hub, group, project in correct format but does not exists.
@@ -335,13 +335,13 @@ class TestIBMProviderAccounts(IBMTestCase):
     def test_disable_account(self, qe_token, qe_url):
         """Test disabling an account """
         IBMProvider(qe_token, qe_url)
-        IBMProvider.disable_account()
+        IBMProvider._disable_account()
         self.assertFalse(IBMProvider.providers())
 
     @requires_qe_access
     def test_active_account(self, qe_token, qe_url):
         """Test active for an account """
-        IBMProvider.disable_account()
+        IBMProvider._disable_account()
         self.assertIsNone(IBMProvider.active_account())
 
         IBMProvider(qe_token, qe_url)

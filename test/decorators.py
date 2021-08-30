@@ -318,5 +318,5 @@ def _enable_account(qe_token: str, qe_url: str) -> None:
     if active_account:
         if active_account.get('token', '') == qe_token:
             return
-        IBMProvider.disable_account()
+        IBMProvider._disable_account()
     IBMProvider(qe_token, qe_url)
