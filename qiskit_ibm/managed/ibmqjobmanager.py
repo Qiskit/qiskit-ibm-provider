@@ -15,6 +15,7 @@
 import logging
 from typing import List, Optional, Union, Any
 from concurrent import futures
+import warnings
 
 from qiskit.circuit import QuantumCircuit
 from qiskit.pulse import Schedule
