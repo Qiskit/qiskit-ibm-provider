@@ -42,6 +42,7 @@ class Credentials:
             self,
             token: str,
             url: str,
+            api_url: Optional[str] = None,
             websockets_url: Optional[str] = None,
             hub: Optional[str] = None,
             group: Optional[str] = None,
@@ -51,13 +52,14 @@ class Credentials:
             services: Optional[Dict] = None,
             access_token: Optional[str] = None,
             preferences: Optional[Dict] = None,
-            default_provider: Optional[HubGroupProject] = None
+            default_provider: Optional[HubGroupProject] = None,
     ) -> None:
         """Credentials constructor.
 
         Args:
             token: IBM Quantum API token.
             url: IBM Quantum URL.
+            api_url: IBM Quantum URL.
             websockets_url: URL for websocket server.
             hub: The hub to use.
             group: The group to use.
@@ -75,6 +77,7 @@ class Credentials:
         (self.url, self.base_url,
          self.hub, self.group, self.project) = _unify_ibm_quantum_url(
              url, hub, group, project)
+        self.api_url = api_url or url
         self.websockets_url = websockets_url
         self.proxies = proxies or {}
         self.verify = verify

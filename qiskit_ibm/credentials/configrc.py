@@ -92,6 +92,9 @@ def read_credentials_from_qiskitrc(
                 configs[key] = config_parser[name].getboolean('verify')
             elif key == 'default_provider':
                 configs[key] = HubGroupProject.from_stored_format(val)
+            elif key == 'url':
+                configs[key] = val
+                configs['api_url'] = val
             else:
                 configs[key] = val
 

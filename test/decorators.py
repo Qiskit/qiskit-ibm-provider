@@ -269,7 +269,9 @@ def _get_credentials():
         # load them from different environment variables. This assumes they
         # will always be in place, as is used by the CI setup.
         return Credentials(
-            os.getenv('QISKIT_IBM_STAGING_API_TOKEN'), os.getenv('QISKIT_IBM_STAGING_API_URL')
+            token=os.getenv('QISKIT_IBM_STAGING_API_TOKEN'),
+            url=os.getenv('QISKIT_IBM_STAGING_API_URL'),
+            api_url=os.getenv('QISKIT_IBM_STAGING_API_URL')
         )
 
     # Attempt to read the standard credentials.

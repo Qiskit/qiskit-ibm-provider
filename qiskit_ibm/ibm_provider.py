@@ -132,7 +132,6 @@ class IBMProvider(Provider):
         in Jupyter Notebook and the Python interpreter.
     """
 
-    _credentials = None  # type: Optional[Credentials]
     _providers = OrderedDict()  # type: Dict[HubGroupProject, IBMProvider]
 
     def __new__(
@@ -160,7 +159,10 @@ class IBMProvider(Provider):
 
         if not account and (not cls._providers or
                             cls._is_different_account(account_credentials.token)):
-            cls._providers = OrderedDict()
+            if cls._providers:
+                logger.warning('Credentials are already in use. The existing '
+                               'account in the session will be replaced.')
+                cls.disable_account()
             cls._initialize_providers(credentials=account_credentials,
                                       preferences=account_preferences)
             instance = cls._get_provider(hub=hub, group=group, project=project)
@@ -174,7 +176,8 @@ class IBMProvider(Provider):
 
     @classmethod
     def _is_different_account(cls, token: str) -> bool:
-        return token != cls._credentials.token
+        first_provider = list(cls._providers.values())[0]
+        return token != first_provider.credentials.token
 
     def __init__(
             self,
@@ -267,7 +270,6 @@ class IBMProvider(Provider):
         account['user_hubs'] = account['auth_client'].user_hubs()
         account['preferences'] = preferences or {}
         account['credentials'] = credentials
-        cls._credentials = credentials
 
         for hub_info in account['user_hubs']:
             # Build the provider.
@@ -300,7 +302,7 @@ class IBMProvider(Provider):
                     'Invalid IBM Quantum token '
                     'found: "{}" of type {}.'.format(token, type(token)))
             url = url or os.getenv('QISKIT_IBM_API_URL') or QISKIT_IBM_API_URL
-            account_credentials = Credentials(token=token, url=url, **kwargs)
+            account_credentials = Credentials(token=token, url=url, api_url=url, **kwargs)
             preferences = {}  # type: Optional[Dict]
         else:
             # Check for valid credentials in env variables or qiskitrc file.
@@ -400,6 +402,7 @@ class IBMProvider(Provider):
             account_credentials.token,
             access_token=auth_client.current_access_token(),
             url=service_urls['http'],
+            api_url=account_credentials.api_url,
             websockets_url=service_urls['ws'],
             proxies=account_credentials.proxies,
             verify=account_credentials.verify,
@@ -733,10 +736,9 @@ class IBMProvider(Provider):
         Raises:
             IBMProviderCredentialsNotFound: If no account is in use for the session.
         """
-        if not cls._credentials:
+        if not cls._providers:
             raise IBMProviderCredentialsNotFound(
                 'No IBM Quantum account is in use for the session.')
-        cls._credentials = None
         cls._providers = OrderedDict()
 
     @classmethod
@@ -746,11 +748,12 @@ class IBMProvider(Provider):
         Returns:
             Information about the account currently in the session.
         """
-        if not cls._credentials:
+        if not cls._providers:
             return None
+        first_provider = list(cls._providers.values())[0]
         return {
-            'token': cls._credentials.token,
-            'url': cls._credentials.url
+            'token': first_provider.credentials.token,
+            'url': first_provider.credentials.api_url
         }
 
     @classmethod
