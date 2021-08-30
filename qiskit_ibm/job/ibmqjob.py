@@ -25,8 +25,7 @@ from qiskit.circuit.quantumcircuit import QuantumCircuit
 from qiskit.pulse import Schedule
 from qiskit.qobj import QasmQobj, PulseQobj
 
-# from qiskit_ibm import ibmqbackend  # pylint: disable=unused-import
-import qiskit_ibm.ibmqbackend as ibmqbackend
+from qiskit_ibm import ibmqbackend  # pylint: disable=unused-import
 from ..api.clients import AccountClient
 from .queueinfo import QueueInfo
 
