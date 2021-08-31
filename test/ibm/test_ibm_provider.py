@@ -336,7 +336,7 @@ class TestIBMProviderAccounts(IBMTestCase):
         """Test disabling an account """
         IBMProvider(qe_token, qe_url)
         IBMProvider._disable_account()
-        self.assertFalse(IBMProvider.providers())
+        self.assertFalse(IBMProvider._providers)
 
     @requires_qe_access
     def test_active_account(self, qe_token, qe_url):

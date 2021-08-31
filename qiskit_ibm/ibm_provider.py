@@ -154,20 +154,13 @@ class IBMProvider(Provider):
 
         if not account and (not cls._providers or
                             cls._is_different_account(account_credentials.token)):
-            if cls._providers:
-                logger.warning('Credentials are already in use. The existing '
-                               'account in the session will be replaced.')
-                cls._disable_account()
             cls._initialize_providers(credentials=account_credentials,
                                       preferences=account_preferences)
-            instance = cls._get_provider(hub=hub, group=group, project=project)
-            return instance
+            return cls._get_provider(hub=hub, group=group, project=project)
         elif not account and cls._providers:
-            instance = cls._get_provider(hub=hub, group=group, project=project)
-            return instance
+            return cls._get_provider(hub=hub, group=group, project=project)
         else:
-            instance = object.__new__(cls)
-            return instance
+            return object.__new__(cls)
 
     @classmethod
     def _is_different_account(cls, token: str) -> bool:
@@ -255,6 +248,11 @@ class IBMProvider(Provider):
             credentials: Credentials for IBM Quantum.
             preferences: Account preferences.
         """
+        if cls._providers:
+            logger.warning('Credentials are already in use. The existing '
+                           'account in the session will be replaced.')
+            cls._disable_account()
+
         account = dict()  # type: Dict[str, Any]
         account['auth_client'] = AuthClient(credentials.token,
                                             credentials.base_url,
@@ -370,7 +368,7 @@ class IBMProvider(Provider):
             group: Optional[str] = None,
             project: Optional[str] = None,
     ) -> 'IBMProvider':
-        providers = cls.providers(hub, group, project)
+        providers = cls.providers(hub=hub, group=group, project=project)
         if not providers:
             raise IBMProviderError('No provider matches the specified criteria: '
                                    'hub = {}, group = {}, project = {}'
@@ -752,20 +750,41 @@ class IBMProvider(Provider):
     @classmethod
     def providers(
             cls,
+            token: Optional[str] = None,
+            url: Optional[str] = None,
             hub: Optional[str] = None,
             group: Optional[str] = None,
-            project: Optional[str] = None
+            project: Optional[str] = None,
+            **kwargs: Any
     ) -> List['IBMProvider']:
         """Return a list of providers, subject to optional filtering.
 
         Args:
+            token: IBM Quantum token.
+            url: URL for the IBM Quantum authentication server.
             hub: Name of the hub.
             group: Name of the group.
             project: Name of the project.
+            **kwargs: Additional settings for the connection:
+
+                * proxies (dict): proxy configuration.
+                * verify (bool): verify the server's TLS certificate.
 
         Returns:
             A list of providers that match the specified criteria.
         """
+        account_credentials, account_preferences, *_ = cls._resolve_credentials(
+            token=token,
+            url=url,
+            hub=hub,
+            group=group,
+            project=project,
+            **kwargs
+        )
+        if not cls._providers or cls._is_different_account(account_credentials.token):
+            cls._initialize_providers(credentials=account_credentials,
+                                      preferences=account_preferences)
+
         filters = []  # type: List[Callable[[HubGroupProject], bool]]
 
         if hub:
