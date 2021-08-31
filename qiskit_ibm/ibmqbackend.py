@@ -75,7 +75,6 @@ class IBMQBackend(Backend):
         qx = random_circuit(n_qubits=5, depth=4)
         transpiled = transpile(qx, backend=backend)
         job = backend.run(transpiled)
-        retrieved_job = backend.retrieve_job(job.job_id())
 
     Note:
 
@@ -648,32 +647,6 @@ class IBMQBackend(Backend):
                                   if status not in API_JOB_FINAL_STATES})
 
         return self.jobs(status=active_job_states, limit=limit)
-
-    def retrieve_job(self, job_id: str) -> IBMQJob:
-        """Return a single job submitted to this backend.
-
-        Args:
-            job_id: The ID of the job to retrieve.
-
-        Returns:
-            The job with the given ID.
-
-        Raises:
-            IBMQBackendError: If job retrieval failed.
-        """
-        job = self._provider.backend.retrieve_job(job_id)
-        job_backend = job.backend()
-
-        if self.name() != job_backend.name():
-            warnings.warn('Job {} belongs to another backend than the one queried. '
-                          'The query was made on backend {}, '
-                          'but the job actually belongs to backend {}.'
-                          .format(job_id, self.name(), job_backend.name()))
-            raise IBMQBackendError('Failed to get job {}: '
-                                   'job does not belong to backend {}.'
-                                   .format(job_id, self.name()))
-
-        return job
 
     def reservations(
             self,
