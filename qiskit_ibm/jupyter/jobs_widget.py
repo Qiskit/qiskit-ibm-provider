@@ -12,6 +12,8 @@
 # pylint: disable=protected-access
 
 """Interactive Jobs widget."""
+
+import datetime
 from typing import Union
 
 import ipywidgets as wid
@@ -110,7 +112,9 @@ def _job_summary(backend: Union[IBMQBackend, FakeBackend]) -> PlotlyWidget:
     Returns:
         A figure for the rendered job summary.
     """
-    jobs = backend.jobs(limit=None)
+    now = datetime.datetime.now()
+    past_year_date = now - datetime.timedelta(days=365)
+    jobs = backend.jobs(limit=None, start_datetime=past_year_date)
 
     num_jobs = len(jobs)
     main_str = "<b>Total Jobs</b><br>{}".format(num_jobs)

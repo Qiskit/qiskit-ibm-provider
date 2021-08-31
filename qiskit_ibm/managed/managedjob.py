@@ -26,7 +26,6 @@ from qiskit.providers.jobstatus import JobStatus
 from qiskit.providers.exceptions import JobError
 
 from qiskit_ibm import IBMQBackend
-
 from ..job.ibmqjob import IBMQJob
 from ..job.exceptions import IBMQJobTimeoutError
 from ..exceptions import IBMQBackendJobLimitError
@@ -119,7 +118,10 @@ class ManagedJob:
                         job_tags=job_tags,
                         **run_config)
                 except IBMQBackendJobLimitError:
-                    oldest_running = backend.jobs(limit=1, descending=False)
+                    non_final_states = ["CREATED", "TRANSPILING", "TRANSPILED", "VALIDATING",
+                                        "VALIDATED", "RUNNING", "PENDING_IN_QUEUE", "QUEUED"]
+                    oldest_running = backend.jobs(
+                        limit=1, descending=False, status=non_final_states)
                     if oldest_running:
                         oldest_running = oldest_running[0]
                         logger.warning("Job limit reached, waiting for job %s to finish "
