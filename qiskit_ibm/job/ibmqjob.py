@@ -119,7 +119,6 @@ class IBMQJob(Job):
             error: Optional[dict] = None,
             tags: Optional[List[str]] = None,
             run_mode: Optional[str] = None,
-            share_level: Optional[str] = None,
             client_info: Optional[Dict[str, str]] = None,
             experiment_id: Optional[str] = None,
             **kwargs: Any
@@ -140,7 +139,6 @@ class IBMQJob(Job):
             error: Job error.
             tags: Job tags.
             run_mode: Scheduling mode the job runs in.
-            share_level: Level the job can be shared with.
             client_info: Client version.
             experiment_id: ID of the experiment this job is part of.
             kwargs: Additional job attributes.
@@ -162,7 +160,6 @@ class IBMQJob(Job):
         self._status, self._queue_info = \
             self._get_status_position(status, kwargs.pop('info_queue', None))
         self._use_object_storage = (self._kind == ApiJobKind.QOBJECT_STORAGE)
-        self._share_level = share_level
         self._set_client_version(client_info)
         self._experiment_id = experiment_id
         self._set_result(result)
@@ -620,19 +617,6 @@ class IBMQJob(Job):
         """
         return self._tags.copy()
 
-    def share_level(self) -> str:
-        """Return the share level of the job.
-
-        The share level is one of ``global``, ``hub``, ``group``, ``project``, and ``none``.
-
-        Returns:
-            The share level of the job.
-        """
-        warnings.warn("`IBMQJob.share_level()` method is no longer supported "
-                      "and will be removed in a future release.",
-                      Warning, stacklevel=2)
-        return 'none'
-
     def time_per_step(self) -> Optional[Dict]:
         """Return the date and time information on each step of the job processing.
 
@@ -692,18 +676,6 @@ class IBMQJob(Job):
         if not self._client_version and not self._refreshed:
             self.refresh()
         return self._client_version
-
-    @client_version.setter
-    def client_version(self, data: Dict[str, str]) -> None:
-        """Set client version.
-
-        Args:
-            data: Client version.
-        """
-        warnings.warn('The ``client_version`` setter method is deprecated and '
-                      'will be removed in a future release.',
-                      DeprecationWarning, stacklevel=2)
-        self._set_client_version(data)
 
     def _set_client_version(self, data: Dict[str, str]) -> None:
         """Set client version.
