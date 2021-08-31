@@ -37,6 +37,7 @@ Detailed information on a single backend
     mock_get_backend('FakeVigo')
 
 .. jupyter-execute::
+
     from qiskit_ibm import IBMProvider
     import qiskit_ibm.jupyter
 

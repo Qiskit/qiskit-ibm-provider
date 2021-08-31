@@ -55,13 +55,13 @@ class IBMProvider(Provider):
     This class provides access to the IBM Quantum services available to an account.
 
     You can access the default open provider by instantiating this class
-    and providing the API token.
+    and providing the API token::
 
         from qiskit_ibm import IBMProvider
         provider = IBMProvider(token=<INSERT_IBM_QUANTUM_TOKEN>)
 
     To access a different provider, specify the hub, group and project name of the
-    desired provider during instantiation.
+    desired provider during instantiation::
 
         from qiskit_ibm import IBMProvider
         provider = IBMProvider(token=<INSERT_IBM_QUANTUM_TOKEN>, hub='ibm-q', group='test',
@@ -69,28 +69,28 @@ class IBMProvider(Provider):
 
     Instead of passing in the parameters during instantiation, you can also set the environment
     variables QISKIT_IBM_API_TOKEN, QISKIT_IBM_API_URL, QISKIT_IBM_HUB, QISKIT_IBM_GROUP
-    and QISKIT_IBM_PROJECT and then instantiate the provider like below.
+    and QISKIT_IBM_PROJECT and then instantiate the provider like below::
 
         from qiskit_ibm import IBMProvider
         provider = IBMProvider()
 
     If parameters are not passed and environment variables are not set then this class looks
     for credentials (token / url) and default provider (hub / group / project) saved in the
-    qiskitrc file. Credentials can be saved by calling the `save_account()` method.
+    qiskitrc file. Credentials can be saved by calling the `save_account()` method::
 
         from qiskit_ibm import IBMProvider
         IBMProvider.save_account(token=<INSERT_IBM_QUANTUM_TOKEN>, hub='ibm-q', group='open',
-                               project='main')
+                                 project='main')
 
     `token` is the only required attribute that needs to be set using one of the above methods.
     If no `url` is set, it defaults to 'https://auth.quantum-computing.ibm.com/api'.
     If no `hub`, `group` and `project` is set, it defaults to the open provider. (ibm-q/open/main)
 
     Once credentails are saved you can simply instantiate the provider like below to load the
-    saved account.
+    saved account::
 
-    from qiskit_ibm import IBMProvider
-    provider = IBMProvider()
+        from qiskit_ibm import IBMProvider
+        provider = IBMProvider()
 
     Each provider may offer different services. The main service,
     :class:`~qiskit_ibm.ibm_backend_service.IBMBackendService`, is

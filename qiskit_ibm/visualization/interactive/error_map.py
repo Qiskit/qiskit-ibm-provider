@@ -64,6 +64,7 @@ def iplot_error_map(
             mock_get_backend('FakeVigo')
 
         .. jupyter-execute::
+
            from qiskit_ibm import IBMProvider
            from qiskit_ibm.visualization import iplot_error_map
 
