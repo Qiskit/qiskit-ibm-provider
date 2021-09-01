@@ -19,6 +19,8 @@ The ``main()`` method is the entry point of a runtime program. It takes a
 send circuits to the backend and messages to the user, respectively.
 """
 
+from typing import Any
+
 from qiskit_ibm.runtime import UserMessenger, ProgramBackend
 
 
@@ -29,7 +31,7 @@ def program(backend: ProgramBackend, user_messenger: UserMessenger, **kwargs):
     return "final result"
 
 
-def main(backend: ProgramBackend, user_messenger: UserMessenger, **kwargs):
+def main(backend: ProgramBackend, user_messenger: UserMessenger, **kwargs) -> Any:
     """This is the main entry point of a runtime program.
 
     The name of this method must not change. It also must have ``backend``
