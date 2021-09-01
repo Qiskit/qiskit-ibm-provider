@@ -39,8 +39,11 @@ def main(backend: ProgramBackend, user_messenger: UserMessenger, **kwargs):
         backend: Backend for the circuits to run on.
         user_messenger: Used to communicate with the program user.
         kwargs: User inputs.
+
+    Returns:
+        The final result of the runtime program.
     """
     # Massage the input if necessary.
     result = program(backend, user_messenger, **kwargs)
-    # UserMessenger can be used to publish final results.
-    user_messenger.publish(result, final=True)
+    # Final results can be directly returned
+    return result
