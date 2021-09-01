@@ -50,7 +50,7 @@ logger = logging.getLogger(__name__)
 
 
 class IBMProvider(Provider):
-    """Provider for a single IBM Quantum account.
+    """Authenticate against IBM Quantum for use during session or from saved credentials.
 
     This class provides access to the IBM Quantum services available to an account.
 
@@ -143,41 +143,7 @@ class IBMProvider(Provider):
             account: Optional[Dict] = None,
             **kwargs: Any
     ) -> 'IBMProvider':
-        account_credentials, account_preferences, hub, group, project = cls._resolve_credentials(
-            token=token,
-            url=url,
-            hub=hub,
-            group=group,
-            project=project,
-            **kwargs
-        )
-
-        if not account and (not cls._providers or
-                            cls._is_different_account(account_credentials.token)):
-            cls._initialize_providers(credentials=account_credentials,
-                                      preferences=account_preferences)
-            return cls._get_provider(hub=hub, group=group, project=project)
-        elif not account and cls._providers:
-            return cls._get_provider(hub=hub, group=group, project=project)
-        else:
-            return object.__new__(cls)
-
-    @classmethod
-    def _is_different_account(cls, token: str) -> bool:
-        first_provider = list(cls._providers.values())[0]
-        return token != first_provider.credentials.token
-
-    def __init__(
-            self,
-            token: Optional[str] = None,
-            url: Optional[str] = None,
-            hub: Optional[str] = None,
-            group: Optional[str] = None,
-            project: Optional[str] = None,
-            account: Optional[Dict] = None,
-            **kwargs: Any
-    ) -> None:
-        """IBMProvider constructor.
+        """IBMProvider constructor
 
         Args:
             token: IBM Quantum token.
@@ -191,8 +157,12 @@ class IBMProvider(Provider):
                 * proxies (dict): proxy configuration.
                 * verify (bool): verify the server's TLS certificate.
 
+        Returns:
+            If `hub`, `group`, and `project` are specified, the corresponding provider
+            is returned. Otherwise the provider for the open access project is returned.
+
         Raises:
-            IBMProviderCredentialsInvalidFormat: If the default provider stored on
+            IBMProviderCredentialsInvalidFormat: If the default provider saved on
                 disk could not be parsed.
             IBMProviderCredentialsNotFound: If no IBM Quantum credentials
                 can be found.
@@ -200,41 +170,156 @@ class IBMProvider(Provider):
                 a valid IBM Quantum authentication URL.
             IBMProviderCredentialsInvalidToken: If the `token` is not a valid
                 IBM Quantum token.
-            IBMProviderValueError: If only one or two parameters from `hub`, `group`,
-                `project` are specified.
         """
-        # pylint: disable=unused-argument
-        super().__init__()
+        account_credentials, account_preferences, hub, group, project = cls._resolve_credentials(
+            token=token,
+            url=url,
+            hub=hub,
+            group=group,
+            project=project,
+            **kwargs
+        )
+        if not account and (not cls._providers or
+                            cls._is_different_account(account_credentials.token)):
+            cls._initialize_providers(credentials=account_credentials,
+                                      preferences=account_preferences)
+            return cls._get_provider(hub=hub, group=group, project=project)
+        elif not account and cls._providers:
+            return cls._get_provider(hub=hub, group=group, project=project)
+        else:
+            return object.__new__(cls)
 
-        if account:
-            self.credentials = self._construct_provider_credentials(
-                account['credentials'],
-                account['preferences'],
-                account['auth_client'],
-                account['service_urls'],
-                hub,
-                group,
-                project
-            )
-            self._api_client = AccountClient(self.credentials,
-                                             **self.credentials.connection_parameters())
+    @classmethod
+    def _resolve_credentials(
+            cls,
+            token: Optional[str] = None,
+            url: Optional[str] = None,
+            hub: Optional[str] = None,
+            group: Optional[str] = None,
+            project: Optional[str] = None,
+            **kwargs: Any
+    ) -> Tuple[Credentials, Dict, str, str, str]:
+        """Resolve credentials after looking up env variables and credentials saved on disk
 
-            # Initialize the internal list of backends.
-            self.__backends: Dict[str, IBMBackend] = {}
-            self._backend = IBMBackendService(self)
-            self.backends = self._backend.backends  # type: ignore[assignment]
+        Args:
+            token: IBM Quantum token.
+            url: URL for the IBM Quantum authentication server.
+            hub: Name of the hub to use.
+            group: Name of the group to use.
+            project: Name of the project to use.
+            **kwargs: Additional settings for the connection:
 
-            # Initialize other services.
-            self._random = IBMRandomService(self) if self.credentials.extractor_url else None
-            self._experiment = IBMExperimentService(self) \
-                if self.credentials.experiment_url else None
-            self._runtime = IBMRuntimeService(self) \
-                if self.credentials.runtime_url else None
+                * proxies (dict): proxy configuration.
+                * verify (bool): verify the server's TLS certificate.
 
-            self._services = {'backend': self._backend,
-                              'random': self._random,
-                              'experiment': self._experiment,
-                              'runtime': self._runtime}
+        Returns:
+            Tuple of account_credentials, preferences, hub, group and project
+
+        Raises:
+            IBMProviderCredentialsInvalidFormat: If the default provider saved on
+                disk could not be parsed.
+            IBMProviderCredentialsNotFound: If no IBM Quantum credentials
+                can be found.
+            IBMProviderCredentialsInvalidUrl: If the URL specified is not
+                a valid IBM Quantum authentication URL.
+            IBMProviderCredentialsInvalidToken: If the `token` is not a valid
+                IBM Quantum token.
+        """
+        saved_hub = None
+        saved_group = None
+        saved_project = None
+        if token:
+            if not isinstance(token, str):
+                raise IBMProviderCredentialsInvalidToken(
+                    'Invalid IBM Quantum token '
+                    'found: "{}" of type {}.'.format(token, type(token)))
+            url = url or os.getenv('QISKIT_IBM_API_URL') or QISKIT_IBM_API_URL
+            account_credentials = Credentials(token=token, url=url, api_url=url, **kwargs)
+            preferences = {}  # type: Optional[Dict]
+        else:
+            # Check for valid credentials in env variables or qiskitrc file.
+            try:
+                saved_credentials, preferences = discover_credentials()
+            except HubGroupProjectInvalidStateError as ex:
+                raise IBMProviderCredentialsInvalidFormat(
+                    'Invalid provider (hub/group/project) data found {}'
+                    .format(str(ex))) from ex
+            credentials_list = list(saved_credentials.values())
+            if not credentials_list:
+                raise IBMProviderCredentialsNotFound(
+                    'No IBM Quantum credentials found.')
+            account_credentials = credentials_list[0]
+            if account_credentials.default_provider:
+                saved_hub, saved_group, saved_project = \
+                    account_credentials.default_provider.to_tuple()
+            else:
+                saved_hub = account_credentials.hub
+                saved_group = account_credentials.group
+                saved_project = account_credentials.project
+        version_info = cls._check_api_version(account_credentials)
+        # Check the URL is a valid authentication URL.
+        if not version_info['new_api'] or 'api-auth' not in version_info:
+            raise IBMProviderCredentialsInvalidUrl(
+                'The URL specified ({}) is not an IBM Quantum authentication URL. '
+                'Valid authentication URL: {}.'
+                .format(account_credentials.url, QISKIT_IBM_API_URL))
+        hub, group, project = cls._resolve_hub_group_project(
+            hub=hub, group=group, project=project, saved_hub=saved_hub, saved_group=saved_group,
+            saved_project=saved_project, url=account_credentials.url
+        )
+        return account_credentials, preferences, hub, group, project
+
+    @staticmethod
+    def _check_api_version(credentials: Credentials) -> Dict[str, Union[bool, str]]:
+        """Check the version of the remote server in a set of credentials.
+
+        Returns:
+            A dictionary with version information.
+        """
+        version_finder = VersionClient(credentials.base_url,
+                                       **credentials.connection_parameters())
+        return version_finder.version()
+
+    @classmethod
+    def _resolve_hub_group_project(
+            cls,
+            hub: Optional[str] = None,
+            group: Optional[str] = None,
+            project: Optional[str] = None,
+            saved_hub: Optional[str] = None,
+            saved_group: Optional[str] = None,
+            saved_project: Optional[str] = None,
+            url: Optional[str] = None
+    ) -> Tuple[str, str, str]:
+        """Resolve hub/group/project after looking up env variables and credentials saved on disk
+
+        Args:
+            hub: Name of the hub to use.
+            group: Name of the group to use.
+            project: Name of the project to use.
+            saved_hub: Name of the hub saved in QISKIT_IBM_HUB env variable or on disk.
+            saved_group: Name of the group saved in QISKIT_IBM_GROUP env variable or on disk.
+            saved_project: Name of the hub saved in QISKIT_IBM_PROJECT env variable or on disk.
+            url: URL for the IBM Quantum authentication server.
+
+        Returns:
+            Tuple of hub, group and project
+        """
+        # If any `hub`, `group`, or `project` is specified, make sure all are set.
+        if any([hub, group, project]):
+            return hub, group, project
+        if any([saved_hub, saved_group, saved_project]):
+            return saved_hub, saved_group, saved_project
+        if url == QISKIT_IBM_API_URL:
+            hub = 'ibm-q'
+            group = 'open'
+            project = 'main'
+        return hub, group, project
+
+    @classmethod
+    def _is_different_account(cls, token: str) -> bool:
+        first_provider = list(cls._providers.values())[0]
+        return token != first_provider.credentials.token
 
     @classmethod
     def _initialize_providers(
@@ -252,7 +337,6 @@ class IBMProvider(Provider):
             logger.warning('Credentials are already in use. The existing '
                            'account in the session will be replaced.')
             cls._disable_account()
-
         account = dict()  # type: Dict[str, Any]
         account['auth_client'] = AuthClient(credentials.token,
                                             credentials.base_url,
@@ -261,7 +345,6 @@ class IBMProvider(Provider):
         account['user_hubs'] = account['auth_client'].user_hubs()
         account['preferences'] = preferences or {}
         account['credentials'] = credentials
-
         for hub_info in account['user_hubs']:
             # Build the provider.
             try:
@@ -273,93 +356,16 @@ class IBMProvider(Provider):
                                hub_info, traceback.format_exc())
 
     @classmethod
-    def _resolve_credentials(
-            cls,
-            token: Optional[str] = None,
-            url: Optional[str] = None,
-            hub: Optional[str] = None,
-            group: Optional[str] = None,
-            project: Optional[str] = None,
-            **kwargs: Any
-    ) -> Tuple[Credentials, Dict, str, str, str]:
+    def _disable_account(cls) -> None:
+        """Disable the account currently in use for the session.
 
-        saved_hub = None
-        saved_group = None
-        saved_project = None
-
-        if token:
-            if not isinstance(token, str):
-                raise IBMProviderCredentialsInvalidToken(
-                    'Invalid IBM Quantum token '
-                    'found: "{}" of type {}.'.format(token, type(token)))
-            url = url or os.getenv('QISKIT_IBM_API_URL') or QISKIT_IBM_API_URL
-            account_credentials = Credentials(token=token, url=url, api_url=url, **kwargs)
-            preferences = {}  # type: Optional[Dict]
-        else:
-            # Check for valid credentials in env variables or qiskitrc file.
-            try:
-                saved_credentials, preferences = discover_credentials()
-            except HubGroupProjectInvalidStateError as ex:
-                raise IBMProviderCredentialsInvalidFormat(
-                    'Invalid provider (hub/group/project) data found {}'
-                    .format(str(ex))) from ex
-
-            credentials_list = list(saved_credentials.values())
-
-            if not credentials_list:
-                raise IBMProviderCredentialsNotFound(
-                    'No IBM Quantum credentials found.')
-
-            account_credentials = credentials_list[0]
-
-            if account_credentials.default_provider:
-                saved_hub, saved_group, saved_project = \
-                    account_credentials.default_provider.to_tuple()
-            else:
-                saved_hub = account_credentials.hub
-                saved_group = account_credentials.group
-                saved_project = account_credentials.project
-
-        version_info = cls._check_api_version(account_credentials)
-
-        # Check the URL is a valid authentication URL.
-        if not version_info['new_api'] or 'api-auth' not in version_info:
-            raise IBMProviderCredentialsInvalidUrl(
-                'The URL specified ({}) is not an IBM Quantum authentication URL. '
-                'Valid authentication URL: {}.'
-                .format(account_credentials.url, QISKIT_IBM_API_URL))
-
-        hub, group, project = cls._resolve_hub_group_project(
-            hub=hub, group=group, project=project, saved_hub=saved_hub, saved_group=saved_group,
-            saved_project=saved_project, url=account_credentials.url
-        )
-
-        return account_credentials, preferences, hub, group, project
-
-    @classmethod
-    def _resolve_hub_group_project(
-            cls,
-            hub: Optional[str] = None,
-            group: Optional[str] = None,
-            project: Optional[str] = None,
-            saved_hub: Optional[str] = None,
-            saved_group: Optional[str] = None,
-            saved_project: Optional[str] = None,
-            url: Optional[str] = None
-    ) -> Tuple[str, str, str]:
-        # If any `hub`, `group`, or `project` is specified, make sure all are set.
-        if any([hub, group, project]):
-            return hub, group, project
-
-        if any([saved_hub, saved_group, saved_project]):
-            return saved_hub, saved_group, saved_project
-
-        if url == QISKIT_IBM_API_URL:
-            hub = 'ibm-q'
-            group = 'open'
-            project = 'main'
-
-        return hub, group, project
+        Raises:
+            IBMProviderCredentialsNotFound: If no account is in use for the session.
+        """
+        if not cls._providers:
+            raise IBMProviderCredentialsNotFound(
+                'No IBM Quantum account is in use for the session.')
+        cls._providers = OrderedDict()
 
     @classmethod
     def _get_provider(
@@ -368,6 +374,20 @@ class IBMProvider(Provider):
             group: Optional[str] = None,
             project: Optional[str] = None,
     ) -> 'IBMProvider':
+        """Return a provider for a single hub/group/project combination.
+
+        Args:
+            hub: Name of the hub.
+            group: Name of the group.
+            project: Name of the project.
+
+        Returns:
+            A provider that matches the specified criteria.
+
+        Raises:
+            IBMProviderError: If no provider matches the specified criteria,
+                or more than one provider matches the specified criteria.
+        """
         providers = cls.providers(hub=hub, group=group, project=project)
         if not providers:
             raise IBMProviderError('No provider matches the specified criteria: '
@@ -379,6 +399,45 @@ class IBMProvider(Provider):
                                    .format(hub, group, project))
         return providers[0]
 
+    def __init__(
+            self,
+            token: Optional[str] = None,
+            url: Optional[str] = None,
+            hub: Optional[str] = None,
+            group: Optional[str] = None,
+            project: Optional[str] = None,
+            account: Optional[Dict] = None,
+            **kwargs: Any
+    ) -> None:
+        # pylint: disable=unused-argument
+        super().__init__()
+        if account:
+            self.credentials = self._construct_provider_credentials(
+                account['credentials'],
+                account['preferences'],
+                account['auth_client'],
+                account['service_urls'],
+                hub,
+                group,
+                project
+            )
+            self._api_client = AccountClient(self.credentials,
+                                             **self.credentials.connection_parameters())
+            # Initialize the internal list of backends.
+            self.__backends: Dict[str, IBMBackend] = {}
+            self._backend = IBMBackendService(self)
+            self.backends = self._backend.backends  # type: ignore[assignment]
+            # Initialize other services.
+            self._random = IBMRandomService(self) if self.credentials.extractor_url else None
+            self._experiment = IBMExperimentService(self) \
+                if self.credentials.experiment_url else None
+            self._runtime = IBMRuntimeService(self) \
+                if self.credentials.runtime_url else None
+            self._services = {'backend': self._backend,
+                              'random': self._random,
+                              'experiment': self._experiment,
+                              'runtime': self._runtime}
+
     def _construct_provider_credentials(
             self,
             account_credentials: Credentials,
@@ -389,6 +448,20 @@ class IBMProvider(Provider):
             group: str,
             project: str
     ) -> Credentials:
+        """Construct provider credentials based on resolved credentials, preferences, hgp
+
+        Args:
+            account_credentials: Credentials after authenticating with IBM Quantum,
+            preferences: Dictionary of saved user preferences,
+            auth_client: AuthClient for accessing IBM Quantum authentication services,
+            service_urls: Current service URLs,
+            hub: Name of the hub.
+            group: Name of the group.
+            project: Name of the project.
+
+        Returns:
+            Credentials for a single provider
+        """
         credentials = Credentials(
             account_credentials.token,
             access_token=auth_client.current_access_token(),
@@ -427,6 +500,263 @@ class IBMProvider(Provider):
         """
         self.__backends = value
 
+    def _discover_remote_backends(self, timeout: Optional[float] = None) -> Dict[str, IBMBackend]:
+        """Return the remote backends available for this provider.
+
+        Args:
+            timeout: Maximum number of seconds to wait for the discovery of
+                remote backends.
+
+        Returns:
+            A dict of the remote backend instances, keyed by backend name.
+        """
+        ret = OrderedDict()  # type: ignore[var-annotated]
+        configs_list = self._api_client.list_backends(timeout=timeout)
+        for raw_config in configs_list:
+            # Make sure the raw_config is of proper type
+            if not isinstance(raw_config, dict):
+                logger.warning("An error occurred when retrieving backend "
+                               "information. Some backends might not be available.")
+                continue
+            try:
+                decode_backend_configuration(raw_config)
+                try:
+                    config = PulseBackendConfiguration.from_dict(raw_config)
+                except (KeyError, TypeError):
+                    config = QasmBackendConfiguration.from_dict(raw_config)
+                backend_cls = IBMSimulator if config.simulator else IBMBackend
+                ret[config.backend_name] = backend_cls(
+                    configuration=config,
+                    provider=self,
+                    credentials=self.credentials,
+                    api_client=self._api_client)
+            except Exception:  # pylint: disable=broad-except
+                logger.warning(
+                    'Remote backend "%s" for provider %s could not be instantiated due to an '
+                    'invalid config: %s',
+                    raw_config.get('backend_name', raw_config.get('name', 'unknown')),
+                    repr(self), traceback.format_exc())
+        return ret
+
+    @property
+    def backend(self) -> IBMBackendService:
+        """Return the backend service.
+
+        Returns:
+            The backend service instance.
+        """
+        return self._backend
+
+    @property
+    def experiment(self) -> IBMExperimentService:
+        """Return the experiment service.
+
+        Returns:
+            The experiment service instance.
+
+        Raises:
+            IBMNotAuthorizedError: If the account is not authorized to use
+                the experiment service.
+        """
+        if self._experiment:
+            return self._experiment
+        else:
+            raise IBMNotAuthorizedError("You are not authorized to use the experiment service.")
+
+    @property
+    def random(self) -> IBMRandomService:
+        """Return the random number service.
+
+        Returns:
+            The random number service instance.
+
+        Raises:
+            IBMNotAuthorizedError: If the account is not authorized to use
+                the service.
+        """
+        if self._random:
+            return self._random
+        else:
+            raise IBMNotAuthorizedError("You are not authorized to use the service.")
+
+    @property
+    def runtime(self) -> IBMRuntimeService:
+        """Return the runtime service.
+
+        Returns:
+            The runtime service instance.
+
+        Raises:
+            IBMNotAuthorizedError: If the account is not authorized to use the service.
+        """
+        if self._runtime:
+            return self._runtime
+        else:
+            raise IBMNotAuthorizedError("You are not authorized to use the runtime service.")
+
+    @classmethod
+    def active_account(cls) -> Optional[Dict[str, str]]:
+        """Return the IBM Quantum account currently in use for the session.
+
+        Returns:
+            A dictionary with information about the account currently in the session,
+                None if there is no active account in session
+        """
+        if not cls._providers:
+            return None
+        first_provider = list(cls._providers.values())[0]
+        return {
+            'token': first_provider.credentials.token,
+            'url': first_provider.credentials.api_url
+        }
+
+    @classmethod
+    def providers(
+            cls,
+            token: Optional[str] = None,
+            url: Optional[str] = None,
+            hub: Optional[str] = None,
+            group: Optional[str] = None,
+            project: Optional[str] = None,
+            **kwargs: Any
+    ) -> List['IBMProvider']:
+        """Return a list of providers, subject to optional filtering.
+
+        Args:
+            token: IBM Quantum token.
+            url: URL for the IBM Quantum authentication server.
+            hub: Name of the hub.
+            group: Name of the group.
+            project: Name of the project.
+            **kwargs: Additional settings for the connection:
+
+                * proxies (dict): proxy configuration.
+                * verify (bool): verify the server's TLS certificate.
+
+        Returns:
+            A list of providers that match the specified criteria.
+        """
+        account_credentials, account_preferences, *_ = cls._resolve_credentials(
+            token=token,
+            url=url,
+            hub=hub,
+            group=group,
+            project=project,
+            **kwargs
+        )
+        if not cls._providers or cls._is_different_account(account_credentials.token):
+            cls._initialize_providers(credentials=account_credentials,
+                                      preferences=account_preferences)
+        filters = []  # type: List[Callable[[HubGroupProject], bool]]
+        if hub:
+            filters.append(lambda hgp: hgp.hub == hub)
+        if group:
+            filters.append(lambda hgp: hgp.group == group)
+        if project:
+            filters.append(lambda hgp: hgp.project == project)
+        providers = [provider for key, provider in cls._providers.items()
+                     if all(f(key) for f in filters)]
+        return providers
+
+    @staticmethod
+    def delete_account() -> None:
+        """Delete the saved account from disk.
+
+        Raises:
+            IBMProviderCredentialsNotFound: If no valid IBM Quantum
+                credentials can be found on disk.
+            IBMProviderCredentialsInvalidUrl: If invalid IBM Quantum
+                credentials are found on disk.
+        """
+        stored_credentials, _ = read_credentials_from_qiskitrc()
+        if not stored_credentials:
+            raise IBMProviderCredentialsNotFound(
+                'No IBM Quantum credentials found on disk.')
+        credentials = list(stored_credentials.values())[0]
+        if credentials.url != QISKIT_IBM_API_URL:
+            raise IBMProviderCredentialsInvalidUrl(
+                'Invalid IBM Quantum credentials found on disk. ')
+        remove_credentials(credentials)
+
+    @staticmethod
+    def save_account(
+            token: str,
+            url: str = QISKIT_IBM_API_URL,
+            hub: Optional[str] = None,
+            group: Optional[str] = None,
+            project: Optional[str] = None,
+            overwrite: bool = False,
+            **kwargs: Any
+    ) -> None:
+        """Save the account to disk for future use.
+
+        Note:
+            If storing a default provider to disk, all three parameters
+            `hub`, `group`, `project` must be specified.
+
+        Args:
+            token: IBM Quantum token.
+            url: URL for the IBM Quantum authentication server.
+            hub: Name of the hub for the default provider to store on disk.
+            group: Name of the group for the default provider to store on disk.
+            project: Name of the project for the default provider to store on disk.
+            overwrite: Overwrite existing credentials.
+            **kwargs:
+                * proxies (dict): Proxy configuration for the server.
+                * verify (bool): If False, ignores SSL certificates errors
+
+        Raises:
+            IBMProviderCredentialsInvalidUrl: If the `url` is not a valid
+                IBM Quantum authentication URL.
+            IBMProviderCredentialsInvalidToken: If the `token` is not a valid
+                IBM Quantum token.
+            IBMProviderValueError: If only one or two parameters from `hub`, `group`,
+                `project` are specified.
+        """
+        if url != QISKIT_IBM_API_URL:
+            raise IBMProviderCredentialsInvalidUrl(
+                'Invalid IBM Quantum credentials found.')
+        if not token or not isinstance(token, str):
+            raise IBMProviderCredentialsInvalidToken(
+                'Invalid IBM Quantum token '
+                'found: "{}" of type {}.'.format(token, type(token)))
+        # If any `hub`, `group`, or `project` is specified, make sure all parameters are set.
+        if any([hub, group, project]) and not all([hub, group, project]):
+            raise IBMProviderValueError('The hub, group, and project parameters must all be '
+                                        'specified when storing a default provider to disk: '
+                                        'hub = "{}", group = "{}", project = "{}"'
+                                        .format(hub, group, project))
+        # If specified, get the provider to store.
+        default_provider_hgp = HubGroupProject(hub, group, project) \
+            if all([hub, group, project]) else None
+        credentials = Credentials(token=token, url=url,
+                                  default_provider=default_provider_hgp, **kwargs)
+        store_credentials(credentials,
+                          overwrite=overwrite)
+
+    @staticmethod
+    def saved_account() -> Dict[str, str]:
+        """List the account saved on disk.
+
+        Returns:
+            A dictionary with information about the account saved on disk.
+
+        Raises:
+            IBMProviderCredentialsInvalidUrl: If invalid IBM Quantum
+                credentials are found on disk.
+        """
+        stored_credentials, _ = read_credentials_from_qiskitrc()
+        if not stored_credentials:
+            return {}
+        credentials = list(stored_credentials.values())[0]
+        if credentials.url != QISKIT_IBM_API_URL:
+            raise IBMProviderCredentialsInvalidUrl(
+                'Invalid IBM Quantum credentials found on disk.')
+        return {
+            'token': credentials.token,
+            'url': credentials.url
+        }
+
     def backends(
             self,
             name: Optional[str] = None,
@@ -457,45 +787,23 @@ class IBMProvider(Provider):
         # replaced by a `IBMBackendService` instance.
         pass
 
-    def _discover_remote_backends(self, timeout: Optional[float] = None) -> Dict[str, IBMBackend]:
-        """Return the remote backends available for this provider.
+    def has_service(self, name: str) -> bool:
+        """Check if this provider has access to the service.
 
         Args:
-            timeout: Maximum number of seconds to wait for the discovery of
-                remote backends.
+            name: Name of the service.
 
         Returns:
-            A dict of the remote backend instances, keyed by backend name.
+            Whether the provider has access to the service.
+
+        Raises:
+            IBMInputValueError: If an unknown service name is specified.
         """
-        ret = OrderedDict()  # type: ignore[var-annotated]
-        configs_list = self._api_client.list_backends(timeout=timeout)
-        for raw_config in configs_list:
-            # Make sure the raw_config is of proper type
-            if not isinstance(raw_config, dict):
-                logger.warning("An error occurred when retrieving backend "
-                               "information. Some backends might not be available.")
-                continue
-
-            try:
-                decode_backend_configuration(raw_config)
-                try:
-                    config = PulseBackendConfiguration.from_dict(raw_config)
-                except (KeyError, TypeError):
-                    config = QasmBackendConfiguration.from_dict(raw_config)
-                backend_cls = IBMSimulator if config.simulator else IBMBackend
-                ret[config.backend_name] = backend_cls(
-                    configuration=config,
-                    provider=self,
-                    credentials=self.credentials,
-                    api_client=self._api_client)
-            except Exception:  # pylint: disable=broad-except
-                logger.warning(
-                    'Remote backend "%s" for provider %s could not be instantiated due to an '
-                    'invalid config: %s',
-                    raw_config.get('backend_name', raw_config.get('name', 'unknown')),
-                    repr(self), traceback.format_exc())
-
-        return ret
+        if name not in self._services:
+            raise IBMInputValueError(f"Unknown service {name} specified.")
+        if self._services[name] is None:
+            return False
+        return True
 
     def run_circuits(
             self,
@@ -594,7 +902,6 @@ class IBMProvider(Provider):
             inputs['transpiler_options'] = transpiler_options
         if use_measure_esp is not None:
             inputs['use_measure_esp'] = use_measure_esp
-
         options = {'backend_name': backend.name()}
         return self.runtime.run('circuit-runner', options=options, inputs=inputs,
                                 result_decoder=RunnerResult)
@@ -615,10 +922,8 @@ class IBMProvider(Provider):
         """
         if name not in self._services:
             raise IBMInputValueError(f"Unknown service {name} specified.")
-
         if self._services[name] is None:
             raise IBMNotAuthorizedError("You are not authorized to use this service.")
-
         return self._services[name]
 
     def services(self) -> Dict:
@@ -628,82 +933,6 @@ class IBMProvider(Provider):
             All services available to this provider.
         """
         return {key: val for key, val in self._services.items() if val is not None}
-
-    def has_service(self, name: str) -> bool:
-        """Check if this provider has access to the service.
-
-        Args:
-            name: Name of the service.
-
-        Returns:
-            Whether the provider has access to the service.
-
-        Raises:
-            IBMInputValueError: If an unknown service name is specified.
-        """
-        if name not in self._services:
-            raise IBMInputValueError(f"Unknown service {name} specified.")
-
-        if self._services[name] is None:
-            return False
-
-        return True
-
-    @property
-    def backend(self) -> IBMBackendService:
-        """Return the backend service.
-
-        Returns:
-            The backend service instance.
-        """
-        return self._backend
-
-    @property
-    def experiment(self) -> IBMExperimentService:
-        """Return the experiment service.
-
-        Returns:
-            The experiment service instance.
-
-        Raises:
-            IBMNotAuthorizedError: If the account is not authorized to use
-                the experiment service.
-        """
-        if self._experiment:
-            return self._experiment
-        else:
-            raise IBMNotAuthorizedError("You are not authorized to use the experiment service.")
-
-    @property
-    def random(self) -> IBMRandomService:
-        """Return the random number service.
-
-        Returns:
-            The random number service instance.
-
-        Raises:
-            IBMNotAuthorizedError: If the account is not authorized to use
-                the service.
-        """
-        if self._random:
-            return self._random
-        else:
-            raise IBMNotAuthorizedError("You are not authorized to use the service.")
-
-    @property
-    def runtime(self) -> IBMRuntimeService:
-        """Return the runtime service.
-
-        Returns:
-            The runtime service instance.
-
-        Raises:
-            IBMNotAuthorizedError: If the account is not authorized to use the service.
-        """
-        if self._runtime:
-            return self._runtime
-        else:
-            raise IBMNotAuthorizedError("You are not authorized to use the runtime service.")
 
     def __eq__(
             self,
@@ -716,206 +945,4 @@ class IBMProvider(Provider):
     def __repr__(self) -> str:
         credentials_info = "hub='{}', group='{}', project='{}'".format(
             self.credentials.hub, self.credentials.group, self.credentials.project)
-
-        return "<{}({})>".format(
-            self.__class__.__name__, credentials_info)
-
-    @classmethod
-    def _disable_account(cls) -> None:
-        """Disable the account currently in use for the session.
-
-        Raises:
-            IBMProviderCredentialsNotFound: If no account is in use for the session.
-        """
-        if not cls._providers:
-            raise IBMProviderCredentialsNotFound(
-                'No IBM Quantum account is in use for the session.')
-        cls._providers = OrderedDict()
-
-    @classmethod
-    def active_account(cls) -> Optional[Dict[str, str]]:
-        """Return the IBM Quantum account currently in use for the session.
-
-        Returns:
-            Information about the account currently in the session.
-        """
-        if not cls._providers:
-            return None
-        first_provider = list(cls._providers.values())[0]
-        return {
-            'token': first_provider.credentials.token,
-            'url': first_provider.credentials.api_url
-        }
-
-    @classmethod
-    def providers(
-            cls,
-            token: Optional[str] = None,
-            url: Optional[str] = None,
-            hub: Optional[str] = None,
-            group: Optional[str] = None,
-            project: Optional[str] = None,
-            **kwargs: Any
-    ) -> List['IBMProvider']:
-        """Return a list of providers, subject to optional filtering.
-
-        Args:
-            token: IBM Quantum token.
-            url: URL for the IBM Quantum authentication server.
-            hub: Name of the hub.
-            group: Name of the group.
-            project: Name of the project.
-            **kwargs: Additional settings for the connection:
-
-                * proxies (dict): proxy configuration.
-                * verify (bool): verify the server's TLS certificate.
-
-        Returns:
-            A list of providers that match the specified criteria.
-        """
-        account_credentials, account_preferences, *_ = cls._resolve_credentials(
-            token=token,
-            url=url,
-            hub=hub,
-            group=group,
-            project=project,
-            **kwargs
-        )
-        if not cls._providers or cls._is_different_account(account_credentials.token):
-            cls._initialize_providers(credentials=account_credentials,
-                                      preferences=account_preferences)
-
-        filters = []  # type: List[Callable[[HubGroupProject], bool]]
-
-        if hub:
-            filters.append(lambda hgp: hgp.hub == hub)
-        if group:
-            filters.append(lambda hgp: hgp.group == group)
-        if project:
-            filters.append(lambda hgp: hgp.project == project)
-
-        providers = [provider for key, provider in cls._providers.items()
-                     if all(f(key) for f in filters)]
-
-        return providers
-
-    @staticmethod
-    def save_account(
-            token: str,
-            url: str = QISKIT_IBM_API_URL,
-            hub: Optional[str] = None,
-            group: Optional[str] = None,
-            project: Optional[str] = None,
-            overwrite: bool = False,
-            **kwargs: Any
-    ) -> None:
-        """Save the account to disk for future use.
-
-        Note:
-            If storing a default provider to disk, all three parameters
-            `hub`, `group`, `project` must be specified.
-
-        Args:
-            token: IBM Quantum token.
-            url: URL for the IBM Quantum authentication server.
-            hub: Name of the hub for the default provider to store on disk.
-            group: Name of the group for the default provider to store on disk.
-            project: Name of the project for the default provider to store on disk.
-            overwrite: Overwrite existing credentials.
-            **kwargs:
-                * proxies (dict): Proxy configuration for the server.
-                * verify (bool): If False, ignores SSL certificates errors
-
-        Raises:
-            IBMProviderCredentialsInvalidUrl: If the `url` is not a valid
-                IBM Quantum authentication URL.
-            IBMProviderCredentialsInvalidToken: If the `token` is not a valid
-                IBM Quantum token.
-            IBMProviderValueError: If only one or two parameters from `hub`, `group`,
-                `project` are specified.
-        """
-        if url != QISKIT_IBM_API_URL:
-            raise IBMProviderCredentialsInvalidUrl(
-                'Invalid IBM Quantum credentials found.')
-
-        if not token or not isinstance(token, str):
-            raise IBMProviderCredentialsInvalidToken(
-                'Invalid IBM Quantum token '
-                'found: "{}" of type {}.'.format(token, type(token)))
-
-        # If any `hub`, `group`, or `project` is specified, make sure all parameters are set.
-        if any([hub, group, project]) and not all([hub, group, project]):
-            raise IBMProviderValueError('The hub, group, and project parameters must all be '
-                                        'specified when storing a default provider to disk: '
-                                        'hub = "{}", group = "{}", project = "{}"'
-                                        .format(hub, group, project))
-
-        # If specified, get the provider to store.
-        default_provider_hgp = HubGroupProject(hub, group, project) \
-            if all([hub, group, project]) else None
-
-        credentials = Credentials(token=token, url=url,
-                                  default_provider=default_provider_hgp, **kwargs)
-
-        store_credentials(credentials,
-                          overwrite=overwrite)
-
-    @staticmethod
-    def delete_account() -> None:
-        """Delete the saved account from disk.
-
-        Raises:
-            IBMProviderCredentialsNotFound: If no valid IBM Quantum
-                credentials can be found on disk.
-            IBMProviderCredentialsInvalidUrl: If invalid IBM Quantum
-                credentials are found on disk.
-        """
-        stored_credentials, _ = read_credentials_from_qiskitrc()
-        if not stored_credentials:
-            raise IBMProviderCredentialsNotFound(
-                'No IBM Quantum credentials found on disk.')
-
-        credentials = list(stored_credentials.values())[0]
-
-        if credentials.url != QISKIT_IBM_API_URL:
-            raise IBMProviderCredentialsInvalidUrl(
-                'Invalid IBM Quantum credentials found on disk. ')
-
-        remove_credentials(credentials)
-
-    @staticmethod
-    def saved_account() -> Dict[str, str]:
-        """List the account saved on disk.
-
-        Returns:
-            A dictionary with information about the account stored on disk.
-
-        Raises:
-            IBMProviderCredentialsInvalidUrl: If invalid IBM Quantum
-                credentials are found on disk.
-        """
-        stored_credentials, _ = read_credentials_from_qiskitrc()
-        if not stored_credentials:
-            return {}
-
-        credentials = list(stored_credentials.values())[0]
-
-        if credentials.url != QISKIT_IBM_API_URL:
-            raise IBMProviderCredentialsInvalidUrl(
-                'Invalid IBM Quantum credentials found on disk.')
-
-        return {
-            'token': credentials.token,
-            'url': credentials.url
-        }
-
-    @staticmethod
-    def _check_api_version(credentials: Credentials) -> Dict[str, Union[bool, str]]:
-        """Check the version of the remote server in a set of credentials.
-
-        Returns:
-            A dictionary with version information.
-        """
-        version_finder = VersionClient(credentials.base_url,
-                                       **credentials.connection_parameters())
-        return version_finder.version()
+        return "<{}({})>".format(self.__class__.__name__, credentials_info)
