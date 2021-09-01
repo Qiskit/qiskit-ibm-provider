@@ -26,6 +26,7 @@ from qiskit.providers.jobstatus import JobStatus
 from qiskit.providers.exceptions import JobError
 
 from qiskit_ibm import IBMQBackend
+from qiskit_ibm.apiconstants import API_JOB_NON_FINAL_STATES
 from ..job.ibmqjob import IBMQJob
 from ..job.exceptions import IBMQJobTimeoutError
 from ..exceptions import IBMQBackendJobLimitError
@@ -118,8 +119,7 @@ class ManagedJob:
                         job_tags=job_tags,
                         **run_config)
                 except IBMQBackendJobLimitError:
-                    non_final_states = ["CREATED", "TRANSPILING", "TRANSPILED", "VALIDATING",
-                                        "VALIDATED", "RUNNING", "PENDING_IN_QUEUE", "QUEUED"]
+                    non_final_states = [state.value for state in API_JOB_NON_FINAL_STATES]
                     oldest_running = backend.jobs(
                         limit=1, descending=False, status=non_final_states)
                     if oldest_running:
