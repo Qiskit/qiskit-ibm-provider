@@ -445,9 +445,9 @@ class TestIBMQJob(IBMQTestCase):
             self.assertTrue(isinstance(new_job.backend(), IBMQRetiredBackend))
             self.assertNotEqual(new_job.backend().name(), 'unknown')
 
-            new_job2 = self.provider.backend.jobs(start_datetime=self.last_month)[0]
-            self.assertTrue(isinstance(new_job2.backend(), IBMQRetiredBackend))
-            self.assertNotEqual(new_job2.backend().name(), 'unknown')
+            last_month_jobs = map(lambda job: job.job_id(),
+                                  self.provider.backend.jobs(start_datetime=self.last_month))
+            self.assertIn(new_job.job_id(), last_month_jobs)
         finally:
             self.provider._backends = saved_backends
 
