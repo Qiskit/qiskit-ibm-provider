@@ -210,7 +210,6 @@ class RuntimeDecoder(json.JSONDecoder):
 
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(object_hook=self.object_hook, *args, **kwargs)
-        self._use_int_keys = False  # Force conversion from int strings to integers
 
     def object_hook(self, obj: Any) -> Any:
         """Called to decode object."""
