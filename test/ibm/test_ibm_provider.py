@@ -165,14 +165,15 @@ class TestIBMProviderEnableAccount(IBMTestCase):
 
         self.assertIn('No IBM Quantum credentials found.', str(context_manager.exception))
 
-    # @requires_qe_access
-    # def test_discover_backend_failed(self, qe_token, qe_url):
-    #     """Test discovering backends failed."""
-    #     with mock.patch.object(AccountClient, 'list_backends',
-    #                            return_value=[{'backend_name': 'bad_backend'}]):
-    #         with self.assertLogs(ibm_provider.logger, level='WARNING') as context_manager:
-    #             IBMProvider(qe_token, qe_url)
-    #     self.assertIn('bad_backend', str(context_manager.output))
+    @requires_qe_access
+    def test_discover_backend_failed(self, qe_token, qe_url):
+        """Test discovering backends failed."""
+        with mock.patch.object(AccountClient, 'list_backends',
+                               return_value=[{'backend_name': 'bad_backend'}]):
+            with self.assertLogs(ibm_provider.logger, level='WARNING') as context_manager:
+                IBMProvider._disable_account()
+                IBMProvider(qe_token, qe_url)
+        self.assertIn('bad_backend', str(context_manager.output))
 
 
 @skipIf(os.name == 'nt', 'Test not supported in Windows')
@@ -336,8 +337,7 @@ class TestIBMProviderAccounts(IBMTestCase):
 
     @requires_qe_access
     def test_active_account(self, qe_token, qe_url):
-        """Test active for an account """
-        IBMProvider._disable_account()
+        """Test get active account """
         self.assertIsNone(IBMProvider.active_account())
 
         IBMProvider(qe_token, qe_url)
@@ -394,8 +394,8 @@ class TestIBMProviderProvider(IBMTestCase):
         self.assertIn(self.provider, providers_list)
 
 
-class TestIBMProvider(IBMTestCase, providers.ProviderTestCase):
-    """Tests for the IBMProvider class."""
+class TestIBMProviderServices(IBMTestCase, providers.ProviderTestCase):
+    """Tests for services provided by the IBMProvider class."""
 
     provider_cls = IBMProvider
     backend_name = 'ibmq_qasm_simulator'
