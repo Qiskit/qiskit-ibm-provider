@@ -140,23 +140,6 @@ class TestRuntime(IBMQTestCase):
                     decoded = [decoded]
                 self.assertTrue(all(isinstance(item, QuantumCircuit) for item in decoded))
 
-    def test_coder_on_dicts_with_int_keys(self):
-        """Test runtime encoder and decoder on dicts with integer keys."""
-        subtests = (
-            {1: 23, 4: 56},
-            {1: 23, 4: 56, 7: {8: 10, 9: 10}},
-            {'1': 23, '4': {56: {78: 90}}},
-            {'1': 23, '4': 56, '7': [{8: 90}]},
-            {'1': 23, '4': 56},
-            [{1: 2}, {3: {4: 5}}, {'6': 7}]
-        )
-
-        for obj in subtests:
-            encoded = json.dumps(obj, cls=RuntimeEncoder)
-            self.assertIsInstance(encoded, str)
-            decoded = json.loads(encoded, cls=RuntimeDecoder)
-            self.assertEqual(decoded, obj)
-
     def test_coder_operators(self):
         """Test runtime encoder and decoder for operators."""
         x = Parameter("x")

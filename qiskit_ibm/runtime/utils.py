@@ -20,7 +20,6 @@ import importlib
 import inspect
 import io
 import json
-import re
 import warnings
 import zlib
 from datetime import date
@@ -39,9 +38,6 @@ from qiskit.circuit import (Instruction, ParameterExpression, QuantumCircuit,
                             qpy_serialization)
 from qiskit.circuit.library import BlueprintCircuit
 from qiskit.result import Result
-
-FLAGS = re.VERBOSE | re.MULTILINE | re.DOTALL
-WHITESPACE = re.compile(r'[ \t\n\r]*', FLAGS)
 
 
 def _serialize_and_encode(
@@ -114,11 +110,11 @@ def deserialize_from_settings(mod_name: str, class_name: str, settings: Dict) ->
     raise ValueError(f"Unable to find class {class_name} in module {mod_name}")
 
 
-def _set_int_keys_flag(obj: Union[Dict, List]) -> Union[Dict, List]:
+def _set_int_keys_flag(obj: Dict) -> Union[Dict, List]:
     """Recursively sets '__int_keys__' flag if dictionary uses integer keys
 
     Args:
-        obj: dictionary or list
+        obj: dictionary
 
     Returns:
         obj with the '__int_keys__' flag set if dictionary uses integer key
@@ -128,29 +124,6 @@ def _set_int_keys_flag(obj: Union[Dict, List]) -> Union[Dict, List]:
             if isinstance(k, int):
                 obj['__int_keys__'] = True
             _set_int_keys_flag(v)
-    elif isinstance(obj, list):
-        for item in obj:
-            _set_int_keys_flag(item)
-    return obj
-
-
-def _remove_int_keys_flag(obj: Union[Dict, List]) -> Union[Dict, List]:
-    """Recursively removes '__int_keys__' flag
-
-    Args:
-        obj: dictionary or list
-
-    Returns:
-        obj without the '__int_keys__' flag
-    """
-    if isinstance(obj, dict):
-        if '__int_keys__' in obj:
-            del obj['__int_keys__']
-        for _, v in list(obj.items()):
-            _remove_int_keys_flag(v)
-    elif isinstance(obj, list):
-        for item in obj:
-            _remove_int_keys_flag(item)
     return obj
 
 
@@ -163,21 +136,21 @@ def _cast_strings_keys_to_int(obj: Dict) -> Dict:
     Returns:
         obj with string keys cast to int keys and '__int_keys__' flags removed
     """
-    if '__int_keys__' in obj:
-        del obj['__int_keys__']
-        keys_to_add: List[int] = []
-        # Cast integer keys disguised as strings back to integer keys
-        for key in obj.keys():
-            try:
-                keys_to_add.insert(0, int(key))
-            except ValueError:
-                pass
-
-        # Remove string keys and replace with int keys
-        while len(keys_to_add) > 0:
-            key = keys_to_add.pop()
+    if isinstance(obj, dict):
+        int_keys: List[int] = []
+        for k, v in list(obj.items()):
+            if '__int_keys__' in obj:
+                try:
+                    int_keys.append(int(k))
+                except ValueError:
+                    pass
+            _cast_strings_keys_to_int(v)
+        while len(int_keys) > 0:
+            key = int_keys.pop()
             obj[key] = obj[str(key)]
             obj.pop(str(key))
+        if '__int_keys__' in obj:
+            del obj['__int_keys__']
     return obj
 
 
@@ -231,14 +204,6 @@ class RuntimeEncoder(json.JSONEncoder):
             return {'__type__': 'spmatrix', '__value__': value}
         return super().default(obj)
 
-    def encode(self, obj: Any) -> str:  # pylint: disable=arguments-differ
-        if isinstance(obj, (dict, list)):
-            obj = _set_int_keys_flag(obj)
-        encoded = super().encode(obj)
-        if isinstance(obj, (dict, list)):
-            obj = _remove_int_keys_flag(obj)
-        return encoded
-
 
 class RuntimeDecoder(json.JSONDecoder):
     """JSON Decoder used by runtime service."""
@@ -281,15 +246,4 @@ class RuntimeDecoder(json.JSONDecoder):
                 return _decode_and_deserialize(obj_val, scipy.sparse.load_npz, False)
             if obj_type == 'to_json':
                 return obj_val
-        if isinstance(obj, dict) and self._use_int_keys:
-            return _cast_strings_keys_to_int(obj)
         return obj
-
-    def decode(self, s: Any, _w: Any = WHITESPACE.match) -> Any:  # pylint: disable=arguments-differ
-        """Return the Python representation of ``s`` (a ``str`` instance
-        containing a JSON document).
-
-        """
-        self._use_int_keys = s.find('"__int_keys__": true') > 0
-        decoded = super(RuntimeDecoder, self).decode(s, _w)
-        return decoded
