@@ -54,6 +54,7 @@ API_JOB_FINAL_STATES = (
 )
 
 API_JOB_NON_FINAL_STATES = (
+    ApiJobStatus.CREATING,
     ApiJobStatus.CREATED,
     ApiJobStatus.TRANSPILING,
     ApiJobStatus.TRANSPILED,
