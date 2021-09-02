@@ -251,10 +251,7 @@ class TestIBMQJob(IBMQTestCase):
         statuses_to_filter = [JobStatus.ERROR, JobStatus.CANCELLED]
         status_filters = [
             {'status': [JobStatus.ERROR, JobStatus.CANCELLED]},
-            {'status': [JobStatus.CANCELLED]},
-            {'status': [JobStatus.ERROR]}
         ]
-
         job_to_cancel = submit_and_cancel(backend=self.sim_backend)
         job_to_fail = submit_job_bad_shots(backend=self.sim_backend)
         job_to_fail.wait_for_final_state()
