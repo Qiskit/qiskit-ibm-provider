@@ -11,7 +11,7 @@
 # that they have been altered from the originals.
 
 """Tests for the IBMProvider class."""
-# pylint: disable=unused-import
+
 from datetime import datetime
 import os
 from unittest import skipIf, mock
