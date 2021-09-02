@@ -209,20 +209,10 @@ class TestIBMQJob(IBMQTestCase):
         job_2 = backend_2.run(transpile(ReferenceCircuits.bell(), backend_2))
 
         # test a retrieved job's backend is the same as the queried backend
-        self.assertEqual(backend_1.retrieve_job(job_1.job_id()).backend().name(),
+        self.assertEqual(provider.backend.retrieve_job(job_1.job_id()).backend().name(),
                          backend_1.name())
-        self.assertEqual(backend_2.retrieve_job(job_2.job_id()).backend().name(),
+        self.assertEqual(provider.backend.retrieve_job(job_2.job_id()).backend().name(),
                          backend_2.name())
-
-        # test retrieve requests for jobs that exist on other backends throw errors
-        with self.assertWarns(Warning) as context_manager:
-            self.assertRaises(IBMQBackendError,
-                              backend_1.retrieve_job, job_2.job_id())
-        self.assertIn('belongs to', str(context_manager.warning))
-        with self.assertWarns(Warning) as context_manager:
-            self.assertRaises(IBMQBackendError,
-                              backend_2.retrieve_job, job_1.job_id())
-        self.assertIn('belongs to', str(context_manager.warning))
 
         # Cleanup
         for job in [job_1, job_2]:
@@ -611,7 +601,7 @@ class TestIBMQJob(IBMQTestCase):
                         self.sim_backend.run(self.bell)
 
                 self.assertTrue(job_id, "Job ID not saved.")
-                job = self.sim_backend.retrieve_job(job_id[0])
+                job = self.provider.backend.retrieve_job(job_id[0])
                 self.assertEqual(job.status(), JobStatus.CANCELLED,
                                  f"Job {job.job_id()} status is {job.status()} and not cancelled!")
 

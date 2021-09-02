@@ -113,7 +113,6 @@ class TestIBMQIntegration(IBMQTestCase):
     @requires_private_provider
     def test_private_job(self, provider):
         """Test a private job."""
-        print('does this job run ')
         backend = provider.get_backend('ibmq_qasm_simulator')
         qc = ReferenceCircuits.bell()
         job = execute(qc, backend=backend)
