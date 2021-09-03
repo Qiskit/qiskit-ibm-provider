@@ -59,31 +59,32 @@ class TestCredentials(IBMTestCase):
         self.assertIn('No IBM Quantum credentials found',
                       str(context_manager.exception))
 
-    # def test_store_credentials_overwrite(self) -> None:
-    #     """Test overwriting qiskitrc credentials."""
-    #     credentials = Credentials('QISKITRC_TOKEN', url=QISKIT_IBM_API_URL)
-    #     credentials2 = Credentials('QISKITRC_TOKEN_2', url=QISKIT_IBM_API_URL)
+    def test_store_credentials_overwrite(self) -> None:
+        """Test overwriting qiskitrc credentials."""
+        credentials = Credentials('QISKITRC_TOKEN', url=QISKIT_IBM_API_URL)
+        credentials2 = Credentials('QISKITRC_TOKEN_2', url=QISKIT_IBM_API_URL)
 
-    #     with custom_qiskitrc():
-    #         store_credentials(credentials)
-    #         # Cause all warnings to always be triggered.
-    #         warnings.simplefilter("always")
+        with custom_qiskitrc():
+            store_credentials(credentials)
+            # Cause all warnings to always be triggered.
+            warnings.simplefilter("always")
 
-    #         # Get the logger for `store_credentials`.
-    #         config_rc_logger = logging.getLogger(store_credentials.__module__)
+            # Get the logger for `store_credentials`.
+            config_rc_logger = logging.getLogger(store_credentials.__module__)
 
-    #         # Attempt overwriting.
-    #         with self.assertLogs(logger=config_rc_logger, level='WARNING') as log_records:
-    #             store_credentials(credentials)
-    #             self.assertIn('already present', log_records.output[0])
+            # Attempt overwriting.
+            with self.assertLogs(logger=config_rc_logger, level='WARNING') as log_records:
+                store_credentials(credentials)
+                self.assertIn('already present', log_records.output[0])
 
-    #         with no_envs(CREDENTIAL_ENV_VARS), mock_ibm_provider():
-    #             # Attempt overwriting.
-    #             store_credentials(credentials2, overwrite=True)
-    #             IBMProvider()
+            with no_envs(CREDENTIAL_ENV_VARS), mock_ibm_provider():
+                # Attempt overwriting.
+                store_credentials(credentials2, overwrite=True)
+                provider = IBMProvider()
 
-    #     # Ensure that the credentials are the overwritten ones.
-    #     self.assertEqual(IBMProvider._credentials, credentials2)
+        # Ensure that the credentials are the overwritten ones.
+        # pylint: disable=unsubscriptable-object
+        self.assertEqual(provider['credentials'].token, credentials2.token)
 
     def test_environ_over_qiskitrc(self) -> None:
         """Test credential discovery order."""
