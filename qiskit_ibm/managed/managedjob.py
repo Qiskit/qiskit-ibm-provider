@@ -121,8 +121,9 @@ class ManagedJob:
                         **run_config)
                 except IBMQBackendJobLimitError:
                     final_states = [state.value for state in API_JOB_FINAL_STATES]
-                    oldest_running = backend.jobs(limit=1, descending=False,
-                                                  db_filter={"status": {"nin": final_states}})
+                    provider = backend.provider()
+                    oldest_running = provider.backend.jobs(limit=1, descending=False, db_filter={
+                        "status": {"nin": final_states}})
                     if oldest_running:
                         oldest_running = oldest_running[0]
                         logger.warning("Job limit reached, waiting for job %s to finish "

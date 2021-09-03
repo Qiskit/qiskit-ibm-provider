@@ -28,7 +28,6 @@ from qiskit.qobj import QasmQobj, PulseQobj
 from qiskit.qobj.utils import MeasLevel, MeasReturnType
 from qiskit.providers.backend import BackendV1 as Backend
 from qiskit.providers.options import Options
-from qiskit.providers.jobstatus import JobStatus
 from qiskit.providers.models import (BackendStatus, BackendProperties,
                                      PulseDefaults, GateConfig)
 from qiskit.tools.events.pubsub import Publisher
@@ -552,81 +551,6 @@ class IBMQBackend(Backend):
 
         return job_limit.maximum_jobs - job_limit.active_jobs
 
-    def jobs(
-            self,
-            limit: int = 10,
-            skip: int = 0,
-            status: Optional[Union[JobStatus, str, List[Union[JobStatus, str]]]] = None,
-            job_name: Optional[str] = None,
-            start_datetime: Optional[python_datetime] = None,
-            end_datetime: Optional[python_datetime] = None,
-            job_tags: Optional[List[str]] = None,
-            job_tags_operator: Optional[str] = "OR",
-            experiment_id: Optional[str] = None,
-            descending: bool = True,
-            db_filter: Optional[Dict[str, Any]] = None
-    ) -> List[IBMQJob]:
-        """Return the jobs submitted to this backend, subject to optional filtering.
-
-        Retrieve jobs submitted to this backend that match the given filters
-        and paginate the results if desired. Note that the server has a limit for the
-        number of jobs returned in a single call. As a result, this function might involve
-        making several calls to the server. See also the `skip` parameter for more control
-        over pagination.
-
-        Args:
-            limit: Number of jobs to retrieve.
-            skip: Starting index for the job retrieval.
-            status: Only get jobs with this status or one of the statuses.
-                For example, you can specify `status=JobStatus.RUNNING` or `status="RUNNING"`
-                or `status=["RUNNING", "ERROR"]`
-            job_name: Filter by job name. The `job_name` is matched partially
-                and `regular expressions
-                <https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions>`_
-                can be used.
-            start_datetime: Filter by the given start date, in local time. This is used to
-                find jobs whose creation dates are after (greater than or equal to) this
-                local date/time.
-            end_datetime: Filter by the given end date, in local time. This is used to
-                find jobs whose creation dates are before (less than or equal to) this
-                local date/time.
-            job_tags: Filter by tags assigned to jobs.
-            job_tags_operator: Logical operator to use when filtering by job tags. Valid
-                values are "AND" and "OR":
-
-                    * If "AND" is specified, then a job must have all of the tags
-                      specified in ``job_tags`` to be included.
-                    * If "OR" is specified, then a job only needs to have any
-                      of the tags specified in ``job_tags`` to be included.
-            experiment_id: Filter by job experiment ID.
-            descending: If ``True``, return the jobs in descending order of the job
-                creation date (newest first). If ``False``, return in ascending order.
-            db_filter: A `loopback-based filter
-                <https://loopback.io/doc/en/lb2/Querying-data.html>`_.
-                This is an interface to a database ``where`` filter. Some
-                examples of its usage are:
-
-                Filter last five jobs with errors::
-
-                   job_list = backend.jobs(limit=5, status=JobStatus.ERROR)
-
-                Filter last five jobs with hub name ``ibm-q``::
-
-                  filter = {'hubInfo.hub.name': 'ibm-q'}
-                  job_list = backend.jobs(limit=5, db_filter=filter)
-
-        Returns:
-            A list of jobs that match the criteria.
-
-        Raises:
-            IBMQBackendValueError: If a keyword value is not recognized.
-        """
-        return self._provider.backend.jobs(
-            limit=limit, skip=skip, backend_name=self.name(), status=status,
-            job_name=job_name, start_datetime=start_datetime, end_datetime=end_datetime,
-            job_tags=job_tags, job_tags_operator=job_tags_operator,
-            experiment_id=experiment_id, descending=descending, db_filter=db_filter)
-
     def active_jobs(self, limit: int = 10) -> List[IBMQJob]:
         """Return the unfinished jobs submitted to this backend.
 
@@ -645,8 +569,8 @@ class IBMQBackend(Backend):
         active_job_states = list({api_status_to_job_status(status)
                                   for status in ApiJobStatus
                                   if status not in API_JOB_FINAL_STATES})
-
-        return self.jobs(status=active_job_states, limit=limit)
+        provider = self.provider()
+        return provider.backend.jobs(status=active_job_states, limit=limit)
 
     def reservations(
             self,
@@ -826,8 +750,7 @@ class IBMQSimulator(IBMQBackend):
             job_name: Custom name to be assigned to the job. This job
                 name can subsequently be used as a filter in the
                 :meth:`jobs` method. Job names do not need to be unique.
-            job_tags: Tags to be assigned to the jobs. The tags can subsequently be used
-                as a filter in the :meth:`IBMQBackend.jobs()<IBMQBackend.jobs>` method.
+            job_tags: Tags to be assigned to the jobs.
             experiment_id: Used to add a job to an "experiment", which is a collection
                 of jobs and additional metadata.
             backend_options: DEPRECATED dictionary of backend options for the execution.

@@ -12,7 +12,6 @@
 
 """IBMQBackend Test."""
 
-from inspect import getfullargspec
 from datetime import timedelta, datetime
 from unittest import SkipTest
 from unittest.mock import patch
@@ -20,8 +19,6 @@ from unittest.mock import patch
 from qiskit import QuantumCircuit, transpile, assemble
 from qiskit.providers.models import QasmBackendConfiguration
 from qiskit.test.reference_circuits import ReferenceCircuits
-from qiskit_ibm.ibmqbackend import IBMQBackend
-from qiskit_ibm.ibmqbackendservice import IBMQBackendService
 
 from ..ibmqtestcase import IBMQTestCase
 from ..decorators import requires_device, requires_provider
@@ -38,33 +35,6 @@ class TestIBMQBackend(IBMQTestCase):
         # pylint: disable=arguments-differ
         super().setUpClass()
         cls.backend = backend
-
-    def test_backend_jobs_signature(self):
-        """Test ``IBMQBackend.jobs()`` signature is similar to ``IBMQBackendService.jobs()``.
-
-        Ensure that the parameter list of ``IBMQBackend.jobs()`` is a subset of that
-        of ``IBMQBackendService.jobs()``.
-        """
-        # Acceptable params `IBMQBackendService.jobs` has that `IBMQBackend.jobs` does not.
-        acceptable_differing_params = {'backend_name'}
-
-        # Retrieve parameter lists for both classes.
-        backend_jobs_params = set(
-            getattr(getfullargspec(IBMQBackend.jobs), 'args', [])
-        )
-        backend_service_jobs_params = set(
-            getattr(getfullargspec(IBMQBackendService.jobs), 'args', [])
-        )
-
-        # Ensure parameter lists not empty
-        self.assertTrue(backend_jobs_params)
-        self.assertTrue(backend_service_jobs_params)
-
-        # Remove acceptable params from `IBMQBackendService.jobs`.
-        backend_service_jobs_params.difference_update(acceptable_differing_params)
-
-        # Ensure method signatures are similar, other than the acceptable differences.
-        self.assertEqual(backend_service_jobs_params, backend_jobs_params)
 
     def test_backend_status(self):
         """Check the status of a real chip."""

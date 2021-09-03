@@ -354,7 +354,7 @@ class TestIBMQJobAttributes(IBMQTestCase):
         job_tags = [uuid.uuid4().hex, uuid.uuid4().hex, uuid.uuid4().hex]
         job = self.sim_backend.run(self.bell, job_tags=job_tags)
 
-        rjobs = self.sim_backend.jobs(
+        rjobs = self.provider.backend.jobs(
             job_tags=['phantom_tag'], start_datetime=self.last_week)
         self.assertEqual(len(rjobs), 0,
                          "Expected job {}, got {}".format(job.job_id(), rjobs))
@@ -363,7 +363,7 @@ class TestIBMQJobAttributes(IBMQTestCase):
         tags_to_check = [job_tags, job_tags[1:2], job_tags[0:1]+['phantom_tag']]
         for tags in tags_to_check:
             with self.subTest(tags=tags):
-                rjobs = self.sim_backend.jobs(job_tags=tags, start_datetime=self.last_week)
+                rjobs = self.provider.backend.jobs(job_tags=tags, start_datetime=self.last_week)
                 self.assertEqual(len(rjobs), 1,
                                  "Expected job {}, got {}".format(job.job_id(), rjobs))
                 self.assertEqual(rjobs[0].job_id(), job.job_id())
@@ -377,7 +377,7 @@ class TestIBMQJobAttributes(IBMQTestCase):
 
         no_rjobs_tags = [job_tags[0:1]+['phantom_tags'], ['phantom_tag']]
         for tags in no_rjobs_tags:
-            rjobs = self.sim_backend.jobs(
+            rjobs = self.provider.backend.jobs(
                 job_tags=tags, job_tags_operator="AND", start_datetime=self.last_week)
             self.assertEqual(len(rjobs), 0,
                              "Expected job {}, got {}".format(job.job_id(), rjobs))
@@ -385,7 +385,7 @@ class TestIBMQJobAttributes(IBMQTestCase):
         has_rjobs_tags = [job_tags, job_tags[1:3]]
         for tags in has_rjobs_tags:
             with self.subTest(tags=tags):
-                rjobs = self.sim_backend.jobs(
+                rjobs = self.provider.backend.jobs(
                     job_tags=tags, job_tags_operator="AND", start_datetime=self.last_week)
                 self.assertEqual(len(rjobs), 1,
                                  "Expected job {}, got {}".format(job.job_id(), rjobs))
@@ -483,7 +483,7 @@ class TestIBMQJobAttributes(IBMQTestCase):
         """Test using job tags with an and operator."""
         self.assertRaises(IBMQBackendValueError, self.sim_backend.run,
                           self.bell, job_tags={'foo'})
-        self.assertRaises(IBMQBackendValueError, self.sim_backend.jobs, job_tags=[1, 2, 3])
+        self.assertRaises(IBMQBackendValueError, self.provider.backend.jobs, job_tags=[1, 2, 3])
 
     def test_run_mode(self):
         """Test job run mode."""
