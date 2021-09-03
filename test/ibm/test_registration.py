@@ -11,7 +11,7 @@
 # that they have been altered from the originals.
 
 """Test the registration and credentials modules."""
-# pylint: disable=unused-import
+
 import logging
 import os
 import warnings
