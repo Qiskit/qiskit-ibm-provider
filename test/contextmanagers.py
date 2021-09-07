@@ -144,6 +144,7 @@ class MockIBMProvider:
             group: Optional[str] = None,
             project: Optional[str] = None
     ):
+        # pylint: disable=unused-argument
         return cls._providers[HubGroupProject(hub, group, project)]
 
 
