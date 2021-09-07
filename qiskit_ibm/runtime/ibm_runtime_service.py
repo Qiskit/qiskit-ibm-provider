@@ -512,7 +512,7 @@ class IBMRuntimeService:
         if self._provider.credentials.unique_id().to_tuple() != (hub, group, project):
             # Try to find the right backend
             try:
-                original_provider = self._provider._account.provider(hub, group, project)
+                original_provider = self._provider._get_provider(hub, group, project)
                 backend = original_provider.get_backend(raw_data['backend'])
             except (IBMProviderError, QiskitBackendNotFoundError):
                 backend = IBMRetiredBackend.from_name(

@@ -132,6 +132,7 @@ class IBMProvider(Provider):
     """
 
     _providers = OrderedDict()  # type: Dict[HubGroupProject, IBMProvider]
+    _account = None  # type: Dict
 
     def __new__(
             cls,
@@ -140,7 +141,6 @@ class IBMProvider(Provider):
             hub: Optional[str] = None,
             group: Optional[str] = None,
             project: Optional[str] = None,
-            account: Optional[Dict] = None,
             **kwargs: Any
     ) -> 'IBMProvider':
         """IBMProvider constructor
@@ -151,7 +151,6 @@ class IBMProvider(Provider):
             hub: Name of the hub to use.
             group: Name of the group to use.
             project: Name of the project to use.
-            account: Dictionary containing account credentials
             **kwargs: Additional settings for the connection:
 
                 * proxies (dict): proxy configuration.
@@ -179,13 +178,15 @@ class IBMProvider(Provider):
             project=project,
             **kwargs
         )
+        account = cls._account
         if not account and (not cls._providers or
                             cls._is_different_account(account_credentials.token)):
             cls._initialize_providers(credentials=account_credentials,
                                       preferences=account_preferences)
-            return cls._get_provider(hub=hub, group=group, project=project)
+            cls._account = None
+            return cls._get_provider(token=token, url=url, hub=hub, group=group, project=project)
         elif not account and cls._providers:
-            return cls._get_provider(hub=hub, group=group, project=project)
+            return cls._get_provider(token=token, url=url, hub=hub, group=group, project=project)
         else:
             return object.__new__(cls)
 
@@ -345,10 +346,11 @@ class IBMProvider(Provider):
         account['user_hubs'] = account['auth_client'].user_hubs()
         account['preferences'] = preferences or {}
         account['credentials'] = credentials
+        cls._account = account
         for hub_info in account['user_hubs']:
             # Build the provider.
             try:
-                provider = IBMProvider(token=credentials.token, **hub_info, account=account)
+                provider = IBMProvider(token=credentials.token, **hub_info)
                 cls._providers[provider.credentials.unique_id()] = provider
             except Exception:  # pylint: disable=broad-except
                 # Catch-all for errors instantiating the provider.
@@ -370,6 +372,8 @@ class IBMProvider(Provider):
     @classmethod
     def _get_provider(
             cls,
+            token: Optional[str] = None,
+            url: Optional[str] = None,
             hub: Optional[str] = None,
             group: Optional[str] = None,
             project: Optional[str] = None,
@@ -377,27 +381,40 @@ class IBMProvider(Provider):
         """Return a provider for a single hub/group/project combination.
 
         Args:
+            token: IBM Quantum token.
+            url: URL for the IBM Quantum authentication server.
             hub: Name of the hub.
             group: Name of the group.
             project: Name of the project.
 
         Returns:
-            A provider that matches the specified criteria.
+            A provider that matches the specified criteria or default provider.
 
         Raises:
             IBMProviderError: If no provider matches the specified criteria,
                 or more than one provider matches the specified criteria.
         """
-        providers = cls.providers(hub=hub, group=group, project=project)
+        providers = cls.providers(token=token, url=url)
+        # Prevent edge case where no hubs are available.
         if not providers:
-            raise IBMProviderError('No provider matches the specified criteria: '
-                                   'hub = {}, group = {}, project = {}'
-                                   .format(hub, group, project))
-        if len(providers) > 1:
-            raise IBMProviderError('More than one provider matches the specified criteria.'
-                                   'hub = {}, group = {}, project = {}'
-                                   .format(hub, group, project))
-        return providers[0]
+            logger.warning('No Hub/Group/Projects could be found for this '
+                           'account.')
+            return None
+        # The provider for the default open access project.
+        default_provider = providers[0]
+        # If any `hub`, `group`, or `project` is specified, return the corresponding provider.
+        if any([hub, group, project]):
+            providers = cls.providers(token=token, url=url, hub=hub, group=group, project=project)
+            if not providers:
+                raise IBMProviderError('No provider matches the specified criteria: '
+                                       'hub = {}, group = {}, project = {}'
+                                       .format(hub, group, project))
+            if len(providers) > 1:
+                raise IBMProviderError('More than one provider matches the specified criteria.'
+                                       'hub = {}, group = {}, project = {}'
+                                       .format(hub, group, project))
+            default_provider = providers[0]
+        return default_provider
 
     def __init__(
             self,
@@ -406,11 +423,11 @@ class IBMProvider(Provider):
             hub: Optional[str] = None,
             group: Optional[str] = None,
             project: Optional[str] = None,
-            account: Optional[Dict] = None,
             **kwargs: Any
     ) -> None:
-        # pylint: disable=unused-argument
+        # pylint: disable=unused-argument,unsubscriptable-object
         super().__init__()
+        account = self._account
         if account:
             self.credentials = self._construct_provider_credentials(
                 account['credentials'],

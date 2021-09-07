@@ -598,7 +598,6 @@ if __name__ == '__main__':
         cred = Credentials(token="", url="", hub="hub2", group="group2", project="project2",
                            services={"runtime": "https://quantum-computing.ibm.com"})
         self.runtime._provider.credentials = cred
-        self.runtime._provider._account = mock.MagicMock()
         rjob = self.runtime.job(job.job_id())
         self.assertIsNotNone(rjob.backend())
 
