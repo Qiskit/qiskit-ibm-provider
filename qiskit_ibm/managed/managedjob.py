@@ -118,9 +118,9 @@ class ManagedJob:
                         job_tags=job_tags,
                         **run_config)
                 except IBMQBackendJobLimitError:
-                    non_final_job_status = ['INITIALIZING', 'QUEUED', 'VALIDATING', 'RUNNING']
+                    all_job_statuses = [status.name for status in JobStatus]
                     oldest_running = backend.jobs(
-                        limit=1, descending=False, status=non_final_job_status)
+                        limit=1, descending=False, status=all_job_statuses)
                     if oldest_running:
                         oldest_running = oldest_running[0]
                         logger.warning("Job limit reached, waiting for job %s to finish "

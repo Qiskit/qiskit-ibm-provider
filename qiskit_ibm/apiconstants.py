@@ -53,18 +53,6 @@ API_JOB_FINAL_STATES = (
     ApiJobStatus.ERROR_TRANSPILING_JOB
 )
 
-API_JOB_NON_FINAL_STATES = (
-    ApiJobStatus.CREATING,
-    ApiJobStatus.CREATED,
-    ApiJobStatus.TRANSPILING,
-    ApiJobStatus.TRANSPILED,
-    ApiJobStatus.VALIDATING,
-    ApiJobStatus.VALIDATED,
-    ApiJobStatus.RUNNING,
-    ApiJobStatus.PENDING_IN_QUEUE,
-    ApiJobStatus.QUEUED
-)
-
 
 class ApiJobKind(enum.Enum):
     """Possible values used by the API for a job kind."""
