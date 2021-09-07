@@ -138,6 +138,8 @@ class MockIBMProvider:
     @classmethod
     def _mock_get_provider(
             cls,
+            token: Optional[str] = None,
+            url: Optional[str] = None,
             hub: Optional[str] = None,
             group: Optional[str] = None,
             project: Optional[str] = None
