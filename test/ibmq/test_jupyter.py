@@ -82,8 +82,8 @@ class TestBackendInfo(IBMQTestCase):
             kwargs['start_datetime'] = datetime.now() - timedelta(days=7)
             return original_backend_jobs(**kwargs)
         for backend in self.backends:
-            provider = backend.provider()
             with self.subTest(backend=backend):
+                provider = backend.provider()
                 original_backend_jobs = provider.backend.jobs
                 provider.backend.jobs = _limit_jobs
                 jobs_tab(backend)
