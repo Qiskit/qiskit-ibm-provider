@@ -22,12 +22,10 @@ from qiskit.qobj import QasmQobj, PulseQobj
 from qiskit.circuit import QuantumCircuit
 from qiskit.pulse import Schedule
 from qiskit.result import Result
-from qiskit.providers.jobstatus import JobStatus
+
 from qiskit.providers.exceptions import JobError
-
+from qiskit.providers.jobstatus import JobStatus, JOB_FINAL_STATES
 from qiskit_ibm import IBMQBackend
-from qiskit_ibm.apiconstants import API_JOB_FINAL_STATES
-
 from ..job.ibmqjob import IBMQJob
 from ..job.exceptions import IBMQJobTimeoutError
 from ..exceptions import IBMQBackendJobLimitError
@@ -120,10 +118,11 @@ class ManagedJob:
                         job_tags=job_tags,
                         **run_config)
                 except IBMQBackendJobLimitError:
-                    final_states = [state.value for state in API_JOB_FINAL_STATES]
+                    non_final_job_statuses = [status.name for status in
+                                              (list(set(JobStatus) - set(JOB_FINAL_STATES)))]
                     provider = backend.provider()
-                    oldest_running = provider.backend.jobs(limit=1, descending=False, db_filter={
-                        "status": {"nin": final_states}})
+                    oldest_running = provider.backend.jobs(
+                        limit=1, descending=False, status=non_final_job_statuses)
                     if oldest_running:
                         oldest_running = oldest_running[0]
                         logger.warning("Job limit reached, waiting for job %s to finish "
