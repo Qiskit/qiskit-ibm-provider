@@ -183,9 +183,9 @@ class IBMProvider(Provider):
             cls._initialize_providers(credentials=account_credentials,
                                       preferences=account_preferences)
             cls._account = None
-            return cls._get_provider(token=token, url=url, hub=hub, group=group, project=project)
+            return cls._get_provider(hub=hub, group=group, project=project)
         elif not account and cls._providers:
-            return cls._get_provider(token=token, url=url, hub=hub, group=group, project=project)
+            return cls._get_provider(hub=hub, group=group, project=project)
         else:
             return object.__new__(cls)
 
@@ -335,8 +335,6 @@ class IBMProvider(Provider):
     @classmethod
     def _get_provider(
             cls,
-            token: Optional[str] = None,
-            url: Optional[str] = None,
             hub: Optional[str] = None,
             group: Optional[str] = None,
             project: Optional[str] = None,
@@ -344,8 +342,6 @@ class IBMProvider(Provider):
         """Return a provider for a single hub/group/project combination.
 
         Args:
-            token: IBM Quantum token.
-            url: URL for the IBM Quantum authentication server.
             hub: Name of the hub.
             group: Name of the group.
             project: Name of the project.
@@ -357,7 +353,7 @@ class IBMProvider(Provider):
             IBMProviderError: If no provider matches the specified criteria,
                 or more than one provider matches the specified criteria.
         """
-        providers = cls.providers(token=token, url=url)
+        providers = cls._get_providers()
         # Prevent edge case where no hubs are available.
         if not providers:
             logger.warning('No Hub/Group/Projects could be found for this '
@@ -367,7 +363,7 @@ class IBMProvider(Provider):
         default_provider = providers[0]
         # If any `hub`, `group`, or `project` is specified, return the corresponding provider.
         if any([hub, group, project]):
-            providers = cls.providers(token=token, url=url, hub=hub, group=group, project=project)
+            providers = cls._get_providers(hub=hub, group=group, project=project)
             if not providers:
                 raise IBMProviderError('No provider matches the specified criteria: '
                                        'hub = {}, group = {}, project = {}'
@@ -600,7 +596,7 @@ class IBMProvider(Provider):
             project: Optional[str] = None,
             **kwargs: Any
     ) -> List['IBMProvider']:
-        """Return a list of providers, subject to optional filtering.
+        """Initialize account and return a list of providers.
 
         Args:
             token: IBM Quantum token.
@@ -627,6 +623,25 @@ class IBMProvider(Provider):
         if not cls._providers or cls._is_different_account(account_credentials.token):
             cls._initialize_providers(credentials=account_credentials,
                                       preferences=account_preferences)
+        return cls._get_providers(hub=hub, group=group, project=project)
+
+    @classmethod
+    def _get_providers(
+            cls,
+            hub: Optional[str] = None,
+            group: Optional[str] = None,
+            project: Optional[str] = None,
+    ) -> List['IBMProvider']:
+        """Return a list of providers, subject to optional filtering.
+
+        Args:
+            hub: Name of the hub.
+            group: Name of the group.
+            project: Name of the project.
+
+        Returns:
+            A list of providers that match the specified criteria.
+        """
         filters = []  # type: List[Callable[[HubGroupProject], bool]]
         if hub:
             filters.append(lambda hgp: hgp.hub == hub)

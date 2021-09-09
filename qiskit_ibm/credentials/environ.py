@@ -44,7 +44,7 @@ def read_credentials_from_environ() -> Dict[HubGroupProject, Credentials]:
     hub = None
     group = None
     project = None
-    
+
     for envar_name, credential_key in VARIABLES_MAP.items():
         if os.getenv(envar_name):
             credentials_dict[credential_key] = os.getenv(envar_name)
