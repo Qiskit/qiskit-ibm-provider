@@ -73,7 +73,7 @@ A lot of other classes have been renamed but may not be directly used by most us
 | IBMQAccountCredentialsInvalidFormat | IBMProviderCredentialsInvalidFormat |
 | IBMQAccountCredentialsInvalidToken | IBMProviderCredentialsInvalidToken |
 | IBMQAccountCredentialsInvalidUrl | IBMProviderCredentialsInvalidUrl |
-| IBMQAccountMultipleCredentialsFound | None (Removed) |
+| IBMQAccountMultipleCredentialsFound | IBMProviderMultipleCredentialsFound |
 | IBMQBackendError | IBMBackendError |
 | IBMQBackendApiProtocolError | IBMBackendApiProtocolError |
 | IBMQBackendValueError | IBMBackendValueError |

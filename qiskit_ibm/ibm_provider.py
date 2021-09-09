@@ -43,54 +43,52 @@ from .experiment import IBMExperimentService  # pylint: disable=cyclic-import
 from .runtime.ibm_runtime_service import IBMRuntimeService  # pylint: disable=cyclic-import
 from .exceptions import (IBMNotAuthorizedError, IBMInputValueError, IBMProviderCredentialsNotFound,
                          IBMProviderCredentialsInvalidFormat, IBMProviderCredentialsInvalidToken,
-                         IBMProviderCredentialsInvalidUrl, IBMProviderError, IBMProviderValueError)
+                         IBMProviderCredentialsInvalidUrl, IBMProviderError, IBMProviderValueError,
+                         IBMProviderMultipleCredentialsFound)
 from .runner_result import RunnerResult  # pylint: disable=cyclic-import
 
 logger = logging.getLogger(__name__)
 
 
 class IBMProvider(Provider):
-    """Authenticate against IBM Quantum for use during session or from saved credentials.
+    """Provides access to the IBM Quantum services available to an account.
 
-    This class provides access to the IBM Quantum services available to an account.
+    Authenticate against IBM Quantum for use from saved credentials or during session.
 
-    You can access the default open provider by instantiating this class
-    and providing the API token::
+    Credentials can be saved to disk by calling the `save_account()` method::
 
         from qiskit_ibm import IBMProvider
-        provider = IBMProvider(token=<INSERT_IBM_QUANTUM_TOKEN>)
+        IBMProvider.save_account(token=<INSERT_IBM_QUANTUM_TOKEN>, hub='ibm-q', group='open',
+                                 project='main')
+
+    Once credentials are saved you can simply instantiate the provider like below to load the
+    saved account and default provider::
+
+        from qiskit_ibm import IBMProvider
+        provider = IBMProvider()
 
     To access a different provider, specify the hub, group and project name of the
     desired provider during instantiation::
 
         from qiskit_ibm import IBMProvider
-        provider = IBMProvider(token=<INSERT_IBM_QUANTUM_TOKEN>, hub='ibm-q', group='test',
-                               project='default')
+        provider = IBMProvider(hub='ibm-q', group='test', project='default')
 
-    Instead of passing in the parameters during instantiation, you can also set the environment
+    Alternatively, you can also set the environment
     variables QISKIT_IBM_API_TOKEN, QISKIT_IBM_API_URL, QISKIT_IBM_HUB, QISKIT_IBM_GROUP
     and QISKIT_IBM_PROJECT and then instantiate the provider like below::
 
         from qiskit_ibm import IBMProvider
         provider = IBMProvider()
 
-    If parameters are not passed and environment variables are not set then this class looks
-    for credentials (token / url) and default provider (hub / group / project) saved in the
-    qiskitrc file. Credentials can be saved by calling the `save_account()` method::
+    As another alternative, you can access the default provider by instantiating this class
+    and providing the API token to use during the current session::
 
         from qiskit_ibm import IBMProvider
-        IBMProvider.save_account(token=<INSERT_IBM_QUANTUM_TOKEN>, hub='ibm-q', group='open',
-                                 project='main')
+        provider = IBMProvider(token=<INSERT_IBM_QUANTUM_TOKEN>)
 
     `token` is the only required attribute that needs to be set using one of the above methods.
     If no `url` is set, it defaults to 'https://auth.quantum-computing.ibm.com/api'.
     If no `hub`, `group` and `project` is set, it defaults to the open provider. (ibm-q/open/main)
-
-    Once credentails are saved you can simply instantiate the provider like below to load the
-    saved account::
-
-        from qiskit_ibm import IBMProvider
-        provider = IBMProvider()
 
     Each provider may offer different services. The main service,
     :class:`~qiskit_ibm.ibm_backend_service.IBMBackendService`, is
@@ -170,7 +168,7 @@ class IBMProvider(Provider):
             IBMProviderCredentialsInvalidToken: If the `token` is not a valid
                 IBM Quantum token.
         """
-        account_credentials, account_preferences, hub, group, project = cls._resolve_credentials(
+        account_credentials, account_preferences, hgp = cls._resolve_credentials(
             token=token,
             url=url,
             hub=hub,
@@ -178,6 +176,7 @@ class IBMProvider(Provider):
             project=project,
             **kwargs
         )
+        hub, group, project = hgp.to_tuple()
         account = cls._account
         if not account and (not cls._providers or
                             cls._is_different_account(account_credentials.token)):
@@ -199,7 +198,7 @@ class IBMProvider(Provider):
             group: Optional[str] = None,
             project: Optional[str] = None,
             **kwargs: Any
-    ) -> Tuple[Credentials, Dict, str, str, str]:
+    ) -> Tuple[Credentials, Dict, HubGroupProject]:
         """Resolve credentials after looking up env variables and credentials saved on disk
 
         Args:
@@ -219,16 +218,12 @@ class IBMProvider(Provider):
         Raises:
             IBMProviderCredentialsInvalidFormat: If the default provider saved on
                 disk could not be parsed.
-            IBMProviderCredentialsNotFound: If no IBM Quantum credentials
-                can be found.
+            IBMProviderCredentialsNotFound: If no IBM Quantum credentials can be found.
             IBMProviderCredentialsInvalidUrl: If the URL specified is not
                 a valid IBM Quantum authentication URL.
-            IBMProviderCredentialsInvalidToken: If the `token` is not a valid
-                IBM Quantum token.
+            IBMProviderCredentialsInvalidToken: If the `token` is not a valid IBM Quantum token.
+            IBMProviderMultipleCredentialsFound: If multiple IBM Quantum credentials are found.
         """
-        saved_hub = None
-        saved_group = None
-        saved_project = None
         if token:
             if not isinstance(token, str):
                 raise IBMProviderCredentialsInvalidToken(
@@ -249,14 +244,12 @@ class IBMProvider(Provider):
             if not credentials_list:
                 raise IBMProviderCredentialsNotFound(
                     'No IBM Quantum credentials found.')
+            if len(credentials_list) > 1:
+                raise IBMProviderMultipleCredentialsFound(
+                    'Multiple IBM Quantum Experience credentials found.')
             account_credentials = credentials_list[0]
-            if account_credentials.default_provider:
-                saved_hub, saved_group, saved_project = \
-                    account_credentials.default_provider.to_tuple()
-            else:
-                saved_hub = account_credentials.hub
-                saved_group = account_credentials.group
-                saved_project = account_credentials.project
+            if not any([hub, group, project]) and account_credentials.default_provider:
+                hub, group, project = account_credentials.default_provider.to_tuple()
         version_info = cls._check_api_version(account_credentials)
         # Check the URL is a valid authentication URL.
         if not version_info['new_api'] or 'api-auth' not in version_info:
@@ -264,11 +257,8 @@ class IBMProvider(Provider):
                 'The URL specified ({}) is not an IBM Quantum authentication URL. '
                 'Valid authentication URL: {}.'
                 .format(account_credentials.url, QISKIT_IBM_API_URL))
-        hub, group, project = cls._resolve_hub_group_project(
-            hub=hub, group=group, project=project, saved_hub=saved_hub, saved_group=saved_group,
-            saved_project=saved_project, url=account_credentials.url
-        )
-        return account_credentials, preferences, hub, group, project
+        hgp = HubGroupProject(hub=hub, group=group, project=project)
+        return account_credentials, preferences, hgp
 
     @staticmethod
     def _check_api_version(credentials: Credentials) -> Dict[str, Union[bool, str]]:
@@ -282,43 +272,16 @@ class IBMProvider(Provider):
         return version_finder.version()
 
     @classmethod
-    def _resolve_hub_group_project(
-            cls,
-            hub: Optional[str] = None,
-            group: Optional[str] = None,
-            project: Optional[str] = None,
-            saved_hub: Optional[str] = None,
-            saved_group: Optional[str] = None,
-            saved_project: Optional[str] = None,
-            url: Optional[str] = None
-    ) -> Tuple[str, str, str]:
-        """Resolve hub/group/project after looking up env variables and credentials saved on disk
+    def _is_different_account(cls, token: str) -> bool:
+        """Check if token is different from already instantiated account.
 
         Args:
-            hub: Name of the hub to use.
-            group: Name of the group to use.
-            project: Name of the project to use.
-            saved_hub: Name of the hub saved in QISKIT_IBM_HUB env variable or on disk.
-            saved_group: Name of the group saved in QISKIT_IBM_GROUP env variable or on disk.
-            saved_project: Name of the hub saved in QISKIT_IBM_PROJECT env variable or on disk.
-            url: URL for the IBM Quantum authentication server.
+            token: IBM Quantum token.
 
         Returns:
-            Tuple of hub, group and project
+            `true` if token passed is different from already instantiated account,
+            `false` otherwise
         """
-        # If any `hub`, `group`, or `project` is specified, make sure all are set.
-        if any([hub, group, project]):
-            return hub, group, project
-        if any([saved_hub, saved_group, saved_project]):
-            return saved_hub, saved_group, saved_project
-        if url == QISKIT_IBM_API_URL:
-            hub = 'ibm-q'
-            group = 'open'
-            project = 'main'
-        return hub, group, project
-
-    @classmethod
-    def _is_different_account(cls, token: str) -> bool:
         first_provider = list(cls._providers.values())[0]
         return token != first_provider.credentials.token
 

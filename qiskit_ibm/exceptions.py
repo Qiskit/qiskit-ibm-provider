@@ -35,6 +35,11 @@ class IBMProviderCredentialsNotFound(IBMProviderError):
     pass
 
 
+class IBMProviderMultipleCredentialsFound(IBMProviderError):
+    """Errors raised when multiple credentials are found."""
+    pass
+
+
 class IBMProviderCredentialsInvalidFormat(IBMProviderError):
     """Errors raised when the credentials format is invalid."""
     pass

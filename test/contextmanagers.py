@@ -145,7 +145,7 @@ class MockIBMProvider:
             project: Optional[str] = None
     ):
         # pylint: disable=unused-argument
-        return cls._providers[HubGroupProject(hub, group, project)]
+        return cls._providers[HubGroupProject('ibm-q', 'open', 'main')]
 
 
 @contextmanager
