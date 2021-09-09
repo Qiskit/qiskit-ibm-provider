@@ -13,7 +13,6 @@
 """Backend namespace for an IBM Quantum Experience account provider."""
 
 import logging
-import warnings
 import copy
 
 from typing import Dict, List, Callable, Optional, Any, Union
@@ -86,7 +85,6 @@ class IBMQBackendService:
             self,
             name: Optional[str] = None,
             filters: Optional[Callable[[List[IBMQBackend]], bool]] = None,
-            timeout: Optional[float] = None,
             min_num_qubits: Optional[int] = None,
             input_allowed: Optional[Union[str, List[str]]] = None,
             **kwargs: Any
@@ -100,8 +98,6 @@ class IBMQBackendService:
 
                     AccountProvider.backends(
                         filters=lambda b: b.configuration().quantum_volume > 16)
-            timeout: Maximum number of seconds to wait for the discovery of
-                remote backends.
             min_num_qubits: Minimum number of qubits the backend has to have.
             input_allowed: Filter by the types of input the backend supports.
                 Valid input types are ``job`` (circuit job) and ``runtime`` (Qiskit Runtime).
@@ -117,10 +113,6 @@ class IBMQBackendService:
         Returns:
             The list of available backends that match the filter.
         """
-        if timeout:
-            warnings.warn("The `timeout` keyword argument is deprecated and will "
-                          "be removed in a future release.",
-                          DeprecationWarning, stacklevel=2)
 
         backends = list(self._provider._backends.values())
 
@@ -157,7 +149,6 @@ class IBMQBackendService:
             job_tags_operator: Optional[str] = "OR",
             experiment_id: Optional[str] = None,
             descending: bool = True,
-            db_filter: Optional[Dict[str, Any]] = None
     ) -> List[IBMQJob]:
         """Return a list of jobs, subject to optional filtering.
 
@@ -194,19 +185,6 @@ class IBMQBackendService:
             experiment_id: Filter by job experiment ID.
             descending: If ``True``, return the jobs in descending order of the job
                 creation date (i.e. newest first) until the limit is reached.
-            db_filter: A `loopback-based filter
-                <https://loopback.io/doc/en/lb2/Querying-data.html>`_.
-                This is an interface to a database ``where`` filter.
-                Some examples of its usage are:
-
-                Filter last five jobs with errors::
-
-                   job_list = backend.jobs(limit=5, status=JobStatus.ERROR)
-
-                Filter last five jobs with hub name ``ibm-q``::
-
-                  filter = {'hubInfo.hub.name': 'ibm-q'}
-                  job_list = backend.jobs(limit=5, db_filter=filter)
 
         Returns:
             A list of ``IBMQJob`` instances.
@@ -252,15 +230,6 @@ class IBMQBackendService:
 
         if experiment_id:
             api_filter['experimentTag'] = experiment_id
-
-        if db_filter:
-            # Rather than overriding the logical operators `and`/`or`, first
-            # check to see if the `api_filter` query should be extended with the
-            # `api_filter` query for the same keys instead.
-            self._merge_logical_filters(api_filter, db_filter)
-
-            # Argument filters takes precedence over db_filter for same keys
-            api_filter = {**db_filter, **api_filter}
 
         # Retrieve the requested number of jobs, using pagination. The server
         # might limit the number of jobs per request.
