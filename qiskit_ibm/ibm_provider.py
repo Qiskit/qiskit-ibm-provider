@@ -279,8 +279,8 @@ class IBMProvider(Provider):
             token: IBM Quantum token.
 
         Returns:
-            `true` if token passed is different from already instantiated account,
-            `false` otherwise
+            ``True`` if token passed is different from already instantiated account,
+            ``False`` otherwise
         """
         first_provider = list(cls._providers.values())[0]
         return token != first_provider.credentials.token
@@ -402,7 +402,6 @@ class IBMProvider(Provider):
             # Initialize the internal list of backends.
             self.__backends: Dict[str, IBMBackend] = {}
             self._backend = IBMBackendService(self)
-            self.backends = self._backend.backends  # type: ignore[assignment]
             # Initialize other services.
             self._random = IBMRandomService(self) if self.credentials.extractor_url else None
             self._experiment = IBMExperimentService(self) \
@@ -756,6 +755,8 @@ class IBMProvider(Provider):
             self,
             name: Optional[str] = None,
             filters: Optional[Callable[[List[IBMBackend]], bool]] = None,
+            min_num_qubits: Optional[int] = None,
+            input_allowed: Optional[Union[str, List[str]]] = None,
             **kwargs: Any
     ) -> List[IBMBackend]:
         """Return all backends accessible via this provider, subject to optional filtering.
@@ -765,7 +766,13 @@ class IBMProvider(Provider):
             filters: More complex filters, such as lambda functions.
                 For example::
 
-                    IBMProvider.backends(filters=lambda b: b.configuration().n_qubits > 5)
+                    IBMProvider.backends(filters=lambda b: b.configuration().quantum_volume > 16)
+            min_num_qubits: Minimum number of qubits the backend has to have.
+            input_allowed: Filter by the types of input the backend supports.
+                Valid input types are ``job`` (circuit job) and ``runtime`` (Qiskit Runtime).
+                For example, ``inputs_allowed='runtime'`` will return all backends
+                that support Qiskit Runtime. If a list is given, the backend must
+                support all types specified in the list.
             kwargs: Simple filters that specify a ``True``/``False`` criteria in the
                 backend configuration, backends status, or provider credentials.
                 An example to get the operational backends with 5 qubits::
@@ -775,12 +782,9 @@ class IBMProvider(Provider):
         Returns:
             The list of available backends that match the filter.
         """
-        # pylint: disable=method-hidden
         # pylint: disable=arguments-differ
-        # This method is only for faking the subclassing of `BaseProvider`, as
-        # `.backends()` is an abstract method. Upon initialization, it is
-        # replaced by a `IBMBackendService` instance.
-        pass
+        return self._backend.backends(name=name, filters=filters, min_num_qubits=min_num_qubits,
+                                      input_allowed=input_allowed, **kwargs)
 
     def has_service(self, name: str) -> bool:
         """Check if this provider has access to the service.
