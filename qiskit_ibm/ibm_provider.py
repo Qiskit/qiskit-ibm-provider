@@ -129,8 +129,8 @@ class IBMProvider(Provider):
         in Jupyter Notebook and the Python interpreter.
     """
 
-    _providers = OrderedDict()  # type: Dict[HubGroupProject, IBMProvider]
-    _account = None  # type: Dict
+    _credentials: Credentials = None
+    _providers: Dict[HubGroupProject, 'IBMProvider'] = OrderedDict()
 
     def __new__(
             cls,
@@ -177,14 +177,12 @@ class IBMProvider(Provider):
             **kwargs
         )
         hub, group, project = hgp.to_tuple()
-        account = cls._account
-        if not account and (not cls._providers or
-                            cls._is_different_account(account_credentials.token)):
+        if not cls._credentials and (not cls._providers or
+                                     cls._is_different_account(account_credentials.token)):
             cls._initialize_providers(credentials=account_credentials,
                                       preferences=account_preferences)
-            cls._account = None
             return cls._get_provider(hub=hub, group=group, project=project)
-        elif not account and cls._providers:
+        elif not cls._credentials and cls._providers:
             return cls._get_provider(hub=hub, group=group, project=project)
         else:
             return object.__new__(cls)
@@ -301,20 +299,37 @@ class IBMProvider(Provider):
             logger.warning('Credentials are already in use. The existing '
                            'account in the session will be replaced.')
             cls._disable_account()
-        account = dict()  # type: Dict[str, Any]
-        account['auth_client'] = AuthClient(credentials.token,
-                                            credentials.base_url,
-                                            **credentials.connection_parameters())
-        account['service_urls'] = account['auth_client'].current_service_urls()
-        account['user_hubs'] = account['auth_client'].user_hubs()
-        account['preferences'] = preferences or {}
-        account['credentials'] = credentials
-        cls._account = account
-        for hub_info in account['user_hubs']:
+        auth_client = AuthClient(credentials.token,
+                                 credentials.base_url,
+                                 **credentials.connection_parameters())
+        service_urls = auth_client.current_service_urls()
+        user_hubs = auth_client.user_hubs()
+        preferences = preferences or {}
+        for hub_info in user_hubs:
+            # Build credentials.
+            provider_credentials = Credentials(
+                credentials.token,
+                access_token=auth_client.current_access_token(),
+                url=service_urls['http'],
+                api_url=credentials.api_url,
+                websockets_url=service_urls['ws'],
+                proxies=credentials.proxies,
+                verify=credentials.verify,
+                services=service_urls.get('services', {}),
+                default_provider=credentials.default_provider,
+                **hub_info
+            )
+            provider_credentials.preferences = \
+                preferences.get(provider_credentials.unique_id(), {})
+            # _credentials class variable is read in __init__ to set provider credentials
+            cls._credentials = provider_credentials
             # Build the provider.
             try:
                 provider = IBMProvider(token=credentials.token, **hub_info)
                 cls._providers[provider.credentials.unique_id()] = provider
+                # Clear _credentials class variable so __init__ is not processed for the first
+                # call to __new__ (since all IBMProvider instances are initialized by this method)
+                cls._credentials = None
             except Exception:  # pylint: disable=broad-except
                 # Catch-all for errors instantiating the provider.
                 logger.warning('Unable to instantiate provider for %s: %s',
@@ -386,17 +401,8 @@ class IBMProvider(Provider):
     ) -> None:
         # pylint: disable=unused-argument,unsubscriptable-object
         super().__init__()
-        account = self._account
-        if account:
-            self.credentials = self._construct_provider_credentials(
-                account['credentials'],
-                account['preferences'],
-                account['auth_client'],
-                account['service_urls'],
-                hub,
-                group,
-                project
-            )
+        if self._credentials:
+            self.credentials = self._credentials
             self._api_client = AccountClient(self.credentials,
                                              **self.credentials.connection_parameters())
             # Initialize the internal list of backends.
@@ -412,48 +418,6 @@ class IBMProvider(Provider):
                               'random': self._random,
                               'experiment': self._experiment,
                               'runtime': self._runtime}
-
-    def _construct_provider_credentials(
-            self,
-            account_credentials: Credentials,
-            preferences: Optional[Dict],
-            auth_client: AuthClient,
-            service_urls: Dict[str, str],
-            hub: str,
-            group: str,
-            project: str
-    ) -> Credentials:
-        """Construct provider credentials based on resolved credentials, preferences, hgp
-
-        Args:
-            account_credentials: Credentials after authenticating with IBM Quantum,
-            preferences: Dictionary of saved user preferences,
-            auth_client: AuthClient for accessing IBM Quantum authentication services,
-            service_urls: Current service URLs,
-            hub: Name of the hub.
-            group: Name of the group.
-            project: Name of the project.
-
-        Returns:
-            Credentials for a single provider
-        """
-        credentials = Credentials(
-            account_credentials.token,
-            access_token=auth_client.current_access_token(),
-            url=service_urls['http'],
-            api_url=account_credentials.api_url,
-            websockets_url=service_urls['ws'],
-            proxies=account_credentials.proxies,
-            verify=account_credentials.verify,
-            services=service_urls.get('services', {}),
-            default_provider=account_credentials.default_provider,
-            hub=hub,
-            group=group,
-            project=project
-        )
-        credentials.preferences = \
-            preferences.get(credentials.unique_id(), {})
-        return credentials
 
     @property
     def _backends(self) -> Dict[str, IBMBackend]:
