@@ -44,7 +44,7 @@ from .api.exceptions import ApiError
 from .backendjoblimit import BackendJobLimit
 from .backendreservation import BackendReservation
 from .credentials import Credentials
-from .exceptions import (IBMBackendError, IBMBackendValueError,
+from .exceptions import (IBMBackendError, IBMBackendValueError, IBMBackendJobLimitError,
                          IBMBackendApiError, IBMBackendApiProtocolError)
 from .job import IBMJob  # pylint: disable=cyclic-import
 from .utils import validate_job_tags
@@ -351,7 +351,7 @@ class IBMBackend(Backend):
                 the job.
             IBMBackendApiProtocolError: If an unexpected value is received from
                  the server.
-            IBMBackendValueError: If the job could not be submitted because
+            IBMBackendJobLimitError: If the job could not be submitted because
                 the job limit has been reached.
         """
         try:
@@ -364,7 +364,7 @@ class IBMBackend(Backend):
                 experiment_id=experiment_id)
         except ApiError as ex:
             if 'Error code: 3458' in str(ex):
-                raise IBMBackendValueError('Error submitting job: {}'.format(str(ex))) from ex
+                raise IBMBackendJobLimitError('Error submitting job: {}'.format(str(ex))) from ex
             raise IBMBackendApiError('Error submitting job: {}'.format(str(ex))) from ex
 
         # Error in the job after submission:
