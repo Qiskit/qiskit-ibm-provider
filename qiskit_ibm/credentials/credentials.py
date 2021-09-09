@@ -58,8 +58,8 @@ class Credentials:
 
         Args:
             token: IBM Quantum API token.
-            url: IBM Quantum URL.
-            api_url: IBM Quantum URL.
+            url: IBM Quantum URL (gets replaced with a new-style URL with hub, group, project).
+            api_url: IBM Quantum URL (always stays https://auth.quantum-computing.ibm.com/api).
             websockets_url: URL for websocket server.
             hub: The hub to use.
             group: The group to use.
