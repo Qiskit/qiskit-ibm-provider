@@ -84,9 +84,10 @@ class TestBackendInfo(IBMQTestCase):
         for backend in self.backends:
             with self.subTest(backend=backend):
                 provider = backend.provider()
-                original_backend_jobs = provider.backend.jobs
-                provider.backend.jobs = _limit_jobs
-                jobs_tab(provider.backend)
+                provider_backend = provider.backend
+                original_backend_jobs = provider_backend.jobs
+                provider_backend.jobs = _limit_jobs
+                jobs_tab(backend)
 
 
 class TestIQXDashboard(IBMQTestCase):
