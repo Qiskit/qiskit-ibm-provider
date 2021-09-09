@@ -87,7 +87,7 @@ class TestBackendInfo(IBMQTestCase):
                 provider_backend_jobs = provider.backend.jobs(backend_name=backend.name())
                 original_backend_jobs = provider_backend_jobs
                 provider_backend_jobs = _limit_jobs
-                jobs_tab(backend)
+                jobs_tab(provider.backend)
 
 
 class TestIQXDashboard(IBMQTestCase):
