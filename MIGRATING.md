@@ -7,6 +7,8 @@ The Qiskit IBM Provider is now distributed as a separate PyPI package called `qi
 pip install qiskit-ibm
 ```
 
+Note: `qiskit-ibm` is not part of the `qiskit` meta package and hence will not be included when you `pip install qiskit`.
+
 ## Breaking Changes
 1. The `IBMQ` global variable which was an instance of the `IBMQFactory` has been removed.
 1. `IBMQFactory` and `AccountProvider` classes have been removed and the functionality provided by these two classes have been combined and refactored in the new `IBMProvider` class. This class will provide a simplified interface and serve as the entrypoint going forward.
@@ -16,13 +18,13 @@ For example, if you are looking to migrate your existing code:
 Before
 ```python
 from qiskit import IBMQ
-provider = IBMQ.load_account() # loads saved account from disk and default provider (ibm-q, open, main)
+provider = IBMQ.load_account() # loads saved account and default provider from disk
 simulator_backend = provider.get_backend('ibmq_qasm_simulator')
 ```
 After
 ```python
 from qiskit_ibm import IBMProvider
-provider = IBMProvider() # loads saved account from disk and default provider (ibm-q, open, main)
+provider = IBMProvider() # loads saved account and default provider from disk
 simulator_backend = provider.get_backend('ibmq_qasm_simulator')
 ```
 
