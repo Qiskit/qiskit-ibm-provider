@@ -217,8 +217,6 @@ class IBMProvider(Provider):
             IBMProviderCredentialsInvalidFormat: If the default provider saved on
                 disk could not be parsed.
             IBMProviderCredentialsNotFound: If no IBM Quantum credentials can be found.
-            IBMProviderCredentialsInvalidUrl: If the URL specified is not
-                a valid IBM Quantum authentication URL.
             IBMProviderCredentialsInvalidToken: If the `token` is not a valid IBM Quantum token.
             IBMProviderMultipleCredentialsFound: If multiple IBM Quantum credentials are found.
         """
@@ -248,26 +246,8 @@ class IBMProvider(Provider):
             account_credentials = credentials_list[0]
             if not any([hub, group, project]) and account_credentials.default_provider:
                 hub, group, project = account_credentials.default_provider.to_tuple()
-        version_info = cls._check_api_version(account_credentials)
-        # Check the URL is a valid authentication URL.
-        if not version_info['new_api'] or 'api-auth' not in version_info:
-            raise IBMProviderCredentialsInvalidUrl(
-                'The URL specified ({}) is not an IBM Quantum authentication URL. '
-                'Valid authentication URL: {}.'
-                .format(account_credentials.url, QISKIT_IBM_API_URL))
         hgp = HubGroupProject(hub=hub, group=group, project=project)
         return account_credentials, preferences, hgp
-
-    @staticmethod
-    def _check_api_version(credentials: Credentials) -> Dict[str, Union[bool, str]]:
-        """Check the version of the remote server in a set of credentials.
-
-        Returns:
-            A dictionary with version information.
-        """
-        version_finder = VersionClient(credentials.base_url,
-                                       **credentials.connection_parameters())
-        return version_finder.version()
 
     @classmethod
     def _is_different_account(cls, token: str) -> bool:
@@ -294,7 +274,18 @@ class IBMProvider(Provider):
         Args:
             credentials: Credentials for IBM Quantum.
             preferences: Account preferences.
+
+        Raises:
+            IBMProviderCredentialsInvalidUrl: If the URL specified is not
+                a valid IBM Quantum authentication URL.
         """
+        version_info = cls._check_api_version(credentials)
+        # Check the URL is a valid authentication URL.
+        if not version_info['new_api'] or 'api-auth' not in version_info:
+            raise IBMProviderCredentialsInvalidUrl(
+                'The URL specified ({}) is not an IBM Quantum authentication URL. '
+                'Valid authentication URL: {}.'
+                .format(credentials.url, QISKIT_IBM_API_URL))
         if cls._providers:
             logger.warning('Credentials are already in use. The existing '
                            'account in the session will be replaced.')
@@ -334,6 +325,20 @@ class IBMProvider(Provider):
                 # Catch-all for errors instantiating the provider.
                 logger.warning('Unable to instantiate provider for %s: %s',
                                hub_info, traceback.format_exc())
+
+    @staticmethod
+    def _check_api_version(credentials: Credentials) -> Dict[str, Union[bool, str]]:
+        """Check the version of the remote server in a set of credentials.
+
+        Args:
+            credentials: IBM Quantum Credentials
+
+        Returns:
+            A dictionary with version information.
+        """
+        version_finder = VersionClient(credentials.base_url,
+                                       **credentials.connection_parameters())
+        return version_finder.version()
 
     @classmethod
     def _disable_account(cls) -> None:

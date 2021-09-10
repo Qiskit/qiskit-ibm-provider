@@ -123,6 +123,7 @@ class TestIBMProviderEnableAccount(IBMTestCase):
             }
         }
         with self.assertRaises(RequestsApiError) as context_manager:
+            IBMProvider._disable_account()
             IBMProvider(qe_token, qe_url, proxies=proxies)
         self.assertIn('ProxyError', str(context_manager.exception))
 
