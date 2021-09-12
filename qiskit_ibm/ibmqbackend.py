@@ -751,9 +751,10 @@ class IBMQSimulator(IBMQBackend):
                 name can subsequently be used as a filter in the
                 :meth:`jobs` method. Job names do not need to be unique.
             job_tags: Tags to be assigned to the jobs. The tags can subsequently be used
-                   as a filter in the 
-                   :meth:`IBMQBackendService.jobs()<qiskit_ibm.ibmqbackendservice.IBMQBackendService.jobs>` 
-                   method.
+                as a filter in the
+                :meth:`IBMQBackendService.jobs()
+                <qiskit_ibm.ibmqbackendservice.IBMQBackendService.jobs>`
+                method.
             experiment_id: Used to add a job to an "experiment", which is a collection
                 of jobs and additional metadata.
             backend_options: DEPRECATED dictionary of backend options for the execution.
