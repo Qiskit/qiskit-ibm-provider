@@ -324,7 +324,7 @@ if __name__ == '__main__':
         job.wait_for_final_state()
         self.assertEqual(job.status(), JobStatus.DONE)
         self.assertTrue(job.result())
-        
+
     def test_run_program_with_custom_runtime_image(self):
         """Test running program."""
         params = {'param1': 'foo'}
