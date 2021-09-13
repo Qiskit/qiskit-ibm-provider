@@ -249,7 +249,8 @@ class IBMRuntimeService:
                          credentials=self._provider.credentials,
                          job_id=response['id'], program_id=program_id, params=inputs,
                          user_callback=callback,
-                         result_decoder=result_decoder)
+                         result_decoder=result_decoder,
+                         runtime=runtime)
         return job
 
     def upload_program(
