@@ -145,7 +145,6 @@ class IBMQBackend(Backend):
                        rep_time=None, rep_delay=None,
                        init_qubits=True, use_measure_esp=None)
 
-    @deprecate_arguments({'qobj': 'circuits'})
     def run(
             self,
             circuits: Union[QuantumCircuit, Schedule,
@@ -801,7 +800,6 @@ class IBMQSimulator(IBMQBackend):
         """Return ``None``, simulators do not have backend properties."""
         return None
 
-    @deprecate_arguments({'qobj': 'circuits'})
     def run(    # type: ignore[override]
             self,
             circuits: Union[QuantumCircuit, Schedule,
