@@ -13,7 +13,6 @@
 """Fake RuntimeClient."""
 
 import time
-from typing_extensions import runtime
 import uuid
 import json
 from typing import Optional
@@ -77,7 +76,7 @@ class BaseFakeRuntimeJob:
     _executor = ThreadPoolExecutor()  # pylint: disable=bad-option-value,consider-using-with
 
     def __init__(self, job_id, program_id, hub, group, project, backend_name, final_status,
-                 params,runtime):
+                 params, runtime):
         """Initialize a fake job."""
         self._job_id = job_id
         self._status = final_status or "QUEUED"
@@ -271,7 +270,7 @@ class BaseFakeRuntimeClient:
             credentials: Credentials,
             backend_name: str,
             params: str,
-            runtime: Optional[str] = "" 
+            runtime: Optional[str] = ""
     ):
         """Run the specified program."""
         job_id = uuid.uuid4().hex

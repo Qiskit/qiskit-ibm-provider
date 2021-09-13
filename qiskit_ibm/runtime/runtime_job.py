@@ -390,7 +390,7 @@ class RuntimeJob:
 
     def runtime(self) -> str:
         """Return the runtime image used for the job.
-        
+
         Returns:
             Runtime image: image_name:tag or "" if the default
             image is used.
