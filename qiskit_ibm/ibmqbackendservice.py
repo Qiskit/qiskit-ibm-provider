@@ -56,7 +56,7 @@ class IBMQBackendService:
 
     It is also possible to retrieve a single job without specifying the backend name::
 
-        job = provider.backend.retrieve_job(<JOB_ID>)
+        job = provider.backend.job(<JOB_ID>)
     """
 
     def __init__(self, provider: 'accountprovider.AccountProvider') -> None:
@@ -431,7 +431,7 @@ class IBMQBackendService:
 
         return _status_filter
 
-    def retrieve_job(self, job_id: str) -> IBMQJob:
+    def job(self, job_id: str) -> IBMQJob:
         """Return a single job.
 
         Args:

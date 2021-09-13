@@ -87,7 +87,7 @@ class TestIBMQJobAttributes(IBMQTestCase):
         job_name = str(time.time()).replace('.', '')
         job = self.sim_backend.run(self.bell, job_name=job_name)
         job_id = job.job_id()
-        rjob = self.provider.backend.retrieve_job(job_id)
+        rjob = self.provider.backend.job(job_id)
         self.assertEqual(rjob.name(), job_name)
 
         # Check using partial matching.
@@ -176,7 +176,7 @@ class TestIBMQJobAttributes(IBMQTestCase):
         message = job.error_message()
         self.assertIn('Experiment 1: ERROR', message)
 
-        r_message = self.provider.backend.retrieve_job(job.job_id()).error_message()
+        r_message = self.provider.backend.job(job.job_id()).error_message()
         self.assertIn('Experiment 1: ERROR', r_message)
 
     def test_error_message_validation(self):
@@ -200,7 +200,7 @@ class TestIBMQJobAttributes(IBMQTestCase):
         if 'COMPLETED' not in self.sim_job.time_per_step():
             self.sim_job.refresh()
 
-        rjob = self.provider.backend.retrieve_job(self.sim_job.job_id())
+        rjob = self.provider.backend.job(self.sim_job.job_id())
         rjob.refresh()
         self.assertEqual(rjob._time_per_step, self.sim_job._time_per_step)
 
@@ -234,7 +234,7 @@ class TestIBMQJobAttributes(IBMQTestCase):
                             'between the start date time {} and end date time {}'
                             .format(step, time_data, start_datetime, end_datetime))
 
-        rjob = self.provider.backend.retrieve_job(job.job_id())
+        rjob = self.provider.backend.job(job.job_id())
         self.assertTrue(rjob.time_per_step())
 
     def test_new_job_attributes(self):
@@ -513,7 +513,7 @@ class TestIBMQJobAttributes(IBMQTestCase):
         exp_id = uuid.uuid4().hex
         job = self.sim_backend.run(self.bell, experiment_id=exp_id)
         self.assertEqual(job.experiment_id, exp_id)
-        rjob = self.provider.backend.retrieve_job(job.job_id())
+        rjob = self.provider.backend.job(job.job_id())
         self.assertEqual(rjob.experiment_id, exp_id)
         rjobs = self.provider.backend.jobs(experiment_id=exp_id)
         for rjob in rjobs:

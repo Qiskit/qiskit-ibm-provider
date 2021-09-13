@@ -185,7 +185,7 @@ class TestIBMQJob(IBMQTestCase):
 
     def test_retrieve_job(self):
         """Test retrieving a single job."""
-        retrieved_job = self.provider.backend.retrieve_job(self.sim_job.job_id())
+        retrieved_job = self.provider.backend.job(self.sim_job.job_id())
         self.assertEqual(self.sim_job.job_id(), retrieved_job.job_id())
         self.assertEqual(self.sim_job.qobj().to_dict(), retrieved_job.qobj().to_dict())
         self.assertEqual(self.sim_job.result().get_counts(), retrieved_job.result().get_counts())
@@ -230,7 +230,7 @@ class TestIBMQJob(IBMQTestCase):
     def test_retrieve_job_error(self):
         """Test retrieving an invalid job."""
         self.assertRaises(IBMQBackendError,
-                          self.provider.backend.retrieve_job, 'BAD_JOB_ID')
+                          self.provider.backend.job, 'BAD_JOB_ID')
 
     def test_retrieve_jobs_status(self):
         """Test retrieving jobs filtered by status."""
@@ -438,7 +438,7 @@ class TestIBMQJob(IBMQTestCase):
         saved_backends = copy.copy(self.provider._backends)
         try:
             del self.provider._backends[self.sim_backend.name()]
-            new_job = self.provider.backend.retrieve_job(self.sim_job.job_id())
+            new_job = self.provider.backend.job(self.sim_job.job_id())
             self.assertTrue(isinstance(new_job.backend(), IBMQRetiredBackend))
             self.assertNotEqual(new_job.backend().name(), 'unknown')
             last_month_jobs = self.provider.backend.jobs(start_datetime=self.last_month)

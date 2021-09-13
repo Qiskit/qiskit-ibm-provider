@@ -647,7 +647,7 @@ class IBMQBackend(Backend):
         Raises:
             IBMQBackendError: If job retrieval failed.
         """
-        job = self._provider.backend.retrieve_job(job_id)
+        job = self._provider.backend.job(job_id)
         job_backend = job.backend()
 
         if self.name() != job_backend.name():
