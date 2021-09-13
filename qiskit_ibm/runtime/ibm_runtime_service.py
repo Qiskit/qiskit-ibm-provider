@@ -218,8 +218,8 @@ class IBMRuntimeService:
 
             result_decoder: A :class:`ResultDecoder` subclass used to decode job results.
                 ``ResultDecoder`` is used if not specified.
-            runtime: The runtime image used to execute the program. Requires
-                near-time-systems-image role.
+            runtime: The runtime image used to execute the program, specified in the form
+                of image_name:tag. Requires near-time-systems-image role.
 
         Returns:
             A ``RuntimeJob`` instance representing the execution.
