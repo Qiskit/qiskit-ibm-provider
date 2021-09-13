@@ -199,7 +199,8 @@ class IBMRuntimeService:
             options: Dict,
             inputs: Union[Dict, ParameterNamespace],
             callback: Optional[Callable] = None,
-            result_decoder: Optional[Type[ResultDecoder]] = None
+            result_decoder: Optional[Type[ResultDecoder]] = None,
+            runtime: Optional[str] = ""
     ) -> RuntimeJob:
         """Execute the runtime program.
 
@@ -217,6 +218,8 @@ class IBMRuntimeService:
 
             result_decoder: A :class:`ResultDecoder` subclass used to decode job results.
                 ``ResultDecoder`` is used if not specified.
+            runtime: The runtime image used to execute the program. Requires
+                near-time-systems-image role.
 
         Returns:
             A ``RuntimeJob`` instance representing the execution.
@@ -237,7 +240,8 @@ class IBMRuntimeService:
         response = self._api_client.program_run(program_id=program_id,
                                                 credentials=self._provider.credentials,
                                                 backend_name=backend_name,
-                                                params=params_str)
+                                                params=params_str,
+                                                runtime=runtime)
 
         backend = self._provider.get_backend(backend_name)
         job = RuntimeJob(backend=backend,
