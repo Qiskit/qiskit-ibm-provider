@@ -226,7 +226,7 @@ class IBMProvider(Provider):
                     'Invalid IBM Quantum token '
                     'found: "{}" of type {}.'.format(token, type(token)))
             url = url or os.getenv('QISKIT_IBM_API_URL') or QISKIT_IBM_API_URL
-            account_credentials = Credentials(token=token, url=url, api_url=url, **kwargs)
+            account_credentials = Credentials(token=token, url=url, auth_url=url, **kwargs)
             preferences = {}  # type: Optional[Dict]
         else:
             # Check for valid credentials in env variables or qiskitrc file.
@@ -302,7 +302,7 @@ class IBMProvider(Provider):
                 credentials.token,
                 access_token=auth_client.current_access_token(),
                 url=service_urls['http'],
-                api_url=credentials.api_url,
+                auth_url=credentials.auth_url,
                 websockets_url=service_urls['ws'],
                 proxies=credentials.proxies,
                 verify=credentials.verify,
@@ -551,7 +551,7 @@ class IBMProvider(Provider):
         first_provider = list(cls._providers.values())[0]
         return {
             'token': first_provider.credentials.token,
-            'url': first_provider.credentials.api_url
+            'url': first_provider.credentials.auth_url
         }
 
     @classmethod

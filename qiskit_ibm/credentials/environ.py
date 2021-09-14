@@ -49,12 +49,12 @@ def read_credentials_from_environ() -> Dict[HubGroupProject, Credentials]:
         if os.getenv(envar_name):
             credentials_dict[credential_key] = os.getenv(envar_name)
             if envar_name == 'QISKIT_IBM_API_URL':
-                credentials_dict['api_url'] = os.getenv(envar_name)
-            if envar_name == 'QISKIT_IBM_HUB':
+                credentials_dict['auth_url'] = os.getenv(envar_name)
+            elif envar_name == 'QISKIT_IBM_HUB':
                 hub = os.getenv(envar_name)
-            if envar_name == 'QISKIT_IBM_GROUP':
+            elif envar_name == 'QISKIT_IBM_GROUP':
                 group = os.getenv(envar_name)
-            if envar_name == 'QISKIT_IBM_PROJECT':
+            elif envar_name == 'QISKIT_IBM_PROJECT':
                 project = os.getenv(envar_name)
 
     if all([hub, group, project]):

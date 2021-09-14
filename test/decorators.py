@@ -271,7 +271,7 @@ def _get_credentials():
         return Credentials(
             token=os.getenv('QISKIT_IBM_STAGING_API_TOKEN'),
             url=os.getenv('QISKIT_IBM_STAGING_API_URL'),
-            api_url=os.getenv('QISKIT_IBM_STAGING_API_URL')
+            auth_url=os.getenv('QISKIT_IBM_STAGING_API_URL')
         )
 
     # Attempt to read the standard credentials.

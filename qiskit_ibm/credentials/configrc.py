@@ -94,7 +94,7 @@ def read_credentials_from_qiskitrc(
                 configs[key] = HubGroupProject.from_stored_format(val)
             elif key == 'url':
                 configs[key] = val
-                configs['api_url'] = val
+                configs['auth_url'] = val
             else:
                 configs[key] = val
 

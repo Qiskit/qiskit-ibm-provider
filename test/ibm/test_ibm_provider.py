@@ -209,7 +209,7 @@ class TestIBMProviderAccounts(IBMTestCase):
 
         self.assertIsInstance(provider, IBMProvider)
         self.assertEqual(provider.credentials.token, qe_token)
-        self.assertEqual(provider.credentials.api_url, qe_url)
+        self.assertEqual(provider.credentials.auth_url, qe_url)
         self.assertEqual(provider.credentials.hub, 'ibm-q')
         self.assertEqual(provider.credentials.group, 'open')
         self.assertEqual(provider.credentials.project, 'main')
@@ -281,7 +281,7 @@ class TestIBMProviderAccounts(IBMTestCase):
                     non_default_provider.credentials.__dict__))
 
         self.assertEqual(saved_provider.credentials.token, qe_token)
-        self.assertEqual(saved_provider.credentials.api_url, qe_url)
+        self.assertEqual(saved_provider.credentials.auth_url, qe_url)
         self.assertEqual(saved_provider.credentials.hub, non_default_provider.credentials.hub)
         self.assertEqual(saved_provider.credentials.group, non_default_provider.credentials.group)
         self.assertEqual(saved_provider.credentials.project,
