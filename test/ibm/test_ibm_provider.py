@@ -63,16 +63,6 @@ class TestIBMProviderEnableAccount(IBMTestCase):
         self.assertEqual(provider.credentials.project, 'main')
 
     @requires_qe_access
-    def test_provider_init_token_url(self, qe_token, qe_url):
-        """Test initializing IBMProvider with API token and URL."""
-        provider = IBMProvider(token=qe_token, url=qe_url)
-        self.assertIsInstance(provider, IBMProvider)
-        self.assertEqual(provider.credentials.token, qe_token)
-        self.assertEqual(provider.credentials.hub, 'ibm-q')
-        self.assertEqual(provider.credentials.group, 'open')
-        self.assertEqual(provider.credentials.project, 'main')
-
-    @requires_qe_access
     def test_provider_init_token_url_hub(self, qe_token, qe_url):
         """Test initializing IBMProvider with API token, URL and Hub."""
         provider = IBMProvider(token=qe_token, url=qe_url, hub='ibm-q')
