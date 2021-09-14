@@ -85,7 +85,7 @@ class RuntimeJob:
             creation_date: Optional[str] = None,
             user_callback: Optional[Callable] = None,
             result_decoder: Type[ResultDecoder] = ResultDecoder,
-            runtime: Optional[str] = ""
+            image: Optional[str] = ""
     ) -> None:
         """RuntimeJob constructor.
 
@@ -99,7 +99,7 @@ class RuntimeJob:
             creation_date: Job creation date, in UTC.
             user_callback: User callback function.
             result_decoder: A :class:`ResultDecoder` subclass used to decode job results.
-            runtime: Runtime image used for this job: image_name:tag.
+            image: Runtime image used for this job: image_name:tag.
         """
         self._job_id = job_id
         self._backend = backend
@@ -111,7 +111,7 @@ class RuntimeJob:
         self._status = JobStatus.INITIALIZING
         self._error_message = None  # type: Optional[str]
         self._result_decoder = result_decoder
-        self._runtime = runtime
+        self._image = image
 
         # Used for streaming
         self._ws_client_future = None  # type: Optional[futures.Future]
@@ -388,14 +388,15 @@ class RuntimeJob:
         """
         return self._backend
 
-    def runtime(self) -> str:
+    @property
+    def image(self) -> str:
         """Return the runtime image used for the job.
 
         Returns:
             Runtime image: image_name:tag or "" if the default
             image is used.
         """
-        return self._runtime
+        return self._image
 
     @property
     def inputs(self) -> Dict:

@@ -76,7 +76,7 @@ class BaseFakeRuntimeJob:
     _executor = ThreadPoolExecutor()  # pylint: disable=bad-option-value,consider-using-with
 
     def __init__(self, job_id, program_id, hub, group, project, backend_name, final_status,
-                 params, runtime):
+                 params, image):
         """Initialize a fake job."""
         self._job_id = job_id
         self._status = final_status or "QUEUED"
@@ -86,7 +86,7 @@ class BaseFakeRuntimeJob:
         self._project = project
         self._backend_name = backend_name
         self._params = params
-        self._runtime = runtime
+        self._image = image
         if final_status is None:
             self._future = self._executor.submit(self._auto_progress)
             self._result = None
@@ -113,7 +113,7 @@ class BaseFakeRuntimeJob:
                 'status': self._status,
                 'params': [self._params],
                 'program': {'id': self._program_id},
-                'runtime': self._runtime}
+                'image': self._image}
 
     def result(self):
         """Return job result."""
@@ -270,7 +270,7 @@ class BaseFakeRuntimeClient:
             credentials: Credentials,
             backend_name: str,
             params: str,
-            runtime: Optional[str] = ""
+            image: Optional[str] = ""
     ):
         """Run the specified program."""
         job_id = uuid.uuid4().hex
@@ -278,7 +278,7 @@ class BaseFakeRuntimeClient:
         job = job_cls(job_id=job_id, program_id=program_id,
                       hub=credentials.hub, group=credentials.group,
                       project=credentials.project, backend_name=backend_name,
-                      params=params, final_status=self._final_status, runtime=runtime,
+                      params=params, final_status=self._final_status, image=image,
                       **self._job_kwargs)
         self._jobs[job_id] = job
         return {'id': job_id}

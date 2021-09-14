@@ -200,7 +200,7 @@ class IBMRuntimeService:
             inputs: Union[Dict, ParameterNamespace],
             callback: Optional[Callable] = None,
             result_decoder: Optional[Type[ResultDecoder]] = None,
-            runtime: Optional[str] = ""
+            image: Optional[str] = ""
     ) -> RuntimeJob:
         """Execute the runtime program.
 
@@ -218,8 +218,8 @@ class IBMRuntimeService:
 
             result_decoder: A :class:`ResultDecoder` subclass used to decode job results.
                 ``ResultDecoder`` is used if not specified.
-            runtime: The runtime image used to execute the program, specified in the form
-                of image_name:tag. Requires near-time-systems-image role.
+            image: The runtime image used to execute the program, specified in the form
+                of image_name:tag. Not all accounts are authorized to select a different image.
 
         Returns:
             A ``RuntimeJob`` instance representing the execution.
@@ -233,6 +233,9 @@ class IBMRuntimeService:
         if isinstance(inputs, ParameterNamespace):
             inputs.validate()
             inputs = vars(inputs)
+        
+        if image and ':' not in image:
+            raise IBMQInputValueError('"image" needs to be in form of image_name:tag')
 
         backend_name = options['backend_name']
         params_str = json.dumps(inputs, cls=RuntimeEncoder)
@@ -241,7 +244,7 @@ class IBMRuntimeService:
                                                 credentials=self._provider.credentials,
                                                 backend_name=backend_name,
                                                 params=params_str,
-                                                runtime=runtime)
+                                                image=image)
 
         backend = self._provider.get_backend(backend_name)
         job = RuntimeJob(backend=backend,
@@ -250,7 +253,7 @@ class IBMRuntimeService:
                          job_id=response['id'], program_id=program_id, params=inputs,
                          user_callback=callback,
                          result_decoder=result_decoder,
-                         runtime=runtime)
+                         image=image)
         return job
 
     def upload_program(

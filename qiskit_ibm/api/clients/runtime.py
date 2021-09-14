@@ -128,7 +128,7 @@ class RuntimeClient:
             credentials: Credentials,
             backend_name: str,
             params: str,
-            runtime: str
+            image: str
     ) -> Dict:
         """Run the specified program.
 
@@ -137,7 +137,7 @@ class RuntimeClient:
             credentials: Credentials used to run the program.
             backend_name: Name of the backend to run the program.
             params: Parameters to use.
-            runtime: The runtime image to use.
+            image: The runtime image to use.
 
         Returns:
             JSON response.
@@ -145,7 +145,7 @@ class RuntimeClient:
         return self.api.program_run(program_id=program_id, hub=credentials.hub,
                                     group=credentials.group, project=credentials.project,
                                     backend_name=backend_name, params=params,
-                                    runtime=runtime)
+                                    image=image)
 
     def program_delete(self, program_id: str) -> None:
         """Delete the specified program.
