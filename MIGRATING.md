@@ -13,7 +13,7 @@ Note: `qiskit-ibm` is not part of the `qiskit` meta package and hence will not b
 1. The `IBMQ` global variable which was an instance of the `IBMQFactory` has been removed.
 1. `IBMQFactory` and `AccountProvider` classes have been removed and the functionality provided by these two classes have been combined and refactored in the new `IBMProvider` class. This class will provide a simplified interface as shown below and serve as the entrypoint going forward.
 
-| Method | Description |
+| Method / Constructor | Description |
 |--------|-------------|
 | IBMProvider.save_account(TOKEN, HUB, GROUP, PROJECT) | Save your account to disk for future use and optionally specify a default provider to return when loading your account. |
 | IBMProvider() | Load account and default provider using saved credentials. |
