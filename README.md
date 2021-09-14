@@ -25,14 +25,14 @@ pip install qiskit-ibm
 1. Copy (and/or optionally regenerate) your API token from your
    [IBM Quantum account page].
 
-1. Take your token from step 2, here called `MY_API_TOKEN`, and save it along with the default open access provider (`hub='ibm-q', group='open', project='main'`) by calling `IBMProvider.save_account()`:
+1. Take your token from step 2, here called `MY_API_TOKEN`, and save it by calling `IBMProvider.save_account()`:
 
    ```python
    from qiskit_ibm import IBMProvider
-   IBMProvider.save_account(token='MY_API_TOKEN', hub='ibm-q', group='open', project='main')
+   IBMProvider.save_account(token='MY_API_TOKEN')
    ```
 
-   The command above stores your credentials and default provider locally in a configuration file called `qiskitrc`. By default, this file is located in `$HOME/.qiskit`, where `$HOME` is your home directory.
+   The command above stores your credentials locally in a configuration file called `qiskitrc`. By default, this file is located in `$HOME/.qiskit`, where `$HOME` is your home directory.
    Once saved you can then instantiate the open access provider (`hub='ibm-q', group='open', project='main'`) like below and access the backends:
 
    ```python
@@ -79,12 +79,6 @@ Then instantiate the provider without any arguments and access the backends:
 ```python
 from qiskit_ibm import IBMProvider
 provider = IBMProvider()
-
-# display current supported backends
-print(provider.backends())
-
-# get IBM's simulator backend
-simulator_backend = provider.get_backend('ibmq_qasm_simulator')
 ```
 
 ### Enable Account for Current Session
@@ -92,13 +86,7 @@ As another alternative, you can also enable an account just for the current sess
 
 ```python
 from qiskit_ibm import IBMProvider
-provider = IBMProvider(token='MY_API_TOKEN', hub='ibm-q', group='open', project='main')
-
-# display current supported backends
-print(provider.backends())
-
-# get IBM's simulator backend
-simulator_backend = provider.get_backend('ibmq_qasm_simulator')
+provider = IBMProvider(token='MY_API_TOKEN', hub='ibm-q', group='test', project='default')
 ```
 
 ## Contribution Guidelines
