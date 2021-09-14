@@ -319,6 +319,7 @@ class TestIBMProviderAccounts(IBMTestCase):
     @requires_qe_access
     def test_active_account(self, qe_token, qe_url):
         """Test get active account """
+        IBMProvider._disable_account()
         self.assertIsNone(IBMProvider.active_account())
 
         IBMProvider(qe_token, qe_url)
