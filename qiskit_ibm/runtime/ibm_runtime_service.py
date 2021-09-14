@@ -233,7 +233,7 @@ class IBMRuntimeService:
         if isinstance(inputs, ParameterNamespace):
             inputs.validate()
             inputs = vars(inputs)
-        
+
         if image and ':' not in image:
             raise IBMQInputValueError('"image" needs to be in form of image_name:tag')
 
