@@ -234,7 +234,8 @@ class IBMRuntimeService:
             inputs.validate()
             inputs = vars(inputs)
 
-        if image and ':' not in image:
+        colon_index = image.find(":")
+        if image and (image.count(":") != 1 or colon_index == 0 or colon_index == len(image) - 1):
             raise IBMQInputValueError('"image" needs to be in form of image_name:tag')
 
         backend_name = options['backend_name']
