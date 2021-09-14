@@ -73,17 +73,6 @@ class TestIBMProviderEnableAccount(IBMTestCase):
         self.assertEqual(provider.credentials.project, 'main')
 
     @requires_qe_access
-    def test_provider_init_token_url_hgp(self, qe_token, qe_url):
-        """Test initializing IBMProvider with API token, URL and Hub/Group/Project."""
-        provider = IBMProvider(
-            token=qe_token, url=qe_url, hub='ibm-q', group='open', project='main')
-        self.assertIsInstance(provider, IBMProvider)
-        self.assertEqual(provider.credentials.token, qe_token)
-        self.assertEqual(provider.credentials.hub, 'ibm-q')
-        self.assertEqual(provider.credentials.group, 'open')
-        self.assertEqual(provider.credentials.project, 'main')
-
-    @requires_qe_access
     def test_provider_init_token_url_hub(self, qe_token, qe_url):
         """Test initializing IBMProvider with API token, URL and Hub."""
         provider = IBMProvider(token=qe_token, url=qe_url, hub='ibm-q')
@@ -114,6 +103,17 @@ class TestIBMProviderEnableAccount(IBMTestCase):
         self.assertEqual(provider.credentials.project, 'main')
 
     @requires_qe_access
+    def test_provider_init_non_default_provider(self, qe_token, qe_url):
+        """Test initializing IBMProvider with a non default provider."""
+        non_default_provider = get_provider(qe_token, qe_url, default=False)
+        enabled_provider = IBMProvider(
+            token=qe_token, url=qe_url,
+            hub=non_default_provider.credentials.hub,
+            group=non_default_provider.credentials.group,
+            project=non_default_provider.credentials.project)
+        self.assertEqual(non_default_provider, enabled_provider)
+
+    @requires_qe_access
     def test_pass_unreachable_proxy(self, qe_token, qe_url):
         """Test using an unreachable proxy while enabling an account."""
         proxies = {
@@ -126,17 +126,6 @@ class TestIBMProviderEnableAccount(IBMTestCase):
             IBMProvider._disable_account()
             IBMProvider(qe_token, qe_url, proxies=proxies)
         self.assertIn('ProxyError', str(context_manager.exception))
-
-    @requires_qe_access
-    def test_enable_specified_provider(self, qe_token, qe_url):
-        """Test enabling an account with a specified provider."""
-        non_default_provider = get_provider(qe_token, qe_url, default=False)
-        enabled_provider = IBMProvider(
-            token=qe_token, url=qe_url,
-            hub=non_default_provider.credentials.hub,
-            group=non_default_provider.credentials.group,
-            project=non_default_provider.credentials.project)
-        self.assertEqual(non_default_provider, enabled_provider)
 
     def test_provider_init_non_auth_url(self):
         """Test initializing IBMProvider with a non-auth URL."""
