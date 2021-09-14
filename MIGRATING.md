@@ -11,7 +11,17 @@ Note: `qiskit-ibm` is not part of the `qiskit` meta package and hence will not b
 
 ## Breaking Changes
 1. The `IBMQ` global variable which was an instance of the `IBMQFactory` has been removed.
-1. `IBMQFactory` and `AccountProvider` classes have been removed and the functionality provided by these two classes have been combined and refactored in the new `IBMProvider` class. This class will provide a simplified interface and serve as the entrypoint going forward.
+1. `IBMQFactory` and `AccountProvider` classes have been removed and the functionality provided by these two classes have been combined and refactored in the new `IBMProvider` class. This class will provide a simplified interface as shown below and serve as the entrypoint going forward.
+
+| Method | Description |
+|--------|-------------|
+| IBMProvider.save_account(TOKEN, HUB, GROUP, PROJECT) | Save your account to disk for future use and optionally specify a default provider to return when loading your account. |
+| IBMProvider() | Load account and default provider using saved credentials. |
+| IBMProvider.providers() | List the providers available to your account. |
+| IBMProvider.saved_account() | View the account saved to disk. |
+| IBMProvider.delete_account() | Delete the saved account from disk. |
+| IBMProvider(TOKEN, HUB, GROUP, PROJECT) | Enable your account in the current session and optionally specify a default provider to return. |
+| IBMProvider.active_account() | List the account currently active in the session. |
 
 Use the examples below to migrate your existing code:
 
@@ -20,21 +30,13 @@ Use the examples below to migrate your existing code:
 Before
 ```python
 from qiskit import IBMQ
-IBMQ.save_account(token='MY_API_TOKEN',
-                  url='https://auth.quantum-computing.ibm.com/api',
-                  hub='ibm-q',
-                  group='open',
-                  project='main')
+IBMQ.save_account(token='MY_API_TOKEN')
 provider = IBMQ.load_account() # loads saved account and default provider from disk
 ```
 After
 ```python
 from qiskit_ibm import IBMProvider
-IBMProvider.save_account(token='MY_API_TOKEN',
-                         url='https://auth.quantum-computing.ibm.com/api',
-                         hub='ibm-q',
-                         group='open',
-                         project='main')
+IBMProvider.save_account(token='MY_API_TOKEN')
 provider = IBMProvider() # loads saved account and default provider from disk
 ```
 
@@ -65,19 +67,6 @@ from qiskit_ibm import IBMProvider
 provider = IBMProvider() # loads account and default provider from env variables
 ```
 
-### Enable Account
-
-Before
-```python
-from qiskit import IBMQ
-provider = IBMQ.enable_account(token='MY_API_TOKEN') # enable account for current session and instantiate default provider
-```
-After
-```python
-from qiskit_ibm import IBMProvider
-provider = IBMProvider(token='MY_API_TOKEN') # enable account for current session and instantiate default provider
-```
-
 ### List Providers
 
 Before
@@ -96,41 +85,6 @@ IBMProvider.providers() # view list of providers available to the saved account
 
 # [<IBMProvider(hub='ibm-q', group='open', project='main')>,
 #  <IBMProvider(hub='ibm-q', group='test', project='default')>]
-```
-
-### Switch Providers
-
-Before
-```python
-from qiskit import IBMQ
-IBMQ.load_account() # load saved account with default provider
-premium_provider = IBMQ.get_provider(hub='ibm-q', group='test', project='default') # switch to using a premium provider
-```
-After
-```python
-from qiskit_ibm import IBMProvider
-provider = IBMProvider(hub='ibm-q', group='test', project='default') # loads saved account and instantiates the premium provider
-```
-
-### Active Account
-
-Before
-```python
-from qiskit import IBMQ
-provider = IBMQ.load_account() # load saved account with default provider
-IBMQ.active_account() # check active account
-
-# {'token': 'MY_API_TOKEN',
-#  'url': 'https://auth.quantum-computing.ibm.com/api'}
-```
-After
-```python
-from qiskit_ibm import IBMProvider
-provider = IBMProvider() # load saved account with default provider
-IBMProvider.active_account() # check active account
-
-# {'token': 'MY_API_TOKEN',
-#  'url': 'https://auth.quantum-computing.ibm.com/api'}
 ```
 
 ### Saved Account
@@ -168,6 +122,54 @@ IBMProvider.delete_account() # delete saved account from qiskitrc file
 Follow the provider setup instructions in the [README] to learn more.
 
 A lot of other classes have been renamed but may not be directly used by most users. Please see the [Appendix](#class-name-changes) for a complete list.
+
+### Enable Account
+
+Before
+```python
+from qiskit import IBMQ
+provider = IBMQ.enable_account(token='MY_API_TOKEN') # enable account for current session and instantiate default provider
+```
+After
+```python
+from qiskit_ibm import IBMProvider
+provider = IBMProvider(token='MY_API_TOKEN') # enable account for current session and instantiate default provider
+```
+
+### Switch Providers
+
+Before
+```python
+from qiskit import IBMQ
+IBMQ.load_account() # load saved account with default provider
+premium_provider = IBMQ.get_provider(hub='ibm-q', group='test', project='default') # switch to using a premium provider
+```
+After
+```python
+from qiskit_ibm import IBMProvider
+provider = IBMProvider(hub='ibm-q', group='test', project='default') # loads saved account and instantiates the premium provider
+```
+
+### Active Account
+
+Before
+```python
+from qiskit import IBMQ
+provider = IBMQ.load_account() # load saved account with default provider
+IBMQ.active_account() # check active account
+
+# {'token': 'MY_API_TOKEN',
+#  'url': 'https://auth.quantum-computing.ibm.com/api'}
+```
+After
+```python
+from qiskit_ibm import IBMProvider
+provider = IBMProvider() # load saved account with default provider
+IBMProvider.active_account() # check active account
+
+# {'token': 'MY_API_TOKEN',
+#  'url': 'https://auth.quantum-computing.ibm.com/api'}
+```
 
 ## Clean up
 1. Uninstall `qiskit-ibmq-provider`:
