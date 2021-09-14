@@ -58,9 +58,10 @@ class IBMProvider(Provider):
     Credentials can be saved to disk by calling the `save_account()` method::
 
         from qiskit_ibm import IBMProvider
-        IBMProvider.save_account(token=<INSERT_IBM_QUANTUM_TOKEN>, hub='ibm-q', group='open',
-                                 project='main')
+        IBMProvider.save_account(token=<INSERT_IBM_QUANTUM_TOKEN>)
 
+    The open access provider (`ibm-q/open/main`) is the default provider, but you can overwrite
+    this default using the `hub`, `group`, and `project` keywords in `save_account()`.
     Once credentials are saved you can simply instantiate the provider like below to load the
     saved account and default provider::
 
@@ -73,15 +74,15 @@ class IBMProvider(Provider):
         from qiskit_ibm import IBMProvider
         provider = IBMProvider(hub='ibm-q', group='test', project='default')
 
-    Alternatively, you can also set the environment
+    Instead of saving credentials to disk, you can also set the environment
     variables QISKIT_IBM_API_TOKEN, QISKIT_IBM_API_URL, QISKIT_IBM_HUB, QISKIT_IBM_GROUP
     and QISKIT_IBM_PROJECT and then instantiate the provider like below::
 
         from qiskit_ibm import IBMProvider
         provider = IBMProvider()
 
-    As another alternative, you can access the default provider by instantiating this class
-    and providing the API token to use during the current session::
+    You can also enable an account just for the current session by instantiating
+    the provider with the API token and optionally a hub/group/project::
 
         from qiskit_ibm import IBMProvider
         provider = IBMProvider(token=<INSERT_IBM_QUANTUM_TOKEN>)
@@ -130,6 +131,10 @@ class IBMProvider(Provider):
     """
 
     _credentials: Credentials = None
+    """Contains credentials of a new IBMProvider being initialized. If None, all the
+    provider instances have already been initialized and __new__ should return an
+    existing instance."""
+
     _providers: Dict[HubGroupProject, 'IBMProvider'] = OrderedDict()
 
     def __new__(
@@ -150,13 +155,16 @@ class IBMProvider(Provider):
             group: Name of the group to use.
             project: Name of the project to use.
             **kwargs: Additional settings for the connection:
-
                 * proxies (dict): proxy configuration.
                 * verify (bool): verify the server's TLS certificate.
 
         Returns:
             If `hub`, `group`, and `project` are specified, the corresponding provider
-            is returned. Otherwise the provider for the open access project is returned.
+            is returned. Otherwise the default provider is looked up in the
+            following order and returned:
+                * environment variables (QISKIT_IBM_HUB, QISKIT_IBM_GROUP and QISKIT_IBM_PROJECT)
+                * default_provider (hub/group/project) saved to disk
+                * open access provider (ibmq/open/main)
 
         Raises:
             IBMProviderCredentialsInvalidFormat: If the default provider saved on
@@ -371,19 +379,11 @@ class IBMProvider(Provider):
 
         Raises:
             IBMProviderError: If no provider matches the specified criteria,
-                or more than one provider matches the specified criteria.
+                if more than one provider matches the specified criteria or if
+                no provider could be found for this account.
         """
-        providers = cls._get_providers()
-        # Prevent edge case where no hubs are available.
-        if not providers:
-            logger.warning('No Hub/Group/Projects could be found for this '
-                           'account.')
-            return None
-        # The provider for the default open access project.
-        default_provider = providers[0]
-        # If any `hub`, `group`, or `project` is specified, return the corresponding provider.
+        providers = cls._get_providers(hub=hub, group=group, project=project)
         if any([hub, group, project]):
-            providers = cls._get_providers(hub=hub, group=group, project=project)
             if not providers:
                 raise IBMProviderError('No provider matches the specified criteria: '
                                        'hub = {}, group = {}, project = {}'
@@ -392,8 +392,10 @@ class IBMProvider(Provider):
                 raise IBMProviderError('More than one provider matches the specified criteria.'
                                        'hub = {}, group = {}, project = {}'
                                        .format(hub, group, project))
-            default_provider = providers[0]
-        return default_provider
+        elif not providers:
+            # Prevent edge case where no providers are available.
+            raise IBMProviderError('No Hub/Group/Project could be found for this account.')
+        return providers[0]
 
     def __init__(
             self,

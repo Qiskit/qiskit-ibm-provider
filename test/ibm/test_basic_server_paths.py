@@ -20,7 +20,7 @@ from qiskit.test import slow_test
 from qiskit.test.reference_circuits import ReferenceCircuits
 
 from qiskit_ibm import least_busy
-from qiskit_ibm.exceptions import IBMBackendValueError
+from qiskit_ibm.exceptions import IBMBackendJobLimitError
 
 from ..decorators import requires_providers
 from ..ibm_test_case import IBMTestCase
@@ -116,7 +116,7 @@ class TestBasicServerPaths(IBMTestCase):
             try:
                 job = backend.run(transpiled)
                 return job
-            except IBMBackendValueError as err:
+            except IBMBackendJobLimitError as err:
                 limit_error = err
                 time.sleep(1)
 

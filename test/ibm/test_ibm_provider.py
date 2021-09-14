@@ -160,7 +160,8 @@ class TestIBMProviderEnableAccount(IBMTestCase):
 
     def test_provider_init_no_credentials(self):
         """Test initializing IBMProvider with no credentials."""
-        with self.assertRaises(IBMProviderCredentialsNotFound) as context_manager, \
+        with custom_qiskitrc(), \
+             self.assertRaises(IBMProviderCredentialsNotFound) as context_manager, \
              no_envs(CREDENTIAL_ENV_VARS):
             IBMProvider()
 
