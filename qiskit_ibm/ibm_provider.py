@@ -155,6 +155,7 @@ class IBMProvider(Provider):
             group: Name of the group to use.
             project: Name of the project to use.
             **kwargs: Additional settings for the connection:
+
                 * proxies (dict): proxy configuration.
                 * verify (bool): verify the server's TLS certificate.
 
@@ -162,6 +163,7 @@ class IBMProvider(Provider):
             If `hub`, `group`, and `project` are specified, the corresponding provider
             is returned. Otherwise the default provider is looked up in the
             following order and returned:
+
                 * environment variables (QISKIT_IBM_HUB, QISKIT_IBM_GROUP and QISKIT_IBM_PROJECT)
                 * default_provider (hub/group/project) saved to disk
                 * open access provider (ibmq/open/main)
