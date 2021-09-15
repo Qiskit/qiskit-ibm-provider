@@ -1,6 +1,6 @@
 # This code is part of Qiskit.
 #
-# (C) Copyright IBM 2018, 2021.
+# (C) Copyright IBM 2021.
 #
 # This code is licensed under the Apache License, Version 2.0. You may
 # obtain a copy of this license in the LICENSE.txt file in the root directory
@@ -9,7 +9,6 @@
 # Any modifications or derivative works of this code must retain this
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
-# pylint: disable=cyclic-import
 
 """
 ======================================
@@ -26,7 +25,6 @@ Classes
 .. autosummary::
     :toctree: ../stubs/
 
-    IBMQJob
     IBMCircuitJob
     IBMCompositeJob
     QueueInfo
@@ -44,17 +42,17 @@ Exception
 .. autosummary::
     :toctree: ../stubs/
 
-    IBMQJobError
-    IBMQJobApiError
-    IBMQJobFailureError
-    IBMQJobInvalidStateError
-    IBMQJobTimeoutError
+    IBMJobError
+    IBMJobApiError
+    IBMJobFailureError
+    IBMJobInvalidStateError
+    IBMJobTimeoutError
 """
 
-from .ibmqjob import IBMQJob
+from .ibm_job import IBMJob
 from .ibm_circuit_job import IBMCircuitJob
 from .ibm_composite_job import IBMCompositeJob
 from .queueinfo import QueueInfo
-from .exceptions import (IBMQJobError, IBMQJobApiError, IBMQJobFailureError,
-                         IBMQJobInvalidStateError, IBMQJobTimeoutError)
+from .exceptions import (IBMJobError, IBMJobApiError, IBMJobFailureError,
+                         IBMJobInvalidStateError, IBMJobTimeoutError)
 from .job_monitor import job_monitor

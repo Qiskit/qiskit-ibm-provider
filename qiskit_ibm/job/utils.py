@@ -1,6 +1,6 @@
 # This code is part of Qiskit.
 #
-# (C) Copyright IBM 2018, 2019.
+# (C) Copyright IBM 2021.
 #
 # This code is licensed under the Apache License, Version 2.0. You may
 # obtain a copy of this license in the LICENSE.txt file in the root directory
@@ -10,7 +10,7 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-"""Utilities for working with IBM Quantum Experience jobs."""
+"""Utilities for working with IBM Quantum jobs."""
 
 from typing import Dict, List, Generator, Any, Callable, Optional, NamedTuple, Tuple
 from contextlib import contextmanager
@@ -18,7 +18,7 @@ from contextlib import contextmanager
 from qiskit.providers.jobstatus import JobStatus
 
 from ..api.exceptions import ApiError
-from .exceptions import IBMQJobApiError
+from .exceptions import IBMJobApiError
 from .queueinfo import QueueInfo
 
 JOB_STATUS_TO_INT = {
@@ -65,11 +65,11 @@ def get_cancel_status(cancel_response: Dict[str, Any]) -> bool:
 
 @contextmanager
 def api_to_job_error() -> Generator[None, None, None]:
-    """Convert an ``ApiError`` to an ``IBMQJobApiError``."""
+    """Convert an ``ApiError`` to an ``IBMJobApiError``."""
     try:
         yield
     except ApiError as api_err:
-        raise IBMQJobApiError(str(api_err)) from api_err
+        raise IBMJobApiError(str(api_err)) from api_err
 
 
 def auto_retry(func: Callable, *args: Any, **kwargs: Any) -> Any:
