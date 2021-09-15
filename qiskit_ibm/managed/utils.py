@@ -1,6 +1,6 @@
 # This code is part of Qiskit.
 #
-# (C) Copyright IBM 2019, 2020.
+# (C) Copyright IBM 2021.
 #
 # This code is licensed under the Apache License, Version 2.0. You may
 # obtain a copy of this license in the LICENSE.txt file in the root directory
@@ -10,7 +10,7 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-"""Utility functions for ``IBMQJobManager``."""
+"""Utility functions for ``IBMJobManager``."""
 
 import re
 from typing import Callable, Any, List, Union
@@ -25,7 +25,7 @@ from .managedjob import ManagedJob
 JOB_SET_NAME_FORMATTER = "{}_{}_"
 """Formatter for the name of a job in a job set. The first entry is the job set
 name, whereas the second entry is the job's index in the job set."""
-JOB_SET_NAME_RE = re.compile(r'(.*)_([0-9])+_$')
+JOB_SET_NAME_RE = re.compile(r'(.*)_([0-9]+)_$')
 """Regex used to match the name of a job in a job set. The first captured group is
 the job set name, whereas the second captured group is the job's index in the job set."""
 

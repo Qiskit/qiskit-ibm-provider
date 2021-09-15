@@ -1,6 +1,6 @@
 # This code is part of Qiskit.
 #
-# (C) Copyright IBM 2018, 2019.
+# (C) Copyright IBM 2021.
 #
 # This code is licensed under the Apache License, Version 2.0. You may
 # obtain a copy of this license in the LICENSE.txt file in the root directory
@@ -13,6 +13,8 @@
 """Values used by the API for different values."""
 
 import enum
+
+QISKIT_IBM_API_URL = 'https://auth.quantum-computing.ibm.com/api'
 
 
 class ApiJobStatus(enum.Enum):
@@ -57,12 +59,3 @@ class ApiJobKind(enum.Enum):
     QOBJECT = 'q-object'
     QOBJECT_STORAGE = 'q-object-external-storage'
     CIRCUIT = 'q-circuit'
-
-
-class ApiJobShareLevel(enum.Enum):
-    """Possible values used by the API for job share levels."""
-    GLOBAL = 'global'
-    HUB = 'hub'
-    GROUP = 'group'
-    PROJECT = 'project'
-    NONE = 'none'

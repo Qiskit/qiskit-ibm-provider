@@ -1,6 +1,6 @@
 # This code is part of Qiskit.
 #
-# (C) Copyright IBM 2017, 2019.
+# (C) Copyright IBM 2021.
 #
 # This code is licensed under the Apache License, Version 2.0. You may
 # obtain a copy of this license in the LICENSE.txt file in the root directory
@@ -19,9 +19,9 @@ from typing import Union
 import ipywidgets as wid
 import plotly.graph_objects as go
 from qiskit.test.mock.fake_backend import FakeBackend
-from qiskit_ibm.ibmqbackend import IBMQBackend
+from qiskit_ibm.ibm_backend import IBMBackend
 
-from ..ibmqbackend import IBMQBackend
+from ..ibm_backend import IBMBackend
 from ..visualization.interactive.plotly_wrapper import PlotlyWidget
 
 MONTH_NAMES = {1: 'Jan.',
@@ -103,7 +103,7 @@ tr:nth-child(even) {background-color: #f6f6f6 !important;}
     return table_html
 
 
-def _job_summary(backend: Union[IBMQBackend, FakeBackend]) -> PlotlyWidget:
+def _job_summary(backend: Union[IBMBackend, FakeBackend]) -> PlotlyWidget:
     """Interactive jobs summary for a backend.
 
     Args:
@@ -114,8 +114,7 @@ def _job_summary(backend: Union[IBMQBackend, FakeBackend]) -> PlotlyWidget:
     """
     now = datetime.datetime.now()
     past_year_date = now - datetime.timedelta(days=365)
-    date_filter = {'creationDate': {'gt': past_year_date.isoformat()}}
-    jobs = backend.jobs(limit=None, db_filter=date_filter)
+    jobs = backend.jobs(limit=None, start_datetime=past_year_date)
 
     num_jobs = len(jobs)
     main_str = "<b>Total Jobs</b><br>{}".format(num_jobs)
@@ -254,7 +253,7 @@ def _job_summary(backend: Union[IBMQBackend, FakeBackend]) -> PlotlyWidget:
     return sun_wid
 
 
-def jobs_tab(backend: Union[IBMQBackend, FakeBackend]) -> wid.HBox:
+def jobs_tab(backend: Union[IBMBackend, FakeBackend]) -> wid.HBox:
     """Construct a widget containing job information for an input backend.
 
     Args:
