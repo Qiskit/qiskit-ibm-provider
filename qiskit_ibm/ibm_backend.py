@@ -65,7 +65,7 @@ class IBMBackend(Backend):
     instance that represents the submitted job. Each job has a unique job ID, which
     can later be used to retrieve the job. An example of this flow::
 
-        from qiskit import assemble, transpile
+        from qiskit import transpile
         from qiskit_ibm import IBMProvider
         from qiskit.circuit.random import random_circuit
 
@@ -74,6 +74,7 @@ class IBMBackend(Backend):
         qx = random_circuit(n_qubits=5, depth=4)
         transpiled = transpile(qx, backend=backend)
         job = backend.run(transpiled)
+        retrieved_job = provider.backend.retrieve_job(job.job_id())
 
     Note:
 
