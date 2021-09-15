@@ -228,6 +228,7 @@ class TestIBMJob(IBMTestCase):
         for arg in status_args:
             with self.subTest(arg=arg):
                 backend_jobs = self.provider.backend.jobs(
+                    backend_name=self.sim_backend.name(),
                     limit=5, skip=5, status=arg, start_datetime=self.last_month)
                 self.assertTrue(backend_jobs)
 
