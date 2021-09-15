@@ -103,16 +103,8 @@ tr:nth-child(even) {background-color: #f6f6f6 !important;}
     return table_html
 
 
-<< << << < HEAD
-def _job_summary(backend: Union[IBMQBackend, FakeBackend], **kwargs: Any) -> PlotlyWidget:
-
-
-== == == =
-def _job_summary(backend: Union[IBMBackend, FakeBackend]) -> PlotlyWidget:
-
-
->>>>>> > main
-"""Interactive jobs summary for a backend.
+def _job_summary(backend: Union[IBMBackend, FakeBackend], **kwargs: Any) -> PlotlyWidget:
+    """Interactive jobs summary for a backend.
 
     Args:
         backend: Display jobs summary for this backend.
@@ -127,19 +119,19 @@ def _job_summary(backend: Union[IBMBackend, FakeBackend]) -> PlotlyWidget:
     Returns:
         A figure for the rendered job summary.
     """
-now = datetime.datetime.now()
-past_year_date = now - datetime.timedelta(days=365)
-limit = kwargs.pop('limit', None)
-start_datetime = kwargs.pop('start_datetime', past_year_date)
-provider = backend.provider()
-jobs = provider.backend.jobs(backend_name=backend.name(),
-                             limit=limit, start_datetime=start_datetime)
+    now = datetime.datetime.now()
+    past_year_date = now - datetime.timedelta(days=365)
+    limit = kwargs.pop('limit', None)
+    start_datetime = kwargs.pop('start_datetime', past_year_date)
+    provider = backend.provider()
+    jobs = provider.backend.jobs(backend_name=backend.name(),
+                                 limit=limit, start_datetime=start_datetime)
 
-num_jobs = len(jobs)
- main_str = "<b>Total Jobs</b><br>{}".format(num_jobs)
-  jobs_dates = {}
+    num_jobs = len(jobs)
+    main_str = "<b>Total Jobs</b><br>{}".format(num_jobs)
+    jobs_dates = {}
 
-   for job in jobs:
+    for job in jobs:
         _date = job.creation_date()
         _year = _date.year
         _id = job.job_id()
