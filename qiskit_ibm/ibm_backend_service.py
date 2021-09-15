@@ -269,7 +269,7 @@ class IBMBackendService:
         Args:
             api_filter: Filter used for querying.
             limit: limit: Number of jobs to retrieve. ``None`` means no limit.
-            skip: skip: Starting index for the job retrieval.
+            skip: Starting index for the job retrieval.
             descending: If ``True``, return the jobs in descending order of the job
                 creation date (i.e. newest first) until the limit is reached.
 
