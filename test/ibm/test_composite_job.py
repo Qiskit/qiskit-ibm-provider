@@ -27,20 +27,20 @@ from qiskit.providers.models import BackendProperties
 from qiskit.providers.jobstatus import JobStatus, JOB_FINAL_STATES
 from qiskit.test.reference_circuits import ReferenceCircuits
 
-from qiskit_ibm.job.exceptions import (IBMQJobFailureError, IBMQJobInvalidStateError,
-                                       IBMQJobNotFoundError, IBMQJobTimeoutError)
+from qiskit_ibm.job.exceptions import (IBMJobFailureError, IBMJobInvalidStateError,
+                                       IBMJobNotFoundError, IBMJobTimeoutError)
 from qiskit_ibm.job import IBMCompositeJob
 from qiskit_ibm.job.constants import IBM_COMPOSITE_JOB_TAG_PREFIX, IBM_COMPOSITE_JOB_ID_PREFIX
 from qiskit_ibm.apiconstants import ApiJobStatus
 
-from ..ibmqtestcase import IBMQTestCase
+from ..ibm_test_case import IBMTestCase
 from ..decorators import requires_provider
 from ..fake_account_client import (BaseFakeAccountClient, CancelableFakeJob,
                                    JobSubmitFailClient, BaseFakeJob, FailedFakeJob,
                                    JobTimeoutClient, FixedStatusFakeJob, MissingFieldFakeJob)
 
 
-class TestIBMCompositeJob(IBMQTestCase):
+class TestIBMCompositeJob(IBMTestCase):
     """Tests for IBMCompositeJob."""
 
     @classmethod
@@ -280,7 +280,7 @@ class TestIBMCompositeJob(IBMQTestCase):
         job_set = self.fake_backend.run([self._qc] * 2, max_circuits_per_job=1)
         job_set.wait_for_final_state()
         self.assertEqual(job_set.status(), JobStatus.ERROR)
-        with self.assertRaises(IBMQJobFailureError):
+        with self.assertRaises(IBMJobFailureError):
             job_set.result()
         self.assertIn("Circuits 0-0: Job submit failed", job_set.error_message())
         report = job_set.report()
@@ -419,7 +419,7 @@ class TestIBMCompositeJob(IBMQTestCase):
         job_set.block_for_submit()
         job_set.cancel()
         self.assertEqual(job_set.status(), JobStatus.CANCELLED)
-        with self.assertRaises(IBMQJobInvalidStateError):
+        with self.assertRaises(IBMJobInvalidStateError):
             job_set.result(partial=False)
 
     def test_creation_date(self):
@@ -532,7 +532,7 @@ class TestIBMCompositeJob(IBMQTestCase):
 
     def test_retrieve_job_error(self):
         """Test retrieving an invalid job."""
-        with self.assertRaises(IBMQJobNotFoundError):
+        with self.assertRaises(IBMJobNotFoundError):
             self.fake_backend.retrieve_job(IBM_COMPOSITE_JOB_ID_PREFIX + '1234')
 
     def test_missing_required_fields(self):
@@ -599,7 +599,7 @@ class TestIBMCompositeJob(IBMQTestCase):
     def test_wait_for_final_state_timeout(self):
         """Test waiting for job to reach final state times out."""
         job_set = self.fake_backend.run([self._qc] * 2, max_circuits_per_job=1)
-        with self.assertRaises(IBMQJobTimeoutError):
+        with self.assertRaises(IBMJobTimeoutError):
             job_set.wait_for_final_state(timeout=0.1)
 
     def test_retry_failed_submit(self):
@@ -682,7 +682,7 @@ class TestIBMCompositeJob(IBMQTestCase):
         self.assertIn(circs[circ_idx], job_set.sub_job(circ_idx).circuits())
 
 
-class TestIBMCompositeJobIntegration(IBMQTestCase):
+class TestIBMCompositeJobIntegration(IBMTestCase):
     """Integration tests for IBMCompositeJob."""
 
     @classmethod
@@ -760,7 +760,7 @@ class TestIBMCompositeJobIntegration(IBMQTestCase):
                 try:
                     job._api_client.job_update_attribute(
                         job_id=job.job_id(), attr_name='tags', attr_value=[])
-                    with self.assertRaises(IBMQJobInvalidStateError) as err_cm:
+                    with self.assertRaises(IBMJobInvalidStateError) as err_cm:
                         self.sim_backend.retrieve_job(job_set.job_id())
                     self.assertIn(f"tags", str(err_cm.exception))
                 finally:

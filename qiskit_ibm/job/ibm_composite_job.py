@@ -83,7 +83,7 @@ class IBMCompositeJob(IBMJob):
     traditional jobs.
 
     ``IBMCompositeJob`` also allows you to re-run failed jobs, using the
-    :meth:`rerun-failed()` method. This method will re-submit all failed or
+    :meth:`rerun_failed()` method. This method will re-submit all failed or
     cancelled sub-jobs. Any circuits that failed to be submitted (e.g. due to
     server error) will only be re-submitted if the circuits are known. That is,
     if this ``IBMCompositeJob`` was returned by
@@ -592,7 +592,7 @@ class IBMCompositeJob(IBMJob):
             for sub_job in self._sub_jobs:
                 report.append(' '*4 + f'Circuits {sub_job.start_index}-{sub_job.end_index}:')
                 report.append(' '*6 + f'Job index: {sub_job.job_index}')
-                if sub_job.job:
+                if sub_job.job and sub_job.job.job_id() in status_by_id:
                     report.append(' '*6 + f'Job ID: {sub_job.job.job_id()}')
                     report.append(' '*6 + f'Status: {status_by_id[sub_job.job.job_id()]}')
                 elif sub_job.submit_error:
