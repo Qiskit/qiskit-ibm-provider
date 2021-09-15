@@ -1,6 +1,6 @@
 # This code is part of Qiskit.
 #
-# (C) Copyright IBM 2021.
+# (C) Copyright IBM 2017, 2019.
 #
 # This code is licensed under the Apache License, Version 2.0. You may
 # obtain a copy of this license in the LICENSE.txt file in the root directory
@@ -14,14 +14,14 @@
 """Interactive Jobs widget."""
 
 import datetime
-from typing import Any, Union
+from typing import Union
 
 import ipywidgets as wid
 import plotly.graph_objects as go
 from qiskit.test.mock.fake_backend import FakeBackend
-from qiskit_ibm.ibm_backend import IBMBackend
+from qiskit_ibm.ibmqbackend import IBMQBackend
 
-from ..ibm_backend import IBMBackend
+from ..ibmqbackend import IBMQBackend
 from ..visualization.interactive.plotly_wrapper import PlotlyWidget
 
 MONTH_NAMES = {1: 'Jan.',
@@ -103,29 +103,18 @@ tr:nth-child(even) {background-color: #f6f6f6 !important;}
     return table_html
 
 
-def _job_summary(backend: Union[IBMBackend, FakeBackend], **kwargs: Any) -> PlotlyWidget:
+def _job_summary(backend: Union[IBMQBackend, FakeBackend]) -> PlotlyWidget:
     """Interactive jobs summary for a backend.
 
     Args:
         backend: Display jobs summary for this backend.
-        **kwargs: Used only for testing purposes:
-
-            * limit - Number of jobs to retrieve.
-            * start_datetime - Filter by the given start date, in local time. This is used to
-                find jobs whose creation dates are after (greater than or equal to) this
-                local date/time.
-
 
     Returns:
         A figure for the rendered job summary.
     """
     now = datetime.datetime.now()
     past_year_date = now - datetime.timedelta(days=365)
-    limit = kwargs.pop('limit', None)
-    start_datetime = kwargs.pop('start_datetime', past_year_date)
-    provider = backend.provider()
-    jobs = provider.backend.jobs(backend_name=backend.name(),
-                                 limit=limit, start_datetime=start_datetime)
+    jobs = backend.jobs(limit=None, start_datetime=past_year_date)
 
     num_jobs = len(jobs)
     main_str = "<b>Total Jobs</b><br>{}".format(num_jobs)
@@ -264,17 +253,11 @@ def _job_summary(backend: Union[IBMBackend, FakeBackend], **kwargs: Any) -> Plot
     return sun_wid
 
 
-def jobs_tab(backend: Union[IBMBackend, FakeBackend], **kwargs: Any) -> wid.HBox:
+def jobs_tab(backend: Union[IBMQBackend, FakeBackend]) -> wid.HBox:
     """Construct a widget containing job information for an input backend.
 
     Args:
         backend: Input backend.
-        **kwargs: Used only for testing purposes:
-
-            * limit - Number of jobs to retrieve.
-            * start_datetime - Filter by the given start date, in local time. This is used to
-                find jobs whose creation dates are after (greater than or equal to) this
-                local date/time.
 
     Returns:
         An widget containing job summary.
@@ -285,7 +268,7 @@ def jobs_tab(backend: Union[IBMBackend, FakeBackend], **kwargs: Any) -> wid.HBox
                                            width='100%',
                                            overflow='hidden scroll',))
 
-    sun_wid = _job_summary(backend, **kwargs)
+    sun_wid = _job_summary(backend)
     sun_wid._table = table
     sun_wid._title = title
 
