@@ -253,7 +253,9 @@ class TestIBMJob(IBMTestCase):
         """Test retrieving jobs filtered by multiple job statuses."""
         statuses_to_filter = [JobStatus.ERROR, JobStatus.CANCELLED]
         status_filters = [
-            {'status': [JobStatus.ERROR, JobStatus.CANCELLED]},
+            [JobStatus.ERROR, JobStatus.CANCELLED],
+            ['ERROR', 'CANCELLED'],
+            [JobStatus.ERROR, 'CANCELLED']
         ]
         job_to_cancel = submit_and_cancel(backend=self.sim_backend)
         job_to_fail = submit_job_bad_shots(backend=self.sim_backend)
@@ -262,8 +264,7 @@ class TestIBMJob(IBMTestCase):
         for status_filter in status_filters:
             with self.subTest(status_filter=status_filter):
                 job_list = self.sim_backend.jobs(
-                    status=status_filter['status'],
-                    db_filter=status_filter['db_filter'],
+                    status=status_filter,
                     start_datetime=self.last_month,
                     ignore_composite_jobs=True)
                 job_list_ids = [_job.job_id() for _job in job_list]

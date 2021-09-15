@@ -1,6 +1,6 @@
 # This code is part of Qiskit.
 #
-# (C) Copyright IBM 2017, 2020.
+# (C) Copyright IBM 2021.
 #
 # This code is licensed under the Apache License, Version 2.0. You may
 # obtain a copy of this license in the LICENSE.txt file in the root directory
@@ -28,7 +28,7 @@ from qiskit.assembler.disassemble import disassemble
 from qiskit.circuit.quantumcircuit import QuantumCircuit
 from qiskit.pulse import Schedule
 
-from qiskit_ibm import ibmqbackend  # pylint: disable=unused-import
+from qiskit_ibm import ibm_backend  # pylint: disable=unused-import
 from ..apiconstants import ApiJobStatus, ApiJobKind
 from ..api.clients import AccountClient
 from ..api.exceptions import ApiError, UserTimeoutExceededError
@@ -36,22 +36,22 @@ from ..utils.utils import RefreshQueue, validate_job_tags, api_status_to_job_sta
 from ..utils.qobj_utils import dict_to_qobj
 from ..utils.json_decoder import decode_backend_properties, decode_result
 from ..utils.converters import utc_to_local, utc_to_local_all
-from .exceptions import (IBMQJobApiError, IBMQJobFailureError,
-                         IBMQJobTimeoutError, IBMQJobInvalidStateError)
+from .exceptions import (IBMJobApiError, IBMJobFailureError,
+                         IBMJobTimeoutError, IBMJobInvalidStateError)
 from .queueinfo import QueueInfo
 from .utils import build_error_report, api_to_job_error, get_cancel_status
-from .ibmqjob import IBMQJob
+from .ibm_job import IBMJob
 from .constants import IBM_COMPOSITE_JOB_TAG_PREFIX, IBM_MANAGED_JOB_ID_PREFIX
 
 logger = logging.getLogger(__name__)
 
 
-class IBMCircuitJob(IBMQJob):
+class IBMCircuitJob(IBMJob):
     """Representation of a job that executes on an IBM Quantum backend.
 
     The job may be executed on a simulator or a real device. A new ``IBMCircuitJob``
     instance is returned when you call
-    :meth:`IBMQBackend.run()<qiskit_ibm.ibmqbackend.IBMQBackend.run()>`
+    :meth:`IBMBackend.run()<qiskit_ibm.ibm_backend.IBMBackend.run()>`
     to submit a job to a particular backend.
 
     If the job is successfully submitted, you can inspect the job's status by
@@ -67,14 +67,14 @@ class IBMCircuitJob(IBMQJob):
             job_status = job.status()  # Query the backend server for job status.
             if job_status is JobStatus.RUNNING:
                 print("The job is still running")
-        except IBMQJobApiError as ex:
+        except IBMJobApiError as ex:
             print("Something wrong happened!: {}".format(ex))
 
     Note:
         An error may occur when querying the remote server to get job information.
         The most common errors are temporary network failures
         and server errors, in which case an
-        :class:`~qiskit_ibm.job.IBMQJobApiError`
+        :class:`~qiskit_ibm.job.IBMJobApiError`
         is raised. These errors usually clear quickly, so retrying the operation is
         likely to succeed.
 
@@ -105,7 +105,7 @@ class IBMCircuitJob(IBMQJob):
 
     def __init__(
             self,
-            backend: 'ibmqbackend.IBMQBackend',
+            backend: 'ibm_backend.IBMBackend',
             api_client: AccountClient,
             job_id: str,
             creation_date: str,
@@ -175,7 +175,7 @@ class IBMCircuitJob(IBMQJob):
             properties are not available.
 
         Raises:
-            IBMQJobApiError: If an unexpected error occurred when communicating
+            IBMJobApiError: If an unexpected error occurred when communicating
                 with the server.
         """
         with api_to_job_error():
@@ -239,17 +239,17 @@ class IBMCircuitJob(IBMQJob):
             Job result.
 
         Raises:
-            IBMQJobInvalidStateError: If the job was cancelled.
-            IBMQJobFailureError: If the job failed.
-            IBMQJobApiError: If an unexpected error occurred when communicating
+            IBMJobInvalidStateError: If the job was cancelled.
+            IBMJobFailureError: If the job failed.
+            IBMJobApiError: If an unexpected error occurred when communicating
                 with the server.
         """
         # pylint: disable=arguments-differ
         if not self._wait_for_completion(timeout=timeout, wait=wait,
                                          required_status=(JobStatus.DONE,)):
             if self._status is JobStatus.CANCELLED:
-                raise IBMQJobInvalidStateError('Unable to retrieve result for job {}. '
-                                               'Job was cancelled.'.format(self.job_id()))
+                raise IBMJobInvalidStateError('Unable to retrieve result for job {}. '
+                                              'Job was cancelled.'.format(self.job_id()))
             # Job failed.
             if partial:
                 self._retrieve_result(refresh=refresh)
@@ -259,7 +259,7 @@ class IBMCircuitJob(IBMQJob):
                     error_message = ". Use the error_message() method to get more details"
                 else:
                     error_message = ": " + error_message
-                raise IBMQJobFailureError(
+                raise IBMJobFailureError(
                     'Unable to retrieve result for job {}. Job has failed{}'.format(
                         self.job_id(), error_message))
         else:
@@ -278,7 +278,7 @@ class IBMCircuitJob(IBMQJob):
             ``True`` if the job is cancelled, else ``False``.
 
         Raises:
-            IBMQJobApiError: If an unexpected error occurred when communicating
+            IBMJobApiError: If an unexpected error occurred when communicating
                 with the server.
         """
         try:
@@ -289,8 +289,8 @@ class IBMCircuitJob(IBMQJob):
             return self._cancelled
         except ApiError as error:
             self._cancelled = False
-            raise IBMQJobApiError('Unexpected error when cancelling job {}: {}'
-                                  .format(self.job_id(), str(error))) from error
+            raise IBMJobApiError('Unexpected error when cancelling job {}: {}'.format(
+                self.job_id(), str(error))) from error
 
     def update_name(self, name: str) -> str:
         """Update the name associated with this job.
@@ -302,12 +302,12 @@ class IBMCircuitJob(IBMQJob):
             The new name associated with this job.
 
         Raises:
-            IBMQJobApiError: If an unexpected error occurred when communicating
+            IBMJobApiError: If an unexpected error occurred when communicating
                 with the server or updating the job name.
-            IBMQJobInvalidStateError: If the input job name is not a string.
+            IBMJobInvalidStateError: If the input job name is not a string.
         """
         if not isinstance(name, str):
-            raise IBMQJobInvalidStateError(
+            raise IBMJobInvalidStateError(
                 '"{}" of type "{}" is not a valid job name. '
                 'The job name needs to be a string.'.format(name, type(name)))
 
@@ -318,9 +318,9 @@ class IBMCircuitJob(IBMQJob):
         # Get the name from the response and check if the update was successful.
         updated_name = response.get('name', None)
         if (updated_name is None) or (name != updated_name):
-            raise IBMQJobApiError('An unexpected error occurred when updating the '
-                                  'name for job {}. The name was not updated for '
-                                  'the job.'.format(self.job_id()))
+            raise IBMJobApiError('An unexpected error occurred when updating the '
+                                 'name for job {}. The name was not updated for '
+                                 'the job.'.format(self.job_id()))
 
         # Cache updated name.
         self._name = updated_name
@@ -340,9 +340,9 @@ class IBMCircuitJob(IBMQJob):
             The new tags associated with this job.
 
         Raises:
-            IBMQJobApiError: If an unexpected error occurred when communicating
+            IBMJobApiError: If an unexpected error occurred when communicating
                 with the server or updating the job tags.
-            IBMQJobInvalidStateError: If none of the input parameters are specified or
+            IBMJobInvalidStateError: If none of the input parameters are specified or
                 if any of the input parameters are invalid.
         """
         # Tags prefix that denotes a job belongs to a jobset or composite job.
@@ -350,7 +350,7 @@ class IBMCircuitJob(IBMQJob):
         tags_to_keep = set(filter(lambda x: x.startswith(filter_tags), self._tags))
 
         tags_to_update = set(new_tags)
-        validate_job_tags(new_tags, IBMQJobInvalidStateError)
+        validate_job_tags(new_tags, IBMJobInvalidStateError)
         tags_to_update = tags_to_update.union(tags_to_keep)
 
         with api_to_job_error():
@@ -361,9 +361,9 @@ class IBMCircuitJob(IBMQJob):
         # Get the tags from the response and check if the update was successful.
         updated_tags = response.get('tags', None)
         if (updated_tags is None) or (set(updated_tags) != set(tags_to_update)):
-            raise IBMQJobApiError('An unexpected error occurred when updating the '
-                                  'tags for job {}. The tags were not updated for '
-                                  'the job.'.format(self.job_id()))
+            raise IBMJobApiError('An unexpected error occurred when updating the '
+                                 'tags for job {}. The tags were not updated for '
+                                 'the job.'.format(self.job_id()))
 
         # Cache the updated tags.
         self._tags = updated_tags
@@ -387,7 +387,7 @@ class IBMCircuitJob(IBMQJob):
             The status of the job.
 
         Raises:
-            IBMQJobApiError: If an unexpected error occurred when communicating
+            IBMJobApiError: If an unexpected error occurred when communicating
                 with the server.
         """
         if self._status in JOB_FINAL_STATES:
@@ -565,7 +565,7 @@ class IBMCircuitJob(IBMQJob):
         information becomes available.
 
         Raises:
-            IBMQJobApiError: If an unexpected error occurred when communicating
+            IBMJobApiError: If an unexpected error occurred when communicating
                 with the server.
         """
         with api_to_job_error():
@@ -580,8 +580,8 @@ class IBMCircuitJob(IBMQJob):
             if 'qobj' in api_response:
                 self._qobj = dict_to_qobj(api_response.pop('qobj'))
         except (KeyError, TypeError) as err:
-            raise IBMQJobApiError("Unexpected return value received "
-                                  "from the server: {}".format(err)) from err
+            raise IBMJobApiError("Unexpected return value received "
+                                 "from the server: {}".format(err)) from err
 
         self._name = api_response.pop('name', None)
         self._time_per_step = api_response.pop('time_per_step', None)
@@ -617,7 +617,7 @@ class IBMCircuitJob(IBMQJob):
 
         Options that are not applicable to the job execution are not returned.
         Some but not all of the options with default values are returned.
-        You can use :attr:`qiskit_ibm.IBMQBackend.options` to see
+        You can use :attr:`qiskit_ibm.IBMBackend.options` to see
         all backend options.
 
         Returns:
@@ -671,7 +671,7 @@ class IBMCircuitJob(IBMQJob):
                       :class:`QueueInfo` instance to a dictionary, if desired.
 
         Raises:
-            IBMQJobTimeoutError: if the job does not reach a final state before the
+            IBMJobTimeoutError: if the job does not reach a final state before the
                 specified timeout.
         """
         exit_event = Event()
@@ -711,9 +711,9 @@ class IBMCircuitJob(IBMQJob):
             ``True`` if the final job status matches one of the required states.
 
         Raises:
-            IBMQJobTimeoutError: if the job does not return results before a
+            IBMJobTimeoutError: if the job does not return results before a
                 specified timeout.
-            IBMQJobApiError: if there was an error getting the job status
+            IBMJobApiError: if there was an error getting the job status
                 due to a network issue.
         """
         if self._status in JOB_FINAL_STATES:
@@ -723,13 +723,13 @@ class IBMCircuitJob(IBMQJob):
             status_response = self._api_client.job_final_status(
                 self.job_id(), timeout=timeout, wait=wait, status_queue=status_queue)
         except UserTimeoutExceededError:
-            raise IBMQJobTimeoutError(
+            raise IBMJobTimeoutError(
                 'Timeout while waiting for job {}.'.format(self._job_id)) from None
         except ApiError as api_err:
             logger.error('Maximum retries exceeded: '
                          'Error checking job status due to a network error.')
-            raise IBMQJobApiError('Error checking job status due to a network '
-                                  'error: {}'.format(str(api_err))) from api_err
+            raise IBMJobApiError('Error checking job status due to a network '
+                                 'error: {}'.format(str(api_err))) from api_err
 
         self._api_status = status_response['status']
         self._status, self._queue_info = self._get_status_position(
@@ -748,7 +748,7 @@ class IBMCircuitJob(IBMQJob):
                Otherwise return the cached value.
 
         Raises:
-            IBMQJobApiError: If an unexpected error occurred when communicating
+            IBMJobApiError: If an unexpected error occurred when communicating
                 with the server.
         """
         if self._api_status in (ApiJobStatus.ERROR_CREATING_JOB.value,
@@ -767,7 +767,7 @@ class IBMCircuitJob(IBMQJob):
                     self._check_for_error_message(result_response)
             except ApiError as err:
                 if self._status not in (JobStatus.ERROR, JobStatus.CANCELLED):
-                    raise IBMQJobApiError(
+                    raise IBMJobApiError(
                         'Unable to retrieve result for '
                         'job {}: {}'.format(self.job_id(), str(err))) from err
 
@@ -778,8 +778,8 @@ class IBMCircuitJob(IBMQJob):
             raw_data: Raw result data.
 
         Raises:
-            IBMQJobInvalidStateError: If result is in an unsupported format.
-            IBMQJobApiError: If an unexpected error occurred when communicating
+            IBMJobInvalidStateError: If result is in an unsupported format.
+            IBMJobApiError: If an unexpected error occurred when communicating
                 with the server.
         """
         if raw_data is None:
@@ -791,10 +791,10 @@ class IBMCircuitJob(IBMQJob):
             self._result = Result.from_dict(raw_data)
         except (KeyError, TypeError) as err:
             if not self._kind:
-                raise IBMQJobInvalidStateError(
+                raise IBMJobInvalidStateError(
                     'Unable to retrieve result for job {}. Job result '
                     'is in an unsupported format.'.format(self.job_id())) from err
-            raise IBMQJobApiError(
+            raise IBMJobApiError(
                 'Unable to retrieve result for '
                 'job {}: {}'.format(self.job_id(), str(err))) from err
 
@@ -820,13 +820,13 @@ class IBMCircuitJob(IBMQJob):
             A formatted error message.
 
         Raises:
-            IBMQJobApiError: If invalid data received from the server.
+            IBMJobApiError: If invalid data received from the server.
         """
         try:
             return "{}. Error code: {}.".format(error['message'], error['code'])
         except KeyError as ex:
-            raise IBMQJobApiError('Failed to get error message for job {}. Invalid error '
-                                  'data received: {}'.format(self.job_id(), error)) from ex
+            raise IBMJobApiError('Failed to get error message for job {}. Invalid error '
+                                 'data received: {}'.format(self.job_id(), error)) from ex
 
     def _status_callback(
             self,
@@ -864,7 +864,7 @@ class IBMCircuitJob(IBMQJob):
             try:
                 status, queue_info = self._get_status_position(
                     status_response['status'], status_response.get('info_queue', None))
-            except IBMQJobApiError as ex:
+            except IBMJobApiError as ex:
                 logger.warning("Unexpected error when getting job status: %s", ex)
                 continue
 
@@ -893,7 +893,7 @@ class IBMCircuitJob(IBMQJob):
             A tuple of job status and queue information (``None`` if not available).
 
         Raises:
-             IBMQJobApiError: if unexpected return value received from the server.
+             IBMJobApiError: if unexpected return value received from the server.
         """
         queue_info = None
         status = api_status_to_job_status(api_status)
@@ -912,7 +912,7 @@ class IBMCircuitJob(IBMQJob):
             The Qobj for this job, or ``None`` if the job does not have a Qobj.
 
         Raises:
-            IBMQJobApiError: If an unexpected error occurred when retrieving
+            IBMJobApiError: If an unexpected error occurred when retrieving
                 job information from the server.
         """
         if not self._kind:
@@ -947,14 +947,14 @@ class IBMCircuitJob(IBMQJob):
 
         Note:
             This method is not supported, please use
-            :meth:`~qiskit_ibm.ibmqbackend.IBMQBackend.run`
+            :meth:`~qiskit_ibm.ibm_backend.IBMBackend.run`
             to submit a job.
 
         Raises:
             NotImplementedError: Upon invocation.
         """
         raise NotImplementedError("job.submit() is not supported. Please use "
-                                  "IBMQBackend.run() to submit a job.")
+                                  "IBMBackend.run() to submit a job.")
 
     def __getattr__(self, name: str) -> Any:
         try:

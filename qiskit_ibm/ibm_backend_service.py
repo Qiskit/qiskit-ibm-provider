@@ -29,7 +29,7 @@ from .exceptions import (IBMBackendValueError, IBMBackendApiError, IBMBackendApi
 from .ibm_backend import IBMBackend, IBMRetiredBackend
 from .backendreservation import BackendReservation
 from .job import IBMJob, IBMCompositeJob, IBMCircuitJob
-from .job.exceptions import IBMQJobNotFoundError
+from .job.exceptions import IBMJobNotFoundError
 from .utils.utils import to_python_identifier, validate_job_tags, filter_data
 from .utils.converters import local_to_utc
 from .utils.backend import convert_reservation_data
@@ -151,7 +151,6 @@ class IBMBackendService:
             job_tags_operator: Optional[str] = "OR",
             descending: bool = True,
             ignore_composite_jobs: bool = False,
-            db_filter: Optional[Dict[str, Any]] = None
     ) -> List[IBMJob]:
         """Return a list of jobs, subject to optional filtering.
 
@@ -343,7 +342,7 @@ class IBMBackendService:
             Circuit job restored from the data, or ``None`` if format is invalid.
 
         Raises:
-            IBMQBackendApiProtocolError: If unexpected return value received
+            IBMBackendApiProtocolError: If unexpected return value received
                  from the server.
         """
         job_id = job_info.get('job_id', "")
@@ -353,9 +352,9 @@ class IBMBackendService:
             backend = self._provider.get_backend(backend_name)
         except QiskitBackendNotFoundError:
             backend = IBMRetiredBackend.from_name(backend_name,
-                                                   self._provider,
-                                                   self._provider.credentials,
-                                                   self._provider._api_client)
+                                                  self._provider,
+                                                  self._provider.credentials,
+                                                  self._provider._api_client)
         try:
             job = IBMCircuitJob(backend=backend,
                                 api_client=self._provider._api_client, **job_info)
@@ -509,7 +508,7 @@ class IBMBackendService:
                 the job.
             IBMBackendApiProtocolError: If unexpected return value received
                  from the server.
-            IBMQJobNotFoundError: If job cannot be found.
+            IBMJobNotFoundError: If job cannot be found.
         """
         if job_id.startswith(IBM_COMPOSITE_JOB_ID_PREFIX):
             job_responses = self._get_jobs(api_filter={'experimentTag': job_id}, limit=None)
@@ -520,7 +519,7 @@ class IBMBackendService:
                     sub_jobs.append(sub_job)
 
             if not sub_jobs:
-                raise IBMQJobNotFoundError(f"Job {job_id} not found.")
+                raise IBMJobNotFoundError(f"Job {job_id} not found.")
             return IBMCompositeJob.from_jobs(job_id=job_id, jobs=sub_jobs,
                                              api_client=self._provider._api_client)
 
@@ -529,8 +528,7 @@ class IBMBackendService:
         except ApiError as ex:
             if 'Error code: 3250.' in str(ex):
                 raise IBMJobNotFoundError(f"Job {job_id} not found.")
-            raise IBMQBackendApiError('Failed to get job {}: {}'
-                                      .format(job_id, str(ex))) from ex
+            raise IBMBackendApiError('Failed to get job {}: {}'.format(job_id, str(ex))) from ex
         job = self._restore_circuit_job(job_info, raise_error=True)
         return job
 

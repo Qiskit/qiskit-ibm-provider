@@ -19,7 +19,7 @@ from concurrent.futures import Future
 from qiskit.qobj import QasmQobj, PulseQobj
 from qiskit.result import Result
 
-from .exceptions import IBMQJobFailureError, IBMQJobInvalidStateError
+from .exceptions import IBMJobFailureError, IBMJobInvalidStateError
 from .utils import auto_retry
 from .ibm_circuit_job import IBMCircuitJob
 
@@ -147,7 +147,7 @@ class SubJob:
             return None
         try:
             return auto_retry(self.job.result, refresh=refresh, partial=partial)
-        except (IBMQJobFailureError, IBMQJobInvalidStateError):
+        except (IBMJobFailureError, IBMJobInvalidStateError):
             return None
 
     def __repr__(self) -> str:

@@ -42,6 +42,6 @@ class IBMJobTimeoutError(JobTimeoutError, IBMJobError):
     pass
 
 
-class IBMQJobNotFoundError(IBMQJobError):
+class IBMJobNotFoundError(IBMJobError):
     """Errors raised when a job cannot be found."""
     pass

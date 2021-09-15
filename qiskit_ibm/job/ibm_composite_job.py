@@ -35,21 +35,20 @@ from qiskit.circuit.quantumcircuit import QuantumCircuit
 from qiskit.pulse import Schedule
 from qiskit.result.models import ExperimentResult
 
-from qiskit_ibm import ibmqbackend  # pylint: disable=unused-import
-from .exceptions import (IBMQJobApiError, IBMQJobFailureError, IBMQJobTimeoutError,
-                         IBMQJobInvalidStateError)
+from qiskit_ibm import ibm_backend  # pylint: disable=unused-import
+from .exceptions import (IBMJobApiError, IBMJobFailureError, IBMJobTimeoutError,
+                         IBMJobInvalidStateError)
 from .queueinfo import QueueInfo
 from .utils import auto_retry, JOB_STATUS_TO_INT, JobStatusQueueInfo, last_job_stat_pos
-from .ibmqjob import IBMQJob
+from .ibm_job import IBMJob
 from .ibm_circuit_job import IBMCircuitJob
 from .sub_job import SubJob
 from .constants import (IBM_COMPOSITE_JOB_ID_PREFIX, IBM_COMPOSITE_JOB_INDEX_PREFIX,
                         IBM_COMPOSITE_JOB_TAG_PREFIX)
-from ..apiconstants import API_JOB_FINAL_STATES
 from ..api.clients import AccountClient
 from ..utils.utils import validate_job_tags, api_status_to_job_status
 
-from ..exceptions import IBMQBackendJobLimitError
+from ..exceptions import IBMBackendJobLimitError
 
 logger = logging.getLogger(__name__)
 
@@ -65,11 +64,11 @@ def _requires_submit(func):  # type: ignore
     return _wrapper
 
 
-class IBMCompositeJob(IBMQJob):
+class IBMCompositeJob(IBMJob):
     """Representation of a set of jobs that execute on an IBM Quantum backend.
 
     An ``IBMCompositeJob`` instance is returned when you call
-    :meth:`IBMQBackend.run()<qiskit_ibm.ibmqbackend.IBMQBackend.run()>`
+    :meth:`IBMBackend.run()<qiskit_ibm.ibm_backend.IBMBackend.run()>`
     to submit a list of circuits whose length exceeds the maximum allowed by
     the backend or by the ``max_circuits_per_job`` parameter.
 
@@ -79,8 +78,8 @@ class IBMCompositeJob(IBMQJob):
     status and result, respectively.
 
     You can also retrieve a previously executed ``IBMCompositeJob`` using the
-    :meth:`~qiskit_ibm.IBMQBackend.retrieve_job` and
-    :meth:`~qiskit_ibm.IBMQBackend.jobs` methods, like you would with
+    :meth:`~qiskit_ibm.IBMBackend.retrieve_job` and
+    :meth:`~qiskit_ibm.IBMBackend.jobs` methods, like you would with
     traditional jobs.
 
     ``IBMCompositeJob`` also allows you to re-run failed jobs, using the
@@ -88,7 +87,7 @@ class IBMCompositeJob(IBMQJob):
     cancelled sub-jobs. Any circuits that failed to be submitted (e.g. due to
     server error) will only be re-submitted if the circuits are known. That is,
     if this ``IBMCompositeJob`` was returned by
-    :meth:`qiskit_ibm.IBMQBackend.run` and not retrieved from the server.
+    :meth:`qiskit_ibm.IBMBackend.run` and not retrieved from the server.
 
     Some of the methods in this class are blocking, which means control may
     not be returned immediately. :meth:`result()` is an example
@@ -111,7 +110,7 @@ class IBMCompositeJob(IBMQJob):
 
     def __init__(
             self,
-            backend: 'ibmqbackend.IBMQBackend',
+            backend: 'ibm_backend.IBMBackend',
             api_client: AccountClient,
             job_id: Optional[str] = None,
             creation_date: Optional[datetime] = None,
@@ -137,10 +136,10 @@ class IBMCompositeJob(IBMQJob):
             client_version: Client used for the job.
 
         Raises:
-            IBMQJobInvalidStateError: If one or more subjobs is missing.
+            IBMJobInvalidStateError: If one or more subjobs is missing.
         """
         if jobs is None and circuits_list is None:
-            raise IBMQJobInvalidStateError('"jobs" and "circuits_list" cannot both be None.')
+            raise IBMJobInvalidStateError('"jobs" and "circuits_list" cannot both be None.')
 
         self._job_id = job_id or IBM_COMPOSITE_JOB_ID_PREFIX + uuid.uuid4().hex + self._id_suffix
         tags = tags or []
@@ -185,7 +184,7 @@ class IBMCompositeJob(IBMQJob):
                            total=total, job=job))
             missing = set(range(total)) - {sub_job.job_index for sub_job in self._sub_jobs}
             if len(missing) > 0:
-                raise IBMQJobInvalidStateError(
+                raise IBMJobInvalidStateError(
                     f"Composite job {self.job_id()} is missing jobs at "
                     f"indexes {', '.join([str(idx) for idx in missing])}.")
             self._sub_jobs.sort(key=lambda sj: sj.job_index)
@@ -276,11 +275,10 @@ class IBMCompositeJob(IBMQJob):
                     job = auto_retry(self.backend()._submit_job,
                                      qobj=sub_job.qobj, job_name=self._name,
                                      job_tags=tags, composite_job_id=self.job_id())
-                except IBMQBackendJobLimitError:
-                    final_states = [state.value for state in API_JOB_FINAL_STATES]
+                except IBMBackendJobLimitError:
                     oldest_running = self.backend().jobs(
                         limit=1, descending=False, ignore_composite_jobs=True,
-                        db_filter={"status": {"nin": final_states}})
+                        status=list(set(JobStatus)-set(JOB_FINAL_STATES)))
                     if oldest_running:
                         oldest_running = oldest_running[0]
                         logger.warning("Job limit reached, waiting for job %s to finish "
@@ -325,7 +323,7 @@ class IBMCompositeJob(IBMQJob):
             returned if the sub-jobs used different properties.
 
         Raises:
-            IBMQJobApiError: If an unexpected error occurred when communicating
+            IBMJobApiError: If an unexpected error occurred when communicating
                 with the server.
         """
         if self._properties is None:
@@ -400,9 +398,9 @@ class IBMCompositeJob(IBMQJob):
             Job result.
 
         Raises:
-            IBMQJobInvalidStateError: If the job was cancelled.
-            IBMQJobFailureError: If the job failed.
-            IBMQJobApiError: If an unexpected error occurred when communicating
+            IBMJobInvalidStateError: If the job was cancelled.
+            IBMJobFailureError: If the job failed.
+            IBMJobApiError: If an unexpected error occurred when communicating
                 with the server.
         """
         # pylint: disable=arguments-differ
@@ -413,14 +411,14 @@ class IBMCompositeJob(IBMQJob):
                 return self._result
 
         if self._status is JobStatus.CANCELLED:
-            raise IBMQJobInvalidStateError('Unable to retrieve result for job {}. '
-                                           'Job was cancelled.'.format(self.job_id()))
+            raise IBMJobInvalidStateError('Unable to retrieve result for job {}. '
+                                          'Job was cancelled.'.format(self.job_id()))
         error_message = self.error_message()
         if '\n' in error_message:
             error_message = ". Use the error_message() method to get more details."
         else:
             error_message = ": " + error_message
-        raise IBMQJobFailureError(
+        raise IBMJobFailureError(
             'Unable to retrieve result for job {}. Job has failed{}'.format(
                 self.job_id(), error_message))
 
@@ -435,7 +433,7 @@ class IBMCompositeJob(IBMQJob):
             ``True`` if the job is cancelled, else ``False``.
 
         Raises:
-            IBMQJobApiError: If an unexpected error occurred when communicating
+            IBMJobApiError: If an unexpected error occurred when communicating
                 with the server.
         """
         self._user_cancelled = True
@@ -447,7 +445,7 @@ class IBMCompositeJob(IBMQJob):
         for job in self._get_circuit_jobs():
             try:
                 all_cancelled.append(job.cancel())
-            except IBMQJobApiError as err:
+            except IBMJobApiError as err:
                 if 'Error code: 3209' not in str(err):
                     raise
 
@@ -467,12 +465,12 @@ class IBMCompositeJob(IBMQJob):
             The new name associated with this job.
 
         Raises:
-            IBMQJobApiError: If an unexpected error occurred when communicating
+            IBMJobApiError: If an unexpected error occurred when communicating
                 with the server or updating the job name.
-            IBMQJobInvalidStateError: If the input job name is not a string.
+            IBMJobInvalidStateError: If the input job name is not a string.
         """
         if not isinstance(name, str):
-            raise IBMQJobInvalidStateError(
+            raise IBMJobInvalidStateError(
                 '"{}" of type "{}" is not a valid job name. '
                 'The job name needs to be a string.'.format(name, type(name)))
 
@@ -499,12 +497,12 @@ class IBMCompositeJob(IBMQJob):
             The new tags associated with this job.
 
         Raises:
-            IBMQJobApiError: If an unexpected error occurred when communicating
+            IBMJobApiError: If an unexpected error occurred when communicating
                 with the server or updating the job tags.
-            IBMQJobInvalidStateError: If none of the input parameters are specified or
+            IBMJobInvalidStateError: If none of the input parameters are specified or
                 if any of the input parameters are invalid.
         """
-        validate_job_tags(new_tags, IBMQJobInvalidStateError)
+        validate_job_tags(new_tags, IBMJobInvalidStateError)
         new_tags_set = set(new_tags)
 
         for job in self._get_circuit_jobs():
@@ -543,7 +541,7 @@ class IBMCompositeJob(IBMQJob):
             The status of the job.
 
         Raises:
-            IBMQJobApiError: If an unexpected error occurred when communicating
+            IBMJobApiError: If an unexpected error occurred when communicating
                 with the server.
         """
         self._update_status_queue_info_error()
@@ -779,7 +777,7 @@ class IBMCompositeJob(IBMQJob):
         information becomes available.
 
         Raises:
-            IBMQJobApiError: If an unexpected error occurred when communicating
+            IBMJobApiError: If an unexpected error occurred when communicating
                 with the server.
         """
         for job in self._get_circuit_jobs():
@@ -803,7 +801,7 @@ class IBMCompositeJob(IBMQJob):
 
         Options that are not applicable to the job execution are not returned.
         Some but not all of the options with default values are returned.
-        You can use :attr:`qiskit_ibm.IBMQBackend.options` to see
+        You can use :attr:`qiskit_ibm.IBMBackend.options` to see
         all backend options.
 
         Returns:
@@ -853,7 +851,7 @@ class IBMCompositeJob(IBMQJob):
                       :class:`QueueInfo` instance to a dictionary, if desired.
 
         Raises:
-            IBMQJobTimeoutError: if the job does not reach a final state before the
+            IBMJobTimeoutError: if the job does not reach a final state before the
                 specified timeout.
         """
         if self._status in JOB_FINAL_STATES:
@@ -873,7 +871,7 @@ class IBMCompositeJob(IBMQJob):
         future_stats = futures.wait(job_futures, timeout=timeout)
         self._update_status_queue_info_error()
         if future_stats[1]:
-            raise IBMQJobTimeoutError(f"Timeout waiting for job {self.job_id()}") from None
+            raise IBMJobTimeoutError(f"Timeout waiting for job {self.job_id()}") from None
         for fut in future_stats[0]:
             exception = fut.exception()
             if exception is not None:
@@ -905,11 +903,11 @@ class IBMCompositeJob(IBMQJob):
             not been submitted or the submit failed.
 
         Raises:
-            IBMQJobInvalidStateError: If the circuit index is out of range.
+            IBMJobInvalidStateError: If the circuit index is out of range.
         """
         last_index = self._sub_jobs[-1].end_index
         if circuit_index > last_index:
-            raise IBMQJobInvalidStateError(
+            raise IBMJobInvalidStateError(
                 f"Circuit index {circuit_index} greater than circuit count {last_index}.")
 
         for sub_job in self._sub_jobs:
@@ -926,7 +924,7 @@ class IBMCompositeJob(IBMQJob):
             be re-submitted.
             Sub-jobs that failed to be submitted will only be re-submitted if the
             circuits are known. That is, if this ``IBMCompositeJob`` was
-            returned by :meth:`qiskit_ibm.IBMQBackend.run` and not
+            returned by :meth:`qiskit_ibm.IBMBackend.run` and not
             retrieved from the server.
         """
         for sub_job in self._sub_jobs:
@@ -1032,7 +1030,7 @@ class IBMCompositeJob(IBMQJob):
                 return
 
         bad_stats = {k: v for k, v in statuses.items() if k not in JobStatus}
-        raise IBMQJobInvalidStateError("Invalid job status found: " + str(bad_stats))
+        raise IBMJobInvalidStateError("Invalid job status found: " + str(bad_stats))
 
     def _build_error_report(self, failed_jobs: List[SubJob]) -> None:
         """Build the error report.
@@ -1065,15 +1063,15 @@ class IBMCompositeJob(IBMQJob):
             A list of job index, total jobs, start index, and end index.
 
         Raises:
-            IBMQJobInvalidStateError: If a sub-job is missing proper tags.
+            IBMJobInvalidStateError: If a sub-job is missing proper tags.
         """
         index_tag = [tag for tag in job.tags() if tag.startswith(IBM_COMPOSITE_JOB_INDEX_PREFIX)]
         match = None
         if index_tag:
             match = re.match(self._index_pattern, index_tag[0])
         if match is None:
-            raise IBMQJobInvalidStateError(f"Job {job.job_id()} in composite job {self.job_id()}"
-                                           f" is missing proper tags.")
+            raise IBMJobInvalidStateError(f"Job {job.job_id()} in composite job {self.job_id()}"
+                                          f" is missing proper tags.")
         output = []
         for name in ['job_index', 'total_jobs', 'start_index', 'end_index']:
             output.append(int(match.group(name)))
@@ -1100,7 +1098,7 @@ class IBMCompositeJob(IBMQJob):
             Combined job result, or ``None`` if not all sub-jobs have finished.
 
         Raises:
-            IBMQJobApiError: If an unexpected error occurred when communicating
+            IBMJobApiError: If an unexpected error occurred when communicating
                 with the server.
         """
         if self._result and not refresh:
@@ -1157,7 +1155,7 @@ class IBMCompositeJob(IBMQJob):
             The Qobj for this job, or ``None`` if the job does not have a Qobj.
 
         Raises:
-            IBMQJobApiError: If an unexpected error occurred when retrieving
+            IBMJobApiError: If an unexpected error occurred when retrieving
                 job information from the server.
         """
         if not self._qobj:
@@ -1179,11 +1177,11 @@ class IBMCompositeJob(IBMQJob):
 
         Note:
             This method is not supported, please use
-            :meth:`~qiskit_ibm.ibmqbackend.IBMQBackend.run`
+            :meth:`~qiskit_ibm.ibm_backend.IBMBackend.run`
             to submit a job.
 
         Raises:
             NotImplementedError: Upon invocation.
         """
         raise NotImplementedError("job.submit() is not supported. Please use "
-                                  "IBMQBackend.run() to submit a job.")
+                                  "IBMBackend.run() to submit a job.")

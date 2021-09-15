@@ -590,7 +590,6 @@ class IBMBackend(Backend):
             job_tags_operator: Optional[str] = "OR",
             descending: bool = True,
             ignore_composite_jobs: bool = False,
-            db_filter: Optional[Dict[str, Any]] = None
     ) -> List[IBMJob]:
         """Return the jobs submitted to this backend, subject to optional filtering.
 
@@ -629,19 +628,6 @@ class IBMBackend(Backend):
             ignore_composite_jobs: If ``True``, sub-jobs of a single
                 :class:`~qiskit_ibm.job.IBMCompositeJob` will be
                 returned as individual jobs instead of merged together.
-            db_filter: A `loopback-based filter
-                <https://loopback.io/doc/en/lb2/Querying-data.html>`_.
-                This is an interface to a database ``where`` filter. Some
-                examples of its usage are:
-
-                Filter last five jobs with errors::
-
-                   job_list = backend.jobs(limit=5, status=JobStatus.ERROR)
-
-                Filter last five jobs with hub name ``ibm-q``::
-
-                  filter = {'hubInfo.hub.name': 'ibm-q'}
-                  job_list = backend.jobs(limit=5, db_filter=filter)
 
         Returns:
             A list of jobs that match the criteria.
@@ -654,7 +640,7 @@ class IBMBackend(Backend):
             job_name=job_name, start_datetime=start_datetime, end_datetime=end_datetime,
             job_tags=job_tags, job_tags_operator=job_tags_operator,
             descending=descending,
-            ignore_composite_jobs=ignore_composite_jobs, db_filter=db_filter)
+            ignore_composite_jobs=ignore_composite_jobs)
 
     def active_jobs(self, limit: int = 10) -> List[IBMJob]:
         """Return the unfinished jobs submitted to this backend.
@@ -881,7 +867,7 @@ class IBMSimulator(IBMBackend):
                 name can subsequently be used as a filter in the
                 :meth:`jobs` method. Job names do not need to be unique.
             job_tags: Tags to be assigned to the jobs. The tags can subsequently be used
-                as a filter in the :meth:`IBMQBackend.jobs()<IBMQBackend.jobs>` method.
+                as a filter in the :meth:`IBMBackend.jobs()<IBMBackend.jobs>` method.
             backend_options: DEPRECATED dictionary of backend options for the execution.
             noise_model: Noise model.
             kwargs: Additional runtime configuration options. They take
