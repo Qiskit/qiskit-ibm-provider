@@ -16,6 +16,7 @@ import logging
 from typing import Dict, Callable, Optional, Union, List, Any, Type
 import json
 import copy
+import re
 
 from qiskit.providers.exceptions import QiskitBackendNotFoundError
 from qiskit_ibm import accountprovider  # pylint: disable=unused-import
@@ -234,8 +235,9 @@ class IBMRuntimeService:
             inputs.validate()
             inputs = vars(inputs)
 
-        colon_index = image.find(":")
-        if image and (image.count(":") != 1 or colon_index == 0 or colon_index == len(image) - 1):
+        if image and not \
+            re.match("[a-zA-Z0-9]+([/.\\-_][a-zA-Z0-9]+)*:[a-zA-Z0-9]+([.\\-_][a-zA-Z0-9]+)*$",
+                     image):
             raise IBMQInputValueError('"image" needs to be in form of image_name:tag')
 
         backend_name = options['backend_name']
