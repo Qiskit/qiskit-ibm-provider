@@ -87,7 +87,7 @@ class TestIBMJobAttributes(IBMTestCase):
         job_name = str(time.time()).replace('.', '')
         job = self.sim_backend.run(self.bell, job_name=job_name)
         job_id = job.job_id()
-        rjob = self.provider.backend.retrieve_job(job_id)
+        rjob = self.provider.backend.job(job_id)
         self.assertEqual(rjob.name(), job_name)
 
         # Check using partial matching.
@@ -155,7 +155,7 @@ class TestIBMJobAttributes(IBMTestCase):
         job = submit_job_one_bad_instr(backend)
         job.wait_for_final_state(wait=300, callback=self.simple_job_callback)
 
-        rjob = backend.retrieve_job(job.job_id())
+        rjob = self.provider.backend.job(job.job_id())
 
         for q_job, partial in [(job, False), (rjob, True)]:
             with self.subTest(partial=partial):
@@ -176,13 +176,13 @@ class TestIBMJobAttributes(IBMTestCase):
         message = job.error_message()
         self.assertIn('Experiment 1: ERROR', message)
 
-        r_message = self.provider.backend.retrieve_job(job.job_id()).error_message()
+        r_message = self.provider.backend.job(job.job_id()).error_message()
         self.assertIn('Experiment 1: ERROR', r_message)
 
     def test_error_message_validation(self):
         """Test retrieving job error message for a validation error."""
         job = submit_job_bad_shots(self.sim_backend)
-        rjob = self.sim_backend.retrieve_job(job.job_id())
+        rjob = self.provider.backend.job(job.job_id())
 
         for q_job, partial in [(job, False), (rjob, True)]:
             with self.subTest(partial=partial):
@@ -200,7 +200,7 @@ class TestIBMJobAttributes(IBMTestCase):
         if 'COMPLETED' not in self.sim_job.time_per_step():
             self.sim_job.refresh()
 
-        rjob = self.provider.backend.retrieve_job(self.sim_job.job_id())
+        rjob = self.provider.backend.job(self.sim_job.job_id())
         rjob.refresh()
         self.assertEqual(rjob._time_per_step, self.sim_job._time_per_step)
 
@@ -234,7 +234,7 @@ class TestIBMJobAttributes(IBMTestCase):
                             'between the start date time {} and end date time {}'
                             .format(step, time_data, start_datetime, end_datetime))
 
-        rjob = self.provider.backend.retrieve_job(job.job_id())
+        rjob = self.provider.backend.job(job.job_id())
         self.assertTrue(rjob.time_per_step())
 
     def test_new_job_attributes(self):
@@ -351,7 +351,7 @@ class TestIBMJobAttributes(IBMTestCase):
         job_tags = [uuid.uuid4().hex, uuid.uuid4().hex, uuid.uuid4().hex]
         job = self.sim_backend.run(self.bell, job_tags=job_tags)
 
-        rjobs = self.sim_backend.jobs(
+        rjobs = self.provider.backend.jobs(
             job_tags=['phantom_tag'], start_datetime=self.last_week)
         self.assertEqual(len(rjobs), 0,
                          "Expected job {}, got {}".format(job.job_id(), rjobs))
@@ -360,7 +360,7 @@ class TestIBMJobAttributes(IBMTestCase):
         tags_to_check = [job_tags, job_tags[1:2], job_tags[0:1]+['phantom_tag']]
         for tags in tags_to_check:
             with self.subTest(tags=tags):
-                rjobs = self.sim_backend.jobs(job_tags=tags, start_datetime=self.last_week)
+                rjobs = self.provider.backend.jobs(job_tags=tags, start_datetime=self.last_week)
                 self.assertEqual(len(rjobs), 1,
                                  "Expected job {}, got {}".format(job.job_id(), rjobs))
                 self.assertEqual(rjobs[0].job_id(), job.job_id())
@@ -374,7 +374,7 @@ class TestIBMJobAttributes(IBMTestCase):
 
         no_rjobs_tags = [job_tags[0:1]+['phantom_tags'], ['phantom_tag']]
         for tags in no_rjobs_tags:
-            rjobs = self.sim_backend.jobs(
+            rjobs = self.provider.backend.jobs(
                 job_tags=tags, job_tags_operator="AND", start_datetime=self.last_week)
             self.assertEqual(len(rjobs), 0,
                              "Expected job {}, got {}".format(job.job_id(), rjobs))
@@ -382,7 +382,7 @@ class TestIBMJobAttributes(IBMTestCase):
         has_rjobs_tags = [job_tags, job_tags[1:3]]
         for tags in has_rjobs_tags:
             with self.subTest(tags=tags):
-                rjobs = self.sim_backend.jobs(
+                rjobs = self.provider.backend.jobs(
                     job_tags=tags, job_tags_operator="AND", start_datetime=self.last_week)
                 self.assertEqual(len(rjobs), 1,
                                  "Expected job {}, got {}".format(job.job_id(), rjobs))
@@ -480,7 +480,7 @@ class TestIBMJobAttributes(IBMTestCase):
         """Test using job tags with an and operator."""
         self.assertRaises(IBMBackendValueError, self.sim_backend.run,
                           self.bell, job_tags={'foo'})
-        self.assertRaises(IBMBackendValueError, self.sim_backend.jobs, job_tags=[1, 2, 3])
+        self.assertRaises(IBMBackendValueError, self.provider.backend.jobs, job_tags=[1, 2, 3])
 
     def test_run_mode(self):
         """Test job run mode."""
@@ -489,7 +489,7 @@ class TestIBMJobAttributes(IBMTestCase):
                          "Job {} scheduling mode is {}".format(
                              self.sim_job.job_id(), self.sim_job.scheduling_mode()))
 
-        rjob = self.sim_backend.retrieve_job(self.sim_job.job_id())
+        rjob = self.provider.backend.job(self.sim_job.job_id())
         self.assertEqual(rjob.scheduling_mode(), "fairshare",
                          "Job {} scheduling mode is {}".format(
                              rjob.job_id(), rjob.scheduling_mode()))
@@ -513,7 +513,7 @@ class TestIBMJobAttributes(IBMTestCase):
         exp_id = uuid.uuid4().hex
         job = self.sim_backend.run(self.bell, experiment_id=exp_id)
         self.assertEqual(job.experiment_id, exp_id)
-        rjob = self.provider.backend.retrieve_job(job.job_id())
+        rjob = self.provider.backend.job(job.job_id())
         self.assertEqual(rjob.experiment_id, exp_id)
         rjobs = self.provider.backend.jobs(experiment_id=exp_id)
         for rjob in rjobs:
