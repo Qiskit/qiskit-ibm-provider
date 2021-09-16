@@ -21,12 +21,5 @@ upgrade:
     :meth:`~qiskit_ibm.job.IBMCompositeJob.report` method that returns a
     report on current sub-job statuses.
 
-deprecations:
-  - |
-    :class:`qiskit_ibm.managed.IBMQJobManager` has been deprecated. You can now
-    use :meth:`qiskit_ibm.IBMQBackend.run` to submit a long list of
-    circuits/schedules like you would for a single circuit/schedule.
-    If the number of circuits/schedules exceeds the backend limit,
-    :meth:`qiskit_ibm.IBMQBackend.run` will automatically divide the list into
-    multiple sub-jobs and return a single :class:`qiskit_ibm.job.IBMCompositeJob`
-    instance.
+    This feature replaces the ``IBMQJobManager`` class in ``qiskit-ibmq-provider``,
+    which is the predecessor of ``qiskit-ibm``.
