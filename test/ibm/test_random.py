@@ -19,6 +19,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 import numpy as np
 from qiskit.providers.jobstatus import JobStatus
+from qiskit.version import VERSION as terra_version
 from qiskit_ibm.random.cqcextractor import CQCExtractor
 from qiskit_ibm.random.utils import bitarray_to_bytes
 from qiskit_ibm.random.ibm_random_service import IBMRandomService
@@ -54,6 +55,7 @@ class TestRandomIntegration(IBMTestCase):
         except IBMError:
             return False
 
+    @skipIf(terra_version <= '0.2.2', "Need Terra > 0.2.2")
     def test_cqc_extractor(self):
         """Test invoking the CQC extractors."""
         generator = Generator(self.provider.get_backend('ibmq_qasm_simulator'))
