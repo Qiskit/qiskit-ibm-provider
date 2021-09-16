@@ -32,7 +32,6 @@ from qiskit_ibm.ibm_backend import IBMRetiredBackend
 from qiskit_ibm.exceptions import IBMBackendError, IBMBackendApiError
 from qiskit_ibm.utils.utils import api_status_to_job_status
 from qiskit_ibm.job.exceptions import IBMJobTimeoutError, IBMJobNotFoundError
-from qiskit_ibm.utils.converters import local_to_utc
 from qiskit_ibm.api.rest.job import Job as RestJob
 from qiskit_ibm.api.exceptions import RequestsApiError
 

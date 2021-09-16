@@ -57,8 +57,10 @@ class TestIBMCompositeJob(IBMTestCase):
         """Initial test setup."""
         super().setUp()
         self._qc = ReferenceCircuits.bell()
-        self.fake_backend = copy.copy(self.sim_backend)
-        self.fake_provider = copy.copy(self.provider)
+        # TODO: We can remove all the deepcopy and do a disable_account
+        # instead once issue 84 is resolved.
+        self.fake_backend = copy.deepcopy(self.sim_backend)
+        self.fake_provider = copy.deepcopy(self.provider)
         self._set_fake_client(BaseFakeAccountClient())
         self.fake_backend._provider = self.fake_provider
         self.fake_provider.backend._provider = self.fake_provider

@@ -70,8 +70,8 @@ class TestIBMJobManager(IBMTestCase):
     def fake_api_backend(self):
         """Setup a backend instance with fake API client."""
         if not self._fake_api_backend:
-            self._fake_api_backend = copy.copy(self.sim_backend)
-            self._fake_api_provider = copy.copy(self.provider)
+            self._fake_api_backend = copy.deepcopy(self.sim_backend)
+            self._fake_api_provider = copy.deepcopy(self.provider)
             self._fake_api_provider._api_client = self._fake_api_backend._api_client \
                 = BaseFakeAccountClient()
             self._fake_api_backend._provider = self._fake_api_provider
