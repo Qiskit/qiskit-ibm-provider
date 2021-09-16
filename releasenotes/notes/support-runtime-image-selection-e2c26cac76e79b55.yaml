@@ -1,0 +1,5 @@
+---
+features:
+  - |
+    Runtime image can now be specified using the `image` parameter in
+    :meth:`qiskit.providers.ibmq.IBMRuntimeService.run`.
