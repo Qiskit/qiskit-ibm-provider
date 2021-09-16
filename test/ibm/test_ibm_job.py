@@ -209,20 +209,10 @@ class TestIBMJob(IBMTestCase):
         job_2 = backend_2.run(transpile(ReferenceCircuits.bell(), backend_2))
 
         # test a retrieved job's backend is the same as the queried backend
-        self.assertEqual(backend_1.retrieve_job(job_1.job_id()).backend().name(),
+        self.assertEqual(provider.backend.retrieve_job(job_1.job_id()).backend().name(),
                          backend_1.name())
-        self.assertEqual(backend_2.retrieve_job(job_2.job_id()).backend().name(),
+        self.assertEqual(provider.backend.retrieve_job(job_2.job_id()).backend().name(),
                          backend_2.name())
-
-        # test retrieve requests for jobs that exist on other backends throw errors
-        with self.assertWarns(Warning) as context_manager:
-            self.assertRaises(IBMBackendError,
-                              backend_1.retrieve_job, job_2.job_id())
-        self.assertIn('belongs to', str(context_manager.warning))
-        with self.assertWarns(Warning) as context_manager:
-            self.assertRaises(IBMBackendError,
-                              backend_2.retrieve_job, job_1.job_id())
-        self.assertIn('belongs to', str(context_manager.warning))
 
         # Cleanup
         for job in [job_1, job_2]:
@@ -238,9 +228,10 @@ class TestIBMJob(IBMTestCase):
         status_args = [JobStatus.DONE, 'DONE', [JobStatus.DONE], ['DONE']]
         for arg in status_args:
             with self.subTest(arg=arg):
-                backend_jobs = self.sim_backend.jobs(limit=5, skip=5, status=arg,
-                                                     start_datetime=self.last_month,
-                                                     ignore_composite_jobs=True)
+                backend_jobs = self.provider.backend.jobs(
+                    backend_name=self.sim_backend.name(),
+                    limit=5, skip=5, status=arg, start_datetime=self.last_month,
+                    ignore_composite_jobs=True)
                 self.assertTrue(backend_jobs)
 
                 for job in backend_jobs:
@@ -262,7 +253,7 @@ class TestIBMJob(IBMTestCase):
 
         for status_filter in status_filters:
             with self.subTest(status_filter=status_filter):
-                job_list = self.sim_backend.jobs(
+                job_list = self.provider.backend.jobs(
                     status=status_filter,
                     start_datetime=self.last_month,
                     ignore_composite_jobs=True)
@@ -301,6 +292,7 @@ class TestIBMJob(IBMTestCase):
         """Test retrieving jobs that are queued."""
         backend = most_busy_backend(self.provider)
         job = backend.run(transpile(ReferenceCircuits.bell(), backend))
+        provider = backend.provider()
 
         # Wait for the job to queue, run, or reach a final state.
         leave_states = list(JOB_FINAL_STATES) + [JobStatus.QUEUED, JobStatus.RUNNING]
@@ -308,9 +300,9 @@ class TestIBMJob(IBMTestCase):
             time.sleep(0.5)
 
         before_status = job._status
-        job_list_queued = backend.jobs(status=JobStatus.QUEUED, limit=5,
-                                       start_datetime=self.last_month,
-                                       ignore_composite_jobs=True)
+        job_list_queued = provider.backend.jobs(status=JobStatus.QUEUED, limit=5,
+                                                start_datetime=self.last_month,
+                                                ignore_composite_jobs=True)
         if before_status is JobStatus.QUEUED and job.status() is JobStatus.QUEUED:
             self.assertIn(job.job_id(), [queued_job.job_id() for queued_job in job_list_queued],
                           "job {} is queued but not retrieved when filtering for queued jobs."
@@ -334,9 +326,9 @@ class TestIBMJob(IBMTestCase):
             time.sleep(0.5)
 
         before_status = job._status
-        job_list_running = self.sim_backend.jobs(status=JobStatus.RUNNING, limit=5,
-                                                 start_datetime=self.last_month,
-                                                 ignore_composite_jobs=True)
+        job_list_running = self.provider.backend.jobs(status=JobStatus.RUNNING, limit=5,
+                                                      start_datetime=self.last_month,
+                                                      ignore_composite_jobs=True)
         if before_status is JobStatus.RUNNING and job.status() is JobStatus.RUNNING:
             self.assertIn(job.job_id(), [rjob.job_id() for rjob in job_list_running])
 
@@ -400,12 +392,12 @@ class TestIBMJob(IBMTestCase):
         """Test retrieving jobs with different orders."""
         job = self.sim_backend.run(self.bell)
         job.wait_for_final_state()
-        newest_jobs = self.sim_backend.jobs(
+        newest_jobs = self.provider.backend.jobs(
             limit=10, status=JobStatus.DONE, descending=True, start_datetime=self.last_month,
             ignore_composite_jobs=True)
         self.assertIn(job.job_id(), [rjob.job_id() for rjob in newest_jobs])
 
-        oldest_jobs = self.sim_backend.jobs(
+        oldest_jobs = self.provider.backend.jobs(
             limit=10, status=JobStatus.DONE, descending=False, start_datetime=self.last_month,
             ignore_composite_jobs=True)
         self.assertNotIn(job.job_id(), [rjob.job_id() for rjob in oldest_jobs])
@@ -561,7 +553,7 @@ class TestIBMJob(IBMTestCase):
                         self.sim_backend.run(self.bell)
 
                 self.assertTrue(job_id, "Job ID not saved.")
-                job = self.sim_backend.retrieve_job(job_id[0])
+                job = self.provider.backend.retrieve_job(job_id[0])
                 self.assertEqual(job.status(), JobStatus.CANCELLED,
                                  f"Job {job.job_id()} status is {job.status()} and not cancelled!")
 

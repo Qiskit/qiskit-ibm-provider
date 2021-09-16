@@ -57,6 +57,7 @@ class TestProxies(IBMTestCase):
     @requires_qe_access
     def test_proxies_ibm_account(self, qe_token, qe_url):
         """Should reach the proxy using account.enable."""
+        IBMProvider._disable_account()
         provider = IBMProvider(qe_token, qe_url,
                                proxies={'urls': VALID_PROXIES})
 
@@ -70,6 +71,7 @@ class TestProxies(IBMTestCase):
         self.assertIn(auth_line, proxy_output)
         # Check if the API call (querying providers list) went through proxy.
         self.assertIn(api_line, proxy_output)
+        IBMProvider._disable_account()
 
     @requires_qe_access
     def test_proxies_authclient(self, qe_token, qe_url):
