@@ -155,7 +155,7 @@ class TestIBMJobAttributes(IBMTestCase):
         job = submit_job_one_bad_instr(backend)
         job.wait_for_final_state(wait=300, callback=self.simple_job_callback)
 
-        rjob = self.provider.backend.retrieve_job(job.job_id())
+        rjob = self.provider.backend.job(job.job_id())
 
         for q_job, partial in [(job, False), (rjob, True)]:
             with self.subTest(partial=partial):
@@ -182,7 +182,7 @@ class TestIBMJobAttributes(IBMTestCase):
     def test_error_message_validation(self):
         """Test retrieving job error message for a validation error."""
         job = submit_job_bad_shots(self.sim_backend)
-        rjob = self.provider.backend.retrieve_job(job.job_id())
+        rjob = self.provider.backend.job(job.job_id())
 
         for q_job, partial in [(job, False), (rjob, True)]:
             with self.subTest(partial=partial):
@@ -489,7 +489,7 @@ class TestIBMJobAttributes(IBMTestCase):
                          "Job {} scheduling mode is {}".format(
                              self.sim_job.job_id(), self.sim_job.scheduling_mode()))
 
-        rjob = self.provider.backend.retrieve_job(self.sim_job.job_id())
+        rjob = self.provider.backend.job(self.sim_job.job_id())
         self.assertEqual(rjob.scheduling_mode(), "fairshare",
                          "Job {} scheduling mode is {}".format(
                              rjob.job_id(), rjob.scheduling_mode()))

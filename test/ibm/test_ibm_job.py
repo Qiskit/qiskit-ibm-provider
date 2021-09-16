@@ -208,9 +208,9 @@ class TestIBMJob(IBMTestCase):
         job_2 = backend_2.run(transpile(ReferenceCircuits.bell(), backend_2))
 
         # test a retrieved job's backend is the same as the queried backend
-        self.assertEqual(provider.backend.retrieve_job(job_1.job_id()).backend().name(),
+        self.assertEqual(provider.backend.job(job_1.job_id()).backend().name(),
                          backend_1.name())
-        self.assertEqual(provider.backend.retrieve_job(job_2.job_id()).backend().name(),
+        self.assertEqual(provider.backend.job(job_2.job_id()).backend().name(),
                          backend_2.name())
 
         # Cleanup
@@ -543,7 +543,7 @@ class TestIBMJob(IBMTestCase):
                         self.sim_backend.run(self.bell)
 
                 self.assertTrue(job_id, "Job ID not saved.")
-                job = self.provider.backend.retrieve_job(job_id[0])
+                job = self.provider.backend.job(job_id[0])
                 self.assertEqual(job.status(), JobStatus.CANCELLED,
                                  f"Job {job.job_id()} status is {job.status()} and not cancelled!")
 
