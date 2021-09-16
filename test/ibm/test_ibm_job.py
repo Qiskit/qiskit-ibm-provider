@@ -29,7 +29,7 @@ from qiskit.providers.jobstatus import JobStatus, JOB_FINAL_STATES
 from qiskit_ibm import least_busy
 from qiskit_ibm.apiconstants import ApiJobStatus, API_JOB_FINAL_STATES
 from qiskit_ibm.ibm_backend import IBMRetiredBackend
-from qiskit_ibm.exceptions import IBMBackendError, IBMBackendApiError
+from qiskit_ibm.exceptions import IBMBackendApiError
 from qiskit_ibm.utils.utils import api_status_to_job_status
 from qiskit_ibm.job.exceptions import IBMJobTimeoutError, IBMJobNotFoundError
 from qiskit_ibm.api.rest.job import Job as RestJob
