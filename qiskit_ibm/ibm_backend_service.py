@@ -246,7 +246,7 @@ class IBMBackendService:
                 if composite_job_id[0] not in composite_ids:
                     composite_ids.add(composite_job_id[0])
                     logger.debug("Adding composite job %s", composite_job_id[0])
-                    job_list.append(self.retrieve_job(composite_job_id[0]))
+                    job_list.append(self.job(composite_job_id[0]))
             else:
                 job = self._restore_circuit_job(job_info, raise_error=False)
                 if job is None:
