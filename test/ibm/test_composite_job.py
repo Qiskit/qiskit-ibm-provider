@@ -182,7 +182,7 @@ class TestIBMCompositeJob(IBMTestCase):
                                         **custom_options)
         self.assertLessEqual(custom_options.items(), job_set.backend_options().items())
         job_set.block_for_submit()
-        rjob_set = self.fake_backend.job(job_set.job_id())
+        rjob_set = self.fake_provider.backend.job(job_set.job_id())
         self.assertLessEqual(custom_options.items(), rjob_set.backend_options().items())
 
     def test_job_header(self):
@@ -192,7 +192,7 @@ class TestIBMCompositeJob(IBMTestCase):
                                         header=custom_header)
         self.assertLessEqual(custom_header.items(), job_set.header().items())
         job_set.block_for_submit()
-        rjob_set = self.fake_backend.job(job_set.job_id())
+        rjob_set = self.fake_provider.backend.job(job_set.job_id())
         self.assertLessEqual(custom_header.items(), rjob_set.header().items())
 
     def test_job_backend(self):
@@ -200,7 +200,7 @@ class TestIBMCompositeJob(IBMTestCase):
         job_set = self.fake_backend.run([self._qc] * 2, max_circuits_per_job=1)
         self.assertEqual(job_set.backend().name(), self.fake_backend.name())
         job_set.block_for_submit()
-        rjob_set = self.fake_backend.job(job_set.job_id())
+        rjob_set = self.fake_provider.backend.job(job_set.job_id())
         self.assertEqual(rjob_set.backend().name(), self.fake_backend.name())
 
     def test_job_name(self):
@@ -210,7 +210,7 @@ class TestIBMCompositeJob(IBMTestCase):
                                         job_name=custom_name)
         self.assertEqual(job_set.name(), custom_name)
         job_set.block_for_submit()
-        rjob_set = self.fake_backend.job(job_set.job_id())
+        rjob_set = self.fake_provider.backend.job(job_set.job_id())
         self.assertEqual(rjob_set.name(), custom_name)
 
     def test_job_name_update(self):
@@ -221,7 +221,7 @@ class TestIBMCompositeJob(IBMTestCase):
         job_set.update_name(new_name)
         self.assertEqual(job_set.name(), new_name)
         job_set.block_for_submit()
-        rjob_set = self.fake_backend.job(job_set.job_id())
+        rjob_set = self.fake_provider.backend.job(job_set.job_id())
         self.assertEqual(rjob_set.name(), new_name)
 
     def test_job_properties(self):
@@ -336,8 +336,7 @@ class TestIBMCompositeJob(IBMTestCase):
             job_set = self.fake_backend.run(
                 [self._qc]*(job_limit+2), max_circuits_per_job=1)
             self.assertEqual(job_set.status(), JobStatus.INITIALIZING)
-            with self.assertRaises(IBMJobTimeoutError):
-                job_set.wait_for_final_state(timeout=10)
+            job_set.wait_for_final_state(timeout=60)
         finally:
             job_set.cancel()
 
@@ -530,13 +529,13 @@ class TestIBMCompositeJob(IBMTestCase):
         client_version = job_set.client_version
         self.assertTrue(client_version)
         self.assertEqual(client_version, job_set.sub_jobs()[0].client_version)
-        rjob_set = self.fake_backend.job(job_set.job_id())
+        rjob_set = self.fake_provider.backend.job(job_set.job_id())
         self.assertEqual(rjob_set.client_version, client_version)
 
     def test_job_error(self):
         """Test retrieving an invalid job."""
         with self.assertRaises(IBMJobNotFoundError):
-            self.fake_backend.job(IBM_COMPOSITE_JOB_ID_PREFIX + '1234')
+            self.fake_provider.backend.job(IBM_COMPOSITE_JOB_ID_PREFIX + '1234')
 
     def test_missing_required_fields(self):
         """Test response data is missing required fields."""
