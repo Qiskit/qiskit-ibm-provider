@@ -23,7 +23,7 @@ Note: `qiskit-ibm` is not part of the `qiskit` meta package and hence will not b
    | IBMProvider(TOKEN, HUB, GROUP, PROJECT) | Enable your account in the current session and optionally specify a default provider to return. |
    | IBMProvider.active_account() | List the account currently active in the session. |
 
-1. `IBMBackend.run()` now splits a long list of circuits into multiple jobs and manages them for you, replacing the
+1. `IBMBackend.run()`, formerly `IBMQBackend.run()`, now splits a long list of circuits into multiple jobs and manages them for you, replacing the
 `IBMQJobManager` feature that was in `qiskit-ibmq-provider`. Instead of initializing a separate `IBMQJobManager`
 instance, you can now pass a long list of circuits directly to `IBMBackend.run()` and receive an
 `IBMCompositeJob` instance back. This `IBMCompositeJob` is a subclass of `IBMJob` and supports the 
@@ -187,7 +187,7 @@ from qiskit.providers.ibmq.managed import IBMQJobManager
 
 job_manager = IBMQJobManager()
 job_set = job_manager.run(long_list_of_circuits, backend=backend)
-results = job_set_foo.results()
+results = job_set.results()
 ```
 
 After

@@ -276,7 +276,7 @@ class IBMCompositeJob(IBMJob):
                                      qobj=sub_job.qobj, job_name=self._name,
                                      job_tags=tags, composite_job_id=self.job_id())
                 except IBMBackendJobLimitError:
-                    oldest_running = self.backend().jobs(
+                    oldest_running = self._provider.backend.jobs(
                         limit=1, descending=False, ignore_composite_jobs=True,
                         status=list(set(JobStatus)-set(JOB_FINAL_STATES)))
                     if oldest_running:

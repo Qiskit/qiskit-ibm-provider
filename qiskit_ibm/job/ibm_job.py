@@ -60,6 +60,7 @@ class IBMJob(Job, ABC):
         self._api_client = api_client
         self._name = name
         self._tags = tags or []
+        self._provider = backend.provider()
 
         self._data = {}
         for key, value in kwargs.items():
