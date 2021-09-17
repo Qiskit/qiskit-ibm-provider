@@ -713,7 +713,7 @@ class TestIBMCompositeJobIntegration(IBMTestCase):
                 job_set.block_for_submit()
                 self.assertEqual(job_set.tags(), tags)
 
-                rjob_set = self.sim_backend.job(job_set.job_id())
+                rjob_set = self.provider.backend.job(job_set.job_id())
                 self.assertIsInstance(rjob_set, IBMCompositeJob)
                 self.assertEqual(rjob_set.job_id(), job_set.job_id())
                 self.assertEqual(len(rjob_set.sub_jobs()), len(job_set.sub_jobs()))
@@ -763,7 +763,7 @@ class TestIBMCompositeJobIntegration(IBMTestCase):
                     job._api_client.job_update_attribute(
                         job_id=job.job_id(), attr_name='tags', attr_value=[])
                     with self.assertRaises(IBMJobInvalidStateError) as err_cm:
-                        self.sim_backend.job(job_set.job_id())
+                        self.provider.backend.job(job_set.job_id())
                     self.assertIn(f"tags", str(err_cm.exception))
                 finally:
                     job._api_client.job_update_attribute(
