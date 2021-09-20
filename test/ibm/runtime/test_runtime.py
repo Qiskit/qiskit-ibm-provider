@@ -613,7 +613,7 @@ if __name__ == '__main__':
                            services={"runtime": "https://quantum-computing.ibm.com"})
         self.runtime._provider.credentials = cred
         rjob = self.runtime.job(job.job_id)
-        self.assertIsNotNone(rjob.backend())
+        self.assertIsNotNone(rjob.backend)
 
     def _upload_program(self, name=None, max_execution_time=300,
                         is_public: bool = False):
