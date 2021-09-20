@@ -1,0 +1,10 @@
+---
+upgrade:
+  - |
+    `qiskit.providers.ibmq.IBMQBackendService.retrieve_job` method has been renamed to
+    :meth:`qiskit_ibm.IBMBackendService.job`.
+
+    `qiskit.providers.ibmq.IBMQBackend.retrieve_job`
+    and `qiskit.providers.ibmq.IBMQBackend.jobs` have been removed.
+    The `IBMBackendService` methods :meth:`qiskit_ibm.IBMBackendService.job`
+    and :meth:`qiskit_ibm.IBMBackendService.jobs` can be used instead.

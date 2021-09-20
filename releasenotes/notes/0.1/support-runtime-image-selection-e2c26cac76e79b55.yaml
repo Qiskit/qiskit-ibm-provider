@@ -3,4 +3,4 @@ features:
   - |
     Runtime image can now be specified using the `image` parameter in
     :meth:`qiskit_ibm.runtime.IBMRuntimeService.run`.
-    Note that not all accounts are authorized to select a different image.
+    Note: not all accounts are authorized to select a different image.
