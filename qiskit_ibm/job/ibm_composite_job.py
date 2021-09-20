@@ -78,8 +78,8 @@ class IBMCompositeJob(IBMJob):
     status and result, respectively.
 
     You can also retrieve a previously executed ``IBMCompositeJob`` using the
-    :meth:`~qiskit_ibm.IBMBackend.retrieve_job` and
-    :meth:`~qiskit_ibm.IBMBackend.jobs` methods, like you would with
+    :meth:`~qiskit_ibm.IBMBackendService.job` and
+    :meth:`~qiskit_ibm.IBMBackendService.jobs` methods, like you would with
     traditional jobs.
 
     ``IBMCompositeJob`` also allows you to re-run failed jobs, using the

@@ -11,8 +11,8 @@ upgrade:
     :meth:`~qiskit_ibm.job.IBMCompositeJob.status` to get job status,
     :meth:`~qiskit_ibm.job.IBMCompositeJob.result` to get job result, and
     :meth:`~qiskit_ibm.job.IBMCompositeJob.cancel` to cancel the job. You can also
-    use the :meth:`qiskit_ibm.IBMBackend.retrieve_job` and
-    :meth:`qiskit_ibm.IBMBackend.jobs` methods to retrieve a single
+    use the :meth:`qiskit_ibm.IBMBackendService.job` and
+    :meth:`qiskit_ibm.IBMBackendService.jobs` methods to retrieve a single
     ``IBMCompositeJob`` (by passing its job ID) or multiple jobs.
 
     :class:`qiskit_ibm.job.IBMCompositeJob` also has a
@@ -21,5 +21,5 @@ upgrade:
     :meth:`~qiskit_ibm.job.IBMCompositeJob.report` method that returns a
     report on current sub-job statuses.
 
-    This feature replaces the ``IBMJobManager`` class in ``qiskit-IBM-provider``,
+    This feature replaces the ``IBMQJobManager`` class in ``qiskit-ibmq-provider``,
     which is the predecessor of ``qiskit-ibm``.
