@@ -388,7 +388,7 @@ class TestIBMJobStates(JobTestCase):
         job = self.run_with_api(NoKindJobAPI())
         with self.assertRaises(IBMJobInvalidStateError):
             job.result()
-        self.assertIsNone(job.qobj())
+        self.assertFalse(job.circuits())
 
     def test_transpiling_status(self):
         """Test transpiling job state."""

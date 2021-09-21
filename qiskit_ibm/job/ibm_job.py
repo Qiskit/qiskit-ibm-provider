@@ -16,14 +16,12 @@ import logging
 from abc import ABC, abstractmethod
 from typing import Dict, Optional, Any, List, Union
 from datetime import datetime
-import warnings
 
 from qiskit.providers.job import JobV1 as Job
 from qiskit.providers.models import BackendProperties
 from qiskit.result import Result
 from qiskit.circuit.quantumcircuit import QuantumCircuit
 from qiskit.pulse import Schedule
-from qiskit.qobj import QasmQobj, PulseQobj
 
 from qiskit_ibm import ibm_backend  # pylint: disable=unused-import
 from ..api.clients import AccountClient
@@ -246,33 +244,6 @@ class IBMJob(Job, ABC):
             Tags assigned to this job.
         """
         return self._tags.copy()
-
-    def qobj(self) -> Optional[Union[QasmQobj, PulseQobj]]:
-        """Return the Qobj for this job.
-
-        Returns:
-            The Qobj for this job, or ``None`` if the job does not have a Qobj.
-
-        Raises:
-            IBMJobApiError: If an unexpected error occurred when retrieving
-                job information from the server.
-        """
-        warnings.warn("The ``job.qobj()`` method is deprecated and will "
-                      "be removed in a future release. You can now pass circuits "
-                      "to ``backend.run()`` and use ``job.circuits()``, "
-                      "``job.backend_options()``, and ``job.header()`` to retrieve "
-                      "circuits, run configuration, and Qobj header, respectively.",
-                      DeprecationWarning, stacklevel=2)
-        return self._get_qobj()
-
-    @abstractmethod
-    def _get_qobj(self) -> Optional[Union[QasmQobj, PulseQobj]]:
-        """Return the Qobj for this job.
-
-        Returns:
-            The Qobj for this job, or ``None`` if the job does not have a Qobj.
-        """
-        pass
 
     def __getattr__(self, name: str) -> Any:
         try:

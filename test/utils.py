@@ -159,7 +159,7 @@ def submit_job_one_bad_instr(backend: IBMBackend) -> IBMJob:
     qc_new = transpile(ReferenceCircuits.bell(), backend)
     qobj = assemble([qc_new]*2, backend=backend)
     qobj.experiments[1].instructions[1].name = 'bad_instruction'
-    job = backend.run(qobj)
+    job = backend._submit_job(qobj)
     return job
 
 
