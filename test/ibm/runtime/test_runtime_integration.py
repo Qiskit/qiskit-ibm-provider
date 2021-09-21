@@ -232,7 +232,7 @@ def main(backend, user_messenger, **kwargs):
 
         job.wait_for_final_state()
         job_result_raw = self.provider.runtime._api_client.job_results(job.job_id)
-        self.assertEqual(JobStatus.ERROR, job.status)
+        self.assertEqual(JobStatus.ERROR, job.status())
         self.assertIn(API_TO_JOB_ERROR_MESSAGE['CANCELLED - RAN TOO LONG'].format(
             job.job_id, job_result_raw), job.error_message())
         with self.assertRaises(RuntimeJobFailureError):
