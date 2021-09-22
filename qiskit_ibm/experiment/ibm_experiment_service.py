@@ -111,7 +111,7 @@ class IBMExperimentService:
             backend_name: str,
             metadata: Optional[Dict] = None,
             experiment_id: Optional[str] = None,
-            parent_experiment_uuid: Optional[str] = None,
+            parent_id: Optional[str] = None,
             job_ids: Optional[List[str]] = None,
             tags: Optional[List[str]] = None,
             notes: Optional[str] = None,
@@ -128,7 +128,7 @@ class IBMExperimentService:
             metadata: Experiment metadata.
             experiment_id: Experiment ID. It must be in the ``uuid4`` format.
                 One will be generated if not supplied.
-            parent_experiment_uuid: The ``uuid`` of the parent experiment.
+            parent_id: The ``uuid`` of the parent experiment.
                 The parent experiment must exist, must be on the same backend as the child,
                 and an experiment cannot be its own parent.
             job_ids: IDs of experiment jobs.
@@ -169,7 +169,7 @@ class IBMExperimentService:
         }
         data.update(self._experiment_data_to_api(metadata=metadata,
                                                  experiment_id=experiment_id,
-                                                 parent_experiment_uuid=parent_experiment_uuid,
+                                                 parent_id=parent_id,
                                                  job_ids=job_ids,
                                                  tags=tags,
                                                  notes=notes,
@@ -241,7 +241,7 @@ class IBMExperimentService:
             self,
             metadata: Optional[Dict] = None,
             experiment_id: Optional[str] = None,
-            parent_experiment_uuid: Optional[str] = None,
+            parent_id: Optional[str] = None,
             job_ids: Optional[List[str]] = None,
             tags: Optional[List[str]] = None,
             notes: Optional[str] = None,
@@ -254,7 +254,7 @@ class IBMExperimentService:
         Args:
             metadata: Experiment metadata.
             experiment_id: Experiment ID.
-            parent_experiment_uuid: Parent experiment ID
+            parent_id: Parent experiment ID
             job_ids: IDs of experiment jobs.
             tags: Tags to be associated with the experiment.
             notes: Freeform notes about the experiment.
@@ -270,8 +270,8 @@ class IBMExperimentService:
             data['extra'] = metadata
         if experiment_id:
             data['uuid'] = experiment_id
-        if parent_experiment_uuid:
-            data['parent_experiment_uuid'] = parent_experiment_uuid
+        if parent_id:
+            data['parent_experiment_uuid'] = parent_id
         if share_level:
             if isinstance(share_level, str):
                 share_level = ExperimentShareLevel(share_level.lower())
@@ -331,7 +331,7 @@ class IBMExperimentService:
             public_only: Optional[bool] = False,
             exclude_mine: Optional[bool] = False,
             mine_only: Optional[bool] = False,
-            parent_experiment_uuid: Optional[str] = None,
+            parent_id: Optional[str] = None,
             sort_by: Optional[Union[str, List[str]]] = None,
             **filters: Any
     ) -> List[Dict]:
@@ -476,7 +476,7 @@ class IBMExperimentService:
                     public_only=public_only,
                     exclude_mine=exclude_mine,
                     mine_only=mine_only,
-                    parent_experiment_uuid=parent_experiment_uuid,
+                    parent_id=parent_id,
                     sort_by=converted["sort_by"])
             raw_data = json.loads(response, cls=json_decoder)
             marker = raw_data.get('marker')

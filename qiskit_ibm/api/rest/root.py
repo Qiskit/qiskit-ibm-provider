@@ -162,7 +162,7 @@ class Api(RestAdapterBase):
             public_only: Optional[bool] = False,
             exclude_mine: Optional[bool] = False,
             mine_only: Optional[bool] = False,
-            parent_experiment_uuid: Optional[str] = None,
+            parent_id: Optional[str] = None,
             sort_by: Optional[str] = None
     ) -> str:
         """Return experiment data.
@@ -182,7 +182,7 @@ class Api(RestAdapterBase):
             public_only: Whether or not to only return experiments with a public share level.
             exclude_mine: Whether or not to exclude experiments where I am the owner.
             mine_only: Whether or not to only return experiments where I am the owner.
-            parent_experiment_uuid: Filter by parent experiment ID.
+            parent_id: Filter by parent experiment ID.
             sort_by: Sorting order.
 
         Returns:
@@ -210,8 +210,8 @@ class Api(RestAdapterBase):
             params['group_id'] = group
         if project:
             params['project_id'] = project
-        if parent_experiment_uuid:
-            params['parent_experiment_uuid'] = parent_experiment_uuid
+        if parent_id:
+            params['parent_experiment_uuid'] = parent_id
         if exclude_public:
             params['visibility'] = '!public'
         elif public_only:
