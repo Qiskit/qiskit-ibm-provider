@@ -396,8 +396,7 @@ class IBMExperimentService:
                 Cannot be ``True`` if `mine_only` is ``True``.
             mine_only: If ``True``, only experiments where I am the owner will be returned.
                 Cannot be ``True`` if `exclude_mine` is ``True``.
-            parent_experiment_uuid: Filter experiments by their `parent_experiment_uuid`.
-                Must be a valid UUID and can be specified at most once.
+            parent_id: Filter experiments by this parent experiment ID.
             sort_by: Specifies how the output should be sorted. This can be a single sorting
                 option or a list of options. Each option should contain a sort key
                 and a direction, separated by a semicolon. Valid sort keys are
