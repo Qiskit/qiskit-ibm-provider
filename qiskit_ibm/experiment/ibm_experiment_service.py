@@ -129,7 +129,7 @@ class IBMExperimentService:
             experiment_id: Experiment ID. It must be in the ``uuid4`` format.
                 One will be generated if not supplied.
             parent_experiment_uuid: The ``uuid`` of the parent experiment.
-                The parent experiment must exist, must be on the same device as the child,
+                The parent experiment must exist, must be on the same backend as the child,
                 and an experiment cannot be its own parent.
             job_ids: IDs of experiment jobs.
             tags: Tags to be associated with the experiment.
