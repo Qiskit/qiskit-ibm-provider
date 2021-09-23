@@ -518,7 +518,7 @@ class IBMExperimentService:
             "experiment_type": raw_data['type'],
             "backend": backend,
             "experiment_id": raw_data['uuid'],
-            "parent_experiment_uuid": raw_data.get('parent_experiment_uuid', None),
+            "parent_id": raw_data.get('parent_experiment_uuid', None),
             "tags": raw_data.get("tags", None),
             "job_ids": raw_data['jobs'],
             "share_level": raw_data.get("visibility", None),
