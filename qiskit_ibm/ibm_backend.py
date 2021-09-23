@@ -190,8 +190,6 @@ class IBMBackend(Backend):
                 as a filter in the :meth:`jobs()` function call.
             max_circuits_per_job: Maximum number of circuits to have in a single job.
 
-            The following arguments are NOT applicable if a Qobj is passed in.
-
             header: User input that will be attached to the job and will be
                 copied to the corresponding result header. Headers do not affect the run.
                 This replaces the old ``Qobj`` header.
@@ -271,8 +269,6 @@ class IBMBackend(Backend):
         if not self.configuration().simulator:
             self._deprecate_id_instruction(circuits)
 
-        qobj_header = run_config.pop('qobj_header', None)
-        header = header or qobj_header
         run_config_dict = self._get_run_config(
             qobj_header=header,
             shots=shots,
