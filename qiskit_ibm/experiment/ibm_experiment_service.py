@@ -128,7 +128,7 @@ class IBMExperimentService:
             metadata: Experiment metadata.
             experiment_id: Experiment ID. It must be in the ``uuid4`` format.
                 One will be generated if not supplied.
-            parent_id: The ``uuid`` of the parent experiment.
+            parent_id: The experiment ID of the parent experiment.
                 The parent experiment must exist, must be on the same backend as the child,
                 and an experiment cannot be its own parent.
             job_ids: IDs of experiment jobs.
