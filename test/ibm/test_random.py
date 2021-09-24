@@ -108,6 +108,12 @@ class TestRandom(IBMTestCase):
         random_service._initialized = False
         cls.provider._random = random_service
 
+    @classmethod
+    def tearDownClass(cls) -> None:
+        """Class level teardown."""
+        super().tearDownClass()
+        cls.provider._disable_account()
+
     def test_list_random_services(self):
         """Test listing random number services."""
         random_services = self.provider.random.services()
