@@ -19,9 +19,10 @@ import copy
 from contextlib import suppress
 from unittest import mock
 
-from qiskit.test.mock import FakeQobj
 from qiskit.providers import JobTimeoutError
 from qiskit.providers.jobstatus import JobStatus
+from qiskit import transpile
+from qiskit.test.reference_circuits import ReferenceCircuits
 
 from qiskit_ibm.apiconstants import API_JOB_FINAL_STATES, ApiJobStatus
 from qiskit_ibm.job.exceptions import IBMJobApiError, IBMJobInvalidStateError
@@ -29,6 +30,7 @@ from qiskit_ibm.api.exceptions import (ApiError, UserTimeoutExceededError,
                                        ApiIBMProtocolError)
 from qiskit_ibm.exceptions import IBMBackendError
 from qiskit_ibm.ibm_backend import IBMBackend
+from qiskit_ibm import IBMProvider
 from ..jobtestcase import JobTestCase
 
 
@@ -398,10 +400,13 @@ class TestIBMJobStates(JobTestCase):
 
     def run_with_api(self, api):
         """Creates a new ``IBMJob`` running with the provided API object."""
-        backend = IBMBackend(mock.Mock(), mock.Mock(), mock.Mock(), api_client=api)
+        provider = IBMProvider()
+        simulator_backend = provider.get_backend('ibmq_qasm_simulator')
+        backend = IBMBackend(simulator_backend.configuration(),
+                             mock.Mock(), mock.Mock(), api_client=api)
+        circuit = transpile(ReferenceCircuits.bell())
         self._current_api = api
-        self._current_qjob = backend._submit_job(
-            qobj=FakeQobj())  # pylint: disable=no-value-for-parameter
+        self._current_qjob = backend.run(circuit)
         self._current_qjob.refresh = mock.Mock()
         return self._current_qjob
 
