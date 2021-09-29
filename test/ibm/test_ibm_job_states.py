@@ -30,7 +30,7 @@ from qiskit_ibm.api.exceptions import (ApiError, UserTimeoutExceededError,
                                        ApiIBMProtocolError)
 from qiskit_ibm.exceptions import IBMBackendError
 from qiskit_ibm.ibm_backend import IBMBackend
-from qiskit_ibm import IBMProvider
+from ..decorators import requires_provider
 from ..jobtestcase import JobTestCase
 
 
@@ -127,9 +127,12 @@ VALID_JOB_RESPONSE = {
 class TestIBMJobStates(JobTestCase):
     """Test the states of an IBMJob."""
 
-    def setUp(self):
+    @requires_provider
+    def setUp(self, provider):
         """Initial test setup."""
+        # pylint: disable=arguments-differ
         super().setUp()
+        self.provider = provider
         self._current_api = None
         self._current_qjob = None
 
@@ -400,8 +403,7 @@ class TestIBMJobStates(JobTestCase):
 
     def run_with_api(self, api):
         """Creates a new ``IBMJob`` running with the provided API object."""
-        provider = IBMProvider()
-        simulator_backend = provider.get_backend('ibmq_qasm_simulator')
+        simulator_backend = self.provider.get_backend('ibmq_qasm_simulator')
         backend = IBMBackend(simulator_backend.configuration(),
                              mock.Mock(), mock.Mock(), api_client=api)
         circuit = transpile(ReferenceCircuits.bell())
