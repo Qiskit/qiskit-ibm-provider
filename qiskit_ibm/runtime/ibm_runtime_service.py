@@ -107,17 +107,17 @@ class IBMRuntimeService:
         self._ws_url = provider.credentials.runtime_url.replace('https', 'wss')
         self._programs = {}  # type: Dict
 
-    def pprint_programs(self, refresh: bool = False, include_details: bool = False) -> None:
+    def pprint_programs(self, refresh: bool = False, detailed: bool = False) -> None:
         """Pretty print information about available runtime programs.
 
         Args:
             refresh: If ``True``, re-query the server for the programs. Otherwise
                 return the cached value.
-            include_details: If ``True`` print all details about available runtime programs.
+            detailed: If ``True`` print all details about available runtime programs.
         """
         programs = self.programs(refresh)
         for prog in programs:
-            if include_details:
+            if detailed:
                 print("="*50)
                 print(str(prog))
             else:
