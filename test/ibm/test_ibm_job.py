@@ -443,9 +443,10 @@ class TestIBMJob(IBMTestCase):
             new_job = self.provider.backend.job(self.sim_job.job_id())
             self.assertTrue(isinstance(new_job.backend(), IBMRetiredBackend))
             self.assertNotEqual(new_job.backend().name(), 'unknown')
-            fifteen_minutes = datetime.now() - timedelta(minutes=15)
+            fifteen_minutes_ago = datetime.now() - timedelta(minutes=15)
             recent_jobs = self.provider.backend.jobs(
-                limit=None, start_datetime=fifteen_minutes, backend_name=new_job.backend().name())
+                limit=None, start_datetime=fifteen_minutes_ago, 
+                backend_name=new_job.backend().name())
             recent_job_ids = [job.job_id() for job in recent_jobs]
             self.assertIn(new_job.job_id(), recent_job_ids)
         finally:
