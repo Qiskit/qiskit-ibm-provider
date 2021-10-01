@@ -1,0 +1,6 @@
+---
+upgrade:
+  - |
+    By default, :meth:`qiskit_ibm.runtime.IBMRuntimeService.run` now only prints
+    the summary of each runtime program instead of all of the details. There is a 
+    new parameter `include_details` that can be set to True to print all details.
