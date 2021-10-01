@@ -101,7 +101,6 @@ class IBMBackend(Backend):
         job_limit = backend.job_limit()
     """
 
-    qobj_warning_issued = False
     id_warning_issued = False
 
     def __init__(
@@ -629,7 +628,7 @@ class IBMBackend(Backend):
 
     def _deprecate_id_instruction(
             self,
-            circuits: Union[QasmQobj, PulseQobj, QuantumCircuit, Schedule,
+            circuits: Union[QuantumCircuit, Schedule,
                             List[Union[QuantumCircuit, Schedule]]]
     ) -> None:
         """Raise a DeprecationWarning if any circuit contains an 'id' instruction.
@@ -742,7 +741,7 @@ class IBMSimulator(IBMBackend):
             noise_model: Any = None,
             **kwargs: Dict
     ) -> IBMJob:
-        """Run a Qobj asynchronously.
+        """Run a Circuit asynchronously.
 
         Args:
             circuits: An individual or a
@@ -854,7 +853,7 @@ class IBMRetiredBackend(IBMBackend):
             *args: Any,
             **kwargs: Any
     ) -> None:
-        """Run a Qobj."""
+        """Run a Circuit."""
         # pylint: disable=arguments-differ
         raise IBMBackendError('This backend ({}) is no longer available.'.format(self.name()))
 

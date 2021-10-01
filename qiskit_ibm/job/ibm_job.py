@@ -23,6 +23,7 @@ from qiskit.result import Result
 from qiskit.circuit.quantumcircuit import QuantumCircuit
 from qiskit.pulse import Schedule
 from qiskit.qobj import QasmQobj, PulseQobj
+
 from qiskit_ibm import ibm_backend  # pylint: disable=unused-import
 from ..api.clients import AccountClient
 from .queueinfo import QueueInfo
@@ -254,6 +255,7 @@ class IBMJob(Job, ABC):
     @abstractmethod
     def _get_qobj(self) -> Optional[Union[QasmQobj, PulseQobj]]:
         """Return the Qobj for this job.
+
         Returns:
             The Qobj for this job, or ``None`` if the job does not have a Qobj.
         """
