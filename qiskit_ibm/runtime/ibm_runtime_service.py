@@ -113,8 +113,7 @@ class IBMRuntimeService:
         Args:
             refresh: If ``True``, re-query the server for the programs. Otherwise
                 return the cached value.
-            include_details: If ``True`` print all details about available runtime programs
-                including version, creation date, maximum execution time, and input parameters.
+            include_details: If ``True`` print all details about available runtime programs.
         """
         programs = self.programs(refresh)
         for prog in programs:
