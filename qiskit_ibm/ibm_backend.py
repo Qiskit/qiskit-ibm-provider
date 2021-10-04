@@ -645,27 +645,19 @@ class IBMBackend(Backend):
             None
         """
 
-        if isinstance(circuits, PulseQobj):
-            return
-
         id_support = 'id' in getattr(self.configuration(), 'basis_gates', [])
         delay_support = 'delay' in getattr(self.configuration(), 'supported_instructions', [])
 
         if not delay_support:
             return
 
-        if isinstance(circuits, QasmQobj):
-            circuit_has_id = any(instr.name == 'id'
-                                 for experiment in circuits.experiments
-                                 for instr in experiment.instructions)
-        else:
-            if not isinstance(circuits, List):
-                circuits = [circuits]
+        if not isinstance(circuits, List):
+            circuits = [circuits]
 
-            circuit_has_id = any(instr.name == 'id'
-                                 for circuit in circuits
-                                 if isinstance(circuit, QuantumCircuit)
-                                 for instr, qargs, cargs in circuit.data)
+        circuit_has_id = any(instr.name == 'id'
+                             for circuit in circuits
+                             if isinstance(circuit, QuantumCircuit)
+                             for instr, qargs, cargs in circuit.data)
 
         if not circuit_has_id:
             return
@@ -688,29 +680,19 @@ class IBMBackend(Backend):
 
         dt_in_s = self.configuration().dt
 
-        if isinstance(circuits, QasmQobj):
-            for experiment in circuits.experiments:
-                for instr in experiment.instructions:
-                    if instr.name == 'id':
-                        sx_duration = self.properties().gate_length('sx', instr.qubits[0])
-                        sx_duration_in_dt = duration_in_dt(sx_duration, dt_in_s)
+        for circuit in circuits:
+            if isinstance(circuit, Schedule):
+                continue
 
-                        instr.name = 'delay'
-                        instr.params = [sx_duration_in_dt]
-        else:
-            for circuit in circuits:
-                if isinstance(circuit, Schedule):
-                    continue
+            for idx, (instr, qargs, cargs) in enumerate(circuit.data):
+                if instr.name == 'id':
 
-                for idx, (instr, qargs, cargs) in enumerate(circuit.data):
-                    if instr.name == 'id':
+                    sx_duration = self.properties().gate_length('sx', qargs[0].index)
+                    sx_duration_in_dt = duration_in_dt(sx_duration, dt_in_s)
 
-                        sx_duration = self.properties().gate_length('sx', qargs[0].index)
-                        sx_duration_in_dt = duration_in_dt(sx_duration, dt_in_s)
+                    delay_instr = Delay(sx_duration_in_dt)
 
-                        delay_instr = Delay(sx_duration_in_dt)
-
-                        circuit.data[idx] = (delay_instr, qargs, cargs)
+                    circuit.data[idx] = (delay_instr, qargs, cargs)
 
 
 class IBMSimulator(IBMBackend):
