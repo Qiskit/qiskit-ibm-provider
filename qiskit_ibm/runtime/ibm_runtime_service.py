@@ -117,11 +117,10 @@ class IBMRuntimeService:
         """
         programs = self.programs(refresh)
         for prog in programs:
+            print("="*50)
             if detailed:
-                print("="*50)
                 print(str(prog))
             else:
-                print("="*50)
                 print(f"Name: {prog.name}")
                 print(f"Description: {prog.description}")
 
