@@ -26,6 +26,7 @@ Conversion
 
     seconds_to_duration
     utc_to_local
+
 Misc Functions
 ==============
 .. autosummary::
