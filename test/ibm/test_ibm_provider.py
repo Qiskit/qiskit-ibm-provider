@@ -17,8 +17,7 @@ import os
 from unittest import skipIf, mock
 from configparser import ConfigParser
 from qiskit import ClassicalRegister, QuantumCircuit, QuantumRegister
-from qiskit.test import providers, slow_test
-from qiskit.compiler import transpile
+from qiskit.test import providers
 from qiskit.providers.exceptions import QiskitBackendNotFoundError
 from qiskit.providers.models.backendproperties import BackendProperties
 
@@ -38,7 +37,7 @@ from qiskit_ibm.credentials.hubgroupproject import HubGroupProject
 from qiskit_ibm.apiconstants import QISKIT_IBM_API_URL
 
 from ..ibm_test_case import IBMTestCase
-from ..decorators import requires_device, requires_provider, requires_qe_access
+from ..decorators import requires_provider, requires_qe_access
 from ..contextmanagers import custom_qiskitrc, no_envs, CREDENTIAL_ENV_VARS
 from ..utils import get_provider
 
@@ -433,40 +432,6 @@ class TestIBMProviderServices(IBMTestCase, providers.ProviderTestCase):
             properties = backend.properties()
             if backend.configuration().simulator:
                 self.assertEqual(properties, None)
-
-    def test_qobj_headers_in_result_sims(self):
-        """Test that the qobj headers are passed onto the results for sims."""
-        backend = self.provider.get_backend('ibmq_qasm_simulator')
-
-        custom_qobj_header = {'x': 1, 'y': [1, 2, 3], 'z': {'a': 4}}
-        circuits = transpile(self.qc1, backend=backend)
-
-        # TODO Use circuit metadata for individual header when terra PR-5270 is released.
-        # qobj.experiments[0].header.some_field = 'extra info'
-
-        job = backend.run(circuits, qobj_header=custom_qobj_header)
-        result = job.result()
-        self.assertTrue(custom_qobj_header.items() <= job.header().items())
-        self.assertTrue(custom_qobj_header.items() <= result.header.to_dict().items())
-        # self.assertEqual(result.results[0].header.some_field,
-        #                  'extra info')
-
-    @slow_test
-    @requires_device
-    def test_qobj_headers_in_result_devices(self, backend):
-        """Test that the qobj headers are passed onto the results for devices."""
-        custom_qobj_header = {'x': 1, 'y': [1, 2, 3], 'z': {'a': 4}}
-
-        # TODO Use circuit metadata for individual header when terra PR-5270 is released.
-        # qobj.experiments[0].header.some_field = 'extra info'
-
-        job = backend.run(transpile(self.qc1, backend=backend), qobj_header=custom_qobj_header)
-        job.wait_for_final_state(wait=300, callback=self.simple_job_callback)
-        result = job.result()
-        self.assertTrue(custom_qobj_header.items() <= job.header().items())
-        self.assertTrue(custom_qobj_header.items() <= result.header.to_dict().items())
-        # self.assertEqual(result.results[0].header.some_field,
-        #                  'extra info')
 
     def test_aliases(self):
         """Test that display names of devices map the regular names."""
