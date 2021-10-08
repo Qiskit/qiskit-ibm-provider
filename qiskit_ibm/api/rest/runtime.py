@@ -145,7 +145,7 @@ class Runtime(RestAdapterBase):
         """
         url = self.get_url('jobs')
         payload = {
-            'programId': program_id,
+            'program_id': program_id,
             'hub': hub,
             'group': group,
             'project': project,
