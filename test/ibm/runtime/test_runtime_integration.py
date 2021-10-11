@@ -209,6 +209,7 @@ def main(backend, user_messenger, **kwargs):
             self.provider.runtime.delete_program(program_id)
 
     def test_update_program(self):
+        """Test updating a program."""
         program_v1 = """
 def main(backend, user_messenger, **kwargs):
     return "version 1"
