@@ -49,7 +49,7 @@ class RuntimeClient:
 
     def program_create(
             self,
-            program_data: str,
+            program_data: bytes,
             name: str,
             description: str,
             max_execution_time: int,

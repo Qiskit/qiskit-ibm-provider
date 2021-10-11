@@ -215,7 +215,7 @@ def main(backend, user_messenger, **kwargs):
         """
         program_v2 = """
 def main(backend, user_messenger, **kwargs):
-    return "version 2"        
+    return "version 2"
         """
         program_id = self._upload_program(data=program_v1)
         job = self._run_program(program_id=program_id)

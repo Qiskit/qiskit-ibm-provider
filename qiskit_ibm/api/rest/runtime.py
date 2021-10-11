@@ -65,7 +65,7 @@ class Runtime(RestAdapterBase):
 
     def create_program(
             self,
-            program_data: str,
+            program_data: bytes,
             name: str,
             description: str,
             max_execution_time: int,
@@ -239,14 +239,11 @@ class Program(RestAdapterBase):
         url = self.get_url('self')
         self.session.delete(url)
 
-    def update(self, program_data: str):
+    def update(self, program_data: str) -> None:
         """Update a program.
 
         Args:
             program_data: Program data.
-
-        Returns:
-            JSON response.
         """
         url = self.get_url("data")
         self.session.put(url, data=program_data,
