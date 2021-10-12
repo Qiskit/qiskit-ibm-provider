@@ -297,7 +297,7 @@ class IBMRuntimeService:
         ``name2`` will be used as the program name.
 
         Args:
-            data: Path of the program file or program data to upload.
+            data: Program data or path of the file containing program data to upload.
             metadata: Name of the program metadata file or metadata dictionary.
                 A metadata file needs to be in the JSON format.
                 See :file:`program/program_metadata_sample.yaml` for an example.
@@ -411,7 +411,7 @@ class IBMRuntimeService:
 
         Args:
             program_id: Program ID.
-            data: Path of the program file or program data to upload.
+            data: Program data or path of the file containing program data to upload.
         """
         if "def main(" not in data:
             # This is the program file
