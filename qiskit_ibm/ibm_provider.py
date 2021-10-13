@@ -299,22 +299,36 @@ class IBMProvider(Provider):
             hub: Optional[str] = None,
             group: Optional[str] = None,
             project: Optional[str] = None,
+            backend_name: Optional[str] = None,
+            service_name: Optional[str] = None
     ) -> HubGroupProject:
         """Return an instance of `HubGroupProject` for a single hub/group/project combination.
+
+        This function also allows to find the `HubGroupProject` that contains a backend
+        `backend_name` providing service `service_name`.
 
         Args:
             hub: Name of the hub.
             group: Name of the group.
             project: Name of the project.
+            backend_name: Name of the IBM Quantum backend.
+            service_name: Name of the IBM Quantum service.
 
         Returns:
             An instance of `HubGroupProject` that matches the specified criteria or the default.
 
         Raises:
             IBMProviderError: If no hub/group/project matches the specified criteria,
-                if more than one hub/group/project matches the specified criteria or if
-                no hub/group/project could be found for this account.
+                if more than one hub/group/project matches the specified criteria, if
+                no hub/group/project could be found for this account or if no backend matches the
+                criteria.
         """
+        # If any `hub`, `group`, or `project` is specified, make sure all parameters are set.
+        if any([hub, group, project]) and not all([hub, group, project]):
+            raise IBMProviderError('The hub, group, and project parameters must all be '
+                                   'specified. '
+                                   'hub = "{}", group = "{}", project = "{}"'
+                                   .format(hub, group, project))
         hgps = self._get_hgps(hub=hub, group=group, project=project)
         if any([hub, group, project]):
             if not hgps:
@@ -328,6 +342,12 @@ class IBMProvider(Provider):
         elif not hgps:
             # Prevent edge case where no hub/group/project is available.
             raise IBMProviderError('No hub/group/project could be found for this account.')
+        elif backend_name and service_name:
+            for hgp in hgps:
+                if hgp.has_service(service_name) and \
+                        hgp.get_backend(backend_name):
+                    return hgp
+            raise IBMProviderError("No backend matches the criteria.")
         return hgps[0]
 
     def _get_hgps(
@@ -622,12 +642,6 @@ class IBMProvider(Provider):
                 `project` are specified.
         """
         # pylint: disable=arguments-differ
-        # If any `hub`, `group`, or `project` is specified, make sure all parameters are set.
-        if any([hub, group, project]) and not all([hub, group, project]):
-            raise IBMProviderValueError('The hub, group, and project parameters must all be '
-                                        'specified. '
-                                        'hub = "{}", group = "{}", project = "{}"'
-                                        .format(hub, group, project))
         backends = self.backends(name, hub=hub, group=group, project=project, **kwargs)
         if len(backends) > 1:
             raise QiskitBackendNotFoundError("More than one backend matches the criteria")
@@ -791,18 +805,6 @@ class IBMProvider(Provider):
             All services available to this account.
         """
         return {key: val for key, val in self._services.items() if val is not None}
-
-    def _get_hgp_by_service_and_backend_name(
-            self,
-            service_name: str,
-            backend_name: str
-    ) -> HubGroupProject:
-        hgps = self._get_hgps()
-        for hgp in hgps:
-            if hgp.has_service(service_name) and \
-                    hgp.get_backend(backend_name):
-                return hgp
-        raise IBMNotAuthorizedError(f"You are not authorized to use {service_name} service.")
 
     def __repr__(self) -> str:
         return "<{}>".format(self.__class__.__name__)

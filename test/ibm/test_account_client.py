@@ -44,7 +44,8 @@ class TestAccountClient(IBMTestCase):
         cls.hub = hub
         cls.group = group
         cls.project = project
-        cls.access_token = cls.provider.backend._hgp._api_client.account_api.session._access_token
+        default_hgp = cls.provider.backend._default_hgp
+        cls.access_token = default_hgp._api_client.account_api.session._access_token
 
     def setUp(self):
         """Initial test setup."""
@@ -73,7 +74,7 @@ class TestAccountClient(IBMTestCase):
     def _get_client(self):
         """Helper for instantiating an AccountClient."""
         # pylint: disable=no-value-for-parameter
-        return AccountClient(self.provider.backend._hgp.credentials)
+        return AccountClient(self.provider.backend._default_hgp.credentials)
 
     def test_exception_message(self):
         """Check exception has proper message."""
@@ -181,7 +182,8 @@ class TestAccountClientJobs(IBMTestCase):
         cls.hub = hub
         cls.group = group
         cls.project = project
-        cls.access_token = cls.provider.backend._hgp._api_client.account_api.session._access_token
+        default_hgp = cls.provider.backend._default_hgp
+        cls.access_token = default_hgp._api_client.account_api.session._access_token
 
         backend_name = 'ibmq_qasm_simulator'
         backend = cls.provider.get_backend(backend_name, hub=cls.hub,

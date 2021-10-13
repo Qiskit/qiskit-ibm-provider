@@ -71,7 +71,7 @@ class IBMBackendService:
         """
         super().__init__()
         self._provider = provider
-        self._hgp = hgp
+        self._default_hgp = hgp
         self._backends: Dict[str, IBMBackend] = {}
         self._initialize_backends()
         self._discover_backends()
@@ -136,12 +136,6 @@ class IBMBackendService:
             IBMBackendValueError: If only one or two parameters from `hub`, `group`,
                 `project` are specified.
         """
-        # If any `hub`, `group`, or `project` is specified, make sure all parameters are set.
-        if any([hub, group, project]) and not all([hub, group, project]):
-            raise IBMBackendValueError('The hub, group, and project parameters must all be '
-                                       'specified. '
-                                       'hub = "{}", group = "{}", project = "{}"'
-                                       .format(hub, group, project))
         backends: List[IBMBackend] = list()
         if all([hub, group, project]):
             hgp = self._provider._get_hgp(hub, group, project)
@@ -301,7 +295,7 @@ class IBMBackendService:
         current_page_limit = limit or 20
         initial_filter = copy.deepcopy(api_filter)
         while True:
-            job_page = self._hgp._api_client.list_jobs_statuses(
+            job_page = self._default_hgp._api_client.list_jobs_statuses(
                 limit=current_page_limit, skip=skip, descending=descending,
                 extra_filter=api_filter)
             if logger.getEffectiveLevel() is logging.DEBUG:
@@ -366,10 +360,10 @@ class IBMBackendService:
             backend = IBMRetiredBackend.from_name(backend_name=backend_name,
                                                   provider=self._provider,
                                                   credentials=self._provider.credentials,
-                                                  api=self._hgp._api_client)
+                                                  api=self._default_hgp._api_client)
         try:
             job = IBMCircuitJob(backend=backend,
-                                api_client=self._hgp._api_client, **job_info)
+                                api_client=self._default_hgp._api_client, **job_info)
             return job
         except TypeError as ex:
             if raise_error:
@@ -526,9 +520,9 @@ class IBMBackendService:
             if not sub_jobs:
                 raise IBMJobNotFoundError(f"Job {job_id} not found.")
             return IBMCompositeJob.from_jobs(job_id=job_id, jobs=sub_jobs,
-                                             api_client=self._hgp._api_client)
+                                             api_client=self._default_hgp._api_client)
         try:
-            job_info = self._hgp._api_client.job_get(job_id)
+            job_info = self._default_hgp._api_client.job_get(job_id)
         except ApiError as ex:
             if 'Error code: 3250.' in str(ex):
                 raise IBMJobNotFoundError(f"Job {job_id} not found.")
@@ -542,7 +536,7 @@ class IBMBackendService:
         Returns:
             A list of your upcoming reservations.
         """
-        raw_response = self._hgp._api_client.my_reservations()
+        raw_response = self._default_hgp._api_client.my_reservations()
         return convert_reservation_data(raw_response)
 
     @staticmethod

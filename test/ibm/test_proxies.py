@@ -63,7 +63,7 @@ class TestProxies(IBMTestCase):
         self.proxy_process.terminate()  # kill to be able of reading the output
 
         auth_line = pproxy_desired_access_log_line(qe_url)
-        api_line = pproxy_desired_access_log_line(provider.backend._hgp.credentials.url)
+        api_line = pproxy_desired_access_log_line(provider.backend._default_hgp.credentials.url)
         proxy_output = self.proxy_process.stdout.read().decode('utf-8')
 
         # Check if the authentication call went through proxy.

@@ -106,10 +106,10 @@ class IBMRuntimeService:
             hgp: default hub/group/project to use for the service.
         """
         self._provider = provider
-        self._hgp = hgp
-        self._api_client = RuntimeClient(self._hgp.credentials)
-        self._access_token = self._hgp.credentials.access_token
-        self._ws_url = self._hgp.credentials.runtime_url.replace('https', 'wss')
+        self._default_hgp = hgp
+        self._api_client = RuntimeClient(self._default_hgp.credentials)
+        self._access_token = self._default_hgp.credentials.access_token
+        self._ws_url = self._default_hgp.credentials.runtime_url.replace('https', 'wss')
         self._programs = {}  # type: Dict
 
     def pprint_programs(self, refresh: bool = False, detailed: bool = False,
@@ -285,16 +285,14 @@ class IBMRuntimeService:
             re.match("[a-zA-Z0-9]+([/.\\-_][a-zA-Z0-9]+)*:[a-zA-Z0-9]+([.\\-_][a-zA-Z0-9]+)*$",
                      image):
             raise IBMInputValueError('"image" needs to be in form of image_name:tag')
-        # If any `hub`, `group`, or `project` is specified, make sure all parameters are set.
-        if any([hub, group, project]) and not all([hub, group, project]):
-            raise IBMInputValueError('The hub, group, and project parameters must all be '
-                                     'specified. hub = "{}", group = "{}", project = "{}"'
-                                     .format(hub, group, project))
         backend_name = options['backend_name']
-        hgp = self._select_hgp(backend_name=backend_name,
-                               hub=hub, group=group, project=project)
+        if not all([hub, group, project]) and self._default_hgp.get_backend(backend_name):
+            hgp = self._default_hgp
+        else:
+            hgp = self._provider._get_hgp(hub=hub, group=group, project=project,
+                                          backend_name=backend_name, service_name=SERVICE_NAME)
         credentials = hgp.credentials
-        api_client = RuntimeClient(credentials)
+        api_client = self._api_client if hgp == self._default_hgp else RuntimeClient(credentials)
         result_decoder = result_decoder or ResultDecoder
         response = api_client.program_run(program_id=program_id,
                                           credentials=credentials,
@@ -311,39 +309,6 @@ class IBMRuntimeService:
                          result_decoder=result_decoder,
                          image=image)
         return job
-
-    def _select_hgp(
-            self,
-            backend_name: str,
-            hub: Optional[str] = None,
-            group: Optional[str] = None,
-            project: Optional[str] = None
-    ) -> HubGroupProject:
-        """Select hgp based on below selection order.
-
-        * hgp with hub/group/project explicitly specified by user
-        * hgp used to initialize service if it has the backend with backend_name
-        * any other hgp that has the backend with backend_name
-
-        Args:
-            backend_name: Name of the IBM Quantum backend.
-            hub: Name of the hub.
-            group: Name of the group.
-            project: Name of the project.
-
-        Returns:
-            An instance of ``HubGroupProject``
-        """
-        if all([hub, group, project]):
-            # Select hgp based on user specified hub, group and project
-            return self._provider._get_hgp(hub=hub, group=group, project=project)
-        elif self._hgp.get_backend(backend_name):
-            # Select resolved hgp if backend with backend_name is available in it
-            return self._hgp
-        else:
-            # Select hgp where backend with backend_name is available
-            return self._provider._get_hgp_by_service_and_backend_name(
-                SERVICE_NAME, backend_name)
 
     def upload_program(
             self,
@@ -722,7 +687,7 @@ class IBMRuntimeService:
         decoded = json.loads(params, cls=RuntimeDecoder)
         return RuntimeJob(backend=backend,
                           api_client=self._api_client,
-                          credentials=self._hgp.credentials,
+                          credentials=self._default_hgp.credentials,
                           job_id=raw_data['id'],
                           program_id=raw_data.get('program', {}).get('id', ""),
                           params=decoded,

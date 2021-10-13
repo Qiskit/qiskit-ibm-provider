@@ -738,7 +738,7 @@ if __name__ == '__main__':
         job = self._run_program(program_id)
         cred = Credentials(token="", url="", hub="hub2", group="group2", project="project2",
                            services={"runtime": "https://quantum-computing.ibm.com"})
-        self.runtime._hgp.credentials = cred
+        self.runtime._default_hgp.credentials = cred
         rjob = self.runtime.job(job.job_id)
         self.assertIsNotNone(rjob.backend)
 

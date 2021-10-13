@@ -39,7 +39,13 @@ class HubGroupProject:
             provider: 'ibm_provider.IBMProvider',
             is_open: bool
     ) -> None:
-        """HubGroupProject constructor"""
+        """HubGroupProject constructor
+
+        Args:
+            credentials: IBM Quantum credentials.
+            provider: IBM Quantum account provider.
+            is_open: True means open access, False means premium
+        """
         self.credentials = credentials
         self._provider = provider
         self.is_open = is_open

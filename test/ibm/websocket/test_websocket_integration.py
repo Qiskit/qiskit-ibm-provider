@@ -205,7 +205,7 @@ class TestWebsocketIntegration(IBMTestCase):
 
         # Manually disable the non-websocket polling.
         job._api_client._job_final_status_polling = self._job_final_status_polling
-        with use_proxies(self.provider.backend._hgp, MockProxyServer.VALID_PROXIES):
+        with use_proxies(self.provider.backend._default_hgp, MockProxyServer.VALID_PROXIES):
             result = job.result()
 
         self.assertEqual(result.status, 'COMPLETED')
@@ -217,7 +217,7 @@ class TestWebsocketIntegration(IBMTestCase):
 
         invalid_proxy = {'https': 'http://{}:{}'.format(MockProxyServer.PROXY_IP_ADDRESS,
                                                         MockProxyServer.INVALID_PROXY_PORT)}
-        with use_proxies(self.provider.backend._hgp, invalid_proxy):
+        with use_proxies(self.provider.backend._default_hgp, invalid_proxy):
             with self.assertLogs('qiskit_ibm', 'INFO') as log_cm:
                 job.wait_for_final_state()
 

@@ -58,7 +58,7 @@ class TestIBMProviderEnableAccount(IBMTestCase):
         # pylint: disable=unused-argument
         provider = IBMProvider(token=qe_token)
         self.assertIsInstance(provider, IBMProvider)
-        self.assertEqual(provider.backend._hgp.credentials.token, qe_token)
+        self.assertEqual(provider.backend._default_hgp.credentials.token, qe_token)
 
     @requires_qe_access
     def test_pass_unreachable_proxy(self, qe_token, qe_url):
@@ -143,8 +143,8 @@ class TestIBMProviderAccounts(IBMTestCase):
             provider = IBMProvider()
 
         self.assertIsInstance(provider, IBMProvider)
-        self.assertEqual(provider.backend._hgp.credentials.token, qe_token)
-        self.assertEqual(provider.backend._hgp.credentials.auth_url, qe_url)
+        self.assertEqual(provider.backend._default_hgp.credentials.token, qe_token)
+        self.assertEqual(provider.backend._default_hgp.credentials.auth_url, qe_url)
 
     def test_save_account_specified_provider(self):
         """Test saving an account with a specified hub/group/project."""
@@ -204,21 +204,21 @@ class TestIBMProviderAccounts(IBMTestCase):
                                      group=non_default_hgp.credentials.group,
                                      project=non_default_hgp.credentials.project)
             saved_provider = IBMProvider()
-            if saved_provider.backend._hgp != non_default_hgp:
+            if saved_provider.backend._default_hgp != non_default_hgp:
                 # Prevent tokens from being logged.
-                saved_provider.backend._hgp.credentials.token = None
+                saved_provider.backend._default_hgp.credentials.token = None
                 non_default_hgp.credentials.token = None
                 self.fail("loaded default hgp ({}) != expected ({})".format(
-                    saved_provider.backend._hgp.credentials.__dict__,
+                    saved_provider.backend._default_hgp.credentials.__dict__,
                     non_default_hgp.credentials.__dict__))
 
-        self.assertEqual(saved_provider.backend._hgp.credentials.token, qe_token)
-        self.assertEqual(saved_provider.backend._hgp.credentials.auth_url, qe_url)
-        self.assertEqual(saved_provider.backend._hgp.credentials.hub,
+        self.assertEqual(saved_provider.backend._default_hgp.credentials.token, qe_token)
+        self.assertEqual(saved_provider.backend._default_hgp.credentials.auth_url, qe_url)
+        self.assertEqual(saved_provider.backend._default_hgp.credentials.hub,
                          non_default_hgp.credentials.hub)
-        self.assertEqual(saved_provider.backend._hgp.credentials.group,
+        self.assertEqual(saved_provider.backend._default_hgp.credentials.group,
                          non_default_hgp.credentials.group)
-        self.assertEqual(saved_provider.backend._hgp.credentials.project,
+        self.assertEqual(saved_provider.backend._default_hgp.credentials.project,
                          non_default_hgp.credentials.project)
 
     @requires_qe_access
@@ -296,7 +296,7 @@ class TestIBMProviderHubGroupProject(IBMTestCase):
         super().setUp()
 
         self.provider = self._initialize_provider()
-        self.credentials = self.provider.backend._hgp.credentials
+        self.credentials = self.provider.backend._default_hgp.credentials
 
     def test_get_hgp(self):
         """Test get single hgp."""
@@ -304,7 +304,7 @@ class TestIBMProviderHubGroupProject(IBMTestCase):
             hub=self.credentials.hub,
             group=self.credentials.group,
             project=self.credentials.project)
-        self.assertEqual(self.provider.backend._hgp, hgp)
+        self.assertEqual(self.provider.backend._default_hgp, hgp)
 
     def test_get_hgps_with_filter(self):
         """Test get hgps with a filter."""
@@ -312,12 +312,12 @@ class TestIBMProviderHubGroupProject(IBMTestCase):
             hub=self.credentials.hub,
             group=self.credentials.group,
             project=self.credentials.project)[0]
-        self.assertEqual(self.provider.backend._hgp, hgp)
+        self.assertEqual(self.provider.backend._default_hgp, hgp)
 
     def test_get_hgps_no_filter(self):
         """Test get hgps without a filter."""
         hgps = self.provider._get_hgps()
-        self.assertIn(self.provider.backend._hgp, hgps)
+        self.assertIn(self.provider.backend._default_hgp, hgps)
 
 
 class TestIBMProviderServices(IBMTestCase, providers.ProviderTestCase):

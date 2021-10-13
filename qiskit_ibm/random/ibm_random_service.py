@@ -48,7 +48,7 @@ class IBMRandomService:
             hgp: default hub/group/project to use for the service.
         """
         self._provider = provider
-        self._hgp = hgp
+        self._default_hgp = hgp
         if hgp.credentials.extractor_url:
             self._random_client = RandomClient(hgp.credentials)
             self._initialized = False
