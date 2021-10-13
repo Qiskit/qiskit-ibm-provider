@@ -26,7 +26,7 @@ from qiskit_ibm.apiconstants import QISKIT_IBM_API_URL
 from qiskit_ibm.credentials import (
     Credentials, discover_credentials,
     read_credentials_from_qiskitrc, store_credentials,
-    store_preferences, HubGroupProject)
+    store_preferences, HubGroupProjectID)
 from qiskit_ibm.credentials import configrc
 from qiskit_ibm.exceptions import IBMProviderError
 
@@ -90,8 +90,8 @@ class TestCredentials(IBMTestCase):
                 provider = IBMProvider()
 
         # Ensure that the credentials are the overwritten ones.
-        # pylint: disable=unsubscriptable-object
-        self.assertEqual(provider['credentials'].token, credentials2.token)
+        # pylint: disable=no-member
+        self.assertEqual(provider._hgp['credentials'].token, credentials2.token)
 
     def test_environ_over_qiskitrc(self) -> None:
         """Test credential discovery order."""
@@ -330,11 +330,11 @@ class TestPreferences(IBMTestCase):
 
     def _get_pref_dict(
             self,
-            hgp: str = 'my-hub/my-group/my-project',
+            hgp_id: str = 'my-hub/my-group/my-project',
             cat: str = 'experiment',
             pref_key: str = 'auto_save',
             pref_val: Any = True
     ) -> Dict:
         """Generate a new preference dictionary."""
-        hub, group, project = hgp.split('/')
-        return {HubGroupProject(hub, group, project): {cat: {pref_key: pref_val}}}
+        hub, group, project = hgp_id.split('/')
+        return {HubGroupProjectID(hub, group, project): {cat: {pref_key: pref_val}}}

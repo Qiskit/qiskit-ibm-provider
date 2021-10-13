@@ -33,6 +33,7 @@ from ..api.exceptions import RequestsApiError
 from ..ibm_backend import IBMRetiredBackend
 from ..exceptions import IBMApiError
 from ..credentials import store_preferences
+from ..hub_group_project import HubGroupProject
 
 logger = logging.getLogger(__name__)
 
@@ -83,19 +84,22 @@ class IBMExperimentService:
 
     def __init__(
             self,
-            provider: 'ibm_provider.IBMProvider'
+            provider: 'ibm_provider.IBMProvider',
+            hgp: HubGroupProject
     ) -> None:
         """IBMExperimentService constructor.
 
         Args:
             provider: IBM Quantum account provider.
+            hgp: default hub/group/project to use for the service.
         """
         super().__init__()
 
         self._provider = provider
-        self._api_client = ExperimentClient(provider.credentials)
+        self._hgp = hgp
+        self._api_client = ExperimentClient(hgp.credentials)
         self._preferences = copy.deepcopy(self._default_preferences)
-        self._preferences.update(provider.credentials.preferences.get('experiments', {}))
+        self._preferences.update(hgp.credentials.preferences.get('experiments', {}))
 
     def backends(self) -> List[Dict]:
         """Return a list of backends that can be used for experiments.
@@ -163,9 +167,9 @@ class IBMExperimentService:
         data = {
             'type': experiment_type,
             'device_name': backend_name,
-            'hub_id': self._provider.credentials.hub,
-            'group_id': self._provider.credentials.group,
-            'project_id': self._provider.credentials.project
+            'hub_id': self._hgp.credentials.hub,
+            'group_id': self._hgp.credentials.group,
+            'project_id': self._hgp.credentials.project
         }
         data.update(self._experiment_data_to_api(metadata=metadata,
                                                  experiment_id=experiment_id,
@@ -506,7 +510,7 @@ class IBMExperimentService:
         except QiskitBackendNotFoundError:
             backend = IBMRetiredBackend.from_name(backend_name=backend_name,
                                                   provider=self._provider,
-                                                  credentials=self._provider.credentials,
+                                                  credentials=self._hgp.credentials,
                                                   api=None)
         extra_data: Dict[str, Any] = {}
         self._convert_dt(raw_data.get('created_at', None), extra_data, 'creation_datetime')
@@ -1277,4 +1281,4 @@ class IBMExperimentService:
 
         if update_cred:
             store_preferences(
-                {self._provider.credentials.unique_id(): {'experiment': self.preferences}})
+                {self._hgp.credentials.unique_id(): {'experiment': self.preferences}})

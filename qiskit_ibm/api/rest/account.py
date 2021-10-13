@@ -109,7 +109,6 @@ class Account(RestAdapterBase):
             JSON response.
         """
         url = self.get_url('jobs_status')
-
         order = 'DESC' if descending else 'ASC'
 
         query = {

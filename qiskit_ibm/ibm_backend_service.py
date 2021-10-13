@@ -10,7 +10,7 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-"""Backend namespace for an IBM Quantum account provider."""
+"""Backend namespace for an IBM Quantum account."""
 
 import logging
 import copy
@@ -28,6 +28,7 @@ from .apiconstants import ApiJobStatus
 from .exceptions import (IBMBackendValueError, IBMBackendApiError, IBMBackendApiProtocolError)
 from .ibm_backend import IBMBackend, IBMRetiredBackend
 from .backendreservation import BackendReservation
+from .hub_group_project import HubGroupProject
 from .job import IBMJob, IBMCompositeJob, IBMCircuitJob
 from .job.exceptions import IBMJobNotFoundError
 from .utils.utils import to_python_identifier, validate_job_tags, filter_data
@@ -39,10 +40,10 @@ logger = logging.getLogger(__name__)
 
 
 class IBMBackendService:
-    """Backend namespace for an IBM Quantum account provider.
+    """Backend namespace for an IBM Quantum account.
 
     Represent a namespace that provides backend related services for the IBM
-    Quantum backends available to this provider. An instance of
+    Quantum backends available to this account. An instance of
     this class is used as a callable attribute to the :class:`IBMProvider`
     class. This allows a convenient way to query for all backends or to access
     a specific backend::
@@ -50,7 +51,7 @@ class IBMBackendService:
         backends = provider.backends()  # Invoke backends() to get the backends.
         sim_backend = provider.backend.ibmq_qasm_simulator  # Get a specific backend instance.
 
-    Also, you are able to retrieve jobs from a provider without specifying the backend name.
+    Also, you are able to retrieve jobs from an account without specifying the backend name.
     For example, to retrieve the ten most recent jobs you have submitted, regardless of the
     backend they were submitted to, you could do::
 
@@ -61,26 +62,36 @@ class IBMBackendService:
         job = provider.backend.job(<JOB_ID>)
     """
 
-    def __init__(self, provider: 'ibm_provider.IBMProvider') -> None:
+    def __init__(self, provider: 'ibm_provider.IBMProvider', hgp: HubGroupProject) -> None:
         """IBMBackendService constructor.
 
         Args:
             provider: IBM Quantum account provider.
+            hgp: default hub/group/project to use for the service.
         """
         super().__init__()
-
         self._provider = provider
+        self._hgp = hgp
+        self._backends: Dict[str, IBMBackend] = {}
+        self._initialize_backends()
         self._discover_backends()
 
-    def _discover_backends(self) -> None:
-        """Discovers the remote backends for this provider, if not already known."""
-        for backend in self._provider._backends.values():
-            backend_name = to_python_identifier(backend.name())
+    def _initialize_backends(self) -> None:
+        """Initialize the internal list of backends."""
+        # Add backends from user selected hgp followed by backends
+        # from other hgps if not already added
+        for hgp in self._provider._get_hgps():
+            for name, backend in hgp.backends.items():
+                if name not in self._backends:
+                    self._backends[name] = backend
 
+    def _discover_backends(self) -> None:
+        """Discovers the remote backends for this account, if not already known."""
+        for backend in self._backends.values():
+            backend_name = to_python_identifier(backend.name())
             # Append _ if duplicate
             while backend_name in self.__dict__:
                 backend_name += '_'
-
             setattr(self, backend_name, backend)
 
     def backends(
@@ -89,9 +100,12 @@ class IBMBackendService:
             filters: Optional[Callable[[List[IBMBackend]], bool]] = None,
             min_num_qubits: Optional[int] = None,
             input_allowed: Optional[Union[str, List[str]]] = None,
+            hub: Optional[str] = None,
+            group: Optional[str] = None,
+            project: Optional[str] = None,
             **kwargs: Any
     ) -> List[IBMBackend]:
-        """Return all backends accessible via this provider, subject to optional filtering.
+        """Return all backends accessible via this account, subject to optional filtering.
 
         Args:
             name: Backend name to filter by.
@@ -106,6 +120,9 @@ class IBMBackendService:
                 For example, ``inputs_allowed='runtime'`` will return all backends
                 that support Qiskit Runtime. If a list is given, the backend must
                 support all types specified in the list.
+            hub: Name of the hub.
+            group: Name of the group.
+            project: Name of the project.
             kwargs: Simple filters that specify a ``True``/``False`` criteria in the
                 backend configuration, backends status, or provider credentials.
                 An example to get the operational backends with 5 qubits::
@@ -114,28 +131,37 @@ class IBMBackendService:
 
         Returns:
             The list of available backends that match the filter.
+
+        Raises:
+            IBMBackendValueError: If only one or two parameters from `hub`, `group`,
+                `project` are specified.
         """
-
-        backends = list(self._provider._backends.values())
-
-        # Special handling of the `name` parameter, to support alias
-        # resolution.
+        # If any `hub`, `group`, or `project` is specified, make sure all parameters are set.
+        if any([hub, group, project]) and not all([hub, group, project]):
+            raise IBMBackendValueError('The hub, group, and project parameters must all be '
+                                       'specified. '
+                                       'hub = "{}", group = "{}", project = "{}"'
+                                       .format(hub, group, project))
+        backends: List[IBMBackend] = list()
+        if all([hub, group, project]):
+            hgp = self._provider._get_hgp(hub, group, project)
+            backends = list(hgp.backends.values())
+        else:
+            backends = list(self._backends.values())
+        # Special handling of the `name` parameter, to support alias resolution.
         if name:
             aliases = self._aliased_backend_names()
             aliases.update(self._deprecated_backend_names())
             name = aliases.get(name, name)
             kwargs['backend_name'] = name
-
         if min_num_qubits:
             backends = list(filter(
                 lambda b: b.configuration().n_qubits >= min_num_qubits, backends))
-
         if input_allowed:
             if not isinstance(input_allowed, list):
                 input_allowed = [input_allowed]
             backends = list(filter(
                 lambda b: set(input_allowed) <= set(b.configuration().input_allowed), backends))
-
         return filter_backends(backends, filters=filters, **kwargs)
 
     def jobs(
@@ -200,23 +226,18 @@ class IBMBackendService:
         """
         # Build the filter for the query.
         api_filter = {}  # type: Dict[str, Any]
-
         if backend_name:
             api_filter['backend.name'] = backend_name
-
         if status:
             status_filter = self._get_status_db_filter(status)
             api_filter.update(status_filter)
-
         if job_name:
             api_filter['name'] = {"regexp": job_name}
-
         if start_datetime or end_datetime:
             api_filter['creationDate'] = self._update_creation_date_filter(
                 cur_dt_filter={},
                 gte_dt=local_to_utc(start_datetime).isoformat() if start_datetime else None,
                 lte_dt=local_to_utc(end_datetime).isoformat() if end_datetime else None)
-
         if job_tags:
             validate_job_tags(job_tags, IBMBackendValueError)
             job_tags_operator = job_tags_operator.upper()
@@ -231,7 +252,6 @@ class IBMBackendService:
                 raise IBMBackendValueError(
                     '"{}" is not a valid job_tags_operator value. '
                     'Valid values are "AND" and "OR"'.format(job_tags_operator))
-
         # Retrieve all requested jobs.
         job_responses = self._get_jobs(api_filter=api_filter, limit=limit,
                                        skip=skip, descending=descending)
@@ -254,7 +274,6 @@ class IBMBackendService:
                                    job_info.get("job_id", ""))
                     continue
                 job_list.append(job)
-
         return job_list
 
     def _get_jobs(
@@ -281,21 +300,17 @@ class IBMBackendService:
         job_responses: List[Dict[str, Any]] = []
         current_page_limit = limit or 20
         initial_filter = copy.deepcopy(api_filter)
-
         while True:
-            job_page = self._provider._api_client.list_jobs_statuses(
+            job_page = self._hgp._api_client.list_jobs_statuses(
                 limit=current_page_limit, skip=skip, descending=descending,
                 extra_filter=api_filter)
             if logger.getEffectiveLevel() is logging.DEBUG:
                 filtered_data = [filter_data(job) for job in job_page]
                 logger.debug("jobs() response data is %s", filtered_data)
-
             if not job_page:
                 # Stop if there are no more jobs returned by the server.
                 break
-
             job_responses += job_page
-
             if limit:
                 if len(job_responses) >= limit:
                     # Stop if we have reached the limit.
@@ -303,7 +318,6 @@ class IBMBackendService:
                 current_page_limit = limit - len(job_responses)
             else:
                 current_page_limit = 20
-
             # Use the last received job for pagination.
             skip = 0
             last_job = job_page[-1]
@@ -320,14 +334,12 @@ class IBMBackendService:
             else:
                 self._merge_logical_filters(
                     api_filter, {'and': [{'creationDate': new_dt_filter}, cur_dt_filter]})
-
             if 'id' not in api_filter:
                 api_filter['id'] = {'nin': [last_job['job_id']]}
             else:
                 new_id_filter = {'and': [{'id': {'nin': [last_job['job_id']]}},
                                          {'id': api_filter.pop('id')}]}
                 self._merge_logical_filters(api_filter, new_id_filter)
-
         return job_responses
 
     def _restore_circuit_job(self, job_info: Dict, raise_error: bool) -> Optional[IBMCircuitJob]:
@@ -351,20 +363,19 @@ class IBMBackendService:
         try:
             backend = self._provider.get_backend(backend_name)
         except QiskitBackendNotFoundError:
-            backend = IBMRetiredBackend.from_name(backend_name,
-                                                  self._provider,
-                                                  self._provider.credentials,
-                                                  self._provider._api_client)
+            backend = IBMRetiredBackend.from_name(backend_name=backend_name,
+                                                  provider=self._provider,
+                                                  credentials=self._provider.credentials,
+                                                  api=self._hgp._api_client)
         try:
             job = IBMCircuitJob(backend=backend,
-                                api_client=self._provider._api_client, **job_info)
+                                api_client=self._hgp._api_client, **job_info)
             return job
         except TypeError as ex:
             if raise_error:
                 raise IBMBackendApiProtocolError(
                     f'Unexpected return value received from the server '
                     f'when retrieving job {job_id}: {ex}') from ex
-
         return None
 
     def _merge_logical_filters(self, cur_filter: Dict, new_filter: Dict) -> None:
@@ -413,7 +424,6 @@ class IBMBackendService:
             if 'between' in cur_dt_filter and len(cur_dt_filter['between']) > 1:
                 lt_list.append(cur_dt_filter.pop('between')[1])
             lte_dt = min(lt_list) if lt_list else None
-
         new_dt_filter = {}  # type: Dict[str, Union[str, List[str]]]
         if gte_dt and lte_dt:
             new_dt_filter['between'] = [gte_dt, lte_dt]
@@ -421,7 +431,6 @@ class IBMBackendService:
             new_dt_filter['gte'] = gte_dt
         elif lte_dt:
             new_dt_filter['lte'] = lte_dt
-
         return new_dt_filter
 
     def _get_status_db_filter(
@@ -446,7 +455,6 @@ class IBMBackendService:
         else:
             status_filter = self._get_status_filter(status_arg)
             _final_status_filter = status_filter
-
         return _final_status_filter
 
     def _get_status_filter(self, status: Union[JobStatus, str]) -> Dict[str, Any]:
@@ -467,7 +475,6 @@ class IBMBackendService:
                     '"{}" is not a valid status value. Valid values are {}'.format(
                         status, ", ".join(job_status.name for job_status in JobStatus))) \
                     from None
-
         _status_filter = {}  # type: Dict[str, Any]
         if status == JobStatus.INITIALIZING:
             _status_filter = {'status': {
@@ -491,7 +498,6 @@ class IBMBackendService:
             raise IBMBackendValueError(
                 '"{}" is not a valid status value. Valid values are {}'.format(
                     status, ", ".join(job_status.name for job_status in JobStatus)))
-
         return _status_filter
 
     def job(self, job_id: str) -> IBMJob:
@@ -517,14 +523,12 @@ class IBMBackendService:
                 sub_job = self._restore_circuit_job(job_info, raise_error=True)
                 if sub_job:
                     sub_jobs.append(sub_job)
-
             if not sub_jobs:
                 raise IBMJobNotFoundError(f"Job {job_id} not found.")
             return IBMCompositeJob.from_jobs(job_id=job_id, jobs=sub_jobs,
-                                             api_client=self._provider._api_client)
-
+                                             api_client=self._hgp._api_client)
         try:
-            job_info = self._provider._api_client.job_get(job_id)
+            job_info = self._hgp._api_client.job_get(job_id)
         except ApiError as ex:
             if 'Error code: 3250.' in str(ex):
                 raise IBMJobNotFoundError(f"Job {job_id} not found.")
@@ -538,7 +542,7 @@ class IBMBackendService:
         Returns:
             A list of your upcoming reservations.
         """
-        raw_response = self._provider._api_client.my_reservations()
+        raw_response = self._hgp._api_client.my_reservations()
         return convert_reservation_data(raw_response)
 
     @staticmethod

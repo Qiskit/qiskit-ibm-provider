@@ -30,11 +30,14 @@ from .program.result_decoder import ResultDecoder
 from ..api.clients.runtime import RuntimeClient
 
 from ..api.exceptions import RequestsApiError
+from ..hub_group_project import HubGroupProject
 from ..exceptions import IBMNotAuthorizedError, IBMInputValueError, IBMProviderError
 from ..ibm_backend import IBMRetiredBackend
 from ..credentials import Credentials
 
 logger = logging.getLogger(__name__)
+
+SERVICE_NAME = 'runtime'
 
 
 class IBMRuntimeService:
@@ -95,16 +98,18 @@ class IBMRuntimeService:
     canceling job.
     """
 
-    def __init__(self, provider: 'ibm_provider.IBMProvider') -> None:
+    def __init__(self, provider: 'ibm_provider.IBMProvider', hgp: HubGroupProject) -> None:
         """IBMRuntimeService constructor.
 
         Args:
             provider: IBM Quantum account provider.
+            hgp: default hub/group/project to use for the service.
         """
         self._provider = provider
-        self._api_client = RuntimeClient(provider.credentials)
-        self._access_token = provider.credentials.access_token
-        self._ws_url = provider.credentials.runtime_url.replace('https', 'wss')
+        self._hgp = hgp
+        self._api_client = RuntimeClient(self._hgp.credentials)
+        self._access_token = self._hgp.credentials.access_token
+        self._ws_url = self._hgp.credentials.runtime_url.replace('https', 'wss')
         self._programs = {}  # type: Dict
 
     def pprint_programs(self, refresh: bool = False, detailed: bool = False,
@@ -236,7 +241,10 @@ class IBMRuntimeService:
             inputs: Union[Dict, ParameterNamespace],
             callback: Optional[Callable] = None,
             result_decoder: Optional[Type[ResultDecoder]] = None,
-            image: Optional[str] = ""
+            image: Optional[str] = "",
+            hub: Optional[str] = None,
+            group: Optional[str] = None,
+            project: Optional[str] = None
     ) -> RuntimeJob:
         """Execute the runtime program.
 
@@ -256,6 +264,9 @@ class IBMRuntimeService:
                 ``ResultDecoder`` is used if not specified.
             image: The runtime image used to execute the program, specified in the form
                 of image_name:tag. Not all accounts are authorized to select a different image.
+            hub: Name of the hub.
+            group: Name of the group.
+            project: Name of the project.
 
         Returns:
             A ``RuntimeJob`` instance representing the execution.
@@ -274,24 +285,65 @@ class IBMRuntimeService:
             re.match("[a-zA-Z0-9]+([/.\\-_][a-zA-Z0-9]+)*:[a-zA-Z0-9]+([.\\-_][a-zA-Z0-9]+)*$",
                      image):
             raise IBMInputValueError('"image" needs to be in form of image_name:tag')
-
+        # If any `hub`, `group`, or `project` is specified, make sure all parameters are set.
+        if any([hub, group, project]) and not all([hub, group, project]):
+            raise IBMInputValueError('The hub, group, and project parameters must all be '
+                                     'specified. hub = "{}", group = "{}", project = "{}"'
+                                     .format(hub, group, project))
         backend_name = options['backend_name']
+        hgp = self._select_hgp(backend_name=backend_name,
+                               hub=hub, group=group, project=project)
+        credentials = hgp.credentials
+        api_client = RuntimeClient(credentials)
         result_decoder = result_decoder or ResultDecoder
-        response = self._api_client.program_run(program_id=program_id,
-                                                credentials=self._provider.credentials,
-                                                backend_name=backend_name,
-                                                params=inputs,
-                                                image=image)
+        response = api_client.program_run(program_id=program_id,
+                                          credentials=credentials,
+                                          backend_name=backend_name,
+                                          params=inputs,
+                                          image=image)
 
         backend = self._provider.get_backend(backend_name)
         job = RuntimeJob(backend=backend,
-                         api_client=self._api_client,
-                         credentials=self._provider.credentials,
+                         api_client=api_client,
+                         credentials=credentials,
                          job_id=response['id'], program_id=program_id, params=inputs,
                          user_callback=callback,
                          result_decoder=result_decoder,
                          image=image)
         return job
+
+    def _select_hgp(
+            self,
+            backend_name: str,
+            hub: Optional[str] = None,
+            group: Optional[str] = None,
+            project: Optional[str] = None
+    ) -> HubGroupProject:
+        """Select hgp based on below selection order.
+
+        * hgp with hub/group/project explicitly specified by user
+        * hgp used to initialize service if it has the backend with backend_name
+        * any other hgp that has the backend with backend_name
+
+        Args:
+            backend_name: Name of the IBM Quantum backend.
+            hub: Name of the hub.
+            group: Name of the group.
+            project: Name of the project.
+
+        Returns:
+            An instance of ``HubGroupProject``
+        """
+        if all([hub, group, project]):
+            # Select hgp based on user specified hub, group and project
+            return self._provider._get_hgp(hub=hub, group=group, project=project)
+        elif self._hgp.get_backend(backend_name):
+            # Select resolved hgp if backend with backend_name is available in it
+            return self._hgp
+        else:
+            # Select hgp where backend with backend_name is available
+            return self._provider._get_hgp_by_service_and_backend_name(
+                SERVICE_NAME, backend_name)
 
     def upload_program(
             self,
@@ -645,21 +697,18 @@ class IBMRuntimeService:
         hub = raw_data['hub']
         group = raw_data['group']
         project = raw_data['project']
-        if self._provider.credentials.unique_id().to_tuple() != (hub, group, project):
-            # Try to find the right backend
-            try:
-                original_provider = self._provider._get_provider(hub, group, project)
-                backend = original_provider.get_backend(raw_data['backend'])
-            except (IBMProviderError, QiskitBackendNotFoundError):
-                backend = IBMRetiredBackend.from_name(
-                    backend_name=raw_data['backend'],
-                    provider=None,
-                    credentials=Credentials(token="", url="",
-                                            hub=hub, group=group, project=project),
-                    api=None
-                )
-        else:
-            backend = self._provider.get_backend(raw_data['backend'])
+        # Try to find the right backend
+        try:
+            backend = self._provider.get_backend(raw_data['backend'],
+                                                 hub=hub, group=group, project=project)
+        except (IBMProviderError, QiskitBackendNotFoundError):
+            backend = IBMRetiredBackend.from_name(
+                backend_name=raw_data['backend'],
+                provider=self._provider,
+                credentials=Credentials(token="", url="",
+                                        hub=hub, group=group, project=project),
+                api=None
+            )
 
         params = raw_data.get('params', {})
         if isinstance(params, list):
@@ -673,7 +722,7 @@ class IBMRuntimeService:
         decoded = json.loads(params, cls=RuntimeDecoder)
         return RuntimeJob(backend=backend,
                           api_client=self._api_client,
-                          credentials=self._provider.credentials,
+                          credentials=self._hgp.credentials,
                           job_id=raw_data['id'],
                           program_id=raw_data.get('program', {}).get('id', ""),
                           params=decoded,

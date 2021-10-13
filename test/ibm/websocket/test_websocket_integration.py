@@ -35,12 +35,16 @@ class TestWebsocketIntegration(IBMTestCase):
 
     @classmethod
     @requires_provider
-    def setUpClass(cls, provider):
+    def setUpClass(cls, provider, hub, group, project):
         """Initial class level setup."""
         # pylint: disable=arguments-differ
         super().setUpClass()
         cls.provider = provider
-        cls.sim_backend = provider.get_backend('ibmq_qasm_simulator')
+        cls.hub = hub
+        cls.group = group
+        cls.project = project
+        cls.sim_backend = provider.get_backend('ibmq_qasm_simulator', hub=cls.hub,
+                                               group=cls.group, project=cls.project)
         cls.bell = transpile(ReferenceCircuits.bell(), cls.sim_backend)
 
     def setUp(self):
@@ -153,7 +157,8 @@ class TestWebsocketIntegration(IBMTestCase):
 
     def test_websockets_timeout(self):
         """Test timeout checking status of a job via websockets."""
-        backend = most_busy_backend(self.provider)
+        backend = most_busy_backend(self.provider, hub=self.hub,
+                                    group=self.group, project=self.project)
         job = backend.run(transpile(ReferenceCircuits.bell(), backend),
                           shots=backend.configuration().max_shots)
 
@@ -200,7 +205,7 @@ class TestWebsocketIntegration(IBMTestCase):
 
         # Manually disable the non-websocket polling.
         job._api_client._job_final_status_polling = self._job_final_status_polling
-        with use_proxies(self.provider, MockProxyServer.VALID_PROXIES):
+        with use_proxies(self.provider.backend._hgp, MockProxyServer.VALID_PROXIES):
             result = job.result()
 
         self.assertEqual(result.status, 'COMPLETED')
@@ -212,7 +217,7 @@ class TestWebsocketIntegration(IBMTestCase):
 
         invalid_proxy = {'https': 'http://{}:{}'.format(MockProxyServer.PROXY_IP_ADDRESS,
                                                         MockProxyServer.INVALID_PROXY_PORT)}
-        with use_proxies(self.provider, invalid_proxy):
+        with use_proxies(self.provider.backend._hgp, invalid_proxy):
             with self.assertLogs('qiskit_ibm', 'INFO') as log_cm:
                 job.wait_for_final_state()
 

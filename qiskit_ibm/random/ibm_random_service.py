@@ -21,6 +21,7 @@ from .cqcextractor import CQCExtractor
 from ..api.clients.random import RandomClient
 from ..api.exceptions import RequestsApiError
 from ..exceptions import IBMError
+from ..hub_group_project import HubGroupProject
 
 logger = logging.getLogger(__name__)
 
@@ -39,15 +40,17 @@ class IBMRandomService:
         extractor = provider.random.cqc_extractor  # Short hand for above.
     """
 
-    def __init__(self, provider: 'ibm_provider.IBMProvider') -> None:
+    def __init__(self, provider: 'ibm_provider.IBMProvider', hgp: HubGroupProject) -> None:
         """IBMRandomService constructor.
 
         Args:
             provider: IBM Quantum account provider.
+            hgp: default hub/group/project to use for the service.
         """
         self._provider = provider
-        if provider.credentials.extractor_url:
-            self._random_client = RandomClient(provider.credentials)
+        self._hgp = hgp
+        if hgp.credentials.extractor_url:
+            self._random_client = RandomClient(hgp.credentials)
             self._initialized = False
         else:
             self._random_client = None

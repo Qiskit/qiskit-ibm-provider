@@ -75,7 +75,7 @@ def main(backend, user_messenger, **kwargs):
         "max_execution_time": 600,
         "description": "Qiskit test program"
     }
-    PROGRAM_PREFIX = 'qiskit-test'
+    PROGRAM_PREFIX = 'qiskit-test-rathish'
 
     @classmethod
     @requires_runtime_device
@@ -652,7 +652,7 @@ def main(backend, user_messenger, **kwargs):
         MockProxyServer(self, self.log).start()
         callback_called = False
 
-        with use_proxies(self.provider, MockProxyServer.VALID_PROXIES):
+        with use_proxies(self.provider.runtime._hgp, MockProxyServer.VALID_PROXIES):
             job = self._run_program(iterations=1, callback=result_callback)
             job.wait_for_final_state()
 
@@ -667,7 +667,7 @@ def main(backend, user_messenger, **kwargs):
         callback_called = False
         invalid_proxy = {'https': 'http://{}:{}'.format(MockProxyServer.PROXY_IP_ADDRESS,
                                                         MockProxyServer.INVALID_PROXY_PORT)}
-        with use_proxies(self.provider, invalid_proxy):
+        with use_proxies(self.provider.runtime._hgp, invalid_proxy):
             with self.assertLogs('qiskit_ibm', 'WARNING') as log_cm:
                 job = self._run_program(iterations=1, callback=result_callback)
                 job.wait_for_final_state()

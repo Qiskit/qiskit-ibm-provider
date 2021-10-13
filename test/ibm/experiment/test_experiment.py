@@ -26,21 +26,19 @@ class TestExperimentPreferences(IBMTestCase):
     """Test experiment preferences."""
 
     @classmethod
-    def setUpClass(cls):
+    @requires_provider
+    def setUpClass(cls, provider, hub, group, project):
         """Initial class level setup."""
         # pylint: disable=arguments-differ
         super().setUpClass()
-        cls.provider = cls._setup_provider()  # pylint: disable=no-value-for-parameter
+        cls.provider = provider
+        cls.hub = hub
+        cls.group = group
+        cls.project = project
         try:
             cls.service = cls.provider.service('experiment')
         except IBMNotAuthorizedError:
             raise SkipTest("Not authorized to use experiment service.")
-
-    @classmethod
-    @requires_provider
-    def _setup_provider(cls, provider):
-        """Get the provider for the class."""
-        return provider
 
     def test_default_preferences(self):
         """Test getting default preferences."""

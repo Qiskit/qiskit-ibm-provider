@@ -36,12 +36,15 @@ class TestAccountClient(IBMTestCase):
 
     @classmethod
     @requires_provider
-    def setUpClass(cls, provider):
+    def setUpClass(cls, provider, hub, group, project):
         """Initial class level setup."""
         # pylint: disable=arguments-differ
         super().setUpClass()
         cls.provider = provider
-        cls.access_token = cls.provider._api_client.account_api.session._access_token
+        cls.hub = hub
+        cls.group = group
+        cls.project = project
+        cls.access_token = cls.provider.backend._hgp._api_client.account_api.session._access_token
 
     def setUp(self):
         """Initial test setup."""
@@ -69,7 +72,8 @@ class TestAccountClient(IBMTestCase):
 
     def _get_client(self):
         """Helper for instantiating an AccountClient."""
-        return AccountClient(self.provider.credentials)  # pylint: disable=no-value-for-parameter
+        # pylint: disable=no-value-for-parameter
+        return AccountClient(self.provider.backend._hgp.credentials)
 
     def test_exception_message(self):
         """Check exception has proper message."""
@@ -102,7 +106,8 @@ class TestAccountClient(IBMTestCase):
     def test_access_token_not_in_exception_traceback(self):
         """Check that access token is replaced within chained request exceptions."""
         backend_name = 'ibmq_qasm_simulator'
-        backend = self.provider.get_backend(backend_name)
+        backend = self.provider.get_backend(backend_name, hub=self.hub,
+                                            group=self.group, project=self.project)
         circuit = transpile(self.qc1, backend, seed_transpiler=self.seed)
         qobj = assemble(circuit, backend, shots=1)
         client = backend._api_client
@@ -169,14 +174,18 @@ class TestAccountClientJobs(IBMTestCase):
 
     @classmethod
     @requires_provider
-    def setUpClass(cls, provider):
+    def setUpClass(cls, provider, hub, group, project):
         # pylint: disable=arguments-differ
         super().setUpClass()
         cls.provider = provider
-        cls.access_token = cls.provider._api_client.account_api.session._access_token
+        cls.hub = hub
+        cls.group = group
+        cls.project = project
+        cls.access_token = cls.provider.backend._hgp._api_client.account_api.session._access_token
 
         backend_name = 'ibmq_qasm_simulator'
-        backend = cls.provider.get_backend(backend_name)
+        backend = cls.provider.get_backend(backend_name, hub=cls.hub,
+                                           group=cls.group, project=cls.project)
         cls.client = backend._api_client
         cls.job = cls.client.job_submit(
             backend_name, cls._get_qobj(backend).to_dict())
