@@ -2,4 +2,4 @@
 fixes:
   - |
     Fixes the issue wherein a runtime job result cannot be retrieved multiple
-    time if the result contains a numpy array.
+    times if the result contains a numpy array.
