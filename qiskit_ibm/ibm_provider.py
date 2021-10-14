@@ -81,6 +81,18 @@ class IBMProvider(Provider):
     `token` is the only required attribute that needs to be set using one of the above methods.
     If no `url` is set, it defaults to 'https://auth.quantum-computing.ibm.com/api'.
 
+    Note:
+        The hub/group/project is selected based on the below selection order,
+        in decreasing order of priority.
+
+        * The hub/group/project you explicity specify when calling a service.
+          Ex: `provider.get_backend()`, `provider.runtime.run()`,
+          `provider.experiment.create_experiment()`, etc.
+        * The hub/group/project required for the service.
+        * The default hub/group/project you set using `save_account()`.
+        * A premium hub/group/project in your account.
+        * An open access hub/group/project.
+
     The IBMProvider offers different services. The main service,
     :class:`~qiskit_ibm.ibm_backend_service.IBMBackendService` gives access to IBM Quantum
     devices and simulators.
