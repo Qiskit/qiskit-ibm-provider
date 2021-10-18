@@ -140,7 +140,7 @@ class Runtime(RestAdapterBase):
         """
         url = self.get_url('jobs')
         payload = {
-            'programId': program_id,
+            'program_id': program_id,
             'hub': hub,
             'group': group,
             'project': project,
@@ -257,7 +257,8 @@ class ProgramJob(RestAdapterBase):
         'self': '',
         'results': '/results',
         'cancel': '/cancel',
-        'logs': '/logs'
+        'logs': '/logs',
+        'interim_results': '/interim_results',
     }
 
     def __init__(
@@ -287,6 +288,15 @@ class ProgramJob(RestAdapterBase):
     def delete(self) -> None:
         """Delete program job."""
         self.session.delete(self.get_url('self'))
+
+    def interim_results(self) -> str:
+        """Return program job interim results.
+
+        Returns:
+            Interim results.
+        """
+        response = self.session.get(self.get_url('interim_results'))
+        return response.text
 
     def results(self) -> str:
         """Return program job results.

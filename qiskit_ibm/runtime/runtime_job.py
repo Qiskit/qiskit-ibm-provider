@@ -125,6 +125,28 @@ class RuntimeJob:
         if user_callback is not None:
             self.stream_results(user_callback)
 
+    def interim_result(self,
+                       timeout: Optional[float] = None,
+                       wait: float = 5,) -> Any:
+        """Return the results of the job.
+
+        Args:
+            timeout: Number of seconds to wait for job.
+            wait: Seconds between queries.
+
+        Returns:
+            Runtime job interim result.
+
+        Raises:
+            RuntimeJobFailureError: If the job failed.
+        """
+        if self._results is None:
+            self.wait_for_final_state(timeout=timeout, wait=wait)
+            if self._status == JobStatus.ERROR:
+                raise RuntimeJobFailureError(f"Unable to retrieve interim results. "
+                                             f"{self.error_message()}")
+        return self._api_client.job_interim_results(job_id=self.job_id)
+
     def result(
             self,
             timeout: Optional[float] = None,
