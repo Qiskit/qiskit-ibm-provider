@@ -13,7 +13,7 @@
 """Client for accessing IBM Quantum runtime service."""
 
 import logging
-from typing import List, Dict, Union, Optional
+from typing import Any, List, Dict, Union, Optional
 
 from qiskit_ibm.credentials import Credentials
 from qiskit_ibm.api.session import RetrySession
@@ -39,7 +39,7 @@ class RuntimeClient:
                                      **credentials.connection_parameters())
         self.api = Runtime(self._session)
 
-    def list_programs(self) -> List[Dict]:
+    def list_programs(self) -> Dict[str, Any]:
         """Return a list of runtime programs.
 
         Returns:
