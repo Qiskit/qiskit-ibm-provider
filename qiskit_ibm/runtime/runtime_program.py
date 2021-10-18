@@ -71,7 +71,7 @@ class RuntimeProgram:
             backend_requirements: Backend requirements.
             creation_date: Program creation date.
             is_public: ``True`` if program is visible to all. ``False`` if it's only visible to you.
-            data: Program data
+            data: Program data.
         """
         self._name = program_name
         self._id = program_id
