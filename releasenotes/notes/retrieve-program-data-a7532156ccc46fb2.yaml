@@ -1,0 +1,6 @@
+---
+features:
+  - |
+    If you are the author of a runtime job, 
+    you can now use :meth:`qiskit_ibm.runtime.RuntimeProgram.data`
+    to retrieve the program data of that job as a string.
