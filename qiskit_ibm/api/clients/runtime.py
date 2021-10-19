@@ -211,7 +211,6 @@ class RuntimeClient:
         Returns:
             Job interim result.
         """
-
         return self.api.program_job(job_id).interim_results()
 
     def job_cancel(self, job_id: str) -> None:
