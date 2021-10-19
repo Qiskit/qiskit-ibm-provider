@@ -128,7 +128,7 @@ class RuntimeJob:
     def interim_result(self,
                        timeout: Optional[float] = None,
                        wait: float = 5,) -> Any:
-        """Return the results of the job.
+        """Return the interim results of the job.
 
         Args:
             timeout: Number of seconds to wait for job.
