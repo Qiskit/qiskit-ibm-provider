@@ -125,9 +125,9 @@ class RuntimeJob:
         if user_callback is not None:
             self.stream_results(user_callback)
 
-    def interim_result(self,
-                       timeout: Optional[float] = None,
-                       wait: float = 5,) -> Any:
+    def interim_results(self,
+                        timeout: Optional[float] = None,
+                        wait: float = 5,) -> Any:
         """Return the interim results of the job.
 
         Args:
