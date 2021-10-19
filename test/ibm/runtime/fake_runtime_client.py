@@ -87,6 +87,7 @@ class BaseFakeRuntimeJob:
         self._backend_name = backend_name
         self._params = params
         self._image = image
+        self._interim_result = json.dumps("foo")
         if final_status is None:
             self._future = self._executor.submit(self._auto_progress)
             self._result = None
@@ -118,6 +119,10 @@ class BaseFakeRuntimeJob:
     def result(self):
         """Return job result."""
         return self._result
+
+    def interim_result(self):
+        """Return job result."""
+        return self._interim_result
 
 
 class FailedRuntimeJob(BaseFakeRuntimeJob):
@@ -320,6 +325,10 @@ class BaseFakeRuntimeClient:
     def job_results(self, job_id):
         """Get the results of a program job."""
         return self._get_job(job_id).result()
+
+    def job_interim_results(self, job_id):
+        """Get the interim results of a program job."""
+        return self._get_job(job_id).interim_result()
 
     def job_cancel(self, job_id):
         """Cancel the job."""
