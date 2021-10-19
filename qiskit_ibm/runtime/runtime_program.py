@@ -15,7 +15,7 @@
 import logging
 from typing import Optional, List, NamedTuple, Dict
 from types import SimpleNamespace
-from qiskit_ibm.exceptions import IBMInputValueError
+from qiskit_ibm.exceptions import IBMInputValueError, IBMNotAuthorizedError
 
 
 logger = logging.getLogger(__name__)
@@ -271,7 +271,13 @@ class RuntimeProgram:
         """Program data.
         Returns:
             Program data.
+
+        Raises:
+            IBMNotAuthorizedError: if user is not the program author.
         """
+        if not self._data:
+            raise IBMNotAuthorizedError(
+                'Only program authors are authorized to retrieve program data')
         return self._data
 
 
