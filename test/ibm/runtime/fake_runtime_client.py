@@ -120,8 +120,8 @@ class BaseFakeRuntimeJob:
         """Return job result."""
         return self._result
 
-    def interim_result(self):
-        """Return job result."""
+    def interim_results(self):
+        """Return job interim results."""
         return self._interim_results
 
 
@@ -328,7 +328,7 @@ class BaseFakeRuntimeClient:
 
     def job_interim_results(self, job_id):
         """Get the interim results of a program job."""
-        return self._get_job(job_id).interim_result()
+        return self._get_job(job_id).interim_results()
 
     def job_cancel(self, job_id):
         """Cancel the job."""

@@ -209,7 +209,7 @@ class RuntimeClient:
             job_id: Program job ID.
 
         Returns:
-            Job interim result.
+            Job interim results.
         """
         return self.api.program_job(job_id).interim_results()
 
