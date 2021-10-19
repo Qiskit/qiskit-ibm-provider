@@ -269,6 +269,7 @@ class RuntimeProgram:
     @property
     def data(self) -> str:
         """Program data.
+
         Returns:
             Program data.
 
