@@ -23,8 +23,6 @@ from qiskit.providers import ProviderV1 as Provider  # type: ignore[attr-defined
 from qiskit.providers.models import (QasmBackendConfiguration,
                                      PulseBackendConfiguration)
 from qiskit.circuit import QuantumCircuit
-from qiskit.providers.backend import BackendV1 as Backend
-from qiskit.providers.basebackend import BaseBackend
 from qiskit.transpiler import Layout
 
 from qiskit_ibm.runtime import runtime_job  # pylint: disable=unused-import
