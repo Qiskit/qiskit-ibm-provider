@@ -124,7 +124,8 @@ class IBMRuntimeService:
                 print(f"Name: {prog.name}")
                 print(f"Description: {prog.description}")
 
-    def programs(self, refresh: bool = False) -> List[RuntimeProgram]:
+    def programs(self, refresh: bool = False, limit: int = 20,
+                 offset: int = 0) -> List[RuntimeProgram]:
         """Return available runtime programs.
 
         Currently only program metadata is returned.
@@ -132,13 +133,16 @@ class IBMRuntimeService:
         Args:
             refresh: If ``True``, re-query the server for the programs. Otherwise
                 return the cached value.
+            limit: The number of programs returned at a time. Default and maximum
+                value of 20.
+            offset: The number of programs to offset.
 
         Returns:
             A list of runtime programs.
         """
         if not self._programs or refresh:
             self._programs = {}
-            response = self._api_client.list_programs()
+            response = self._api_client.list_programs(limit, offset)
             for prog_dict in response:
                 program = self._to_program(prog_dict)
                 self._programs[program.program_id] = program
