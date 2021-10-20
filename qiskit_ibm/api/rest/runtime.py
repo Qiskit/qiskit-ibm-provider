@@ -61,13 +61,8 @@ class Runtime(RestAdapterBase):
             JSON response.
         """
         url = self.get_url('programs')
-        if limit != 20 and offset == 0:
-            return self.session.get('{}?limit={}'.format(url, limit)).json()
-        if offset != 0 and limit == 20:
-            return self.session.get('{}?offset={}'.format(url, offset)).json()
-        if limit != 20 and offset != 0:
-            return self.session.get('{}?limit={}&offset={}'.format(url, limit, offset)).json()
-        return self.session.get(url).json()
+        response = self.session.get('{}?limit={}&offset={}'.format(url, limit, offset)).json()
+        return response['programs']
 
     def create_program(
             self,
