@@ -780,7 +780,7 @@ class IBMProvider(Provider):
     def run_circuits(
             self,
             circuits: Union[QuantumCircuit, List[QuantumCircuit]],
-            backend: Union[Backend, BaseBackend],
+            backend_name: str,
             shots: Optional[int] = None,
             initial_layout: Optional[Union[Layout, Dict, List]] = None,
             layout_method: Optional[str] = None,
@@ -804,7 +804,7 @@ class IBMProvider(Provider):
         Args:
             circuits: Circuit(s) to execute.
 
-            backend: Backend to execute circuits on.
+            backend_name: Name of the backend to execute circuits on.
                 Transpiler options are automatically grabbed from backend configuration
                 and properties unless otherwise specified.
 
@@ -874,7 +874,7 @@ class IBMProvider(Provider):
             inputs['transpiler_options'] = transpiler_options
         if use_measure_esp is not None:
             inputs['use_measure_esp'] = use_measure_esp
-        options = {'backend_name': backend.name()}
+        options = {'backend_name': backend_name}
         return self.runtime.run('circuit-runner', options=options, inputs=inputs,
                                 result_decoder=RunnerResult)
 

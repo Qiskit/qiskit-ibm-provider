@@ -1,0 +1,5 @@
+---
+upgrade:
+  - |
+    :meth:`qiskit_ibm.IBMProvider.run_circuits` method now takes a `backend_name`
+    instead of a `Backend` object.
