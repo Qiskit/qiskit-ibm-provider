@@ -183,6 +183,7 @@ class IBMRuntimeService:
         Returns:
             A ``RuntimeProgram`` instance.
         """
+        data = response.get('data', "")
         backend_req = json.loads(response.get('backendRequirements', '{}'))
         params = json.loads(response.get('parameters', '{}')).get("doc", [])
         ret_vals = json.loads(response.get('returnValues', '{}'))
@@ -198,7 +199,8 @@ class IBMRuntimeService:
                               creation_date=response.get('creation_date', ""),
                               update_date=response.get('update_date', ""),
                               backend_requirements=backend_req,
-                              is_public=response.get('is_public', False))
+                              is_public=response.get('is_public', False),
+                              data=data)
 
     def run(
             self,
