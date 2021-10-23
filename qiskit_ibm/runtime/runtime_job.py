@@ -121,9 +121,7 @@ class RuntimeJob:
             credentials=credentials,
             job_id=job_id,
             message_queue=self._result_queue)
-
-        if user_callback is not None:
-            self.stream_results(user_callback)
+        self.stream_results(user_callback)
 
     def result(
             self,
@@ -146,7 +144,7 @@ class RuntimeJob:
         """
         _decoder = decoder or self._result_decoder
         if self._results is None or (_decoder != self._result_decoder):
-            self.wait_for_final_state(timeout=timeout, wait=wait)
+            self.wait_for_closed_stream(timeout=timeout, wait=wait)
             if self._status == JobStatus.ERROR:
                 raise RuntimeJobFailureError(f"Unable to retrieve job result. "
                                              f"{self.error_message()}")
@@ -188,11 +186,28 @@ class RuntimeJob:
         self._set_status_and_error_message()
         return self._error_message
 
-    def wait_for_final_state(
-            self,
-            timeout: Optional[float] = None,
-            wait: float = 5
-    ) -> None:
+    def wait_for_closed_stream(self, timeout: Optional[float] = None, wait: float = 5) -> None:
+        """If the websocket server stream endpoint is open, wait for it to close.
+
+        Args:
+            timeout: Seconds to wait for the job. If ``None``, wait indefinitely.
+            wait: Seconds between queries.
+
+        Raises:
+            JobTimeoutError: If the job does not reach a final state before the
+                specified timeout.
+        """
+        stream_status = self._is_streaming()
+        start_time = time.time()
+        while stream_status:
+            elapsed_time = time.time() - start_time
+            if timeout is not None and elapsed_time >= timeout:
+                raise JobTimeoutError(
+                    'Timeout while waiting for job {}.'.format(self.job_id))
+            time.sleep(wait)
+            stream_status = self._is_streaming()
+
+    def wait_for_final_state(self, timeout: Optional[float] = None, wait: float = 5) -> None:
         """Poll the job status until it progresses to a final state such as ``DONE`` or ``ERROR``.
 
         Args:
@@ -215,7 +230,7 @@ class RuntimeJob:
 
     def stream_results(
             self,
-            callback: Callable,
+            callback: Optional[Type[Callable]] = None,
             decoder: Optional[Type[ResultDecoder]] = None
     ) -> None:
         """Start streaming job results.
@@ -240,9 +255,10 @@ class RuntimeJob:
             raise RuntimeInvalidStateError("Job already finished.")
 
         self._ws_client_future = self._executor.submit(self._start_websocket_client)
-        self._executor.submit(self._stream_results,
-                              result_queue=self._result_queue, user_callback=callback,
-                              decoder=decoder)
+        if callback:
+            self._executor.submit(self._stream_results,
+                                  result_queue=self._result_queue, user_callback=callback,
+                                  decoder=decoder)
 
     def cancel_result_streaming(self) -> None:
         """Cancel result streaming."""
@@ -372,7 +388,7 @@ class RuntimeJob:
         except queue.Empty:
             pass
 
-    @property
+    @ property
     def job_id(self) -> str:
         """Return a unique ID identifying the job.
 
@@ -381,7 +397,7 @@ class RuntimeJob:
         """
         return self._job_id
 
-    @property
+    @ property
     def backend(self) -> Backend:
         """Return the backend where this job was executed.
 
@@ -390,7 +406,7 @@ class RuntimeJob:
         """
         return self._backend
 
-    @property
+    @ property
     def image(self) -> str:
         """Return the runtime image used for the job.
 
@@ -400,7 +416,7 @@ class RuntimeJob:
         """
         return self._image
 
-    @property
+    @ property
     def inputs(self) -> Dict:
         """Job input parameters.
 
@@ -409,7 +425,7 @@ class RuntimeJob:
         """
         return self._params
 
-    @property
+    @ property
     def program_id(self) -> str:
         """Program ID.
 
@@ -418,7 +434,7 @@ class RuntimeJob:
         """
         return self._program_id
 
-    @property
+    @ property
     def creation_date(self) -> Optional[datetime]:
         """Job creation date in local time.
 
