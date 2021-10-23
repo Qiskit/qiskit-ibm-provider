@@ -207,7 +207,11 @@ class RuntimeJob:
             time.sleep(wait)
             stream_status = self._is_streaming()
 
-    def wait_for_final_state(self, timeout: Optional[float] = None, wait: float = 5) -> None:
+    def wait_for_final_state(
+            self,
+            timeout: Optional[float] = None,
+            wait: float = 5
+    ) -> None:
         """Poll the job status until it progresses to a final state such as ``DONE`` or ``ERROR``.
 
         Args:
@@ -388,7 +392,7 @@ class RuntimeJob:
         except queue.Empty:
             pass
 
-    @ property
+    @property
     def job_id(self) -> str:
         """Return a unique ID identifying the job.
 
@@ -397,7 +401,7 @@ class RuntimeJob:
         """
         return self._job_id
 
-    @ property
+    @property
     def backend(self) -> Backend:
         """Return the backend where this job was executed.
 
@@ -406,7 +410,7 @@ class RuntimeJob:
         """
         return self._backend
 
-    @ property
+    @property
     def image(self) -> str:
         """Return the runtime image used for the job.
 
@@ -416,7 +420,7 @@ class RuntimeJob:
         """
         return self._image
 
-    @ property
+    @property
     def inputs(self) -> Dict:
         """Job input parameters.
 
@@ -425,7 +429,7 @@ class RuntimeJob:
         """
         return self._params
 
-    @ property
+    @property
     def program_id(self) -> str:
         """Program ID.
 
@@ -434,7 +438,7 @@ class RuntimeJob:
         """
         return self._program_id
 
-    @ property
+    @property
     def creation_date(self) -> Optional[datetime]:
         """Job creation date in local time.
 
