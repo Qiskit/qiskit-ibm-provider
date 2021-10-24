@@ -1,0 +1,8 @@
+---
+upgrade:
+  - |
+    For runtime jobs, there is no longer continuous polling of the api
+    to check the status of a job. Instead, the stream endpoint of the 
+    websocket server is used. If the stream is open, that indicates the job has not
+    yet completed and once the job has completed, the websocket 
+    server will terminate the connection.

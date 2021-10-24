@@ -121,6 +121,7 @@ class RuntimeJob:
             credentials=credentials,
             job_id=job_id,
             message_queue=self._result_queue)
+
         if user_callback is not None:
             self.stream_results(user_callback)
 
@@ -263,10 +264,9 @@ class RuntimeJob:
             raise RuntimeInvalidStateError("Job already finished.")
 
         self._ws_client_future = self._executor.submit(self._start_websocket_client)
-        if callback:
-            self._executor.submit(self._stream_results,
-                                  result_queue=self._result_queue, user_callback=callback,
-                                  decoder=decoder)
+        self._executor.submit(self._stream_results,
+                              result_queue=self._result_queue, user_callback=callback,
+                              decoder=decoder)
 
     def cancel_result_streaming(self) -> None:
         """Cancel result streaming."""
