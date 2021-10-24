@@ -121,7 +121,8 @@ class RuntimeJob:
             credentials=credentials,
             job_id=job_id,
             message_queue=self._result_queue)
-        self.stream_results(user_callback)
+        if user_callback is not None:
+            self.stream_results(user_callback)
 
     def result(
             self,
@@ -144,7 +145,10 @@ class RuntimeJob:
         """
         _decoder = decoder or self._result_decoder
         if self._results is None or (_decoder != self._result_decoder):
-            self.wait_for_closed_stream(timeout=timeout, wait=wait)
+            if self._is_streaming():
+                self.wait_for_closed_stream(timeout=timeout, wait=wait)
+            else:
+                self.wait_for_final_state(timeout=timeout, wait=wait)
             if self._status == JobStatus.ERROR:
                 raise RuntimeJobFailureError(f"Unable to retrieve job result. "
                                              f"{self.error_message()}")
@@ -234,7 +238,7 @@ class RuntimeJob:
 
     def stream_results(
             self,
-            callback: Optional[Type[Callable]] = None,
+            callback: Callable,
             decoder: Optional[Type[ResultDecoder]] = None
     ) -> None:
         """Start streaming job results.
