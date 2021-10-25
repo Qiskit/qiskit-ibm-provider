@@ -296,7 +296,7 @@ class IBMRuntimeService:
             metadata: Name of the program metadata file or metadata dictionary.
                 A metadata file needs to be in the JSON format. The ``parameters``,
                 ``return_values``, and ``interim_results`` should be defined as JSON Schema.
-                See :file:`program/program_metadata_sample.yaml` for an example. The
+                See :file:`program/program_metadata_sample.json` for an example. The
                 fields in metadata are explained below.
 
                 * name: Name of the program. Required.

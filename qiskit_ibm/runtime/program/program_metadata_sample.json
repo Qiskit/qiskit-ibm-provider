@@ -10,7 +10,7 @@
       "type": "object",
       "properties": {
         "iterations": {
-          "description": "Number of iterations to run. Each iteration generates a runs a random circuit.",
+          "description": "Number of iterations to run. Each iteration generates and runs a random circuit.",
           "type": "integer"
         }
       },
