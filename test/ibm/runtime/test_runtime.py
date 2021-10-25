@@ -664,7 +664,6 @@ if __name__ == '__main__':
         metadata.update(name=name)
         metadata.update(is_public=is_public)
         metadata.update(max_execution_time=max_execution_time)
-        metadata.update(description='A test program')
         program_id = self.runtime.upload_program(
             data=data,
             metadata=metadata)

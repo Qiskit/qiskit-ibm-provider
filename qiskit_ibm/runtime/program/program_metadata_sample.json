@@ -27,11 +27,11 @@
       "properties": {
         "iteration": {
           "description": "Iteration number.",
-          "type": "int"
+          "type": "integer"
         },
         "counts": {
           "description": "Histogram data of the circuit result.",
-          "type": "dict"
+          "type": "object"
         }
       }
     }
