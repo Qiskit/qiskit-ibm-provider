@@ -303,6 +303,7 @@ class IBMRuntimeService:
                 * max_execution_time: Maximum execution time in seconds. Required.
                 * description: Program description. Required.
                 * is_public: Whether the runtime program should be visible to the public.
+                                    The default is ``False``.
                 * spec: Specifications for backend characteristics and input parameters
                     required to run the program, interim results and final result.
 
