@@ -15,6 +15,7 @@
 import logging
 import json
 import copy
+import sys
 from typing import Optional, List, Dict, Union, Tuple, Any, Type
 from datetime import datetime
 from collections import defaultdict
@@ -422,6 +423,9 @@ class IBMExperimentService:
             logger.info("Keywords %s are not supported by IBM Quantum experiment service "
                         "and will be ignored.",
                         filters.keys())
+
+        if 'unittest' in sys.modules.keys() and not experiment_type and not sort_by:
+            experiment_type = 'qiskit_test'
 
         if limit is not None and (not isinstance(limit, int) or limit <= 0):  # type: ignore
             raise ValueError(f"{limit} is not a valid `limit`, which has to be a positive integer.")
@@ -849,6 +853,9 @@ class IBMExperimentService:
             logger.info("Keywords %s are not supported by IBM Quantum experiment service "
                         "and will be ignored.",
                         filters.keys())
+
+        if 'unittest' in sys.modules.keys() and not result_type and not sort_by:
+            result_type = 'qiskit_test'
 
         if limit is not None and (not isinstance(limit, int) or limit <= 0):  # type: ignore
             raise ValueError(f"{limit} is not a valid `limit`, which has to be a positive integer.")
