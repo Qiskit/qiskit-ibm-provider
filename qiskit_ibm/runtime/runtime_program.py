@@ -13,10 +13,11 @@
 """Qiskit runtime program."""
 
 import logging
+import json
 from typing import Optional, List, NamedTuple, Dict
 from types import SimpleNamespace
 from qiskit_ibm.exceptions import IBMInputValueError, IBMNotAuthorizedError
-
+from ..api.clients.runtime import RuntimeClient
 
 logger = logging.getLogger(__name__)
 
@@ -55,6 +56,7 @@ class RuntimeProgram:
             creation_date: str = "",
             update_date: str = "",
             is_public: Optional[bool] = False,
+            api_client: Optional[RuntimeClient] = None,
             data: str = ""
     ) -> None:
         """RuntimeProgram constructor.
@@ -72,6 +74,7 @@ class RuntimeProgram:
             update_date: Program last updated date.
             is_public: ``True`` if program is visible to all. ``False`` if it's only visible to you.
             data: Program data.
+            api_client: Runtime api client.
         """
         self._name = program_name
         self._id = program_id
@@ -85,6 +88,7 @@ class RuntimeProgram:
         self._update_date = update_date
         self._is_public = is_public
         self._data = data
+        self._api_client = api_client
 
         if parameters:
             for param in parameters:
@@ -276,8 +280,23 @@ class RuntimeProgram:
             IBMNotAuthorizedError: if user is not the program author.
         """
         if not self._data:
-            raise IBMNotAuthorizedError(
-                'Only program authors are authorized to retrieve program data')
+            response = self._api_client.program_get(self._id)
+            self._name = response['name']
+            self._id = response['id']
+            self._description = response.get('description', "")
+            self._max_execution_time = response.get('cost', 0)
+            self._backend_requirements = json.loads(response.get('backendRequirements', '{}'))
+            self._parameters = json.loads(response.get('parameters', '{}')).get("doc", [])
+            self._return_values = json.loads(response.get('returnValues', '{}'))
+            self._interim_results = json.loads(response.get('interimResults', '{}'))
+            self._creation_date = response.get('creation_date', "")
+            self._update_date = response.get('update_date', "")
+            self._is_public = response.get('is_public', False)
+            if 'data' in response:
+                self._data = response['data']
+            else:
+                raise IBMNotAuthorizedError(
+                    'Only program authors are authorized to retrieve program data')
         return self._data
 
 

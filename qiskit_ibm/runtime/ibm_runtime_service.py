@@ -161,7 +161,7 @@ class IBMRuntimeService:
             RuntimeProgramNotFound: If the program does not exist.
             QiskitRuntimeError: If the request failed.
         """
-        if program_id not in self._programs or 'data' not in self._programs or refresh:
+        if program_id not in self._programs or refresh:
             try:
                 response = self._api_client.program_get(program_id)
             except RequestsApiError as ex:
@@ -199,7 +199,8 @@ class IBMRuntimeService:
                               update_date=response.get('update_date', ""),
                               backend_requirements=backend_req,
                               is_public=response.get('is_public', False),
-                              data=data)
+                              data=data,
+                              api_client=self._api_client)
 
     def run(
             self,
