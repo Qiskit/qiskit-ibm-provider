@@ -13,9 +13,7 @@
 """General utility functions for testing."""
 
 import os
-import time
 import logging
-from typing import List, Optional
 
 from qiskit import QuantumCircuit
 from qiskit.qobj import QasmQobj
@@ -145,7 +143,7 @@ def submit_job_bad_shots(backend: IBMBackend) -> IBMJob:
     """
     qobj = bell_in_qobj(backend=backend)
     qobj.config.shots = 10000  # Modify the number of shots to be an invalid amount.
-    job_to_fail = backend.run(qobj)
+    job_to_fail = backend._submit_job(qobj)
     return job_to_fail
 
 
@@ -159,9 +157,13 @@ def submit_job_one_bad_instr(backend: IBMBackend) -> IBMJob:
         Submitted job.
     """
     qc_new = transpile(ReferenceCircuits.bell(), backend)
-    qobj = assemble([qc_new]*2, backend=backend)
+    if backend.configuration().simulator:
+        # Specify method so it doesn't fail at method selection.
+        qobj = assemble([qc_new]*2, backend=backend, method="statevector")
+    else:
+        qobj = assemble([qc_new]*2, backend=backend)
     qobj.experiments[1].instructions[1].name = 'bad_instruction'
-    job = backend.run(qobj)
+    job = backend._submit_job(qobj)
     return job
 
 
@@ -174,8 +176,8 @@ def submit_and_cancel(backend: IBMBackend) -> IBMJob:
     Returns:
         Cancelled job.
     """
-    qobj = bell_in_qobj(backend=backend)
-    job = backend.run(qobj)
+    circuit = transpile(ReferenceCircuits.bell(), backend=backend)
+    job = backend.run(circuit)
     cancel_job(job, True)
     return job
 
@@ -222,38 +224,3 @@ def get_provider(
     IBMProvider._disable_account()
 
     return provider_to_return
-
-
-def update_job_tags_and_verify(
-        job_to_update: IBMJob,
-        tags_after_update: List[str],
-        replacement_tags: Optional[List[str]] = None,
-        additional_tags: Optional[List[str]] = None,
-        removal_tags: Optional[List[str]] = None
-) -> None:
-    """Update the tags for a job and assert that the update was successful.
-
-    Args:
-        job_to_update: The job to update.
-        tags_after_update: The list of tags a job should be associated after updating.
-        replacement_tags: The tags that should replace the current tags
-            associated with this job set.
-        additional_tags: The new tags that should be added to the current tags
-            associated with this job set.
-        removal_tags: The tags that should be removed from the current tags
-            associated with this job set.
-    """
-    # Update the job tags.
-    _ = job_to_update.update_tags(replacement_tags=replacement_tags,
-                                  additional_tags=additional_tags,
-                                  removal_tags=removal_tags)
-
-    # Cached results may be returned if quickly refreshing,
-    # after an update, so wait some time.
-    time.sleep(2)
-    job_to_update.refresh()
-
-    assert set(job_to_update.tags()) == set(tags_after_update), (
-        'Updating the tags for job {} was unsuccessful. '
-        'The tags are {}, but they should be {}.'
-        .format(job_to_update.job_id(), job_to_update.tags(), tags_after_update))

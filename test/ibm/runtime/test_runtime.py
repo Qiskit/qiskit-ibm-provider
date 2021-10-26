@@ -286,6 +286,13 @@ if __name__ == '__main__':
             for prog in programs:
                 self.assertIn(prog.program_id, stdout)
                 self.assertIn(prog.name, stdout)
+                self.assertNotIn(prog.version, stdout)
+            self.runtime.pprint_programs(detailed=True)
+            stdout_detailed = mock_stdout.getvalue()
+            for prog in programs:
+                self.assertIn(prog.program_id, stdout_detailed)
+                self.assertIn(prog.name, stdout_detailed)
+                self.assertIn(prog.version, stdout_detailed)
 
     def test_upload_program(self):
         """Test uploading a program."""
@@ -317,7 +324,7 @@ if __name__ == '__main__':
         """Test running program."""
         params = {'param1': 'foo'}
         job = self._run_program(inputs=params)
-        self.assertTrue(job.job_id())
+        self.assertTrue(job.job_id)
         self.assertIsInstance(job, RuntimeJob)
         self.assertIsInstance(job.status(), JobStatus)
         self.assertEqual(job.inputs, params)
@@ -330,7 +337,7 @@ if __name__ == '__main__':
         params = {'param1': 'foo'}
         image = "name:tag"
         job = self._run_program(inputs=params, image=image)
-        self.assertTrue(job.job_id())
+        self.assertTrue(job.job_id)
         self.assertIsInstance(job, RuntimeJob)
         self.assertIsInstance(job.status(), JobStatus)
         self.assertEqual(job.inputs, params)
@@ -342,7 +349,7 @@ if __name__ == '__main__':
     def test_program_params_validation(self):
         """Test program parameters validation process"""
         program_id = self.runtime.upload_program(
-            data="foo".encode(), metadata=self.DEFAULT_METADATA)
+            data="def main() {}", metadata=self.DEFAULT_METADATA)
         program = self.runtime.program(program_id)
         params: ParameterNamespace = program.parameters()
         params.param1 = 'Hello, World'
@@ -360,7 +367,7 @@ if __name__ == '__main__':
     def test_program_params_namespace(self):
         """Test running a program using parameter namespace."""
         program_id = self.runtime.upload_program(
-            data="foo".encode(), metadata=self.DEFAULT_METADATA)
+            data="def main() {}", metadata=self.DEFAULT_METADATA)
         params = self.runtime.program(program_id).parameters()
         params.param1 = "Hello World"
         self._run_program(program_id, inputs=params)
@@ -369,10 +376,10 @@ if __name__ == '__main__':
         """Test a failed program execution."""
         job = self._run_program(job_classes=FailedRuntimeJob)
         job.wait_for_final_state()
-        job_result_raw = self.runtime._api_client.job_results(job.job_id())
+        job_result_raw = self.runtime._api_client.job_results(job.job_id)
         self.assertEqual(JobStatus.ERROR, job.status())
         self.assertEqual(API_TO_JOB_ERROR_MESSAGE['FAILED'].format(
-            job.job_id(), job_result_raw), job.error_message())
+            job.job_id, job_result_raw), job.error_message())
         with self.assertRaises(RuntimeJobFailureError):
             job.result()
 
@@ -380,10 +387,10 @@ if __name__ == '__main__':
         """Test a program that failed since it ran longer than maxiumum execution time."""
         job = self._run_program(job_classes=FailedRanTooLongRuntimeJob)
         job.wait_for_final_state()
-        job_result_raw = self.runtime._api_client.job_results(job.job_id())
+        job_result_raw = self.runtime._api_client.job_results(job.job_id)
         self.assertEqual(JobStatus.ERROR, job.status())
         self.assertEqual(API_TO_JOB_ERROR_MESSAGE['CANCELLED - RAN TOO LONG'].format(
-            job.job_id(), job_result_raw), job.error_message())
+            job.job_id, job_result_raw), job.error_message())
         with self.assertRaises(RuntimeJobFailureError):
             job.result()
 
@@ -392,8 +399,8 @@ if __name__ == '__main__':
         program_id = self._upload_program()
         params = {'param1': 'foo'}
         job = self._run_program(program_id, inputs=params)
-        rjob = self.runtime.job(job.job_id())
-        self.assertEqual(job.job_id(), rjob.job_id())
+        rjob = self.runtime.job(job.job_id)
+        self.assertEqual(job.job_id, rjob.job_id)
         self.assertEqual(program_id, rjob.program_id)
 
     def test_jobs_no_limit(self):
@@ -519,7 +526,7 @@ if __name__ == '__main__':
         time.sleep(1)
         job.cancel()
         self.assertEqual(job.status(), JobStatus.CANCELLED)
-        rjob = self.runtime.job(job.job_id())
+        rjob = self.runtime.job(job.job_id)
         self.assertEqual(rjob.status(), JobStatus.CANCELLED)
 
     def test_final_result(self):
@@ -565,6 +572,16 @@ if __name__ == '__main__':
                 result = job.result(decoder=decoder)
                 self.assertIsInstance(result['serializable_class'], SerializableClass)
 
+    def test_get_result_twice(self):
+        """Test getting results multiple times."""
+        custom_result = get_complex_types()
+        job_cls = CustomResultRuntimeJob
+        job_cls.custom_result = custom_result
+
+        job = self._run_program(job_classes=job_cls)
+        _ = job.result()
+        _ = job.result()
+
     def test_program_metadata(self):
         """Test program metadata."""
         file_name = "test_metadata.json"
@@ -576,7 +593,7 @@ if __name__ == '__main__':
 
         for metadata in sub_tests:
             with self.subTest(metadata_type=type(metadata)):
-                program_id = self.runtime.upload_program(data="foo".encode(), metadata=metadata)
+                program_id = self.runtime.upload_program(data="def main() {}", metadata=metadata)
                 program = self.runtime.program(program_id)
                 self.runtime.delete_program(program_id)
                 self.assertEqual(self.DEFAULT_METADATA['name'], program.name)
@@ -600,7 +617,7 @@ if __name__ == '__main__':
         """Test combining metadata"""
         update_metadata = {"version": "1.2", "max_execution_time": 600}
         program_id = self.runtime.upload_program(
-            data="foo".encode(), metadata=self.DEFAULT_METADATA, **update_metadata)
+            data="def main() {}", metadata=self.DEFAULT_METADATA, **update_metadata)
         program = self.runtime.program(program_id)
         self.assertEqual(update_metadata['max_execution_time'], program.max_execution_time)
         self.assertEqual(update_metadata["version"], program.version)
@@ -612,8 +629,8 @@ if __name__ == '__main__':
         cred = Credentials(token="", url="", hub="hub2", group="group2", project="project2",
                            services={"runtime": "https://quantum-computing.ibm.com"})
         self.runtime._provider.credentials = cred
-        rjob = self.runtime.job(job.job_id())
-        self.assertIsNotNone(rjob.backend())
+        rjob = self.runtime.job(job.job_id)
+        self.assertIsNotNone(rjob.backend)
 
     def _upload_program(self, name=None, max_execution_time=300,
                         is_public: bool = False):
@@ -622,7 +639,7 @@ if __name__ == '__main__':
         data = "def main() {}"
         program_id = self.runtime.upload_program(
             name=name,
-            data=data.encode(),
+            data=data,
             is_public=is_public,
             max_execution_time=max_execution_time,
             description="A test program")

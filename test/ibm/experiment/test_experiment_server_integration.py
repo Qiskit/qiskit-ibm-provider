@@ -137,6 +137,21 @@ class TestExperimentServerIntegration(IBMTestCase):
         self.assertTrue(found, "Experiment {} not found when filter by type {}.".format(
             exp_id, exp_type))
 
+    def test_experiments_with_parent_id(self):
+        """Test retrieving all experiments for a specific parent id."""
+        parent_id = self._create_experiment()
+        child_id = self._create_experiment(parent_id=parent_id)
+        experiments = self.provider.experiment.experiments(
+            parent_id=parent_id)
+
+        found = False
+        for exp in experiments:
+            self.assertEqual(parent_id, exp["parent_id"])
+            if exp["experiment_id"] == child_id:
+                found = True
+        self.assertTrue(found, "Experiment {} not found when filter by type {}.".format(
+            child_id, parent_id))
+
     def test_experiments_with_type_operator(self):
         """Test retrieving all experiments for a specific type with operator."""
         exp_type = 'qiskit_test'
@@ -166,7 +181,7 @@ class TestExperimentServerIntegration(IBMTestCase):
                 experiment_type="foo", experiment_type_operator="bad")
 
     def test_experiments_with_start_time(self):
-        """Test retrieving all experiments for a specific type."""
+        """Test retrieving an experiment by its start_time."""
         ref_start_dt = datetime.now() - timedelta(days=1)
         ref_start_dt = ref_start_dt.replace(tzinfo=tz.tzlocal())
         exp_id = self._create_experiment(start_datetime=ref_start_dt)
@@ -184,7 +199,8 @@ class TestExperimentServerIntegration(IBMTestCase):
         for start_dt, end_dt, expected, title in sub_tests:
             with self.subTest(title=title):
                 backend_experiments = self.provider.experiment.experiments(
-                    start_datetime_after=start_dt, start_datetime_before=end_dt)
+                    start_datetime_after=start_dt, start_datetime_before=end_dt,
+                    experiment_type='qiskit_test')
                 found = False
                 for exp in backend_experiments:
                     if start_dt:

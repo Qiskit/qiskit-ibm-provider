@@ -52,9 +52,9 @@ class TestBasicServerPaths(IBMTestCase):
                 result = job.result()
                 self.assertTrue(result.success)
 
-                # Fetch the qobj.
-                qobj_downloaded = provider.backend.job(job.job_id()).qobj()
-                self.assertEqual(qobj_downloaded.to_dict(), job.qobj().to_dict())
+                # Fetch the circuits.
+                circuit = provider.backend.job(job.job_id()).circuits()
+                self.assertEqual(circuit, job.circuits())
 
     def test_job_backend_properties_and_status(self):
         """Test the backend properties and status of a job."""
@@ -79,7 +79,8 @@ class TestBasicServerPaths(IBMTestCase):
                 job_id = job.job_id()
 
                 retrieved_jobs = provider.backend.jobs(
-                    backend_name=backend_name, start_datetime=self.last_week)
+                    backend_name=backend_name, start_datetime=self.last_week,
+                    ignore_composite_jobs=True)
                 self.assertGreaterEqual(len(retrieved_jobs), 1)
                 retrieved_job_ids = {job.job_id() for job in retrieved_jobs}
                 self.assertIn(job_id, retrieved_job_ids)

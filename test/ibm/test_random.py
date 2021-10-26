@@ -16,6 +16,7 @@ import time
 import uuid
 from unittest import skipIf
 from concurrent.futures import ThreadPoolExecutor
+import pkg_resources
 
 import numpy as np
 from qiskit.providers.jobstatus import JobStatus
@@ -23,6 +24,7 @@ from qiskit_ibm.random.cqcextractor import CQCExtractor
 from qiskit_ibm.random.utils import bitarray_to_bytes
 from qiskit_ibm.random.ibm_random_service import IBMRandomService
 from qiskit_ibm.exceptions import IBMError
+from qiskit_ibm import IBMProvider
 
 from ..ibm_test_case import IBMTestCase
 from ..decorators import requires_provider
@@ -30,6 +32,7 @@ from ..decorators import requires_provider
 HAS_QISKIT_RNG = True
 try:
     from qiskit_rng import Generator
+    QISKIT_RNG_VERSION = pkg_resources.get_distribution("qiskit_rng").version
 except ImportError:
     HAS_QISKIT_RNG = False
 
@@ -54,6 +57,7 @@ class TestRandomIntegration(IBMTestCase):
         except IBMError:
             return False
 
+    @skipIf(QISKIT_RNG_VERSION <= '0.2.2', "Need qiskit_rng > 0.2.2")
     def test_cqc_extractor(self):
         """Test invoking the CQC extractors."""
         generator = Generator(self.provider.get_backend('ibmq_qasm_simulator'))
@@ -107,6 +111,12 @@ class TestRandom(IBMTestCase):
         random_service._random_client = FakeRandomClient()
         random_service._initialized = False
         cls.provider._random = random_service
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        """Class level teardown."""
+        super().tearDownClass()
+        IBMProvider._disable_account()
 
     def test_list_random_services(self):
         """Test listing random number services."""
