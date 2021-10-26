@@ -146,10 +146,7 @@ class RuntimeJob:
         """
         _decoder = decoder or self._result_decoder
         if self._results is None or (_decoder != self._result_decoder):
-            if self._is_streaming():
-                self.wait_for_closed_stream(timeout=timeout, wait=wait)
-            else:
-                self.wait_for_final_state(timeout=timeout, wait=wait)
+            self.wait_for_closed_stream(timeout=timeout, wait=wait)
             if self._status == JobStatus.ERROR:
                 raise RuntimeJobFailureError(f"Unable to retrieve job result. "
                                              f"{self.error_message()}")
@@ -202,6 +199,7 @@ class RuntimeJob:
             JobTimeoutError: If the job does not reach a final state before the
                 specified timeout.
         """
+        self._ws_client_future = self._executor.submit(self._start_websocket_client)
         stream_status = self._is_streaming()
         start_time = time.time()
         while stream_status:
@@ -257,16 +255,13 @@ class RuntimeJob:
             RuntimeInvalidStateError: If a callback function is already streaming results or
                 if the job already finished.
         """
-        if self._is_streaming():
-            raise RuntimeInvalidStateError("A callback function is already streaming results.")
-
         if self._status in JOB_FINAL_STATES:
             raise RuntimeInvalidStateError("Job already finished.")
-
-        self._ws_client_future = self._executor.submit(self._start_websocket_client)
-        self._executor.submit(self._stream_results,
-                              result_queue=self._result_queue, user_callback=callback,
-                              decoder=decoder)
+        if not self._is_streaming():
+            self._ws_client_future = self._executor.submit(self._start_websocket_client)
+            self._executor.submit(self._stream_results,
+                                  result_queue=self._result_queue, user_callback=callback,
+                                  decoder=decoder)
 
     def cancel_result_streaming(self) -> None:
         """Cancel result streaming."""
