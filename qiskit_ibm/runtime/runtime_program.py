@@ -13,7 +13,6 @@
 """Qiskit runtime program."""
 
 import logging
-import json
 import re
 from typing import Optional, List, Dict
 from types import SimpleNamespace
@@ -57,8 +56,8 @@ class RuntimeProgram:
             creation_date: str = "",
             update_date: str = "",
             is_public: Optional[bool] = False,
-            api_client: Optional[RuntimeClient] = None,
-            data: str = ""
+            data: str = "",
+            api_client: Optional[RuntimeClient] = None
     ) -> None:
         """RuntimeProgram constructor.
 

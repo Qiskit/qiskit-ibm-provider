@@ -181,7 +181,6 @@ class IBMRuntimeService:
         Returns:
             A ``RuntimeProgram`` instance.
         """
-
         backend_requirements = {}
         parameters = {}
         return_values = {}
