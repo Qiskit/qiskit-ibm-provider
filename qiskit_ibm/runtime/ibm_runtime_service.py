@@ -144,16 +144,12 @@ class IBMRuntimeService:
         Returns:
             A list of runtime programs.
         """
-        total_programs = limit + skip
-        if not self._programs or refresh or total_programs > len(self._programs):
+        if not self._programs or refresh or limit != 20 or skip != 0:
             self._programs = {}
             response = self._api_client.list_programs(limit, skip)
             for prog_dict in response:
                 program = self._to_program(prog_dict)
                 self._programs[program.program_id] = program
-        elif total_programs <= len(self._programs):
-            programs = list(self._programs.values())
-            return programs[skip: total_programs]
         return list(self._programs.values())
 
     def program(self, program_id: str, refresh: bool = False) -> RuntimeProgram:
