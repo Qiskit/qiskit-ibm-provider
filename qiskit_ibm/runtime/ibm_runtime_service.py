@@ -107,15 +107,19 @@ class IBMRuntimeService:
         self._ws_url = provider.credentials.runtime_url.replace('https', 'wss')
         self._programs = {}  # type: Dict
 
-    def pprint_programs(self, refresh: bool = False, detailed: bool = False) -> None:
+    def pprint_programs(self, refresh: bool = False, detailed: bool = False,
+                        limit: int = 20, skip: int = 0) -> None:
         """Pretty print information about available runtime programs.
 
         Args:
             refresh: If ``True``, re-query the server for the programs. Otherwise
                 return the cached value.
             detailed: If ``True`` print all details about available runtime programs.
+            limit: The number of programs returned at a time. Default and maximum
+                value of 20.
+            skip: The number of programs to skip.
         """
-        programs = self.programs(refresh)
+        programs = self.programs(refresh, limit, skip)
         for prog in programs:
             print("="*50)
             if detailed:
@@ -125,7 +129,7 @@ class IBMRuntimeService:
                 print(f"Description: {prog.description}")
 
     def programs(self, refresh: bool = False, limit: int = 20,
-                 offset: int = 0) -> List[RuntimeProgram]:
+                 skip: int = 0) -> List[RuntimeProgram]:
         """Return available runtime programs.
 
         Currently only program metadata is returned.
@@ -135,17 +139,21 @@ class IBMRuntimeService:
                 return the cached value.
             limit: The number of programs returned at a time. Default and maximum
                 value of 20.
-            offset: The number of programs to offset.
+            skip: The number of programs to skip.
 
         Returns:
             A list of runtime programs.
         """
-        if not self._programs or refresh:
+        total_programs = limit + skip
+        if not self._programs or refresh or total_programs > len(self._programs):
             self._programs = {}
-            response = self._api_client.list_programs(limit, offset)
+            response = self._api_client.list_programs(limit, skip)
             for prog_dict in response:
                 program = self._to_program(prog_dict)
                 self._programs[program.program_id] = program
+        elif total_programs <= len(self._programs):
+            programs = list(self._programs.values())
+            return programs[skip: total_programs]
         return list(self._programs.values())
 
     def program(self, program_id: str, refresh: bool = False) -> RuntimeProgram:

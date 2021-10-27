@@ -1,8 +1,9 @@
 ---
 upgrade:
   - |
-    Limit and offset parameters have been added to 
-    :meth:`qiskit_ibm.runtime.IBMRuntimeService.programs`.
+    Limit and skip parameters have been added to 
+    :meth:`qiskit_ibm.runtime.IBMRuntimeService.programs` and 
+    :meth:`qiskit_ibm.runtime.IBMRuntimeService.pprint_programs`.
     Limit can be used to set the number of runtime programs returned 
-    and offset is the number of results to offset by when retrieving 
+    and skip is the number of results to skip when retrieving 
     programs.

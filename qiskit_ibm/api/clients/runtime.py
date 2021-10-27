@@ -39,13 +39,13 @@ class RuntimeClient:
                                      **credentials.connection_parameters())
         self.api = Runtime(self._session)
 
-    def list_programs(self, limit: int, offset: int) -> List[Dict]:
+    def list_programs(self, limit: int, skip: int) -> List[Dict]:
         """Return a list of runtime programs.
 
         Returns:
             A list of quantum programs.
         """
-        return self.api.list_programs(limit, offset)
+        return self.api.list_programs(limit, skip)
 
     def program_create(
             self,

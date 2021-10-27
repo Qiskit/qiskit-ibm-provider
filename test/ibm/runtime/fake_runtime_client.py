@@ -230,11 +230,11 @@ class BaseFakeRuntimeClient:
         """Set job status to passed in final status instantly."""
         self._final_status = final_status
 
-    def list_programs(self, limit, offset):
+    def list_programs(self, limit, skip):
         """List all programs."""
         programs = []
-        for index, prog in enumerate(self._programs.values(), start=offset):
-            if index == limit + offset:
+        for index, prog in enumerate(self._programs.values(), start=skip):
+            if index == limit + skip:
                 break
             programs.append(prog.to_dict())
         return programs
