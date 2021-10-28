@@ -12,6 +12,7 @@
 
 """Tests for runtime service."""
 
+import copy
 import unittest
 import os
 import uuid
@@ -38,10 +39,6 @@ from ...proxy_server import MockProxyServer, use_proxies
 from .utils import SerializableClass, SerializableClassDecoder, get_complex_types
 
 
-@unittest.skipIf(
-    not os.environ.get('QISKIT_IBM_USE_STAGING_CREDENTIALS', ''),
-    "Only runs on staging"
-)
 class TestRuntimeIntegration(IBMTestCase):
     """Integration tests for runtime modules."""
 
@@ -89,11 +86,12 @@ def main(backend, user_messenger, **kwargs):
         cls.backend = backend
         cls.poll_time = 1 if backend.configuration().simulator else 5
         cls.provider = backend.provider()
+        metadata = copy.deepcopy(cls.RUNTIME_PROGRAM_METADATA)
+        metadata['name'] = cls._get_program_name()
         try:
             cls.program_id = cls.provider.runtime.upload_program(
-                name=cls._get_program_name(),
                 data=cls.RUNTIME_PROGRAM,
-                metadata=cls.RUNTIME_PROGRAM_METADATA)
+                metadata=metadata)
         except RuntimeDuplicateProgramError:
             pass
         except IBMNotAuthorizedError:
@@ -152,14 +150,11 @@ def main(backend, user_messenger, **kwargs):
     def test_upload_program(self):
         """Test uploading a program."""
         max_execution_time = 3000
-        is_public = True
-        program_id = self._upload_program(max_execution_time=max_execution_time,
-                                          is_public=is_public)
+        program_id = self._upload_program(max_execution_time=max_execution_time)
         self.assertTrue(program_id)
         program = self.provider.runtime.program(program_id)
         self.assertTrue(program)
         self.assertEqual(max_execution_time, program.max_execution_time)
-        self.assertEqual(program.is_public, is_public)
 
     def test_upload_program_file(self):
         """Test uploading a program using a file."""
@@ -173,6 +168,26 @@ def main(backend, user_messenger, **kwargs):
         program = self.provider.runtime.program(program_id)
         self.assertTrue(program)
 
+    @unittest.skipIf(
+        not os.environ.get('QISKIT_IBM_USE_STAGING_CREDENTIALS', ''),
+        "Only runs on staging"
+    )
+    def test_upload_public_program(self):
+        """Test uploading a public program."""
+        max_execution_time = 3000
+        is_public = True
+        program_id = self._upload_program(max_execution_time=max_execution_time,
+                                          is_public=is_public)
+        self.assertTrue(program_id)
+        program = self.provider.runtime.program(program_id)
+        self.assertTrue(program)
+        self.assertEqual(max_execution_time, program.max_execution_time)
+        self.assertEqual(program.is_public, is_public)
+
+    @unittest.skipIf(
+        not os.environ.get('QISKIT_IBM_USE_STAGING_CREDENTIALS', ''),
+        "Only runs on staging"
+    )
     def test_set_visibility(self):
         """Test setting the visibility of a program."""
         program_id = self._upload_program()
@@ -186,13 +201,6 @@ def main(backend, user_messenger, **kwargs):
         end_vis = prog.is_public
         # Verify changed
         self.assertNotEqual(start_vis, end_vis)
-
-    def test_upload_program_conflict(self):
-        """Test uploading a program with conflicting name."""
-        name = self._get_program_name()
-        self._upload_program(name=name)
-        with self.assertRaises(RuntimeDuplicateProgramError):
-            self._upload_program(name=name)
 
     def test_delete_program(self):
         """Test deleting program."""
@@ -548,9 +556,9 @@ def main(backend, user_messenger, **kwargs):
         _ = self._run_program()
 
     def test_run_circuit(self):
-        """Test run_circuit"""
+        """Test run_circuits"""
         job = self.provider.run_circuits(
-            ReferenceCircuits.bell(), backend=self.backend, shots=100)
+            ReferenceCircuits.bell(), backend_name=self.backend.name(), shots=100)
         counts = job.result().get_counts()
         self.assertEqual(100, sum(counts.values()))
 
@@ -613,7 +621,7 @@ def main(backend, user_messenger, **kwargs):
         self.assertTrue(program.description)
         self.assertTrue(program.max_execution_time)
         self.assertTrue(program.creation_date)
-        self.assertTrue(program.version)
+        self.assertTrue(program.update_date)
 
     def _upload_program(
             self,
@@ -624,13 +632,13 @@ def main(backend, user_messenger, **kwargs):
         """Upload a new program."""
         name = name or self._get_program_name()
         data = data or self.RUNTIME_PROGRAM
+        metadata = copy.deepcopy(self.RUNTIME_PROGRAM_METADATA)
+        metadata['name'] = name
+        metadata['max_execution_time'] = max_execution_time
+        metadata['is_public'] = is_public
         program_id = self.provider.runtime.upload_program(
-            name=name,
             data=data,
-            is_public=is_public,
-            metadata=self.RUNTIME_PROGRAM_METADATA,
-            max_execution_time=max_execution_time,
-            description="Qiskit test program")
+            metadata=metadata)
         self.to_delete.append(program_id)
         return program_id
 
