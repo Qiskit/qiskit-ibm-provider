@@ -12,7 +12,6 @@
 
 """Qiskit runtime service."""
 
-import base64
 import logging
 from typing import Dict, Callable, Optional, Union, List, Any, Type
 import json
