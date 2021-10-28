@@ -1,7 +1,7 @@
 ---
 upgrade:
   - |
-    Limit and skip parameters have been added to 
+    ``limit`` and ``skip`` parameters have been added to 
     :meth:`qiskit_ibm.runtime.IBMRuntimeService.programs` and 
     :meth:`qiskit_ibm.runtime.IBMRuntimeService.pprint_programs`.
     Limit can be used to set the number of runtime programs returned 
