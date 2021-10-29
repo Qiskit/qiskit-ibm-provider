@@ -108,7 +108,7 @@ class IBMRuntimeService:
         self._programs = {}  # type: Dict
 
     def pprint_programs(self, refresh: bool = False, detailed: bool = False,
-                        limit: int = 20, skip: int = 0) -> None:
+                        limit: int = None, skip: int = None) -> None:
         """Pretty print information about available runtime programs.
 
         Args:
@@ -128,8 +128,8 @@ class IBMRuntimeService:
                 print(f"Name: {prog.name}")
                 print(f"Description: {prog.description}")
 
-    def programs(self, refresh: bool = False, limit: int = 20,
-                 skip: int = 0) -> List[RuntimeProgram]:
+    def programs(self, refresh: bool = False,
+                 limit: int = None, skip: int = None) -> List[RuntimeProgram]:
         """Return available runtime programs.
 
         Currently only program metadata is returned.
@@ -144,7 +144,11 @@ class IBMRuntimeService:
         Returns:
             A list of runtime programs.
         """
-        if not self._programs or refresh or limit != 20 or skip != 0:
+        if not self._programs or refresh or limit or skip:
+            if not limit:
+                limit = 20
+            if not skip:
+                skip = 0
             self._programs = {}
             response = self._api_client.list_programs(limit, skip)
             for prog_dict in response:
