@@ -380,6 +380,13 @@ if __name__ == '__main__':
                     raw_program = self.runtime._api_client.program_get(program_id)
                     self.assertEqual(new_spec, raw_program["spec"])
 
+    def test_update_program_no_new_fields(self):
+        """Test updating a program without any new data."""
+        program_id = self._upload_program()
+        with warnings.catch_warnings(record=True) as warn_cm:
+            self.runtime.update_program(program_id=program_id)
+            self.assertEqual(len(warn_cm), 1)
+
     def test_delete_program(self):
         """Test deleting program."""
         program_id = self._upload_program()

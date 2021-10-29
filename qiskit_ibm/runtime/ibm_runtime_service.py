@@ -406,6 +406,7 @@ class IBMRuntimeService:
             warnings.warn("None of the 'data', 'metadata', 'name', 'description', "
                           "'max_execution_time', or 'spec' parameters is specified. "
                           "No update is made.")
+            return
 
         if data:
             if "def main(" not in data:
