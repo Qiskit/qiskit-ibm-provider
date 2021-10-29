@@ -431,7 +431,7 @@ class IBMRuntimeService:
 
     def _merge_metadata(
             self,
-            metadata: Optional[Union[Dict, str]] = None,
+            metadata: Optional[Dict] = None,
             **kwargs: Any
     ) -> Dict:
         """Merge multiple copies of metadata.
