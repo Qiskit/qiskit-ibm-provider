@@ -289,10 +289,6 @@ class RuntimeProgram:
             self._id = response['id']
             self._description = response.get('description', "")
             self._max_execution_time = response.get('cost', 0)
-            self._backend_requirements = backend_requirements
-            self._parameters = parameters
-            self._return_values = return_values
-            self._interim_results = interim_results
             self._creation_date = response.get('creation_date', "")
             self._update_date = response.get('update_date', "")
             self._is_public = response.get('is_public', False)
