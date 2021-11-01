@@ -281,10 +281,10 @@ class RuntimeProgram:
             return_values = {}
             interim_results = {}
             if "spec" in response:
-                backend_requirements = response["spec"].get('backend_requirements', {})
-                parameters = response["spec"].get('parameters', {})
-                return_values = response["spec"].get('return_values', {})
-                interim_results = response["spec"].get('interim_results', {})
+                self._backend_requirements = response["spec"].get('backend_requirements', {})
+                self._parameters = response["spec"].get('parameters', {})
+                self._return_values = response["spec"].get('return_values', {})
+                self._interim_results = response["spec"].get('interim_results', {})
             self._name = response['name']
             self._id = response['id']
             self._description = response.get('description', "")
