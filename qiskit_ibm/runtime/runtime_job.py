@@ -199,7 +199,8 @@ class RuntimeJob:
             JobTimeoutError: If the job does not reach a final state before the
                 specified timeout.
         """
-        self._ws_client_future = self._executor.submit(self._start_websocket_client)
+        if not self._is_streaming():
+            self._ws_client_future = self._executor.submit(self._start_websocket_client)
         stream_status = self._is_streaming()
         start_time = time.time()
         while stream_status:
