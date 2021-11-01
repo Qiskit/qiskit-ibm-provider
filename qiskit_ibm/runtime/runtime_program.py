@@ -276,23 +276,19 @@ class RuntimeProgram:
         """
         if not self._data:
             response = self._api_client.program_get(self._id)
-            backend_requirements = {}
-            parameters = {}
-            return_values = {}
-            interim_results = {}
+            self._backend_requirements = {}
+            self._parameters = {}
+            self._return_values = {}
+            self._interim_results = {}
             if "spec" in response:
-                backend_requirements = response["spec"].get('backend_requirements', {})
-                parameters = response["spec"].get('parameters', {})
-                return_values = response["spec"].get('return_values', {})
-                interim_results = response["spec"].get('interim_results', {})
+                self._backend_requirements = response["spec"].get('backend_requirements', {})
+                self._parameters = response["spec"].get('parameters', {})
+                self._return_values = response["spec"].get('return_values', {})
+                self._interim_results = response["spec"].get('interim_results', {})
             self._name = response['name']
             self._id = response['id']
             self._description = response.get('description', "")
             self._max_execution_time = response.get('cost', 0)
-            self._backend_requirements = backend_requirements
-            self._parameters = parameters
-            self._return_values = return_values
-            self._interim_results = interim_results
             self._creation_date = response.get('creation_date', "")
             self._update_date = response.get('update_date', "")
             self._is_public = response.get('is_public', False)
