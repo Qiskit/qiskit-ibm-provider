@@ -16,13 +16,14 @@ import logging
 from typing import Dict, Callable, Optional, Union, List, Any, Type
 import json
 import re
+import warnings
 
 from qiskit.providers.exceptions import QiskitBackendNotFoundError
 from qiskit_ibm import ibm_provider  # pylint: disable=unused-import
 
 from .runtime_job import RuntimeJob
 from .runtime_program import RuntimeProgram, ParameterNamespace
-from .utils import RuntimeEncoder, RuntimeDecoder, to_base64_string
+from .utils import RuntimeDecoder, to_base64_string
 from .exceptions import (QiskitRuntimeError, RuntimeDuplicateProgramError, RuntimeProgramNotFound,
                          RuntimeJobNotFound)
 from .program.result_decoder import ResultDecoder
@@ -120,8 +121,9 @@ class IBMRuntimeService:
             if detailed:
                 print(str(prog))
             else:
-                print(f"Name: {prog.name}")
-                print(f"Description: {prog.description}")
+                print(f"{prog.program_id}:",)
+                print(f"  Name: {prog.name}")
+                print(f"  Description: {prog.description}")
 
     def programs(self, refresh: bool = False) -> List[RuntimeProgram]:
         """Return available runtime programs.
@@ -252,12 +254,11 @@ class IBMRuntimeService:
             raise IBMInputValueError('"image" needs to be in form of image_name:tag')
 
         backend_name = options['backend_name']
-        params_str = json.dumps(inputs, cls=RuntimeEncoder)
         result_decoder = result_decoder or ResultDecoder
         response = self._api_client.program_run(program_id=program_id,
                                                 credentials=self._provider.credentials,
                                                 backend_name=backend_name,
-                                                params=params_str,
+                                                params=inputs,
                                                 image=image)
 
         backend = self._provider.get_backend(backend_name)
@@ -375,29 +376,82 @@ class IBMRuntimeService:
     def update_program(
             self,
             program_id: str,
-            data: str,
+            data: str = None,
+            metadata: Optional[Union[Dict, str]] = None,
+            name: str = None,
+            description: str = None,
+            max_execution_time: int = None,
+            spec: Optional[Dict] = None
     ) -> None:
         """Update a runtime program.
+
+        Program metadata can be specified using the `metadata` parameter or
+        individual parameters, such as `name` and `description`. If the
+        same metadata field is specified in both places, the individual parameter
+        takes precedence.
 
         Args:
             program_id: Program ID.
             data: Program data or path of the file containing program data to upload.
+            metadata: Name of the program metadata file or metadata dictionary.
+            name: New program name.
+            description: New program description.
+            max_execution_time: New maximum execution time.
+            spec: New specifications for backend characteristics, input parameters,
+                interim results and final result.
 
         Raises:
             RuntimeProgramNotFound: If the program doesn't exist.
             QiskitRuntimeError: If the request failed.
         """
-        if "def main(" not in data:
-            # This is the program file
-            with open(data, "r") as file:
-                data = file.read()
+        if not any([data, metadata, name, description, max_execution_time, spec]):
+            warnings.warn("None of the 'data', 'metadata', 'name', 'description', "
+                          "'max_execution_time', or 'spec' parameters is specified. "
+                          "No update is made.")
+            return
+
+        if data:
+            if "def main(" not in data:
+                # This is the program file
+                with open(data, "r") as file:
+                    data = file.read()
+            data = to_base64_string(data)
+
+        if metadata:
+            metadata = self._read_metadata(metadata=metadata)
+        combined_metadata = self._merge_metadata(
+            metadata=metadata, name=name, description=description,
+            max_execution_time=max_execution_time, spec=spec)
+
         try:
-            program_data = to_base64_string(data)
-            self._api_client.program_update(program_id, program_data)
+            self._api_client.program_update(
+                program_id, program_data=data, **combined_metadata)
         except RequestsApiError as ex:
             if ex.status_code == 404:
                 raise RuntimeProgramNotFound(f"Program not found: {ex.message}") from None
             raise QiskitRuntimeError(f"Failed to update program: {ex}") from None
+
+    def _merge_metadata(
+            self,
+            metadata: Optional[Dict] = None,
+            **kwargs: Any
+    ) -> Dict:
+        """Merge multiple copies of metadata.
+        Args:
+            metadata: Program metadata.
+            **kwargs: Additional metadata fields to overwrite.
+        Returns:
+            Merged metadata.
+        """
+        merged = {}
+        metadata = metadata or {}
+        metadata_keys = ['name', 'max_execution_time', 'description', 'spec']
+        for key in metadata_keys:
+            if kwargs.get(key, None) is not None:
+                merged[key] = kwargs[key]
+            elif key in metadata.keys():
+                merged[key] = metadata[key]
+        return merged
 
     def delete_program(self, program_id: str) -> None:
         """Delete a runtime program.
@@ -479,17 +533,24 @@ class IBMRuntimeService:
         """
         job_responses = []  # type: List[Dict[str, Any]]
         current_page_limit = limit or 20
+        offset = skip
 
         while True:
-            job_page = self._api_client.jobs_get(
+            jobs_response = self._api_client.jobs_get(
                 limit=current_page_limit,
-                skip=skip,
-                pending=pending)["jobs"]
-            if not job_page:
+                skip=offset,
+                pending=pending)
+            job_page = jobs_response["jobs"]
+            # count is the total number of jobs that would be returned if
+            # there was no limit or skip
+            count = jobs_response["count"]
+
+            job_responses += job_page
+
+            if len(job_responses) == count - skip:
                 # Stop if there are no more jobs returned by the server.
                 break
 
-            job_responses += job_page
             if limit:
                 if len(job_responses) >= limit:
                     # Stop if we have reached the limit.
@@ -498,7 +559,7 @@ class IBMRuntimeService:
             else:
                 current_page_limit = 20
 
-            skip += len(job_page)
+            offset += len(job_page)
 
         return [self._decode_job(job) for job in job_responses]
 

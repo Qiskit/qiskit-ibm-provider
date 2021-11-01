@@ -12,6 +12,7 @@
 
 """Tests for runtime service."""
 
+import copy
 import unittest
 import os
 import uuid
@@ -85,11 +86,12 @@ def main(backend, user_messenger, **kwargs):
         cls.backend = backend
         cls.poll_time = 1 if backend.configuration().simulator else 5
         cls.provider = backend.provider()
+        metadata = copy.deepcopy(cls.RUNTIME_PROGRAM_METADATA)
+        metadata['name'] = cls._get_program_name()
         try:
             cls.program_id = cls.provider.runtime.upload_program(
-                name=cls._get_program_name(),
                 data=cls.RUNTIME_PROGRAM,
-                metadata=cls.RUNTIME_PROGRAM_METADATA)
+                metadata=metadata)
         except RuntimeDuplicateProgramError:
             pass
         except IBMNotAuthorizedError:
@@ -206,13 +208,6 @@ def main(backend, user_messenger, **kwargs):
         # Verify changed
         self.assertNotEqual(start_vis, end_vis)
 
-    def test_upload_program_conflict(self):
-        """Test uploading a program with conflicting name."""
-        name = self._get_program_name()
-        self._upload_program(name=name)
-        with self.assertRaises(RuntimeDuplicateProgramError):
-            self._upload_program(name=name)
-
     def test_delete_program(self):
         """Test deleting program."""
         program_id = self._upload_program()
@@ -227,8 +222,8 @@ def main(backend, user_messenger, **kwargs):
         with self.assertRaises(RuntimeProgramNotFound):
             self.provider.runtime.delete_program(program_id)
 
-    def test_update_program(self):
-        """Test updating a program."""
+    def test_update_program_data(self):
+        """Test updating program data."""
         program_v1 = """
 def main(backend, user_messenger, **kwargs):
     return "version 1"
@@ -237,12 +232,35 @@ def main(backend, user_messenger, **kwargs):
 def main(backend, user_messenger, **kwargs):
     return "version 2"
         """
+        # TODO retrieve program data instead of run program when #66 is merged
         program_id = self._upload_program(data=program_v1)
         job = self._run_program(program_id=program_id)
         self.assertEqual("version 1", job.result())
         self.provider.runtime.update_program(program_id=program_id, data=program_v2)
         job = self._run_program(program_id=program_id)
         self.assertEqual("version 2", job.result())
+
+    def test_update_program_metadata(self):
+        """Test updating program metadata."""
+        program_id = self._upload_program()
+        original = self.provider.runtime.program(program_id)
+        new_metadata = {
+            "name": self._get_program_name(),
+            "description": "test_update_program_metadata",
+            "max_execution_time": original.max_execution_time + 100,
+            "spec": {
+                "return_values": {
+                    "type": "object",
+                    "description": "Some return value"
+                }
+            }
+        }
+        self.provider.runtime.update_program(program_id=program_id, metadata=new_metadata)
+        updated = self.provider.runtime.program(program_id, refresh=True)
+        self.assertEqual(new_metadata["name"], updated.name)
+        self.assertEqual(new_metadata["description"], updated.description)
+        self.assertEqual(new_metadata["max_execution_time"], updated.max_execution_time)
+        self.assertEqual(new_metadata["spec"]["return_values"], updated.return_values)
 
     def test_run_program(self):
         """Test running a program."""
@@ -632,6 +650,7 @@ def main(backend, user_messenger, **kwargs):
         self.assertTrue(program.description)
         self.assertTrue(program.max_execution_time)
         self.assertTrue(program.creation_date)
+        self.assertTrue(program.update_date)
 
     def _upload_program(
             self,
@@ -642,13 +661,13 @@ def main(backend, user_messenger, **kwargs):
         """Upload a new program."""
         name = name or self._get_program_name()
         data = data or self.RUNTIME_PROGRAM
+        metadata = copy.deepcopy(self.RUNTIME_PROGRAM_METADATA)
+        metadata['name'] = name
+        metadata['max_execution_time'] = max_execution_time
+        metadata['is_public'] = is_public
         program_id = self.provider.runtime.upload_program(
-            name=name,
             data=data,
-            is_public=is_public,
-            metadata=self.RUNTIME_PROGRAM_METADATA,
-            max_execution_time=max_execution_time,
-            description="Qiskit test program")
+            metadata=metadata)
         self.to_delete.append(program_id)
         return program_id
 
