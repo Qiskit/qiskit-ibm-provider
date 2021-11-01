@@ -276,10 +276,10 @@ class RuntimeProgram:
         """
         if not self._data:
             response = self._api_client.program_get(self._id)
-            backend_requirements = {}
-            parameters = {}
-            return_values = {}
-            interim_results = {}
+            self._backend_requirements = {}
+            self._parameters = {}
+            self._return_values = {}
+            self._interim_results = {}
             if "spec" in response:
                 self._backend_requirements = response["spec"].get('backend_requirements', {})
                 self._parameters = response["spec"].get('parameters', {})
