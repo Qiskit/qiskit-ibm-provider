@@ -18,6 +18,7 @@ from qiskit.test.mock.fake_qasm_simulator import FakeQasmSimulator
 
 from qiskit_ibm.credentials import Credentials
 from qiskit_ibm.runtime import RuntimeJob
+from qiskit_ibm.runtime.exceptions import RuntimeInvalidStateError
 
 from ...ibm_test_case import IBMTestCase
 from ...ws_server import MockWsServer
@@ -83,10 +84,8 @@ class TestRuntimeWebsocketClient(IBMTestCase):
         results = []
         job = self._get_job(callback=result_callback)
         time.sleep(1)
-        job.stream_results(callback=result_callback)
-        time.sleep(JOB_PROGRESS_RESULT_COUNT+2)
-        self.assertEqual(JOB_PROGRESS_RESULT_COUNT, len(results))
-        self.assertFalse(job._ws_client.connected)
+        with self.assertRaises(RuntimeInvalidStateError):
+            job.stream_results(callback=result_callback)
 
     def test_cancel_streaming(self):
         """Test canceling streaming."""

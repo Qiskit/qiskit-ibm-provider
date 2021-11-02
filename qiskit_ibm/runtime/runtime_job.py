@@ -258,11 +258,14 @@ class RuntimeJob:
         """
         if self._status in JOB_FINAL_STATES:
             raise RuntimeInvalidStateError("Job already finished.")
-        if not self._is_streaming():
-            self._ws_client_future = self._executor.submit(self._start_websocket_client)
-            self._executor.submit(self._stream_results,
-                                  result_queue=self._result_queue, user_callback=callback,
-                                  decoder=decoder)
+
+        if self._is_streaming():
+            raise RuntimeInvalidStateError("A callback function is already streaming results.")
+
+        self._ws_client_future = self._executor.submit(self._start_websocket_client)
+        self._executor.submit(self._stream_results,
+                              result_queue=self._result_queue, user_callback=callback,
+                              decoder=decoder)
 
     def cancel_result_streaming(self) -> None:
         """Cancel result streaming."""
