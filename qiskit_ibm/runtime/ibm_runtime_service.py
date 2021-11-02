@@ -108,15 +108,17 @@ class IBMRuntimeService:
         self._ws_url = provider.credentials.runtime_url.replace('https', 'wss')
         self._programs = {}  # type: Dict
 
-    def pprint_programs(self, refresh: bool = False, detailed: bool = False) -> None:
+    def pprint_programs(self, refresh: bool = False, detailed: bool = False,
+                        name: Optional[str] = "") -> None:
         """Pretty print information about available runtime programs.
 
         Args:
             refresh: If ``True``, re-query the server for the programs. Otherwise
                 return the cached value.
             detailed: If ``True`` print all details about available runtime programs.
+            name: Program name.
         """
-        programs = self.programs(refresh)
+        programs = self.programs(refresh, name)
         for prog in programs:
             print("="*50)
             if detailed:
@@ -126,7 +128,7 @@ class IBMRuntimeService:
                 print(f"  Name: {prog.name}")
                 print(f"  Description: {prog.description}")
 
-    def programs(self, refresh: bool = False) -> List[RuntimeProgram]:
+    def programs(self, refresh: bool = False, name: Optional[str] = "") -> List[RuntimeProgram]:
         """Return available runtime programs.
 
         Currently only program metadata is returned.
@@ -134,13 +136,14 @@ class IBMRuntimeService:
         Args:
             refresh: If ``True``, re-query the server for the programs. Otherwise
                 return the cached value.
+            name: Program name.
 
         Returns:
             A list of runtime programs.
         """
         if not self._programs or refresh:
             self._programs = {}
-            response = self._api_client.list_programs()
+            response = self._api_client.list_programs(name)
             for prog_dict in response.get("programs", []):
                 program = self._to_program(prog_dict)
                 self._programs[program.program_id] = program

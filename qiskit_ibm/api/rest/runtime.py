@@ -55,14 +55,15 @@ class Runtime(RestAdapterBase):
         """
         return ProgramJob(self.session, job_id)
 
-    def list_programs(self) -> Dict[str, Any]:
+    def list_programs(self, name: str) -> Dict[str, Any]:
         """Return a list of runtime programs.
 
         Returns:
             JSON response.
         """
         url = self.get_url('programs')
-        return self.session.get(url).json()
+        response = self.session.get('{}?name={}'.format(url, name)).json()
+        return response
 
     def create_program(
             self,

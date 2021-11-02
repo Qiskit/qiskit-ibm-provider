@@ -1,0 +1,7 @@
+---
+upgrade:
+  - |
+    The ``name`` parameter has been added to 
+    :meth:`qiskit_ibm.runtime.IBMRuntimeService.programs` and 
+    :meth:`qiskit_ibm.runtime.IBMRuntimeService.pprint_programs`.
+    ``name`` can be used to query by a specific program name.
