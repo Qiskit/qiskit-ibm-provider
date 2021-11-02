@@ -133,7 +133,7 @@ class IBMBackend(Backend):
     @classmethod
     def _default_options(cls) -> Options:
         """Default runtime options."""
-        return Options(shots=1024, memory=False,
+        return Options(shots=4000, memory=False,
                        qubit_lo_freq=None, meas_lo_freq=None,
                        schedule_los=None,
                        meas_level=MeasLevel.CLASSIFIED,
@@ -192,7 +192,7 @@ class IBMBackend(Backend):
             header: User input that will be attached to the job and will be
                 copied to the corresponding result header. Headers do not affect the run.
                 This replaces the old ``Qobj`` header.
-            shots: Number of repetitions of each circuit, for sampling. Default: 1024
+            shots: Number of repetitions of each circuit, for sampling. Default: 4000
                 or ``max_shots`` from the backend configuration, whichever is smaller.
             memory: If ``True``, per-shot measurement bitstrings are returned as well
                 (provided the backend supports it). For OpenPulse jobs, only
