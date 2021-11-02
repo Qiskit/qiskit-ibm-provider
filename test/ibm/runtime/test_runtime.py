@@ -427,6 +427,27 @@ if __name__ == '__main__':
         self.assertTrue(job.result())
         self.assertEqual(job.image, image)
 
+    def test_retrieve_program_data(self):
+        """Test retrieving program data"""
+        program_id = self._upload_program(name="qiskit-test")
+        self.runtime.programs()
+        program = self.runtime.program(program_id)
+        self.assertEqual(program.data, "def main() {}")
+        self.assertEqual(self.DEFAULT_METADATA['name'], program.name)
+        self.assertEqual(self.DEFAULT_METADATA['description'], program.description)
+        self.assertEqual(self.DEFAULT_METADATA['max_execution_time'],
+                         program.max_execution_time)
+        self.assertTrue(program.creation_date)
+        self.assertTrue(program.update_date)
+        self.assertEqual(self.DEFAULT_METADATA['spec']['backend_requirements'],
+                         program.backend_requirements)
+        self.assertEqual(self.DEFAULT_METADATA['spec']['parameters'],
+                         program.parameters().metadata)
+        self.assertEqual(self.DEFAULT_METADATA['spec']['return_values'],
+                         program.return_values)
+        self.assertEqual(self.DEFAULT_METADATA['spec']['interim_results'],
+                         program.interim_results)
+
     def test_program_params_validation(self):
         """Test program parameters validation process"""
         program_id = self.runtime.upload_program(
