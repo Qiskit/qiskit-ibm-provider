@@ -66,7 +66,7 @@ class Runtime(RestAdapterBase):
             payload['limit'] = limit
         if skip:
             payload['offset'] = skip
-        response =  self.session.get(url, params=payload).json()
+        response = self.session.get(url, params=payload).json()
         return response['programs']
 
     def create_program(
