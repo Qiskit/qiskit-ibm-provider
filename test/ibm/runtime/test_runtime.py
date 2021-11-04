@@ -302,6 +302,16 @@ if __name__ == '__main__':
         all_ids = [prog.program_id for prog in programs]
         self.assertIn(program_id, all_ids)
 
+    def test_list_programs_with_name(self):
+        """Test listing programs with the name parameter"""
+        program_id = self._upload_program(name="sample-program")
+        programs = self.runtime.programs(name="sample-program")
+        all_ids = [prog.program_id for prog in programs]
+        self.assertIn(program_id, all_ids)
+        programs = self.runtime.programs(name="qiskit-test")
+        all_ids = [prog.program_id for prog in programs]
+        self.assertNotIn(program_id, all_ids)
+
     def test_list_program(self):
         """Test listing a single program."""
         program_id = self._upload_program()

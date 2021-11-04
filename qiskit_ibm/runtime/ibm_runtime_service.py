@@ -140,7 +140,7 @@ class IBMRuntimeService:
         Returns:
             A list of runtime programs.
         """
-        if not self._programs or refresh:
+        if not self._programs or refresh or name:
             self._programs = {}
             response = self._api_client.list_programs(name)
             for prog_dict in response.get("programs", []):
