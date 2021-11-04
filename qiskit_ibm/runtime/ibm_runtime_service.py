@@ -516,7 +516,8 @@ class IBMRuntimeService:
             self,
             limit: Optional[int] = 10,
             skip: int = 0,
-            pending: bool = None
+            pending: bool = None,
+            provider: str = None
     ) -> List[RuntimeJob]:
         """Retrieve all runtime jobs, subject to optional filtering.
 
@@ -526,6 +527,8 @@ class IBMRuntimeService:
             pending: Filter by job pending state. If ``True``, 'QUEUED' and 'RUNNING'
                 jobs are included. If ``False``, 'DONE', 'CANCELLED' and 'ERROR' jobs
                 are included.
+            provider: Provider to filter jobs.
+                Should be in the following format {hub}/{group}/{project}.
 
         Returns:
             A list of runtime jobs.
@@ -538,7 +541,8 @@ class IBMRuntimeService:
             jobs_response = self._api_client.jobs_get(
                 limit=current_page_limit,
                 skip=offset,
-                pending=pending)
+                pending=pending,
+                provider=provider)
             job_page = jobs_response["jobs"]
             # count is the total number of jobs that would be returned if
             # there was no limit or skip

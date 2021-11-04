@@ -16,6 +16,7 @@ import logging
 from typing import Dict, List, Any, Union, Optional
 import json
 from concurrent import futures
+from urllib.parse import quote
 
 from .base import RestAdapterBase
 from ..session import RetrySession
@@ -134,7 +135,8 @@ class Runtime(RestAdapterBase):
         data = json.dumps(payload, cls=RuntimeEncoder)
         return self.session.post(url, data=data).json()
 
-    def jobs_get(self, limit: int = None, skip: int = None, pending: bool = None) -> Dict:
+    def jobs_get(self, limit: int = None, skip: int = None,
+                 pending: bool = None, provider: str = None) -> Dict:
         """Get a list of job data.
 
         Args:
@@ -142,6 +144,8 @@ class Runtime(RestAdapterBase):
             skip: Number of results to skip.
             pending: Returns 'QUEUED' and 'RUNNING' jobs if True,
                 returns 'DONE', 'CANCELLED' and 'ERROR' jobs if False.
+            provider: Provider to filter jobs.
+                Should be in the following format {hub}/{group}/{project}.
 
         Returns:
             JSON response.
@@ -154,6 +158,8 @@ class Runtime(RestAdapterBase):
             payload['offset'] = skip
         if pending is not None:
             payload['pending'] = 'true' if pending else 'false'
+        if provider:
+            payload['provider'] = quote(provider, safe='')
         return self.session.get(url, params=payload).json()
 
     def logout(self) -> None:
