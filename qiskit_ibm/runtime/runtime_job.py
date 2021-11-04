@@ -146,7 +146,7 @@ class RuntimeJob:
         """
         _decoder = decoder or self._result_decoder
         if self._results is None or (_decoder != self._result_decoder):
-            self.wait_for_closed_stream(timeout=timeout, wait=wait)
+            self.wait_for_final_state(timeout=timeout, wait=wait)
             if self._status == JobStatus.ERROR:
                 raise RuntimeJobFailureError(f"Unable to retrieve job result. "
                                              f"{self.error_message()}")
@@ -188,7 +188,7 @@ class RuntimeJob:
         self._set_status_and_error_message()
         return self._error_message
 
-    def wait_for_closed_stream(self, timeout: Optional[float] = None, wait: float = 5) -> None:
+    def wait_for_final_state(self, timeout: Optional[float] = None, wait: float = 5) -> None:
         """If the websocket server stream endpoint is open, wait for it to close.
 
         Args:
@@ -210,31 +210,6 @@ class RuntimeJob:
                     'Timeout while waiting for job {}.'.format(self.job_id))
             time.sleep(wait)
             stream_status = self._is_streaming()
-
-    def wait_for_final_state(
-            self,
-            timeout: Optional[float] = None,
-            wait: float = 5
-    ) -> None:
-        """Poll the job status until it progresses to a final state such as ``DONE`` or ``ERROR``.
-
-        Args:
-            timeout: Seconds to wait for the job. If ``None``, wait indefinitely.
-            wait: Seconds between queries.
-
-        Raises:
-            JobTimeoutError: If the job does not reach a final state before the
-                specified timeout.
-        """
-        start_time = time.time()
-        status = self.status()
-        while status not in JOB_FINAL_STATES:
-            elapsed_time = time.time() - start_time
-            if timeout is not None and elapsed_time >= timeout:
-                raise JobTimeoutError(
-                    'Timeout while waiting for job {}.'.format(self.job_id))
-            time.sleep(wait)
-            status = self.status()
 
     def stream_results(
             self,
