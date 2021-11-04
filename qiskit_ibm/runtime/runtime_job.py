@@ -210,6 +210,7 @@ class RuntimeJob:
                     'Timeout while waiting for job {}.'.format(self.job_id))
             time.sleep(wait)
             stream_status = self._is_streaming()
+        self.status()
 
     def stream_results(
             self,
