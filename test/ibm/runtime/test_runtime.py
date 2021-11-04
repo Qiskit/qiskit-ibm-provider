@@ -434,20 +434,7 @@ if __name__ == '__main__':
         self.runtime.programs()
         program = self.runtime.program(program_id)
         self.assertEqual(program.data, self.DEFAULT_DATA)
-        self.assertEqual(self.DEFAULT_METADATA['name'], program.name)
-        self.assertEqual(self.DEFAULT_METADATA['description'], program.description)
-        self.assertEqual(self.DEFAULT_METADATA['max_execution_time'],
-                         program.max_execution_time)
-        self.assertTrue(program.creation_date)
-        self.assertTrue(program.update_date)
-        self.assertEqual(self.DEFAULT_METADATA['spec']['backend_requirements'],
-                         program.backend_requirements)
-        self.assertEqual(self.DEFAULT_METADATA['spec']['parameters'],
-                         program.parameters().metadata)
-        self.assertEqual(self.DEFAULT_METADATA['spec']['return_values'],
-                         program.return_values)
-        self.assertEqual(self.DEFAULT_METADATA['spec']['interim_results'],
-                         program.interim_results)
+        self._validate_program(program)
 
     def test_program_params_validation(self):
         """Test program parameters validation process"""
@@ -699,20 +686,7 @@ if __name__ == '__main__':
                 program_id = self.runtime.upload_program(data=self.DEFAULT_DATA, metadata=metadata)
                 program = self.runtime.program(program_id)
                 self.runtime.delete_program(program_id)
-                self.assertEqual(self.DEFAULT_METADATA['name'], program.name)
-                self.assertEqual(self.DEFAULT_METADATA['description'], program.description)
-                self.assertEqual(self.DEFAULT_METADATA['max_execution_time'],
-                                 program.max_execution_time)
-                self.assertTrue(program.creation_date)
-                self.assertTrue(program.update_date)
-                self.assertEqual(self.DEFAULT_METADATA['spec']['backend_requirements'],
-                                 program.backend_requirements)
-                self.assertEqual(self.DEFAULT_METADATA['spec']['parameters'],
-                                 program.parameters().metadata)
-                self.assertEqual(self.DEFAULT_METADATA['spec']['return_values'],
-                                 program.return_values)
-                self.assertEqual(self.DEFAULT_METADATA['spec']['interim_results'],
-                                 program.interim_results)
+                self._validate_program(program)
 
     def test_different_providers(self):
         """Test retrieving job submitted with different provider."""
@@ -772,3 +746,19 @@ if __name__ == '__main__':
             jobs.append(self._run_program(program_id, final_status='CANCELLED'))
             returned_jobs_count += 1
         return (jobs, pending_jobs_count, returned_jobs_count)
+
+    def _validate_program(self, program):
+        self.assertEqual(self.DEFAULT_METADATA['name'], program.name)
+        self.assertEqual(self.DEFAULT_METADATA['description'], program.description)
+        self.assertEqual(self.DEFAULT_METADATA['max_execution_time'],
+                         program.max_execution_time)
+        self.assertTrue(program.creation_date)
+        self.assertTrue(program.update_date)
+        self.assertEqual(self.DEFAULT_METADATA['spec']['backend_requirements'],
+                         program.backend_requirements)
+        self.assertEqual(self.DEFAULT_METADATA['spec']['parameters'],
+                         program.parameters().metadata)
+        self.assertEqual(self.DEFAULT_METADATA['spec']['return_values'],
+                         program.return_values)
+        self.assertEqual(self.DEFAULT_METADATA['spec']['interim_results'],
+                         program.interim_results)
