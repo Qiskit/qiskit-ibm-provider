@@ -67,6 +67,7 @@ from .utils import SerializableClass, SerializableClassDecoder, get_complex_type
 class TestRuntime(IBMTestCase):
     """Class for testing runtime modules."""
 
+    DEFAULT_DATA = "def main() {}"
     DEFAULT_METADATA = {
         "name": "qiskit-test",
         "description": "Test program.",
@@ -427,10 +428,18 @@ if __name__ == '__main__':
         self.assertTrue(job.result())
         self.assertEqual(job.image, image)
 
+    def test_retrieve_program_data(self):
+        """Test retrieving program data"""
+        program_id = self._upload_program(name="qiskit-test")
+        self.runtime.programs()
+        program = self.runtime.program(program_id)
+        self.assertEqual(program.data, self.DEFAULT_DATA)
+        self._validate_program(program)
+
     def test_program_params_validation(self):
         """Test program parameters validation process"""
         program_id = self.runtime.upload_program(
-            data="def main() {}", metadata=self.DEFAULT_METADATA)
+            data=self.DEFAULT_DATA, metadata=self.DEFAULT_METADATA)
         program = self.runtime.program(program_id)
         params: ParameterNamespace = program.parameters()
         params.param1 = 'Hello, World'
@@ -448,7 +457,7 @@ if __name__ == '__main__':
     def test_program_params_namespace(self):
         """Test running a program using parameter namespace."""
         program_id = self.runtime.upload_program(
-            data="def main() {}", metadata=self.DEFAULT_METADATA)
+            data=self.DEFAULT_DATA, metadata=self.DEFAULT_METADATA)
         params = self.runtime.program(program_id).parameters()
         params.param1 = "Hello World"
         self._run_program(program_id, inputs=params)
@@ -601,6 +610,18 @@ if __name__ == '__main__':
         rjobs = self.runtime.jobs(limit=limit, skip=skip, pending=False)
         self.assertEqual(limit, len(rjobs))
 
+    def test_jobs_filter_by_program_id(self):
+        """Test retrieving jobs by Program ID."""
+        program_id = self._upload_program()
+        program_id_1 = self._upload_program()
+        job = self._run_program(program_id=program_id)
+        job_1 = self._run_program(program_id=program_id_1)
+        job.wait_for_final_state()
+        job_1.wait_for_final_state()
+        rjobs = self.runtime.jobs(program_id=program_id)
+        self.assertEqual(program_id, rjobs[0].program_id)
+        self.assertEqual(1, len(rjobs))
+
     def test_cancel_job(self):
         """Test canceling a job."""
         job = self._run_program(job_classes=CancelableRuntimeJob)
@@ -674,23 +695,10 @@ if __name__ == '__main__':
 
         for metadata in sub_tests:
             with self.subTest(metadata_type=type(metadata)):
-                program_id = self.runtime.upload_program(data="def main() {}", metadata=metadata)
+                program_id = self.runtime.upload_program(data=self.DEFAULT_DATA, metadata=metadata)
                 program = self.runtime.program(program_id)
                 self.runtime.delete_program(program_id)
-                self.assertEqual(self.DEFAULT_METADATA['name'], program.name)
-                self.assertEqual(self.DEFAULT_METADATA['description'], program.description)
-                self.assertEqual(self.DEFAULT_METADATA['max_execution_time'],
-                                 program.max_execution_time)
-                self.assertTrue(program.creation_date)
-                self.assertTrue(program.update_date)
-                self.assertEqual(self.DEFAULT_METADATA['spec']['backend_requirements'],
-                                 program.backend_requirements)
-                self.assertEqual(self.DEFAULT_METADATA['spec']['parameters'],
-                                 program.parameters().metadata)
-                self.assertEqual(self.DEFAULT_METADATA['spec']['return_values'],
-                                 program.return_values)
-                self.assertEqual(self.DEFAULT_METADATA['spec']['interim_results'],
-                                 program.interim_results)
+                self._validate_program(program)
 
     def test_different_providers(self):
         """Test retrieving job submitted with different provider."""
@@ -706,7 +714,7 @@ if __name__ == '__main__':
                         is_public: bool = False):
         """Upload a new program."""
         name = name or uuid.uuid4().hex
-        data = "def main() {}"
+        data = self.DEFAULT_DATA
         metadata = copy.deepcopy(self.DEFAULT_METADATA)
         metadata.update(name=name)
         metadata.update(is_public=is_public)
@@ -750,3 +758,20 @@ if __name__ == '__main__':
             jobs.append(self._run_program(program_id, final_status='CANCELLED'))
             returned_jobs_count += 1
         return (jobs, pending_jobs_count, returned_jobs_count)
+
+    def _validate_program(self, program):
+        """Validate a program."""
+        self.assertEqual(self.DEFAULT_METADATA['name'], program.name)
+        self.assertEqual(self.DEFAULT_METADATA['description'], program.description)
+        self.assertEqual(self.DEFAULT_METADATA['max_execution_time'],
+                         program.max_execution_time)
+        self.assertTrue(program.creation_date)
+        self.assertTrue(program.update_date)
+        self.assertEqual(self.DEFAULT_METADATA['spec']['backend_requirements'],
+                         program.backend_requirements)
+        self.assertEqual(self.DEFAULT_METADATA['spec']['parameters'],
+                         program.parameters().metadata)
+        self.assertEqual(self.DEFAULT_METADATA['spec']['return_values'],
+                         program.return_values)
+        self.assertEqual(self.DEFAULT_METADATA['spec']['interim_results'],
+                         program.interim_results)

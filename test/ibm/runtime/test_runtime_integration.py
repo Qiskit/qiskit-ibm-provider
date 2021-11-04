@@ -147,6 +147,19 @@ def main(backend, user_messenger, **kwargs):
         self.assertEqual(self.program_id, program.program_id)
         self._validate_program(program)
 
+    def test_retrieve_program_data(self):
+        """Test retrieving program data"""
+        program = self.provider.runtime.program(self.program_id)
+        self.assertEqual(self.RUNTIME_PROGRAM, program.data)
+        self._validate_program(program)
+
+    def test_retrieve_unauthorized_program_data(self):
+        """Test retrieving program data when user is not the program author"""
+        program = self.provider.runtime.program('sample-program')
+        self._validate_program(program)
+        with self.assertRaises(IBMNotAuthorizedError):
+            return program.data
+
     def test_upload_program(self):
         """Test uploading a program."""
         max_execution_time = 3000
@@ -375,6 +388,15 @@ def main(backend, user_messenger, **kwargs):
                 found = True
                 break
         self.assertTrue(found, f"Returned job {job.job_id} not retrieved.")
+
+    def test_retrieve_jobs_by_program_id(self):
+        """Test retrieving jobs by Program ID."""
+        program_id = self._upload_program()
+        job = self._run_program(program_id=program_id)
+        job.wait_for_final_state()
+        rjobs = self.provider.runtime.jobs(program_id=program_id)
+        self.assertEqual(program_id, rjobs[0].program_id)
+        self.assertEqual(1, len(rjobs))
 
     def test_cancel_job_queued(self):
         """Test canceling a queued job."""

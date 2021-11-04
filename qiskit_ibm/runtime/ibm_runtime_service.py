@@ -12,7 +12,6 @@
 
 """Qiskit runtime service."""
 
-import base64
 import logging
 from typing import Dict, Callable, Optional, Union, List, Any, Type
 import json
@@ -207,7 +206,9 @@ class IBMRuntimeService:
                               creation_date=response.get('creation_date', ""),
                               update_date=response.get('update_date', ""),
                               backend_requirements=backend_requirements,
-                              is_public=response.get('is_public', False))
+                              is_public=response.get('is_public', False),
+                              data=response.get('data', ""),
+                              api_client=self._api_client)
 
     def run(
             self,
@@ -519,7 +520,8 @@ class IBMRuntimeService:
             self,
             limit: Optional[int] = 10,
             skip: int = 0,
-            pending: bool = None
+            pending: bool = None,
+            program_id: str = None
     ) -> List[RuntimeJob]:
         """Retrieve all runtime jobs, subject to optional filtering.
 
@@ -529,6 +531,7 @@ class IBMRuntimeService:
             pending: Filter by job pending state. If ``True``, 'QUEUED' and 'RUNNING'
                 jobs are included. If ``False``, 'DONE', 'CANCELLED' and 'ERROR' jobs
                 are included.
+            program_id: Filter by Program ID.
 
         Returns:
             A list of runtime jobs.
@@ -541,7 +544,8 @@ class IBMRuntimeService:
             jobs_response = self._api_client.jobs_get(
                 limit=current_page_limit,
                 skip=offset,
-                pending=pending)
+                pending=pending,
+                program_id=program_id)
             job_page = jobs_response["jobs"]
             # count is the total number of jobs that would be returned if
             # there was no limit or skip
