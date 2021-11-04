@@ -760,6 +760,7 @@ if __name__ == '__main__':
         return (jobs, pending_jobs_count, returned_jobs_count)
 
     def _validate_program(self, program):
+        """Validate a program."""
         self.assertEqual(self.DEFAULT_METADATA['name'], program.name)
         self.assertEqual(self.DEFAULT_METADATA['description'], program.description)
         self.assertEqual(self.DEFAULT_METADATA['max_execution_time'],
