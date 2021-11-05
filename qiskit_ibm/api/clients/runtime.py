@@ -174,8 +174,14 @@ class RuntimeClient:
         logger.debug("Runtime job get response: %s", response)
         return response
 
-    def jobs_get(self, limit: int = None, skip: int = None, 
-                 pending: bool = None, provider: str = None) -> Dict:
+    def jobs_get(
+            self,
+            limit: int = None,
+            skip: int = None,
+            pending: bool = None,
+            program_id: str = None, 
+            provider: str = None
+    ) -> Dict:
         """Get job data for all jobs.
 
         Args:
@@ -183,13 +189,15 @@ class RuntimeClient:
             skip: Number of results to skip.
             pending: Returns 'QUEUED' and 'RUNNING' jobs if True,
                 returns 'DONE', 'CANCELLED' and 'ERROR' jobs if False.
+            program_id: Filter by Program ID.
             provider: Provider to filter jobs.
                 Should be in the following format {hub}/{group}/{project}.
 
         Returns:
             JSON response.
         """
-        return self.api.jobs_get(limit=limit, skip=skip, pending=pending, provider=provider)
+        return self.api.jobs_get(limit=limit, skip=skip, pending=pending,
+                                 program_id=program_id, provider=provider)
 
     def job_results(self, job_id: str) -> str:
         """Get the results of a program job.

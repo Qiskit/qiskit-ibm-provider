@@ -12,7 +12,6 @@
 
 """Qiskit runtime service."""
 
-import base64
 import logging
 from typing import Dict, Callable, Optional, Union, List, Any, Type
 import json
@@ -204,7 +203,9 @@ class IBMRuntimeService:
                               creation_date=response.get('creation_date', ""),
                               update_date=response.get('update_date', ""),
                               backend_requirements=backend_requirements,
-                              is_public=response.get('is_public', False))
+                              is_public=response.get('is_public', False),
+                              data=response.get('data', ""),
+                              api_client=self._api_client)
 
     def run(
             self,
@@ -430,6 +431,10 @@ class IBMRuntimeService:
                 raise RuntimeProgramNotFound(f"Program not found: {ex.message}") from None
             raise QiskitRuntimeError(f"Failed to update program: {ex}") from None
 
+        if program_id in self._programs:
+            program = self._programs[program_id]
+            program._refresh()
+
     def _merge_metadata(
             self,
             metadata: Optional[Dict] = None,
@@ -491,6 +496,10 @@ class IBMRuntimeService:
                 raise RuntimeJobNotFound(f"Program not found: {ex.message}") from None
             raise QiskitRuntimeError(f"Failed to set program visibility: {ex}") from None
 
+        if program_id in self._programs:
+            program = self._programs[program_id]
+            program._is_public = public
+
     def job(self, job_id: str) -> RuntimeJob:
         """Retrieve a runtime job.
 
@@ -517,6 +526,7 @@ class IBMRuntimeService:
             limit: Optional[int] = 10,
             skip: int = 0,
             pending: bool = None,
+            program_id: str = None,
             provider: str = None
     ) -> List[RuntimeJob]:
         """Retrieve all runtime jobs, subject to optional filtering.
@@ -527,6 +537,7 @@ class IBMRuntimeService:
             pending: Filter by job pending state. If ``True``, 'QUEUED' and 'RUNNING'
                 jobs are included. If ``False``, 'DONE', 'CANCELLED' and 'ERROR' jobs
                 are included.
+            program_id: Filter by Program ID.
             provider: Provider to filter jobs.
                 Should be in the following format {hub}/{group}/{project}.
 
@@ -542,6 +553,7 @@ class IBMRuntimeService:
                 limit=current_page_limit,
                 skip=offset,
                 pending=pending,
+                program_id=program_id,
                 provider=provider)
             job_page = jobs_response["jobs"]
             # count is the total number of jobs that would be returned if
