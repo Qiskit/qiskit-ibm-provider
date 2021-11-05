@@ -546,6 +546,10 @@ class IBMRuntimeService:
 
         Returns:
             A list of runtime jobs.
+
+        Raises:
+            IBMInputValueError: If any but not all of the parameters ``hub``, ``group``
+                and ``project are given.
         """
         if any([hub, group, project]) and not all([hub, group, project]):
             raise IBMInputValueError('If filtering by provider, the hub, group, '

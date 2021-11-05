@@ -622,6 +622,14 @@ if __name__ == '__main__':
         self.assertEqual(program_id, rjobs[0].program_id)
         self.assertEqual(1, len(rjobs))
 
+    def test_jobs_filter_by_provider(self):
+        """Test retrieving jobs by provider."""
+        program_id = self._upload_program()
+        job = self._run_program(program_id=program_id)
+        job.wait_for_final_state()
+        with self.assertRaises(IBMInputValueError):
+            self.runtime.jobs(hub="defaultHub")
+            
     def test_cancel_job(self):
         """Test canceling a job."""
         job = self._run_program(job_classes=CancelableRuntimeJob)
