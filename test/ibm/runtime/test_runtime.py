@@ -632,7 +632,6 @@ if __name__ == '__main__':
                                   hub="defaultHub", group="defaultGroup", project="defaultProject")
         self.assertEqual(program_id, rjobs[0].program_id)
         self.assertEqual(1, len(rjobs))
-        print(rjobs)
         rjobs = self.runtime.jobs(program_id=program_id,
                                   hub="test", group="test", project="test")
         self.assertFalse(rjobs)
