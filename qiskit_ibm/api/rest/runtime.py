@@ -57,11 +57,15 @@ class Runtime(RestAdapterBase):
     def list_programs(self, limit: int, skip: int) -> List[Dict]:
         """Return a list of runtime programs.
 
+        Args:
+            limit: The maxiumum number of programs to return.
+            skip: The number of programs to skip.
+
         Returns:
             JSON response.
         """
         url = self.get_url('programs')
-        payload: Dict[str, Union[int, str]] = {}
+        payload: Dict[str, Union[int]] = {}
         if limit:
             payload['limit'] = limit
         if skip:

@@ -42,6 +42,10 @@ class RuntimeClient:
     def list_programs(self, limit: int, skip: int) -> List[Dict]:
         """Return a list of runtime programs.
 
+        Args:
+            limit: limit: The maxiumum number of programs to return.
+            skip: The number of programs to skip.
+
         Returns:
             A list of quantum programs.
         """
