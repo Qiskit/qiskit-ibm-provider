@@ -42,6 +42,9 @@ class RuntimeClient:
     def list_programs(self, name: str) -> Dict[str, Any]:
         """Return a list of runtime programs.
 
+        Args:
+            name: Name of the program.
+
         Returns:
             A list of quantum programs.
         """

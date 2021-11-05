@@ -58,11 +58,14 @@ class Runtime(RestAdapterBase):
     def list_programs(self, name: str) -> Dict[str, Any]:
         """Return a list of runtime programs.
 
+        Args:
+            name: Name of the program.
+
         Returns:
             JSON response.
         """
         url = self.get_url('programs')
-        payload: Dict[str, Union[int, str]] = {}
+        payload: Dict[str, Union[str]] = {}
         if name:
             payload['name'] = name
         response = self.session.get(url, params=payload).json()

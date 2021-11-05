@@ -115,7 +115,7 @@ class IBMRuntimeService:
             refresh: If ``True``, re-query the server for the programs. Otherwise
                 return the cached value.
             detailed: If ``True`` print all details about available runtime programs.
-            name: Program name.
+            name: Only retrieve programs with the exact program name given.
         """
         programs = self.programs(refresh, name)
         for prog in programs:
@@ -135,7 +135,7 @@ class IBMRuntimeService:
         Args:
             refresh: If ``True``, re-query the server for the programs. Otherwise
                 return the cached value.
-            name: Program name.
+            name: Only retrieve programs with the exact program name given.
 
         Returns:
             A list of runtime programs.
