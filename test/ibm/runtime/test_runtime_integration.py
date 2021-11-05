@@ -142,7 +142,7 @@ def main(backend, user_messenger, **kwargs):
         self.assertTrue(found, f"Program {self.program_id} not found!")
 
     def test_filter_programs_with_program_name(self):
-        """Test listing programs with program name."""
+        """Test filter programs with program name."""
         program_id = self._upload_program(name="sample-program")
         programs = self.provider.runtime.programs(name="sample-program")
         all_ids = [prog.program_id for prog in programs]
