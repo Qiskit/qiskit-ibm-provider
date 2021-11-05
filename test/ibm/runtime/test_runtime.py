@@ -304,8 +304,8 @@ if __name__ == '__main__':
 
     def test_filter_programs_with_program_name(self):
         """Test filter programs with the program name"""
-        program_id = self._upload_program(name="sample-program")
-        programs = self.runtime.programs(name="sample-program")
+        program_id = self._upload_program(name="qiskit-test-sample")
+        programs = self.runtime.programs(name="qiskit-test-sample")
         all_ids = [prog.program_id for prog in programs]
         self.assertIn(program_id, all_ids)
         programs = self.runtime.programs(name="qiskit-test")
