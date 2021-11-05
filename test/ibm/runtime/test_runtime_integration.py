@@ -141,6 +141,16 @@ def main(backend, user_messenger, **kwargs):
                 found = True
         self.assertTrue(found, f"Program {self.program_id} not found!")
 
+    def test_list_programs_with_program_name(self):
+        """Test listing programs with program name."""
+        program_id = self._upload_program(name="sample-program")
+        programs = self.provider.runtime.programs(name="sample-program")
+        all_ids = [prog.program_id for prog in programs]
+        self.assertIn(program_id, all_ids)
+        programs = self.provider.runtime.programs(name="qiskit-test")
+        all_ids = [prog.program_id for prog in programs]
+        self.assertNotIn(program_id, all_ids)
+
     def test_list_program(self):
         """Test listing a single program."""
         program = self.provider.runtime.program(self.program_id)
