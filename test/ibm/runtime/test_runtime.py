@@ -629,7 +629,7 @@ if __name__ == '__main__':
         job.wait_for_final_state()
         with self.assertRaises(IBMInputValueError):
             self.runtime.jobs(hub="defaultHub")
-            
+
     def test_cancel_job(self):
         """Test canceling a job."""
         job = self._run_program(job_classes=CancelableRuntimeJob)
