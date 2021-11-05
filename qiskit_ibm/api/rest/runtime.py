@@ -152,7 +152,6 @@ class Runtime(RestAdapterBase):
             pending: Returns 'QUEUED' and 'RUNNING' jobs if True,
                 returns 'DONE', 'CANCELLED' and 'ERROR' jobs if False.
             program_id: Filter by Program ID.
-                Should be in the following format {hub}/{group}/{project}.
             hub: Filter by hub - hub, group, and project must all be specified.
             group: Filter by group - hub, group, and project must all be specified.
             project: Filter by project - hub, group, and project must all be specified.
