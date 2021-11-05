@@ -552,8 +552,8 @@ class IBMRuntimeService:
                 and ``project`` are given.
         """
         if any([hub, group, project]) and not all([hub, group, project]):
-            raise IBMInputValueError('If filtering by provider, the hub, group, '
-                                     'and project parameters must all be specified. '
+            raise IBMInputValueError('Hub, group and project '
+                                     'parameters must all be specified. '
                                      'hub = "{}", group = "{}", project = "{}"'
                                      .format(hub, group, project))
         job_responses = []  # type: List[Dict[str, Any]]
