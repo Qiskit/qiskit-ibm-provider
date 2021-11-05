@@ -527,7 +527,9 @@ class IBMRuntimeService:
             skip: int = 0,
             pending: bool = None,
             program_id: str = None,
-            provider: str = None
+            hub: str = None,
+            group: str = None,
+            project: str = None
     ) -> List[RuntimeJob]:
         """Retrieve all runtime jobs, subject to optional filtering.
 
@@ -538,12 +540,18 @@ class IBMRuntimeService:
                 jobs are included. If ``False``, 'DONE', 'CANCELLED' and 'ERROR' jobs
                 are included.
             program_id: Filter by Program ID.
-            provider: Provider to filter jobs.
-                Should be in the following format {hub}/{group}/{project}.
+            hub: Filter by hub - hub, group, and project must all be specified.
+            group: Filter by group - hub, group, and project must all be specified.
+            project: Filter by project - hub, group, and project must all be specified.
 
         Returns:
             A list of runtime jobs.
         """
+        if any([hub, group, project]) and not all([hub, group, project]):
+            raise IBMInputValueError('If filtering by provider, the hub, group, '
+                                     'and project parameters must all be specified. '
+                                     'hub = "{}", group = "{}", project = "{}"'
+                                     .format(hub, group, project))
         job_responses = []  # type: List[Dict[str, Any]]
         current_page_limit = limit or 20
         offset = skip
@@ -554,7 +562,9 @@ class IBMRuntimeService:
                 skip=offset,
                 pending=pending,
                 program_id=program_id,
-                provider=provider)
+                hub=hub,
+                group=group,
+                project=project)
             job_page = jobs_response["jobs"]
             # count is the total number of jobs that would be returned if
             # there was no limit or skip
