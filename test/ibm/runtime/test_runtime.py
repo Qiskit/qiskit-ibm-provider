@@ -303,7 +303,7 @@ if __name__ == '__main__':
         self.assertIn(program_id, all_ids)
 
     def test_filter_programs_with_program_name(self):
-        """Test listing programs with the name parameter"""
+        """Test filter programs with the program name"""
         program_id = self._upload_program(name="sample-program")
         programs = self.runtime.programs(name="sample-program")
         all_ids = [prog.program_id for prog in programs]
