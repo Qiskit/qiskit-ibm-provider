@@ -39,7 +39,7 @@ class RuntimeClient:
                                      **credentials.connection_parameters())
         self.api = Runtime(self._session)
 
-    def list_programs(self, limit: int, skip: int) -> List[Dict]:
+    def list_programs(self, limit: int = None, skip: int = None) -> List[Dict]:
         """Return a list of runtime programs.
 
         Args:
@@ -47,7 +47,7 @@ class RuntimeClient:
             skip: The number of programs to skip.
 
         Returns:
-            A list of quantum programs.
+            A list of runtime programs.
         """
         return self.api.list_programs(limit, skip)
 

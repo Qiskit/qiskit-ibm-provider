@@ -108,7 +108,7 @@ class IBMRuntimeService:
         self._programs = {}  # type: Dict
 
     def pprint_programs(self, refresh: bool = False, detailed: bool = False,
-                        limit: int = 20, skip: int = 20) -> None:
+                        limit: int = 20, skip: int = 0) -> None:
         """Pretty print information about available runtime programs.
 
         Args:
