@@ -39,13 +39,17 @@ class RuntimeClient:
                                      **credentials.connection_parameters())
         self.api = Runtime(self._session)
 
-    def list_programs(self) -> Dict[str, Any]:
+    def list_programs(self, limit: int = None, skip: int = None) -> Dict[str, Any]:
         """Return a list of runtime programs.
 
+        Args:
+            limit: The number of programs to return.
+            skip: The number of programs to skip.
+
         Returns:
-            A list of quantum programs.
+            A list of runtime programs.
         """
-        return self.api.list_programs()
+        return self.api.list_programs(limit, skip)
 
     def program_create(
             self,
@@ -174,7 +178,16 @@ class RuntimeClient:
         logger.debug("Runtime job get response: %s", response)
         return response
 
-    def jobs_get(self, limit: int = None, skip: int = None, pending: bool = None) -> Dict:
+    def jobs_get(
+            self,
+            limit: int = None,
+            skip: int = None,
+            pending: bool = None,
+            program_id: str = None,
+            hub: str = None,
+            group: str = None,
+            project: str = None
+    ) -> Dict:
         """Get job data for all jobs.
 
         Args:
@@ -182,11 +195,16 @@ class RuntimeClient:
             skip: Number of results to skip.
             pending: Returns 'QUEUED' and 'RUNNING' jobs if True,
                 returns 'DONE', 'CANCELLED' and 'ERROR' jobs if False.
+            program_id: Filter by Program ID.
+            hub: Filter by hub - hub, group, and project must all be specified.
+            group: Filter by group - hub, group, and project must all be specified.
+            project: Filter by project - hub, group, and project must all be specified.
 
         Returns:
             JSON response.
         """
-        return self.api.jobs_get(limit=limit, skip=skip, pending=pending)
+        return self.api.jobs_get(limit=limit, skip=skip, pending=pending,
+                                 program_id=program_id, hub=hub, group=group, project=project)
 
     def job_results(self, job_id: str) -> str:
         """Get the results of a program job.

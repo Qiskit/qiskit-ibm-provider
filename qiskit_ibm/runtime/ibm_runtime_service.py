@@ -107,15 +107,19 @@ class IBMRuntimeService:
         self._ws_url = provider.credentials.runtime_url.replace('https', 'wss')
         self._programs = {}  # type: Dict
 
-    def pprint_programs(self, refresh: bool = False, detailed: bool = False) -> None:
+    def pprint_programs(self, refresh: bool = False, detailed: bool = False,
+                        limit: int = 20, skip: int = 0) -> None:
         """Pretty print information about available runtime programs.
 
         Args:
             refresh: If ``True``, re-query the server for the programs. Otherwise
                 return the cached value.
             detailed: If ``True`` print all details about available runtime programs.
+            limit: The number of programs returned at a time. Default and maximum
+                value of 20.
+            skip: The number of programs to skip.
         """
-        programs = self.programs(refresh)
+        programs = self.programs(refresh, limit, skip)
         for prog in programs:
             print("="*50)
             if detailed:
@@ -125,7 +129,8 @@ class IBMRuntimeService:
                 print(f"  Name: {prog.name}")
                 print(f"  Description: {prog.description}")
 
-    def programs(self, refresh: bool = False) -> List[RuntimeProgram]:
+    def programs(self, refresh: bool = False,
+                 limit: int = 20, skip: int = 0) -> List[RuntimeProgram]:
         """Return available runtime programs.
 
         Currently only program metadata is returned.
@@ -133,17 +138,34 @@ class IBMRuntimeService:
         Args:
             refresh: If ``True``, re-query the server for the programs. Otherwise
                 return the cached value.
+            limit: The number of programs returned at a time. ``None`` means no limit.
+            skip: The number of programs to skip.
 
         Returns:
             A list of runtime programs.
         """
+        if skip is None:
+            skip = 0
         if not self._programs or refresh:
             self._programs = {}
-            response = self._api_client.list_programs()
-            for prog_dict in response.get("programs", []):
-                program = self._to_program(prog_dict)
-                self._programs[program.program_id] = program
-        return list(self._programs.values())
+            current_page_limit = 20
+            offset = 0
+            while True:
+                response = self._api_client.list_programs(limit=current_page_limit, skip=offset)
+                program_page = response.get("programs", [])
+                # count is the total number of programs that would be returned if
+                # there was no limit or skip
+                count = response.get("count", 0)
+                for prog_dict in program_page:
+                    program = self._to_program(prog_dict)
+                    self._programs[program.program_id] = program
+                if len(self._programs) == count:
+                    # Stop if there are no more programs returned by the server.
+                    break
+                offset += len(program_page)
+        if limit is None:
+            limit = len(self._programs)
+        return list(self._programs.values())[skip:limit+skip]
 
     def program(self, program_id: str, refresh: bool = False) -> RuntimeProgram:
         """Retrieve a runtime program.
@@ -203,7 +225,9 @@ class IBMRuntimeService:
                               creation_date=response.get('creation_date', ""),
                               update_date=response.get('update_date', ""),
                               backend_requirements=backend_requirements,
-                              is_public=response.get('is_public', False))
+                              is_public=response.get('is_public', False),
+                              data=response.get('data', ""),
+                              api_client=self._api_client)
 
     def run(
             self,
@@ -429,6 +453,10 @@ class IBMRuntimeService:
                 raise RuntimeProgramNotFound(f"Program not found: {ex.message}") from None
             raise QiskitRuntimeError(f"Failed to update program: {ex}") from None
 
+        if program_id in self._programs:
+            program = self._programs[program_id]
+            program._refresh()
+
     def _merge_metadata(
             self,
             metadata: Optional[Dict] = None,
@@ -490,6 +518,10 @@ class IBMRuntimeService:
                 raise RuntimeJobNotFound(f"Program not found: {ex.message}") from None
             raise QiskitRuntimeError(f"Failed to set program visibility: {ex}") from None
 
+        if program_id in self._programs:
+            program = self._programs[program_id]
+            program._is_public = public
+
     def job(self, job_id: str) -> RuntimeJob:
         """Retrieve a runtime job.
 
@@ -515,7 +547,11 @@ class IBMRuntimeService:
             self,
             limit: Optional[int] = 10,
             skip: int = 0,
-            pending: bool = None
+            pending: bool = None,
+            program_id: str = None,
+            hub: str = None,
+            group: str = None,
+            project: str = None
     ) -> List[RuntimeJob]:
         """Retrieve all runtime jobs, subject to optional filtering.
 
@@ -525,10 +561,23 @@ class IBMRuntimeService:
             pending: Filter by job pending state. If ``True``, 'QUEUED' and 'RUNNING'
                 jobs are included. If ``False``, 'DONE', 'CANCELLED' and 'ERROR' jobs
                 are included.
+            program_id: Filter by Program ID.
+            hub: Filter by hub - hub, group, and project must all be specified.
+            group: Filter by group - hub, group, and project must all be specified.
+            project: Filter by project - hub, group, and project must all be specified.
 
         Returns:
             A list of runtime jobs.
+
+        Raises:
+            IBMInputValueError: If any but not all of the parameters ``hub``, ``group``
+                and ``project`` are given.
         """
+        if any([hub, group, project]) and not all([hub, group, project]):
+            raise IBMInputValueError('Hub, group and project '
+                                     'parameters must all be specified. '
+                                     'hub = "{}", group = "{}", project = "{}"'
+                                     .format(hub, group, project))
         job_responses = []  # type: List[Dict[str, Any]]
         current_page_limit = limit or 20
         offset = skip
@@ -537,7 +586,11 @@ class IBMRuntimeService:
             jobs_response = self._api_client.jobs_get(
                 limit=current_page_limit,
                 skip=offset,
-                pending=pending)
+                pending=pending,
+                program_id=program_id,
+                hub=hub,
+                group=group,
+                project=project)
             job_page = jobs_response["jobs"]
             # count is the total number of jobs that would be returned if
             # there was no limit or skip
