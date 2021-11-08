@@ -20,7 +20,6 @@ import traceback
 import queue
 from datetime import datetime
 
-from qiskit.providers.exceptions import JobTimeoutError
 from qiskit.providers.backend import Backend
 from qiskit.providers.jobstatus import JobStatus, JOB_FINAL_STATES
 
