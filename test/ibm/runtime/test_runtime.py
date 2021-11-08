@@ -309,12 +309,12 @@ if __name__ == '__main__':
         program_3 = self._upload_program()
         programs = self.runtime.programs(limit=2, skip=1)
         all_ids = [prog.program_id for prog in programs]
-        self.assertNotIn(program_3, all_ids)
-        self.assertIn(program_1, all_ids)
+        self.assertNotIn(program_1, all_ids)
         self.assertIn(program_2, all_ids)
+        self.assertIn(program_3, all_ids)
         programs = self.runtime.programs(limit=3)
         all_ids = [prog.program_id for prog in programs]
-        self.assertIn(program_3, all_ids)
+        self.assertIn(program_1, all_ids)
 
     def test_list_program(self):
         """Test listing a single program."""
