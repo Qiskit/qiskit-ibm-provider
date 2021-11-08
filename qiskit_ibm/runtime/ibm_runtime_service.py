@@ -529,7 +529,10 @@ class IBMRuntimeService:
             limit: Optional[int] = 10,
             skip: int = 0,
             pending: bool = None,
-            program_id: str = None
+            program_id: str = None,
+            hub: str = None,
+            group: str = None,
+            project: str = None
     ) -> List[RuntimeJob]:
         """Retrieve all runtime jobs, subject to optional filtering.
 
@@ -540,10 +543,22 @@ class IBMRuntimeService:
                 jobs are included. If ``False``, 'DONE', 'CANCELLED' and 'ERROR' jobs
                 are included.
             program_id: Filter by Program ID.
+            hub: Filter by hub - hub, group, and project must all be specified.
+            group: Filter by group - hub, group, and project must all be specified.
+            project: Filter by project - hub, group, and project must all be specified.
 
         Returns:
             A list of runtime jobs.
+
+        Raises:
+            IBMInputValueError: If any but not all of the parameters ``hub``, ``group``
+                and ``project`` are given.
         """
+        if any([hub, group, project]) and not all([hub, group, project]):
+            raise IBMInputValueError('Hub, group and project '
+                                     'parameters must all be specified. '
+                                     'hub = "{}", group = "{}", project = "{}"'
+                                     .format(hub, group, project))
         job_responses = []  # type: List[Dict[str, Any]]
         current_page_limit = limit or 20
         offset = skip
@@ -553,7 +568,10 @@ class IBMRuntimeService:
                 limit=current_page_limit,
                 skip=offset,
                 pending=pending,
-                program_id=program_id)
+                program_id=program_id,
+                hub=hub,
+                group=group,
+                project=project)
             job_page = jobs_response["jobs"]
             # count is the total number of jobs that would be returned if
             # there was no limit or skip
