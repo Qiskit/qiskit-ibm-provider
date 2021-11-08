@@ -43,7 +43,7 @@ class RuntimeClient:
         """Return a list of runtime programs.
 
         Args:
-            limit: limit: The maxiumum number of programs to return.
+            limit: The number of programs to return.
             skip: The number of programs to skip.
 
         Returns:
