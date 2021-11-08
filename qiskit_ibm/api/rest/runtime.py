@@ -65,7 +65,7 @@ class Runtime(RestAdapterBase):
             JSON response.
         """
         url = self.get_url('programs')
-        payload: Dict[str, Union[str]] = {}
+        payload: Dict[str, str] = {}
         if name:
             payload['name'] = name
         response = self.session.get(url, params=payload).json()
