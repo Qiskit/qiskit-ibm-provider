@@ -55,7 +55,7 @@ class Runtime(RestAdapterBase):
         """
         return ProgramJob(self.session, job_id)
 
-    def list_programs(self, limit: int = None, skip: int = None) -> List[Dict]:
+    def list_programs(self, limit: int = None, skip: int = None) -> Dict[str, Any]:
         """Return a list of runtime programs.
 
         Args:
@@ -71,8 +71,7 @@ class Runtime(RestAdapterBase):
             payload['limit'] = limit
         if skip:
             payload['offset'] = skip
-        response = self.session.get(url, params=payload).json()
-        return response
+        return self.session.get(url, params=payload).json()
 
     def create_program(
             self,
