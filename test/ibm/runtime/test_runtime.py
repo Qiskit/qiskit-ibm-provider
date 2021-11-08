@@ -308,7 +308,7 @@ if __name__ == '__main__':
         programs = self.runtime.programs(name="qiskit-test-sample")
         all_ids = [prog.program_id for prog in programs]
         self.assertIn(program_id, all_ids)
-        programs = self.runtime.programs(name="fafewfe")
+        programs = self.runtime.programs(name="qiskit-test")
         all_ids = [prog.program_id for prog in programs]
         self.assertNotIn(program_id, all_ids)
 
