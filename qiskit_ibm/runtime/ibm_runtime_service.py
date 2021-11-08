@@ -108,7 +108,7 @@ class IBMRuntimeService:
         self._programs = {}  # type: Dict
 
     def pprint_programs(self, refresh: bool = False, detailed: bool = False,
-                        name: Optional[str] = "") -> None:
+                        name: Optional[str] = "", limit: int = 20, skip: int = 0) -> None:
         """Pretty print information about available runtime programs.
 
         Args:
@@ -116,8 +116,11 @@ class IBMRuntimeService:
                 return the cached value.
             detailed: If ``True`` print all details about available runtime programs.
             name: Only retrieve programs with the exact program name given.
+            limit: The number of programs returned at a time. Default and maximum
+                value of 20.
+            skip: The number of programs to skip.
         """
-        programs = self.programs(refresh, name)
+        programs = self.programs(refresh, name, limit, skip)
         for prog in programs:
             print("="*50)
             if detailed:
@@ -127,7 +130,8 @@ class IBMRuntimeService:
                 print(f"  Name: {prog.name}")
                 print(f"  Description: {prog.description}")
 
-    def programs(self, refresh: bool = False, name: Optional[str] = "") -> List[RuntimeProgram]:
+    def programs(self, refresh: bool = False, name: Optional[str] = "",
+                 limit: int = 20, skip: int = 0) -> List[RuntimeProgram]:
         """Return available runtime programs.
 
         Currently only program metadata is returned.
@@ -136,17 +140,43 @@ class IBMRuntimeService:
             refresh: If ``True``, re-query the server for the programs. Otherwise
                 return the cached value.
             name: Only retrieve programs with the exact program name given.
+            limit: The number of programs returned at a time. ``None`` means no limit.
+            skip: The number of programs to skip.
 
         Returns:
             A list of runtime programs.
         """
-        if not self._programs or refresh or name:
+        if skip is None:
+            skip = 0
+        if name:
+            matched_programs = []
+            for prog in self._programs.values():
+                if prog.name == name:
+                    matched_programs.append(prog)
+            if matched_programs:
+                return matched_programs
+            refresh = True
+        if not self._programs or refresh:
             self._programs = {}
-            response = self._api_client.list_programs(name)
-            for prog_dict in response.get("programs", []):
-                program = self._to_program(prog_dict)
-                self._programs[program.program_id] = program
-        return list(self._programs.values())
+            current_page_limit = 20
+            offset = 0
+            while True:
+                response = self._api_client.list_programs(name=name, limit=current_page_limit,
+                                                          skip=offset)
+                program_page = response.get("programs", [])
+                # count is the total number of programs that would be returned if
+                # there was no limit or skip
+                count = response.get("count", 0)
+                for prog_dict in program_page:
+                    program = self._to_program(prog_dict)
+                    self._programs[program.program_id] = program
+                if len(self._programs) == count:
+                    # Stop if there are no more programs returned by the server.
+                    break
+                offset += len(program_page)
+        if limit is None:
+            limit = len(self._programs)
+        return list(self._programs.values())[skip:limit+skip]
 
     def program(self, program_id: str, refresh: bool = False) -> RuntimeProgram:
         """Retrieve a runtime program.
