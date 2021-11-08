@@ -202,12 +202,8 @@ class RuntimeJob:
         if not self._is_streaming():
             self._ws_client_future = self._executor.submit(self._start_websocket_client)
         stream_status = self._is_streaming()
-        start_time = time.time()
         while stream_status:
-            elapsed_time = time.time() - start_time
-            if timeout is not None and elapsed_time >= timeout:
-                raise JobTimeoutError(
-                    'Timeout while waiting for job {}.'.format(self.job_id))
+            self._ws_client_future.result(timeout)
             time.sleep(wait)
             stream_status = self._is_streaming()
         self.status()
