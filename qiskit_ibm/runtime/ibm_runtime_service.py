@@ -108,7 +108,7 @@ class IBMRuntimeService:
         self._programs = {}  # type: Dict
 
     def pprint_programs(self, refresh: bool = False, detailed: bool = False,
-                        limit: int = None, skip: int = None) -> None:
+                        limit: int = 20, skip: int = 20) -> None:
         """Pretty print information about available runtime programs.
 
         Args:
@@ -152,7 +152,7 @@ class IBMRuntimeService:
                 skip = 0
             self._programs = {}
             response = self._api_client.list_programs(limit, skip)
-            for prog_dict in response:
+            for prog_dict in response.get("programs", []):
                 program = self._to_program(prog_dict)
                 self._programs[program.program_id] = program
         return list(self._programs.values())

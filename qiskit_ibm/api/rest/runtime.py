@@ -72,7 +72,7 @@ class Runtime(RestAdapterBase):
         if skip:
             payload['offset'] = skip
         response = self.session.get(url, params=payload).json()
-        return response['programs']
+        return response
 
     def create_program(
             self,
