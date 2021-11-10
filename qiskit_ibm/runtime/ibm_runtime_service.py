@@ -150,7 +150,7 @@ class IBMRuntimeService:
             skip = 0
         if name:
             matched_programs = []
-            for prog in self._programs.values():
+            for prog in list(self._programs.values())[skip:limit+skip]:
                 if prog.name == name:
                     matched_programs.append(prog)
             if matched_programs:
