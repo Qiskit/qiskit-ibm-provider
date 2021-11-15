@@ -90,15 +90,13 @@ def _decode_and_deserialize(data: str, deserializer: Callable, decompress: bool 
     Returns:
         Deserialized data.
     """
-    buff = io.BytesIO()
     decoded = base64.standard_b64decode(data)
     if decompress:
         decoded = zlib.decompress(decoded)
-    buff.write(decoded)
-    buff.seek(0)
-    orig = deserializer(buff)
-    buff.close()
-    return orig
+    with io.BytesIO() as buff:
+        buff.write(decoded)
+        buff.seek(0)
+        return deserializer(buff)
 
 
 def deserialize_from_settings(mod_name: str, class_name: str, settings: Dict) -> Any:
