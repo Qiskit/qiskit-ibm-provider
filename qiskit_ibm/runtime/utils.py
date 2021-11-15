@@ -69,11 +69,11 @@ def _serialize_and_encode(
     Returns:
         String representation.
     """
-    buff = io.BytesIO()
-    serializer(buff, data, **kwargs)
-    buff.seek(0)
-    serialized_data = buff.read()
-    buff.close()
+    with io.BytesIO() as buff:
+        serializer(buff, data, **kwargs)
+        buff.seek(0)
+        serialized_data = buff.read()
+
     if compress:
         serialized_data = zlib.compress(serialized_data)
     return base64.standard_b64encode(serialized_data).decode("utf-8")

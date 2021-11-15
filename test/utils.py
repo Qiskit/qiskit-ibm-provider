@@ -22,6 +22,7 @@ from qiskit.test.reference_circuits import ReferenceCircuits
 from qiskit.pulse import Schedule
 from qiskit.providers.exceptions import JobError
 from qiskit.providers.jobstatus import JobStatus
+from qiskit.circuit.library import QuantumVolume
 from qiskit_ibm.ibm_provider import IBMProvider
 from qiskit_ibm.ibm_backend import IBMBackend
 from qiskit_ibm.job import IBMJob
@@ -157,14 +158,18 @@ def submit_job_one_bad_instr(backend: IBMBackend) -> IBMJob:
         Submitted job.
     """
     qc_new = transpile(ReferenceCircuits.bell(), backend)
-    if backend.configuration().simulator:
-        # Specify method so it doesn't fail at method selection.
-        qobj = assemble([qc_new]*2, backend=backend, method="statevector")
-    else:
-        qobj = assemble([qc_new]*2, backend=backend)
-    qobj.experiments[1].instructions[1].name = 'bad_instruction'
-    job = backend._submit_job(qobj)
-    return job
+    qv = QuantumVolume(5)
+    qv.measure_all()
+    return backend.run([qc_new, qv], shots=100)
+
+    # if backend.configuration().simulator:
+    #     # Specify method so it doesn't fail at method selection.
+    #     qobj = assemble([qc_new]*2, backend=backend, method="statevector")
+    # else:
+    #     qobj = assemble([qc_new]*2, backend=backend)
+    # qobj.experiments[1].instructions[1].name = 'bad_instruction'
+    # job = backend._submit_job(qobj)
+    # return job
 
 
 def submit_and_cancel(backend: IBMBackend) -> IBMJob:
