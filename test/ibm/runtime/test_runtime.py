@@ -425,7 +425,7 @@ if __name__ == '__main__':
         self.assertIsInstance(job.status(), JobStatus)
         self.assertEqual(job.inputs, params)
         with mock.patch.object(RuntimeJob, 'wait_for_final_state',
-                               side_effect=time.sleep(5)):
+                               side_effect=time.sleep(1)):
             job.wait_for_final_state()
             self.assertTrue(job.result())
         self.assertEqual(job.status(), JobStatus.DONE)
@@ -440,7 +440,7 @@ if __name__ == '__main__':
         self.assertIsInstance(job.status(), JobStatus)
         self.assertEqual(job.inputs, params)
         with mock.patch.object(RuntimeJob, 'wait_for_final_state',
-                               side_effect=time.sleep(5)):
+                               side_effect=time.sleep(1)):
             job.wait_for_final_state()
             self.assertTrue(job.result())
         self.assertEqual(job.status(), JobStatus.DONE)
@@ -484,7 +484,7 @@ if __name__ == '__main__':
         """Test a failed program execution."""
         job = self._run_program(job_classes=FailedRuntimeJob)
         with mock.patch.object(RuntimeJob, 'wait_for_final_state',
-                               side_effect=time.sleep(5)):
+                               side_effect=time.sleep(1)):
             job.wait_for_final_state()
         job_result_raw = self.runtime._api_client.job_results(job.job_id)
         self.assertEqual(JobStatus.ERROR, job.status())
@@ -492,14 +492,14 @@ if __name__ == '__main__':
             job.job_id, job_result_raw), job.error_message())
         with self.assertRaises(RuntimeJobFailureError):
             with mock.patch.object(RuntimeJob, 'wait_for_final_state',
-                                   side_effect=time.sleep(5)):
+                                   side_effect=time.sleep(1)):
                 job.result()
 
     def test_run_program_failed_ran_too_long(self):
         """Test a program that failed since it ran longer than maxiumum execution time."""
         job = self._run_program(job_classes=FailedRanTooLongRuntimeJob)
         with mock.patch.object(RuntimeJob, 'wait_for_final_state',
-                               side_effect=time.sleep(5)):
+                               side_effect=time.sleep(1)):
             job.wait_for_final_state()
         job_result_raw = self.runtime._api_client.job_results(job.job_id)
         self.assertEqual(JobStatus.ERROR, job.status())
@@ -507,7 +507,7 @@ if __name__ == '__main__':
             job.job_id, job_result_raw), job.error_message())
         with self.assertRaises(RuntimeJobFailureError):
             with mock.patch.object(RuntimeJob, 'wait_for_final_state',
-                                   side_effect=time.sleep(5)):
+                                   side_effect=time.sleep(1)):
                 job.result()
 
     def test_retrieve_job(self):
@@ -643,7 +643,7 @@ if __name__ == '__main__':
         job = self._run_program(program_id=program_id)
         job_1 = self._run_program(program_id=program_id_1)
         with mock.patch.object(RuntimeJob, 'wait_for_final_state',
-                               side_effect=time.sleep(5)):
+                               side_effect=time.sleep(1)):
             job.wait_for_final_state()
             job_1.wait_for_final_state()
         rjobs = self.runtime.jobs(program_id=program_id)
@@ -656,7 +656,7 @@ if __name__ == '__main__':
         job = self._run_program(program_id=program_id,
                                 hub="defaultHub", group="defaultGroup", project="defaultProject")
         with mock.patch.object(RuntimeJob, 'wait_for_final_state',
-                               side_effect=time.sleep(5)):
+                               side_effect=time.sleep(1)):
             job.wait_for_final_state()
         rjobs = self.runtime.jobs(program_id=program_id,
                                   hub="defaultHub", group="defaultGroup", project="defaultProject")
@@ -681,7 +681,7 @@ if __name__ == '__main__':
         """Test getting final result."""
         job = self._run_program()
         with mock.patch.object(RuntimeJob, 'wait_for_final_state',
-                               side_effect=time.sleep(5)):
+                               side_effect=time.sleep(1)):
             result = job.result()
         self.assertTrue(result)
 
@@ -707,7 +707,7 @@ if __name__ == '__main__':
         """Test wait for final state."""
         job = self._run_program()
         with mock.patch.object(RuntimeJob, 'wait_for_final_state',
-                               side_effect=time.sleep(5)):
+                               side_effect=time.sleep(1)):
             job.wait_for_final_state()
         self.assertEqual(JobStatus.DONE, job.status())
 
@@ -722,7 +722,7 @@ if __name__ == '__main__':
             with self.subTest(decoder=decoder):
                 job = self._run_program(job_classes=job_cls, decoder=result_decoder)
                 with mock.patch.object(RuntimeJob, 'wait_for_final_state',
-                                       side_effect=time.sleep(5)):
+                                       side_effect=time.sleep(1)):
                     result = job.result(decoder=decoder)
                 self.assertIsInstance(result['serializable_class'], SerializableClass)
 
@@ -734,7 +734,7 @@ if __name__ == '__main__':
 
         job = self._run_program(job_classes=job_cls)
         with mock.patch.object(RuntimeJob, 'wait_for_final_state',
-                               side_effect=time.sleep(5)):
+                               side_effect=time.sleep(1)):
             _ = job.result()
             _ = job.result()
 
