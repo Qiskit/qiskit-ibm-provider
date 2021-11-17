@@ -13,7 +13,6 @@
 """Qiskit runtime job."""
 
 from typing import Any, Optional, Callable, Dict, Type
-import time
 import logging
 from concurrent import futures
 import traceback
