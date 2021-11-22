@@ -1,6 +1,0 @@
----
-other:
-  - |
-    If using ``requirements-dev.txt``, ``qiskit-experiments`` will now
-    be installed from released versions on PyPI rather than from the ``main``
-    branch in the qiskit-experiments GitHub repository.
