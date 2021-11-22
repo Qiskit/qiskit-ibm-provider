@@ -329,6 +329,7 @@ class TestExperimentDataIntegration(IBMTestCase):
         job = self._run_circuit()
         exp_data.add_data(job)
         exp_data.save()
+        self.experiments_to_delete.append(exp_data.experiment_id)
 
         rexp = self.experiment.experiment(exp_data.experiment_id)
         self.assertEqual([job.job_id()], rexp["job_ids"])
