@@ -260,6 +260,7 @@ class Api(RestAdapterBase):
             quality: Optional[List[str]] = None,
             verified: Optional[bool] = None,
             tags: Optional[List[str]] = None,
+            created_at: Optional[List] = None,
             sort_by: Optional[str] = None
     ) -> str:
         """Return all analysis results.
@@ -274,6 +275,7 @@ class Api(RestAdapterBase):
             quality: Quality value used for filtering.
             verified: Indicates whether this result has been verified.
             tags: Filter by tags assigned to analysis results.
+            created_at: A list of timestamps used to filter by creation time.
             sort_by: Indicates how the output should be sorted.
 
         Returns:
@@ -299,6 +301,8 @@ class Api(RestAdapterBase):
             params["verified"] = "true" if verified else "false"
         if tags:
             params['tags'] = tags
+        if created_at:
+            params['created_at'] = created_at
         if sort_by:
             params['sort'] = sort_by
         return self.session.get(url, params=params).text
