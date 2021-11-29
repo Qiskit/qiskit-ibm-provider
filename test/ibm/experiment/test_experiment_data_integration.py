@@ -310,7 +310,9 @@ class TestExperimentDataIntegration(IBMTestCase):
         exp_data.save()
 
         rexp = DbExperimentData.load(exp_data.experiment_id, self.experiment)
-        self.assertEqual(["foo", "bar"], rexp.tags)
+        # Experiment tag order is not necessarily preserved by qiskit-experiments
+        # so compare tags with a predictable sort order.
+        self.assertEqual(["bar", "foo"], sorted(rexp.tags))
         self.assertEqual(aresult.result_id, rexp.analysis_results(0).result_id)
         self.assertEqual(hello_bytes, rexp.figure(0))
 
@@ -329,6 +331,7 @@ class TestExperimentDataIntegration(IBMTestCase):
         job = self._run_circuit()
         exp_data.add_data(job)
         exp_data.save()
+        self.experiments_to_delete.append(exp_data.experiment_id)
 
         rexp = self.experiment.experiment(exp_data.experiment_id)
         self.assertEqual([job.job_id()], rexp["job_ids"])
