@@ -1,0 +1,6 @@
+---
+features:
+  - |
+    Analysis results can now be filtered by ``creation_datetime_after`` and
+    ``creation_datetime_before`` in 
+    :meth:`qiskit_ibm.experiment.IBMExperimentService.analysis_results`.

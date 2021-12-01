@@ -858,6 +858,45 @@ class TestExperimentServerIntegration(IBMTestCase):
                 with self.assertRaises(ValueError):
                     self.provider.experiment.analysis_results(sort_by=sort_by)
 
+    def test_analysis_results_with_creation_datetime(self):
+        """Test retrieving analysis_results with creation_datetime"""
+        # Create an analysis_result and get it back to get its creation_datetime value.
+        result1_id = self._create_analysis_result()
+        result1 = self.provider.experiment.analysis_result(result1_id)
+        self.assertIn('creation_datetime', result1)
+        self.assertIsNotNone(result1['creation_datetime'])
+        cdt1 = result1['creation_datetime']
+        # Assert that the UTC timestamp was converted to the local time.
+        self.assertIsNotNone(cdt1.tzinfo)
+        self.log.debug('Created first analysis result %s with creation_datetime %s',
+                       result1_id, cdt1.isoformat())
+        # Get the analysis result back using the exact creation timestamp
+        # using both ge and le prefixes.
+        results = self.provider.experiment.analysis_results(
+            creation_datetime_after=cdt1,
+            creation_datetime_before=cdt1
+        )
+        # Chances are that we should only get exactly one analysis result
+        # back but to be safe check for at least 1.
+        self.assertGreaterEqual(len(results), 1, results)
+        result_ids = [r['result_id'] for r in results]
+        self.assertIn(result1_id, result_ids)
+        # Create another analysis result on the same experiment.
+        result2_id = self._create_analysis_result(exp_id=result1['experiment_id'])
+        result2 = self.provider.experiment.analysis_result(result2_id)
+        cdt2 = result2['creation_datetime']
+        self.log.debug('Created second analysis result %s with creation_datetime %s',
+                       result2_id, cdt2.isoformat())
+        # Get both results using their creation timestamps as a range.
+        results = self.provider.experiment.analysis_results(
+            creation_datetime_after=cdt1,
+            creation_datetime_before=cdt2
+        )
+        self.assertGreaterEqual(len(results), 2, results)
+        result_ids = [r['result_id'] for r in results]
+        for result_id in [result1_id, result2_id]:
+            self.assertIn(result_id, result_ids)
+
     def test_delete_analysis_result(self):
         """Test deleting an analysis result."""
         result_id = self._create_analysis_result()
