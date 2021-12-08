@@ -150,7 +150,7 @@ class IBMBackend(Backend):
             job_tags: Optional[List[str]] = None,
             max_circuits_per_job: Optional[int] = None,
             header: Optional[Dict] = None,
-            shots: Optional[int] = None,
+            shots: Optional[Union[int, float]] = None,
             memory: Optional[bool] = None,
             qubit_lo_freq: Optional[List[int]] = None,
             meas_lo_freq: Optional[List[int]] = None,
@@ -264,9 +264,11 @@ class IBMBackend(Backend):
                 "ESP readout not supported on this device. Please make sure the flag "
                 "'use_measure_esp' is unset or set to 'False'."
             )
-
         if not self.configuration().simulator:
             self._deprecate_id_instruction(circuits)
+
+        if isinstance(shots, float):
+            shots = int(shots)
 
         run_config_dict = self._get_run_config(
             qobj_header=header,
