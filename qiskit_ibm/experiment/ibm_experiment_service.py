@@ -747,7 +747,7 @@ class IBMExperimentService:
             result_id: str,
             json_decoder: Type[json.JSONDecoder] = json.JSONDecoder
     ) -> Dict:
-        """Retrieve a previously stored experiment.
+        """Retrieve a previously stored analysis result.
 
         Args:
             result_id: Analysis result ID.
@@ -779,6 +779,8 @@ class IBMExperimentService:
             verified: Optional[bool] = None,
             tags: Optional[List[str]] = None,
             tags_operator: Optional[str] = "OR",
+            creation_datetime_after: Optional[datetime] = None,
+            creation_datetime_before: Optional[datetime] = None,
             sort_by: Optional[Union[str, List[str]]] = None,
             **filters: Any
     ) -> List[Dict]:
@@ -823,6 +825,12 @@ class IBMExperimentService:
                     * If "OR" is specified, then an analysis result only needs to have any
                       of the tags specified in `tags` to be included.
 
+            creation_datetime_after: Filter by the given creation timestamp, in local time.
+                This is used to find analysis results whose creation date/time is after
+                (greater than or equal to) this local timestamp.
+            creation_datetime_before: Filter by the given creation timestamp, in local time.
+                This is used to find analysis results whose creation date/time is before
+                (less than or equal to) this local timestamp.
             sort_by: Specifies how the output should be sorted. This can be a single sorting
                 option or a list of options. Each option should contain a sort key
                 and a direction. Valid sort keys are "creation_datetime", "device_components",
@@ -855,6 +863,14 @@ class IBMExperimentService:
 
         quality = self._quality_filter_to_api(quality)
 
+        created_at_filters = []
+        if creation_datetime_after:
+            ca_filter = 'ge:{}'.format(local_to_utc_str(creation_datetime_after))
+            created_at_filters.append(ca_filter)
+        if creation_datetime_before:
+            ca_filter = 'le:{}'.format(local_to_utc_str(creation_datetime_before))
+            created_at_filters.append(ca_filter)
+
         converted = self._filtering_to_api(
             tags=tags,
             tags_operator=tags_operator,
@@ -882,6 +898,7 @@ class IBMExperimentService:
                     quality=quality,
                     verified=verified,
                     tags=converted["tags"],
+                    created_at=created_at_filters,
                     sort_by=converted["sort_by"]
                 )
             raw_data = json.loads(response, cls=json_decoder)
@@ -1000,7 +1017,7 @@ class IBMExperimentService:
             self,
             raw_data: Dict,
     ) -> Dict:
-        """Map API response to an AnalysisResult instance.
+        """Map API response to a dictionary representing an analysis result.
 
         Args:
             raw_data: API response data.
