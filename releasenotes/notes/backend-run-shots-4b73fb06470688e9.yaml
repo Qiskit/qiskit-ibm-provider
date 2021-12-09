@@ -1,0 +1,6 @@
+---
+upgrade:
+  - |
+    Floats can now be use when setting the number of ``shots`` 
+    in :meth:`qiskit_ibm.IBMBackend.run`.
+    
