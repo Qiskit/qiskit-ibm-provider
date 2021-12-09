@@ -111,6 +111,10 @@ The Qiskit IBM Quantum Provider is the work of [many people] who contribute to t
 project at different levels. If you use Qiskit, please cite as per the included
 [BibTeX file].
 
+## Release Notes
+
+Qiskit [Release Notes]
+
 ## License
 
 [Apache License 2.0].
@@ -130,3 +134,4 @@ project at different levels. If you use Qiskit, please cite as per the included
 [BibTeX file]: https://github.com/Qiskit/qiskit/blob/master/Qiskit.bib
 [Apache License 2.0]: https://github.com/Qiskit-Partners/qiskit-ibm/blob/main/LICENSE.txt
 [migration guide]: https://github.com/Qiskit-Partners/qiskit-ibm/blob/main/MIGRATING.md
+[Release Notes]: https://qiskit.org/documentation/release_notes.html
