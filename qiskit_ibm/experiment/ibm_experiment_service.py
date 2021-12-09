@@ -96,6 +96,15 @@ class IBMExperimentService:
         self._api_client = ExperimentClient(provider.credentials)
         self._preferences = copy.deepcopy(self._default_preferences)
         self._preferences.update(provider.credentials.preferences.get('experiments', {}))
+        self._prompt_for_delete = True
+
+    def set_option(self, prompt_for_delete: bool = True) -> None:
+        """Set the value of prompt_for_delete.
+
+        Args:
+            prompt_for_delete: boolean value to update
+        """
+        self._prompt_for_delete = prompt_for_delete
 
     def backends(self) -> List[Dict]:
         """Return a list of backends that can be used for experiments.
@@ -562,10 +571,12 @@ class IBMExperimentService:
         Raises:
             IBMApiError: If the request to the server failed.
         """
-        confirmation = input('\nAre you sure you want to delete the experiment? '
-                             'Results and plots for the experiment will also be deleted. [y/N]: ')
-        if confirmation not in ('y', 'Y'):
-            return
+        if self._prompt_for_delete:
+            confirmation = input('\nAre you sure you want to delete the experiment? '
+                                 'Results and plots for the experiment '
+                                 'will also be deleted. [y/N]: ')
+            if confirmation not in ('y', 'Y'):
+                return
 
         try:
             self._api_client.experiment_delete(experiment_id)
@@ -1071,9 +1082,10 @@ class IBMExperimentService:
         Raises:
             IBMApiError: If the request to the server failed.
         """
-        confirmation = input('\nAre you sure you want to delete the analysis result? [y/N]: ')
-        if confirmation not in ('y', 'Y'):
-            return
+        if self._prompt_for_delete:
+            confirmation = input('\nAre you sure you want to delete the analysis result? [y/N]: ')
+            if confirmation not in ('y', 'Y'):
+                return
 
         try:
             self._api_client.analysis_result_delete(result_id)
@@ -1201,9 +1213,10 @@ class IBMExperimentService:
         Raises:
             IBMApiError: If the request to the server failed.
         """
-        confirmation = input('\nAre you sure you want to delete the experiment plot? [y/N]: ')
-        if confirmation not in ('y', 'Y'):
-            return
+        if self._prompt_for_delete:
+            confirmation = input('\nAre you sure you want to delete the experiment plot? [y/N]: ')
+            if confirmation not in ('y', 'Y'):
+                return
 
         try:
             self._api_client.experiment_plot_delete(experiment_id, figure_name)

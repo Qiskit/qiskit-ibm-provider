@@ -1,0 +1,9 @@
+---
+upgrade:
+  - |
+    There is a new method :meth:`qiskit_ibm.IBMExperimentService.set_option` that takes 
+    the parameter ``prompt_for_delete`` and defaults to ``True``. 
+    When ``True``, deleting experiments, analysis results, and figures will 
+    prompt the user as usual. When set to ``False``, the prompt will be skipped.
+
+
