@@ -1,6 +1,6 @@
 # Qiskit IBM Provider
 
-[![License](https://img.shields.io/github/license/Qiskit-Partners/qiskit-ibm.svg?style=popout-square)](https://opensource.org/licenses/Apache-2.0)[![Push-Test](https://github.com/Qiskit-Partners/qiskit-ibm/actions/workflows/main.yml/badge.svg)](https://github.com/Qiskit-Partners/qiskit-ibm/actions/workflows/main.yml)[![](https://img.shields.io/github/release/Qiskit-Partners/qiskit-ibm.svg?style=popout-square)](https://github.com/Qiskit-Partners/qiskit-ibm/releases)[![](https://img.shields.io/pypi/dm/qiskit-ibm.svg?style=popout-square)](https://pypi.org/project/qiskit-ibm/)
+[![License](https://img.shields.io/github/license/Qiskit/qiskit-ibm-provider.svg?style=popout-square)](https://opensource.org/licenses/Apache-2.0)[![Push-Test](https://github.com/Qiskit/qiskit-ibm-provider/actions/workflows/main.yml/badge.svg)](https://github.com/Qiskit/qiskit-ibm-provider/actions/workflows/main.yml)[![](https://img.shields.io/github/release/Qiskit/qiskit-ibm-provider.svg?style=popout-square)](https://github.com/Qiskit/qiskit-ibm-provider/releases)[![](https://img.shields.io/pypi/dm/qiskit-ibm.svg?style=popout-square)](https://pypi.org/project/qiskit-ibm/)
 
 **Qiskit** is an open-source SDK for working with quantum computers at the level of circuits, algorithms, and application modules.
 
@@ -15,7 +15,7 @@ If you are migrating from `qiskit-ibmq-provider` please follow the instructions 
 You can install the provider using pip:
 
 ```bash
-pip install qiskit-ibm
+pip install qiskit-ibm-provider
 ```
 
 ## Provider Setup
@@ -120,13 +120,13 @@ project at different levels. If you use Qiskit, please cite as per the included
 [IBM Quantum login page]:  https://quantum-computing.ibm.com/login
 [IBM Quantum account page]: https://quantum-computing.ibm.com/account
 [contribution guidelines]: https://github.com/Qiskit-Partners/qiskit-ibm/blob/main/CONTRIBUTING.md
-[code of conduct]: https://github.com/Qiskit-Partners/qiskit-ibm/blob/main/CODE_OF_CONDUCT.md
-[GitHub issues]: https://github.com/Qiskit-Partners/qiskit-ibm/issues
+[code of conduct]: https://github.com/Qiskit/qiskit-ibm-provider/blob/main/CODE_OF_CONDUCT.md
+[GitHub issues]: https://github.com/Qiskit/qiskit-ibm-provider/issues
 [slack]: https://qiskit.slack.com
 [Qiskit.org]: https://qiskit.org
 [Stack Exchange]: https://quantumcomputing.stackexchange.com/questions/tagged/qiskit
 [Qiskit Tutorial]: https://github.com/Qiskit/qiskit-tutorial
-[many people]: https://github.com/Qiskit-Partners/qiskit-ibm/graphs/contributors
+[many people]: https://github.com/Qiskit/qiskit-ibm-provider/graphs/contributors
 [BibTeX file]: https://github.com/Qiskit/qiskit/blob/master/Qiskit.bib
-[Apache License 2.0]: https://github.com/Qiskit-Partners/qiskit-ibm/blob/main/LICENSE.txt
-[migration guide]: https://github.com/Qiskit-Partners/qiskit-ibm/blob/main/MIGRATING.md
+[Apache License 2.0]: https://github.com/Qiskit/qiskit-ibm-provider/blob/main/LICENSE.txt
+[migration guide]: https://github.com/Qiskit/qiskit-ibm-provider/blob/main/MIGRATING.md

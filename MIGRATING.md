@@ -1,13 +1,13 @@
 # Migrating from qiskit-ibmq-provider>=0.16
 
 ## Installation
-The Qiskit IBM Provider is now distributed as a separate PyPI package called `qiskit-ibm`. You can install the provider using pip:
+The Qiskit IBM Provider is now distributed as a separate PyPI package called `qiskit-ibm-provider`. You can install the provider using pip:
 
 ```bash
-pip install qiskit-ibm
+pip install qiskit-ibm-provider
 ```
 
-Note: `qiskit-ibm` is not part of the `qiskit` meta package and hence will not be included when you `pip install qiskit`.
+Note: `qiskit-ibm-provider` is not part of the `qiskit` meta package and hence will not be included when you `pip install qiskit`.
 
 ## Breaking Changes
 1. The `IBMQ` global variable which was an instance of the `IBMQFactory` has been removed.
@@ -214,7 +214,7 @@ result = job.result()
 
     If you are a contributor or internal user of Qiskit IBM Provider please see the [Appendix] for a complete list of environment variable changes.
 
-[README]: https://github.com/Qiskit-Partners/qiskit-ibm/blob/main/README.md
+[README]: https://github.com/Qiskit/qiskit-ibm-provider/blob/main/README.md
 
 ## Appendix
 ### Class Name changes
