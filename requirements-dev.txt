@@ -25,4 +25,3 @@ qiskit_rng
 qiskit-aer
 websockets>=8
 scikit-quant;platform_system != 'Windows'
-qiskit-experiments; python_version > '3.6'

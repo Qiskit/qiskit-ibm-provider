@@ -37,7 +37,6 @@ from .credentials.exceptions import HubGroupProjectInvalidStateError
 from .ibm_backend_service import IBMBackendService  # pylint: disable=cyclic-import
 from .utils.json_decoder import decode_backend_configuration
 from .random.ibm_random_service import IBMRandomService  # pylint: disable=cyclic-import
-from .experiment import IBMExperimentService  # pylint: disable=cyclic-import
 from .runtime.ibm_runtime_service import IBMRuntimeService  # pylint: disable=cyclic-import
 from .exceptions import (IBMNotAuthorizedError, IBMInputValueError, IBMProviderCredentialsNotFound,
                          IBMProviderCredentialsInvalidFormat, IBMProviderCredentialsInvalidToken,
@@ -417,8 +416,6 @@ class IBMProvider(Provider):
             self._backend = IBMBackendService(self)
             # Initialize other services.
             self._random = IBMRandomService(self) if self.credentials.extractor_url else None
-            self._experiment = IBMExperimentService(self) \
-                if self.credentials.experiment_url else None
             self._runtime = IBMRuntimeService(self) \
                 if self.credentials.runtime_url else None
             self._services = {'backend': self._backend,
@@ -492,22 +489,6 @@ class IBMProvider(Provider):
             The backend service instance.
         """
         return self._backend
-
-    @property
-    def experiment(self) -> IBMExperimentService:
-        """Return the experiment service.
-
-        Returns:
-            The experiment service instance.
-
-        Raises:
-            IBMNotAuthorizedError: If the account is not authorized to use
-                the experiment service.
-        """
-        if self._experiment:
-            return self._experiment
-        else:
-            raise IBMNotAuthorizedError("You are not authorized to use the experiment service.")
 
     @property
     def random(self) -> IBMRandomService:
