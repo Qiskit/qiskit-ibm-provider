@@ -420,7 +420,6 @@ class IBMProvider(Provider):
                 if self.credentials.runtime_url else None
             self._services = {'backend': self._backend,
                               'random': self._random,
-                              'experiment': self._experiment,
                               'runtime': self._runtime}
 
     @property
