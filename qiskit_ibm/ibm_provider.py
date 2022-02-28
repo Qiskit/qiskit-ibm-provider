@@ -515,7 +515,6 @@ class IBMProvider(Provider):
         else:
             raise IBMNotAuthorizedError("You are not authorized to use the service.")
 
-
     @classmethod
     def active_account(cls) -> Optional[Dict[str, str]]:
         """Return the IBM Quantum account currently in use for the session.
