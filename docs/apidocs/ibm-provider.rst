@@ -13,4 +13,3 @@ Qiskit IBM Quantum Provider API Reference
    ibm_utils
    ibm_random
    ibm_experiment
-   ibm_runtime

@@ -13,37 +13,30 @@
 """Provider for a single IBM Quantum account."""
 
 import logging
-from typing import Dict, List, Optional, Any, Callable, Tuple, Union
-from collections import OrderedDict
-import traceback
-import copy
 import os
+import traceback
+from collections import OrderedDict
+from typing import Dict, List, Optional, Any, Callable, Tuple, Union
 
 from qiskit.providers import ProviderV1 as Provider  # type: ignore[attr-defined]
 from qiskit.providers.models import (QasmBackendConfiguration,
                                      PulseBackendConfiguration)
-from qiskit.circuit import QuantumCircuit
-from qiskit.transpiler import Layout
-
-from qiskit_ibm.runtime import runtime_job  # pylint: disable=unused-import
 
 from .api.clients import AuthClient, AccountClient, VersionClient
 from .apiconstants import QISKIT_IBM_API_URL
-from .ibm_backend import IBMBackend, IBMSimulator  # pylint: disable=cyclic-import
 from .credentials import Credentials, HubGroupProject, discover_credentials
 from .credentials.configrc import (remove_credentials, read_credentials_from_qiskitrc,
                                    store_credentials)
 from .credentials.exceptions import HubGroupProjectInvalidStateError
-from .ibm_backend_service import IBMBackendService  # pylint: disable=cyclic-import
-from .utils.json_decoder import decode_backend_configuration
-from .random.ibm_random_service import IBMRandomService  # pylint: disable=cyclic-import
-from .experiment import IBMExperimentService  # pylint: disable=cyclic-import
-from .runtime.ibm_runtime_service import IBMRuntimeService  # pylint: disable=cyclic-import
 from .exceptions import (IBMNotAuthorizedError, IBMInputValueError, IBMProviderCredentialsNotFound,
                          IBMProviderCredentialsInvalidFormat, IBMProviderCredentialsInvalidToken,
                          IBMProviderCredentialsInvalidUrl, IBMProviderError, IBMProviderValueError,
                          IBMProviderMultipleCredentialsFound)
-from .runner_result import RunnerResult  # pylint: disable=cyclic-import
+from .experiment import IBMExperimentService  # pylint: disable=cyclic-import
+from .ibm_backend import IBMBackend, IBMSimulator  # pylint: disable=cyclic-import
+from .ibm_backend_service import IBMBackendService  # pylint: disable=cyclic-import
+from .random.ibm_random_service import IBMRandomService  # pylint: disable=cyclic-import
+from .utils.json_decoder import decode_backend_configuration
 
 logger = logging.getLogger(__name__)
 
@@ -419,12 +412,9 @@ class IBMProvider(Provider):
             self._random = IBMRandomService(self) if self.credentials.extractor_url else None
             self._experiment = IBMExperimentService(self) \
                 if self.credentials.experiment_url else None
-            self._runtime = IBMRuntimeService(self) \
-                if self.credentials.runtime_url else None
             self._services = {'backend': self._backend,
                               'random': self._random,
-                              'experiment': self._experiment,
-                              'runtime': self._runtime}
+                              'experiment': self._experiment}
 
     @property
     def _backends(self) -> Dict[str, IBMBackend]:
@@ -525,20 +515,6 @@ class IBMProvider(Provider):
         else:
             raise IBMNotAuthorizedError("You are not authorized to use the service.")
 
-    @property
-    def runtime(self) -> IBMRuntimeService:
-        """Return the runtime service.
-
-        Returns:
-            The runtime service instance.
-
-        Raises:
-            IBMNotAuthorizedError: If the account is not authorized to use the service.
-        """
-        if self._runtime:
-            return self._runtime
-        else:
-            raise IBMNotAuthorizedError("You are not authorized to use the runtime service.")
 
     @classmethod
     def active_account(cls) -> Optional[Dict[str, str]]:
@@ -774,107 +750,6 @@ class IBMProvider(Provider):
         if self._services[name] is None:
             return False
         return True
-
-    def run_circuits(
-            self,
-            circuits: Union[QuantumCircuit, List[QuantumCircuit]],
-            backend_name: str,
-            shots: Optional[int] = None,
-            initial_layout: Optional[Union[Layout, Dict, List]] = None,
-            layout_method: Optional[str] = None,
-            routing_method: Optional[str] = None,
-            translation_method: Optional[str] = None,
-            seed_transpiler: Optional[int] = None,
-            optimization_level: int = 1,
-            init_qubits: bool = True,
-            rep_delay: Optional[float] = None,
-            transpiler_options: Optional[dict] = None,
-            measurement_error_mitigation: bool = False,
-            use_measure_esp: Optional[bool] = None,
-            **run_config: Dict
-    ) -> 'runtime_job.RuntimeJob':
-        """Execute the input circuit(s) on a backend using the runtime service.
-
-        Note:
-            This method uses the IBM Quantum runtime service which is not
-            available to all accounts.
-
-        Args:
-            circuits: Circuit(s) to execute.
-
-            backend_name: Name of the backend to execute circuits on.
-                Transpiler options are automatically grabbed from backend configuration
-                and properties unless otherwise specified.
-
-            shots: Number of repetitions of each circuit, for sampling. If not specified,
-                the backend default is used.
-
-            initial_layout: Initial position of virtual qubits on physical qubits.
-
-            layout_method: Name of layout selection pass ('trivial', 'dense',
-                'noise_adaptive', 'sabre').
-                Sometimes a perfect layout can be available in which case the layout_method
-                may not run.
-
-            routing_method: Name of routing pass ('basic', 'lookahead', 'stochastic', 'sabre')
-
-            translation_method: Name of translation pass ('unroller', 'translator', 'synthesis')
-
-            seed_transpiler: Sets random seed for the stochastic parts of the transpiler.
-
-            optimization_level: How much optimization to perform on the circuits.
-                Higher levels generate more optimized circuits, at the expense of longer
-                transpilation time.
-                If None, level 1 will be chosen as default.
-
-            init_qubits: Whether to reset the qubits to the ground state for each shot.
-
-            rep_delay: Delay between programs in seconds. Only supported on certain
-                backends (``backend.configuration().dynamic_reprate_enabled`` ). If supported,
-                ``rep_delay`` will be used instead of ``rep_time`` and must be from the
-                range supplied by the backend (``backend.configuration().rep_delay_range``).
-                Default is given by ``backend.configuration().default_rep_delay``.
-
-            transpiler_options: Additional transpiler options.
-
-            measurement_error_mitigation: Whether to apply measurement error mitigation.
-
-            use_measure_esp: Whether to use excited state promoted (ESP) readout for measurements
-                which are the final instruction on a qubit. ESP readout can offer higher fidelity
-                than standard measurement sequences. See
-                `here <https://arxiv.org/pdf/2008.08571.pdf>`_.
-
-            **run_config: Extra arguments used to configure the circuit execution.
-
-        Returns:
-            Runtime job.
-        """
-        inputs = copy.deepcopy(run_config)  # type: Dict[str, Any]
-        inputs['circuits'] = circuits
-        inputs['optimization_level'] = optimization_level
-        inputs['init_qubits'] = init_qubits
-        inputs['measurement_error_mitigation'] = measurement_error_mitigation
-        if shots:
-            inputs['shots'] = shots
-        if initial_layout:
-            inputs['initial_layout'] = initial_layout
-        if layout_method:
-            inputs['layout_method'] = layout_method
-        if routing_method:
-            inputs['routing_method'] = routing_method
-        if translation_method:
-            inputs['translation_method'] = translation_method
-        if seed_transpiler:
-            inputs['seed_transpiler'] = seed_transpiler
-        if rep_delay:
-            inputs['rep_delay'] = rep_delay
-        if transpiler_options:
-            inputs['transpiler_options'] = transpiler_options
-        if use_measure_esp is not None:
-            inputs['use_measure_esp'] = use_measure_esp
-        options = {'backend_name': backend_name}
-        return self.runtime.run('circuit-runner', options=options, inputs=inputs,
-                                result_decoder=RunnerResult)
 
     def service(self, name: str) -> Any:
         """Return the specified service.
