@@ -33,7 +33,6 @@ from qiskit.providers.models import (BackendStatus, BackendProperties,
 from qiskit.tools.events.pubsub import Publisher
 from qiskit.providers.models import (QasmBackendConfiguration,
                                      PulseBackendConfiguration)
-
 from qiskit_ibm import ibm_provider  # pylint: disable=unused-import
 
 from .apiconstants import ApiJobStatus, API_JOB_FINAL_STATES
@@ -114,7 +113,7 @@ class IBMBackend(Backend):
 
         Args:
             configuration: Backend configuration.
-            provider: IBM Quantum account provider
+            provider: IBM Quantum account provider.
             credentials: IBM Quantum credentials.
             api_client: IBM Quantum client used to communicate with the server.
         """
@@ -150,7 +149,7 @@ class IBMBackend(Backend):
             job_tags: Optional[List[str]] = None,
             max_circuits_per_job: Optional[int] = None,
             header: Optional[Dict] = None,
-            shots: Optional[int] = None,
+            shots: Optional[Union[int, float]] = None,
             memory: Optional[bool] = None,
             qubit_lo_freq: Optional[List[int]] = None,
             meas_lo_freq: Optional[List[int]] = None,
@@ -264,9 +263,11 @@ class IBMBackend(Backend):
                 "ESP readout not supported on this device. Please make sure the flag "
                 "'use_measure_esp' is unset or set to 'False'."
             )
-
         if not self.configuration().simulator:
             self._deprecate_id_instruction(circuits)
+
+        if isinstance(shots, float):
+            shots = int(shots)
 
         run_config_dict = self._get_run_config(
             qobj_header=header,
@@ -619,12 +620,7 @@ class IBMBackend(Backend):
         return self._configuration
 
     def __repr__(self) -> str:
-        credentials_info = ''
-        if self.hub:
-            credentials_info = "hub='{}', group='{}', project='{}'".format(
-                self.hub, self.group, self.project)
-        return "<{}('{}') from IBMProvider({})>".format(
-            self.__class__.__name__, self.name(), credentials_info)
+        return "<{}('{}')>".format(self.__class__.__name__, self.name())
 
     def _deprecate_id_instruction(
             self,
@@ -778,7 +774,7 @@ class IBMRetiredBackend(IBMBackend):
 
         Args:
             configuration: Backend configuration.
-            provider: IBM Quantum account provider
+            provider: IBM Quantum account provider.
             credentials: IBM Quantum credentials.
             api_client: IBM Quantum client used to communicate with the server.
         """

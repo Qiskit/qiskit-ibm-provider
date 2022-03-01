@@ -33,7 +33,7 @@ pip install qiskit-ibm
    ```
 
    The command above stores your credentials locally in a configuration file called `qiskitrc`. By default, this file is located in `$HOME/.qiskit`, where `$HOME` is your home directory.
-   Once saved you can then instantiate the open access provider (`hub='ibm-q', group='open', project='main'`) like below and access the backends:
+   Once saved you can then instantiate the provider like below and access the backends:
 
    ```python
    from qiskit_ibm import IBMProvider
@@ -46,33 +46,10 @@ pip install qiskit-ibm
    simulator_backend = provider.get_backend('ibmq_qasm_simulator')
    ```
 
-   To see a list of providers available to your account, use the `IBMProvider.providers()` class method:
-
-   ```python
-   from qiskit_ibm import IBMProvider
-   IBMProvider.providers()
-
-   # [<IBMProvider(hub='ibm-q', group='open', project='main')>,
-   #  <IBMProvider(hub='ibm-q', group='test', project='default')>]
-   ```
-
-   To access a different provider you can do:
-
-   ```python
-   from qiskit_ibm import IBMProvider
-   provider = IBMProvider(hub='ibm-q', group='test', project='default')
-   ```
-
-   where `hub='ibm-q', group='test', project='default'` is a sample premium provider.
-
 ### Load Account from Environment Variables
 Alternatively, the IBM Provider can discover credentials from environment variables:
 ```bash
 export QISKIT_IBM_API_TOKEN='MY_API_TOKEN'
-export QISKIT_IBM_API_URL='https://auth.quantum-computing.ibm.com/api'
-export QISKIT_IBM_HUB='ibm-q'
-export QISKIT_IBM_GROUP='test'
-export QISKIT_IBM_PROJECT='default'
 ```
 
 Then instantiate the provider without any arguments and access the backends:
@@ -82,12 +59,18 @@ provider = IBMProvider()
 ```
 
 ### Enable Account for Current Session
-As another alternative, you can also enable an account just for the current session by instantiating the provider with the token and hub/group/project.
+As another alternative, you can also enable an account just for the current session by instantiating the provider with the token.
 
 ```python
 from qiskit_ibm import IBMProvider
-provider = IBMProvider(token='MY_API_TOKEN', hub='ibm-q', group='test', project='default')
+provider = IBMProvider(token='MY_API_TOKEN')
 ```
+
+## Next Steps
+
+Now you're set up and ready to check out some of the tutorials.
+- [Qiskit IBM Provider]
+- [Qiskit]
 
 ## Contribution Guidelines
 
@@ -99,11 +82,6 @@ We use [GitHub issues] for tracking requests and bugs. Please use our [slack]
 for discussion and simple questions. To join our Slack community use the
 invite link at [Qiskit.org]. For questions that are more suited for a forum we
 use the `Qiskit` tag in [Stack Exchange].
-
-## Next Steps
-
-Now you're set up and ready to check out some of the other examples from our
-[Qiskit Tutorial] repository.
 
 ## Authors and Citation
 
@@ -125,7 +103,8 @@ project at different levels. If you use Qiskit, please cite as per the included
 [slack]: https://qiskit.slack.com
 [Qiskit.org]: https://qiskit.org
 [Stack Exchange]: https://quantumcomputing.stackexchange.com/questions/tagged/qiskit
-[Qiskit Tutorial]: https://github.com/Qiskit/qiskit-tutorial
+[Qiskit IBM Provider]: https://github.com/Qiskit-Partners/qiskit-ibm/tree/main/docs/tutorials
+[Qiskit]: https://github.com/Qiskit/qiskit-tutorial
 [many people]: https://github.com/Qiskit-Partners/qiskit-ibm/graphs/contributors
 [BibTeX file]: https://github.com/Qiskit/qiskit/blob/master/Qiskit.bib
 [Apache License 2.0]: https://github.com/Qiskit-Partners/qiskit-ibm/blob/main/LICENSE.txt
