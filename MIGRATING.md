@@ -1,4 +1,4 @@
-# Migrating from qiskit-ibmq-provider>=0.17.0
+# Migrating from qiskit-ibmq-provider
 
 ## Installation
 The Qiskit IBM Provider is now distributed as a separate PyPI package called `qiskit-ibm`. You can install the provider using pip:
