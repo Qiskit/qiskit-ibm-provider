@@ -32,7 +32,6 @@ from .exceptions import (IBMNotAuthorizedError, IBMInputValueError, IBMProviderC
                          IBMProviderCredentialsInvalidFormat, IBMProviderCredentialsInvalidToken,
                          IBMProviderCredentialsInvalidUrl, IBMProviderError, IBMProviderValueError,
                          IBMProviderMultipleCredentialsFound)
-from .experiment import IBMExperimentService  # pylint: disable=cyclic-import
 from .hub_group_project import HubGroupProject  # pylint: disable=cyclic-import
 from .ibm_backend import IBMBackend  # pylint: disable=cyclic-import
 from .ibm_backend_service import IBMBackendService  # pylint: disable=cyclic-import
@@ -79,7 +78,7 @@ class IBMProvider(Provider):
         in decreasing order of priority.
 
         * The hub/group/project you explicity specify when calling a service.
-          Ex: `provider.get_backend()`, `provider.experiment.create_experiment()`, etc.
+          Ex: `provider.get_backend()`, etc.
         * The hub/group/project required for the service.
         * The default hub/group/project you set using `save_account()`.
         * A premium hub/group/project in your account.
@@ -140,8 +139,7 @@ class IBMProvider(Provider):
                 * verify (bool): verify the server's TLS certificate.
 
         Returns:
-            An instance of IBMProvider with services like :class:`~qiskit_ibm.IBMBackendService`,
-            :class:`~qiskit_ibm.experiment.IBMExperimentService` and
+            An instance of IBMProvider with services like :class:`~qiskit_ibm.IBMBackendService` and
             :class:`~qiskit_ibm.random.IBMRandomService`
             as available to the account.
 
@@ -383,7 +381,6 @@ class IBMProvider(Provider):
     def _initialize_services(self) -> None:
         """Initialize all services."""
         self._backend = None
-        self._experiment = None
         self._random = None
         hgps = self._get_hgps()
         for hgp in hgps:
@@ -391,17 +388,13 @@ class IBMProvider(Provider):
             if not self._backend:
                 self._backend = IBMBackendService(self, hgp)
             # Initialize other services.
-            if not self._experiment:
-                self._experiment = IBMExperimentService(self, hgp) \
-                    if hgp.has_service('experiment') else None
             if not self._random:
                 self._random = IBMRandomService(self, hgp) \
                     if hgp.has_service('random') else None
-            if all([self._backend, self._experiment, self._random]):
+            if all([self._backend, self._random]):
                 break
         self._services = {'backend': self._backend,
-                          'random': self._random,
-                          'experiment': self._experiment}
+                          'random': self._random}
 
     @property
     def backend(self) -> IBMBackendService:
@@ -411,22 +404,6 @@ class IBMProvider(Provider):
             The backend service instance.
         """
         return self._backend
-
-    @property
-    def experiment(self) -> IBMExperimentService:
-        """Return the experiment service.
-
-        Returns:
-            The experiment service instance.
-
-        Raises:
-            IBMNotAuthorizedError: If the account is not authorized to use
-                the experiment service.
-        """
-        if self._experiment:
-            return self._experiment
-        else:
-            raise IBMNotAuthorizedError("You are not authorized to use the experiment service.")
 
     @property
     def random(self) -> IBMRandomService:

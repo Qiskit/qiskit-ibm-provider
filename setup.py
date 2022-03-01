@@ -42,13 +42,13 @@ with open(README_PATH) as readme_file:
 
 
 setuptools.setup(
-    name="qiskit-ibm",
+    name="qiskit-ibm-provider",
     version=VERSION,
     description="Qiskit provider for accessing the quantum devices and "
                 "simulators at IBM",
     long_description=README,
     long_description_content_type='text/markdown',
-    url="https://github.com/Qiskit-Partners/qiskit-ibm",
+    url="https://github.com/Qiskit/qiskit-ibm-provider",
     author="Qiskit Development Team",
     author_email="hello@qiskit.org",
     license="Apache 2.0",
@@ -78,8 +78,8 @@ setuptools.setup(
                                       "ipython>=5.0.0", "traitlets!=5.0.5",
                                       "ipyvue>=1.4.1"]},
     project_urls={
-        "Bug Tracker": "https://github.com/Qiskit-Partners/qiskit-ibm/issues",
+        "Bug Tracker": "https://github.com/Qiskit/qiskit-ibm-provider/issues",
         "Documentation": "https://qiskit.org/documentation/",
-        "Source Code": "https://github.com/Qiskit-Partners/qiskit-ibm",
+        "Source Code": "https://github.com/Qiskit/qiskit-ibm-provider",
     },
 )
