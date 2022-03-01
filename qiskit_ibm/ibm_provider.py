@@ -85,8 +85,7 @@ class IBMProvider(Provider):
         in decreasing order of priority.
 
         * The hub/group/project you explicity specify when calling a service.
-          Ex: `provider.get_backend()`, `provider.runtime.run()`,
-          `provider.experiment.create_experiment()`, etc.
+          Ex: `provider.get_backend()`, `provider.runtime.run()`, etc.
         * The hub/group/project required for the service.
         * The default hub/group/project you set using `save_account()`.
         * A premium hub/group/project in your account.
