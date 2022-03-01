@@ -11,7 +11,7 @@
 # that they have been altered from the originals.
 
 
-.PHONY: lint style test mypy test1 test2 test3 runtime_integration experiment_integration
+.PHONY: lint style test mypy test1 test2 test3 runtime_integration 
 
 lint:
 	pylint -rn qiskit_ibm test
@@ -37,6 +37,3 @@ test3:
 
 runtime_integration:
 	python -m unittest -v test/ibm/runtime/test_runtime_integration.py
-
-experiment_integration:
-	python -m unittest -v test/ibm/experiment/test_experiment_server_integration.py

@@ -24,7 +24,6 @@ from qiskit.providers.models.backendproperties import BackendProperties
 
 from qiskit_ibm.ibm_backend import IBMSimulator, IBMBackend
 from qiskit_ibm.ibm_backend_service import IBMBackendService
-from qiskit_ibm.experiment import IBMExperimentService
 from qiskit_ibm.random import IBMRandomService
 from qiskit_ibm.runtime import IBMRuntimeService
 from qiskit_ibm.ibm_provider import IBMProvider
@@ -469,9 +468,6 @@ class TestIBMProviderServices(IBMTestCase, providers.ProviderTestCase):
         self.assertIsInstance(self.provider.service('backend'), IBMBackendService)
         self.assertIsInstance(self.provider.backend, IBMBackendService)
 
-        if 'experiment' in services:
-            self.assertIsInstance(self.provider.service('experiment'), IBMExperimentService)
-            self.assertIsInstance(self.provider.experiment, IBMExperimentService)
         if 'random' in services:
             self.assertIsInstance(self.provider.service('random'), IBMRandomService)
             self.assertIsInstance(self.provider.random, IBMRandomService)
