@@ -47,12 +47,16 @@ class TestIBMJob(IBMTestCase):
 
     @classmethod
     @requires_provider
-    def setUpClass(cls, provider):
+    def setUpClass(cls, provider, hub, group, project):
         """Initial class level setup."""
         # pylint: disable=arguments-differ
         super().setUpClass()
         cls.provider = provider
-        cls.sim_backend = provider.get_backend('ibmq_qasm_simulator')
+        cls.hub = hub
+        cls.group = group
+        cls.project = project
+        cls.sim_backend = provider.get_backend('ibmq_qasm_simulator', hub=cls.hub,
+                                               group=cls.group, project=cls.project)
         cls.bell = transpile(ReferenceCircuits.bell(), cls.sim_backend)
         cls.sim_job = cls.sim_backend.run(cls.bell)
         cls.last_month = datetime.now() - timedelta(days=30)
@@ -172,7 +176,8 @@ class TestIBMJob(IBMTestCase):
     def test_cancel(self):
         """Test job cancellation."""
         # Find the most busy backend
-        backend = most_busy_backend(self.provider)
+        backend = most_busy_backend(self.provider, hub=self.hub,
+                                    group=self.group, project=self.project)
         submit_and_cancel(backend)
 
     def test_retrieve_jobs(self):
@@ -270,7 +275,8 @@ class TestIBMJob(IBMTestCase):
 
     def test_retrieve_active_jobs(self):
         """Test retrieving jobs that are currently unfinished."""
-        backend = most_busy_backend(self.provider)
+        backend = most_busy_backend(self.provider, hub=self.hub,
+                                    group=self.group, project=self.project)
         active_job_statuses = {api_status_to_job_status(status) for status in ApiJobStatus
                                if status not in API_JOB_FINAL_STATES}
 
@@ -290,7 +296,8 @@ class TestIBMJob(IBMTestCase):
 
     def test_retrieve_jobs_queued(self):
         """Test retrieving jobs that are queued."""
-        backend = most_busy_backend(self.provider)
+        backend = most_busy_backend(self.provider, hub=self.hub,
+                                    group=self.group, project=self.project)
         job = backend.run(transpile(ReferenceCircuits.bell(), backend))
         provider = backend.provider()
 
@@ -437,9 +444,9 @@ class TestIBMJob(IBMTestCase):
 
     def test_retrieve_from_retired_backend(self):
         """Test retrieving a job from a retired backend."""
-        saved_backends = copy.copy(self.provider._backends)
+        saved_backends = copy.copy(self.provider.backend._backends)
         try:
-            del self.provider._backends[self.sim_backend.name()]
+            del self.provider.backend._backends[self.sim_backend.name()]
             new_job = self.provider.backend.job(self.sim_job.job_id())
             self.assertTrue(isinstance(new_job.backend(), IBMRetiredBackend))
             self.assertNotEqual(new_job.backend().name(), 'unknown')
@@ -450,7 +457,7 @@ class TestIBMJob(IBMTestCase):
             recent_job_ids = [job.job_id() for job in recent_jobs]
             self.assertIn(new_job.job_id(), recent_job_ids)
         finally:
-            self.provider._backends = saved_backends
+            self.provider.backend._backends = saved_backends
 
     def test_refresh_job_result(self):
         """Test re-retrieving job result via refresh."""
@@ -527,7 +534,8 @@ class TestIBMJob(IBMTestCase):
 
     def test_wait_for_final_state_timeout(self):
         """Test waiting for job to reach final state times out."""
-        backend = most_busy_backend(self.provider)
+        backend = most_busy_backend(self.provider, hub=self.hub,
+                                    group=self.group, project=self.project)
         job = backend.run(transpile(ReferenceCircuits.bell(), backend=backend))
         try:
             self.assertRaises(IBMJobTimeoutError, job.wait_for_final_state, timeout=0.1)

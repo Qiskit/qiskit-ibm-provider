@@ -14,6 +14,7 @@
 
 import os
 import logging
+from typing import Optional
 
 from qiskit import QuantumCircuit
 from qiskit.qobj import QasmQobj
@@ -22,6 +23,7 @@ from qiskit.test.reference_circuits import ReferenceCircuits
 from qiskit.pulse import Schedule
 from qiskit.providers.exceptions import JobError
 from qiskit.providers.jobstatus import JobStatus
+from qiskit_ibm.hub_group_project import HubGroupProject
 from qiskit_ibm.ibm_provider import IBMProvider
 from qiskit_ibm.ibm_backend import IBMBackend
 from qiskit_ibm.job import IBMJob
@@ -53,7 +55,12 @@ def setup_test_logging(logger: logging.Logger, filename: str):
     logger.setLevel(os.getenv('LOG_LEVEL', 'DEBUG'))
 
 
-def most_busy_backend(provider: IBMProvider) -> IBMBackend:
+def most_busy_backend(
+        provider: IBMProvider,
+        hub: Optional[str] = None,
+        group: Optional[str] = None,
+        project: Optional[str] = None
+) -> IBMBackend:
     """Return the most busy backend for the provider given.
 
     Return the most busy available backend for those that
@@ -62,11 +69,15 @@ def most_busy_backend(provider: IBMProvider) -> IBMBackend:
 
     Args:
         provider: IBM Quantum account provider.
+        hub: Name of the hub.
+        group: Name of the group.
+        project: Name of the project.
 
     Returns:
         The most busy backend.
     """
-    backends = provider.backends(simulator=False, operational=True)
+    backends = provider.backends(simulator=False, operational=True,
+                                 hub=hub, group=group, project=project)
     return max([b for b in backends if b.configuration().n_qubits >= 5],
                key=lambda b: b.status().pending_jobs)
 
@@ -142,7 +153,8 @@ def submit_job_bad_shots(backend: IBMBackend) -> IBMJob:
         Submitted job.
     """
     qobj = bell_in_qobj(backend=backend)
-    qobj.config.shots = 10000  # Modify the number of shots to be an invalid amount.
+    # Modify the number of shots to be an invalid amount.
+    qobj.config.shots = backend.configuration().max_shots + 10000
     job_to_fail = backend._submit_job(qobj)
     return job_to_fail
 
@@ -197,30 +209,30 @@ def get_pulse_schedule(backend: IBMBackend) -> Schedule:
     return schedules
 
 
-def get_provider(
+def get_hgp(
         qe_token: str,
         qe_url: str,
         default: bool = True
-) -> IBMProvider:
-    """Return a provider for the account.
+) -> HubGroupProject:
+    """Return a HubGroupProject for the account.
 
     Args:
         qe_token: IBM Quantum token.
         qe_url: IBM Quantum auth URL.
-        default: If `True`, the default open access project provider is returned.
-            Otherwise, a non open access project provider is returned.
+        default: If `True`, the default open access hgp is returned.
+            Otherwise, a non open access hgp is returned.
 
     Returns:
-        A provider, as specified by `default`.
+        A HubGroupProject, as specified by `default`.
     """
-    provider_to_return = IBMProvider(qe_token, url=qe_url)  # Default provider.
+    provider = IBMProvider(qe_token, url=qe_url)  # Default hub/group/project.
+    open_hgp = provider._get_hgp()  # Open access hgp
+    hgp_to_return = open_hgp
     if not default:
-        # Get a non default provider (i.e.not the default open access project).
-        providers = IBMProvider.providers()
-        for provider in providers:
-            if provider != provider_to_return:
-                provider_to_return = provider
+        # Get a non default hgp (i.e. not the default open access hgp).
+        hgps = provider._get_hgps()
+        for hgp in hgps:
+            if hgp != open_hgp:
+                hgp_to_return = hgp
                 break
-    IBMProvider._disable_account()
-
-    return provider_to_return
+    return hgp_to_return

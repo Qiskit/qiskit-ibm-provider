@@ -41,12 +41,16 @@ class TestIBMJobAttributes(IBMTestCase):
 
     @classmethod
     @requires_provider
-    def setUpClass(cls, provider):
+    def setUpClass(cls, provider, hub, group, project):
         """Initial class level setup."""
         # pylint: disable=arguments-differ
         super().setUpClass()
         cls.provider = provider
-        cls.sim_backend = provider.get_backend('ibmq_qasm_simulator')
+        cls.hub = hub
+        cls.group = group
+        cls.project = project
+        cls.sim_backend = provider.get_backend('ibmq_qasm_simulator', hub=cls.hub,
+                                               group=cls.group, project=cls.project)
         cls.bell = transpile(ReferenceCircuits.bell(), cls.sim_backend)
         cls.sim_job = cls.sim_backend.run(cls.bell)
         cls.last_week = datetime.now() - timedelta(days=7)
@@ -253,7 +257,8 @@ class TestIBMJobAttributes(IBMTestCase):
     def test_queue_info(self):
         """Test retrieving queue information."""
         # Find the most busy backend.
-        backend = most_busy_backend(self.provider)
+        backend = most_busy_backend(self.provider, hub=self.hub,
+                                    group=self.group, project=self.project)
         leave_states = list(JOB_FINAL_STATES) + [JobStatus.RUNNING]
         job = backend.run(self.bell)
         queue_info = None

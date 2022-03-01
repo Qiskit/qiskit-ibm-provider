@@ -45,12 +45,16 @@ class TestIBMCompositeJob(IBMTestCase):
 
     @classmethod
     @requires_provider
-    def setUpClass(cls, provider):
+    def setUpClass(cls, provider, hub, group, project):
         """Initial class level setup."""
         # pylint: disable=arguments-differ
         super().setUpClass()
         cls.provider = provider
-        cls.sim_backend = provider.get_backend('ibmq_qasm_simulator')
+        cls.hub = hub
+        cls.group = group
+        cls.project = project
+        cls.sim_backend = provider.get_backend('ibmq_qasm_simulator', hub=cls.hub,
+                                               group=cls.group, project=cls.project)
         cls.last_week = datetime.now() - timedelta(days=7)
 
     def setUp(self):
@@ -689,12 +693,16 @@ class TestIBMCompositeJobIntegration(IBMTestCase):
 
     @classmethod
     @requires_provider
-    def setUpClass(cls, provider):
+    def setUpClass(cls, provider, hub, group, project):
         """Initial class level setup."""
         # pylint: disable=arguments-differ
         super().setUpClass()
         cls.provider = provider
-        cls.sim_backend = provider.get_backend('ibmq_qasm_simulator')
+        cls.hub = hub
+        cls.group = group
+        cls.project = project
+        cls.sim_backend = provider.get_backend('ibmq_qasm_simulator', hub=cls.hub,
+                                               group=cls.group, project=cls.project)
         cls._qc = transpile(ReferenceCircuits.bell(), backend=cls.sim_backend)
         cls.last_week = datetime.now() - timedelta(days=7)
 

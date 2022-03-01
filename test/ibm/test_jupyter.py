@@ -36,9 +36,12 @@ class TestBackendInfo(IBMTestCase):
 
     @classmethod
     @requires_provider
-    def setUpClass(cls, provider):
+    def setUpClass(cls, provider, hub, group, project):
         # pylint: disable=arguments-differ
         super().setUpClass()
+        cls.hub = hub
+        cls.group = group
+        cls.project = project
         cls.backends = _get_backends(provider)
 
     def test_config_tab(self):
@@ -88,18 +91,20 @@ class TestIBMDashboard(IBMTestCase):
 
     @classmethod
     @requires_provider
-    def setUpClass(cls, provider):
+    def setUpClass(cls, provider, hub, group, project):
         # pylint: disable=arguments-differ
         super().setUpClass()
         cls.provider = provider
+        cls.hub = hub
+        cls.group = group
+        cls.project = project
         cls.backends = _get_backends(provider)
 
     def test_backend_widget(self):
         """Test devices tab."""
         for backend in self.backends:
             with self.subTest(backend=backend):
-                cred = backend.provider().credentials
-                provider_str = "{}/{}/{}".format(cred.hub, cred.group, cred.project)
+                provider_str = "{}/{}/{}".format(backend.hub, backend.group, backend.project)
                 b_w_p = BackendWithProviders(backend=backend, providers=[provider_str])
                 make_backend_widget(b_w_p)
 

@@ -35,22 +35,20 @@ class TestExperimentServerIntegration(IBMTestCase):
     """Test experiment modules."""
 
     @classmethod
-    def setUpClass(cls):
+    @requires_provider
+    def setUpClass(cls, provider, hub, group, project):
         """Initial class level setup."""
         # pylint: disable=arguments-differ
         super().setUpClass()
-        cls.provider = cls._setup_provider()  # pylint: disable=no-value-for-parameter
+        cls.provider = provider
+        cls.hub = hub
+        cls.group = group
+        cls.project = project
         cls.backend = cls._setup_backend()  # pylint: disable=no-value-for-parameter
         try:
             cls.device_components = cls.provider.experiment.device_components(cls.backend.name())
         except Exception:
             raise SkipTest("Not authorized to use experiment service.")
-
-    @classmethod
-    @requires_provider
-    def _setup_provider(cls, provider):
-        """Get the provider for the class."""
-        return provider
 
     @classmethod
     @requires_device
@@ -241,12 +239,10 @@ class TestExperimentServerIntegration(IBMTestCase):
     def test_experiments_with_hgp(self):
         """Test retrieving all experiments for a specific h/g/p."""
         exp_id = self._create_experiment()
-        credentials = self.provider.credentials
-        hgp = [credentials.hub, credentials.group, credentials.project]
         sub_tests = [
-            {'hub': hgp[0]},
-            {'hub': hgp[0], 'group': hgp[1]},
-            {'hub': hgp[0], 'group': hgp[1], 'project': hgp[2]}
+            {'hub': self.hub},
+            {'hub': self.hub, 'group': self.group},
+            {'hub': self.hub, 'group': self.group, 'project': self.project}
         ]
 
         for hgp_kwargs in sub_tests:
@@ -498,10 +494,9 @@ class TestExperimentServerIntegration(IBMTestCase):
         self.assertEqual(exp_id, new_exp_id)
         new_exp = self.provider.experiment.experiment(new_exp_id)
 
-        credentials = self.provider.credentials
-        self.assertEqual(credentials.hub, new_exp["hub"])  # pylint: disable=no-member
-        self.assertEqual(credentials.group, new_exp["group"])  # pylint: disable=no-member
-        self.assertEqual(credentials.project, new_exp["project"])  # pylint: disable=no-member
+        self.assertEqual(self.hub, new_exp["hub"])  # pylint: disable=no-member
+        self.assertEqual(self.group, new_exp["group"])  # pylint: disable=no-member
+        self.assertEqual(self.project, new_exp["project"])  # pylint: disable=no-member
         self.assertEqual("qiskit_test", new_exp["experiment_type"])
         self.assertEqual(self.backend.name(), new_exp["backend"].name())
         self.assertEqual({"foo": "bar"}, new_exp["metadata"])
@@ -857,6 +852,45 @@ class TestExperimentServerIntegration(IBMTestCase):
             with self.subTest(sort_by=sort_by):
                 with self.assertRaises(ValueError):
                     self.provider.experiment.analysis_results(sort_by=sort_by)
+
+    def test_analysis_results_with_creation_datetime(self):
+        """Test retrieving analysis_results with creation_datetime"""
+        # Create an analysis_result and get it back to get its creation_datetime value.
+        result1_id = self._create_analysis_result()
+        result1 = self.provider.experiment.analysis_result(result1_id)
+        self.assertIn('creation_datetime', result1)
+        self.assertIsNotNone(result1['creation_datetime'])
+        cdt1 = result1['creation_datetime']
+        # Assert that the UTC timestamp was converted to the local time.
+        self.assertIsNotNone(cdt1.tzinfo)
+        self.log.debug('Created first analysis result %s with creation_datetime %s',
+                       result1_id, cdt1.isoformat())
+        # Get the analysis result back using the exact creation timestamp
+        # using both ge and le prefixes.
+        results = self.provider.experiment.analysis_results(
+            creation_datetime_after=cdt1,
+            creation_datetime_before=cdt1
+        )
+        # Chances are that we should only get exactly one analysis result
+        # back but to be safe check for at least 1.
+        self.assertGreaterEqual(len(results), 1, results)
+        result_ids = [r['result_id'] for r in results]
+        self.assertIn(result1_id, result_ids)
+        # Create another analysis result on the same experiment.
+        result2_id = self._create_analysis_result(exp_id=result1['experiment_id'])
+        result2 = self.provider.experiment.analysis_result(result2_id)
+        cdt2 = result2['creation_datetime']
+        self.log.debug('Created second analysis result %s with creation_datetime %s',
+                       result2_id, cdt2.isoformat())
+        # Get both results using their creation timestamps as a range.
+        results = self.provider.experiment.analysis_results(
+            creation_datetime_after=cdt1,
+            creation_datetime_before=cdt2
+        )
+        self.assertGreaterEqual(len(results), 2, results)
+        result_ids = [r['result_id'] for r in results]
+        for result_id in [result1_id, result2_id]:
+            self.assertIn(result_id, result_ids)
 
     def test_delete_analysis_result(self):
         """Test deleting an analysis result."""

@@ -39,4 +39,4 @@ runtime_integration:
 	python -m unittest -v test/ibm/runtime/test_runtime_integration.py
 
 experiment_integration:
-	python -m unittest -v test/ibm/experiment/test_experiment_data_integration.py test/ibm/experiment/test_experiment_server_integration.py
+	python -m unittest -v test/ibm/experiment/test_experiment_server_integration.py

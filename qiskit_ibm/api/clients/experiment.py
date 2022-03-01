@@ -230,6 +230,7 @@ class ExperimentClient(BaseClient):
             quality: Optional[Union[str, List[str]]] = None,
             verified: Optional[bool] = None,
             tags: Optional[List[str]] = None,
+            created_at: Optional[List] = None,
             sort_by: Optional[str] = None
     ) -> str:
         """Return a list of analysis results.
@@ -244,6 +245,7 @@ class ExperimentClient(BaseClient):
             quality: Quality value used for filtering.
             verified: Indicates whether this result has been verified.
             tags: Filter by tags assigned to analysis results.
+            created_at: A list of timestamps used to filter by creation time.
             sort_by: Indicates how the output should be sorted.
 
         Returns:
@@ -259,6 +261,7 @@ class ExperimentClient(BaseClient):
             quality=quality,
             verified=verified,
             tags=tags,
+            created_at=created_at,
             sort_by=sort_by
         )
         return resp

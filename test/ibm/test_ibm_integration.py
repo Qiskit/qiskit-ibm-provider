@@ -31,12 +31,16 @@ class TestIBMIntegration(IBMTestCase):
 
     @classmethod
     @requires_provider
-    def setUpClass(cls, provider):
+    def setUpClass(cls, provider, hub, group, project):
         """Initial class level setup."""
         # pylint: disable=arguments-differ
         super().setUpClass()
         cls.provider = provider
-        cls.sim_backend = provider.get_backend('ibmq_qasm_simulator')
+        cls.hub = hub
+        cls.group = group
+        cls.project = project
+        cls.sim_backend = provider.get_backend('ibmq_qasm_simulator', hub=cls.hub,
+                                               group=cls.group, project=cls.project)
 
     def setUp(self):
         super().setUp()
@@ -111,9 +115,9 @@ class TestIBMIntegration(IBMTestCase):
         self.assertIsInstance(results, Result)
 
     @requires_private_provider
-    def test_private_job(self, provider):
+    def test_private_job(self, provider, hub, group, project):
         """Test a private job."""
-        backend = provider.get_backend('ibmq_qasm_simulator')
+        backend = provider.get_backend('ibmq_qasm_simulator', hub, group, project)
         qc = ReferenceCircuits.bell()
         job = execute(qc, backend=backend)
         self.assertIsNotNone(job.circuits())
