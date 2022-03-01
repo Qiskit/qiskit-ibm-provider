@@ -20,7 +20,7 @@ from configparser import ConfigParser, ParsingError
 from typing import Dict, Tuple, Optional, Any, Union
 
 from .credentials import Credentials
-from .hubgroupproject import HubGroupProject
+from .hub_group_project_id import HubGroupProjectID
 from .exceptions import InvalidCredentialsFormatError, CredentialsNotFoundError
 
 logger = logging.getLogger(__name__)
@@ -37,7 +37,7 @@ _PREFERENCES_SECTION_NAME = 'ibmq.preferences'
 
 def read_credentials_from_qiskitrc(
         filename: Optional[str] = None
-) -> Tuple[Dict[HubGroupProject, Credentials], Dict]:
+) -> Tuple[Dict[HubGroupProjectID, Credentials], Dict]:
     """Read a configuration file and return a dictionary with its contents.
 
     Args:
@@ -54,7 +54,7 @@ def read_credentials_from_qiskitrc(
         InvalidCredentialsFormatError: If the file cannot be parsed. Note
             that this exception is not raised if the input file
             does not exist, and an empty dictionary is returned instead.
-        HubGroupProjectInvalidStateError: If the default provider stored on
+        HubGroupProjectIDInvalidStateError: If the default provider stored on
             disk could not be parsed.
     """
     filename = filename or DEFAULT_QISKITRC_FILE
@@ -68,15 +68,15 @@ def read_credentials_from_qiskitrc(
             'Error parsing file {}: {}'.format(filename, str(ex))) from ex
 
     # Build the credentials dictionary.
-    credentials_dict: Dict[HubGroupProject, Credentials] = {}
-    preferences: Dict[HubGroupProject, Dict] = {}
+    credentials_dict: Dict[HubGroupProjectID, Credentials] = {}
+    preferences: Dict[HubGroupProjectID, Dict] = {}
 
     for name in config_parser.sections():
         if not name.startswith('ibmq'):
             continue
 
         single_section = dict(config_parser.items(name))
-        configs: Dict[str, Union[str, bool, HubGroupProject, Dict]] = {}
+        configs: Dict[str, Union[str, bool, HubGroupProjectID, Dict]] = {}
 
         if name == _PREFERENCES_SECTION_NAME:
             preferences = _parse_preferences(single_section)
@@ -91,7 +91,7 @@ def read_credentials_from_qiskitrc(
             elif key == 'verify':
                 configs[key] = config_parser[name].getboolean('verify')
             elif key == 'default_provider':
-                configs[key] = HubGroupProject.from_stored_format(val)
+                configs[key] = HubGroupProjectID.from_stored_format(val)
             elif key == 'url':
                 configs[key] = val
                 configs['auth_url'] = val
@@ -104,7 +104,7 @@ def read_credentials_from_qiskitrc(
     return credentials_dict, preferences
 
 
-def _parse_preferences(pref_section: Dict) -> Dict[HubGroupProject, Dict]:
+def _parse_preferences(pref_section: Dict) -> Dict[HubGroupProjectID, Dict]:
     """Parse the preferences section.
 
     Args:
@@ -113,27 +113,27 @@ def _parse_preferences(pref_section: Dict) -> Dict[HubGroupProject, Dict]:
     Returns:
         Parsed preferences, indexed by hub/group/project.
     """
-    preferences: Dict[HubGroupProject, Dict] = defaultdict(dict)
+    preferences: Dict[HubGroupProjectID, Dict] = defaultdict(dict)
     for key, val in pref_section.items():
         # Preferences section format is hgp,category,item=value
         elems = key.split(',')
         if len(elems) != 3:
             continue
-        hgp, pref_cat, pref_key = elems
+        hgp_id, pref_cat, pref_key = elems
         try:
             val_type = _ACTIVE_PREFERENCES[pref_cat][pref_key]
         except KeyError:
             continue
-        hgp = HubGroupProject.from_stored_format(hgp)
-        cur_val = preferences[hgp].get(pref_cat, {})
+        hgp_id = HubGroupProjectID.from_stored_format(hgp_id)
+        cur_val = preferences[hgp_id].get(pref_cat, {})
         cur_val.update({pref_key: val_type(val)})  # type: ignore[no-untyped-call]
-        preferences[hgp].update({pref_cat: cur_val})
+        preferences[hgp_id].update({pref_cat: cur_val})
 
     return preferences
 
 
 def write_qiskit_rc(
-        credentials: Dict[HubGroupProject, Credentials],
+        credentials: Dict[HubGroupProjectID, Credentials],
         preferences: Optional[Dict] = None,
         filename: Optional[str] = None
 ) -> None:
@@ -256,7 +256,7 @@ def remove_credentials(
 
 
 def store_preferences(
-        preferences: Dict[HubGroupProject, Dict],
+        preferences: Dict[HubGroupProjectID, Dict],
         filename: Optional[str] = None
 ) -> None:
     """Store the preferences in the configuration file.
