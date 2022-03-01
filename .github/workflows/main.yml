@@ -61,7 +61,7 @@ jobs:
     runs-on: macOS-latest
     strategy:
       matrix:
-        python-version: [3.6, 3.7, 3.8, 3.9]
+        python-version: [3.7, 3.8, 3.9]
     env:
       QISKIT_IBM_API_TOKEN: ${{ secrets.QISKIT_IBM_API_TOKEN }}
       QISKIT_IBM_API_URL: ${{ secrets.QISKIT_IBM_API_URL }}

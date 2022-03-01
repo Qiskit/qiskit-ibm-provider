@@ -16,7 +16,7 @@ import os
 from typing import Dict
 
 from .credentials import Credentials
-from .hubgroupproject import HubGroupProject
+from .hub_group_project_id import HubGroupProjectID
 
 VARIABLES_MAP = {
     'QISKIT_IBM_API_TOKEN': 'token',
@@ -28,7 +28,7 @@ VARIABLES_MAP = {
 """Dictionary that maps `ENV_VARIABLE_NAME` to credential parameter."""
 
 
-def read_credentials_from_environ() -> Dict[HubGroupProject, Credentials]:
+def read_credentials_from_environ() -> Dict[HubGroupProjectID, Credentials]:
     """Extract credentials from the environment variables.
 
     Returns:
@@ -58,7 +58,7 @@ def read_credentials_from_environ() -> Dict[HubGroupProject, Credentials]:
                 project = os.getenv(envar_name)
 
     if all([hub, group, project]):
-        credentials_dict['default_provider'] = HubGroupProject(hub, group, project)
+        credentials_dict['default_provider'] = HubGroupProjectID(hub, group, project)
 
     credentials = Credentials(**credentials_dict)  # type: ignore[arg-type]
     return {credentials.unique_id(): credentials}
