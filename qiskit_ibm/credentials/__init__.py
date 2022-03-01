@@ -42,9 +42,9 @@ from typing import Dict, Optional, Tuple, Any
 import logging
 
 from .credentials import Credentials
-from .hubgroupproject import HubGroupProject
+from .hub_group_project_id import HubGroupProjectID
 from .exceptions import (CredentialsError, InvalidCredentialsFormatError,
-                         CredentialsNotFoundError, HubGroupProjectInvalidStateError)
+                         CredentialsNotFoundError, HubGroupProjectIDInvalidStateError)
 from .configrc import read_credentials_from_qiskitrc, store_credentials, store_preferences
 from .environ import read_credentials_from_environ
 
@@ -53,7 +53,7 @@ logger = logging.getLogger(__name__)
 
 def discover_credentials(
         qiskitrc_filename: Optional[str] = None
-) -> Tuple[Dict[HubGroupProject, Credentials], Dict]:
+) -> Tuple[Dict[HubGroupProjectID, Credentials], Dict]:
     """Automatically discover credentials for IBM Quantum.
 
     This method looks for credentials in the following places in order and
@@ -67,7 +67,7 @@ def discover_credentials(
             file. If ``None``, ``$HOME/.qiskitrc/qiskitrc`` is used.
 
     Raises:
-        HubGroupProjectInvalidStateError: If the default provider stored on
+        HubGroupProjectIDInvalidStateError: If the default provider stored on
             disk could not be parsed.
 
     Returns:
@@ -76,8 +76,8 @@ def discover_credentials(
         for the found credentials is ``{credentials_unique_id: Credentials}``,
         whereas the preferences is ``{credentials_unique_id: {category: {key: val}}}``.
     """
-    credentials_: Dict[HubGroupProject, Credentials] = {}
-    preferences: Dict[HubGroupProject, Dict] = {}
+    credentials_: Dict[HubGroupProjectID, Credentials] = {}
+    preferences: Dict[HubGroupProjectID, Dict] = {}
 
     # dict[str:function] that defines the different locations for looking for
     # credentials, and their precedence order.

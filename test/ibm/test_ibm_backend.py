@@ -65,7 +65,8 @@ class TestIBMBackend(IBMTestCase):
         """Test backend reservations."""
         provider = self.backend.provider()
         backend = reservations = None
-        for backend in provider.backends(simulator=False, operational=True):
+        for backend in provider.backends(simulator=False, operational=True, hub=self.backend.hub,
+                                         group=self.backend.group, project=self.backend.project):
             reservations = backend.reservations()
             if reservations:
                 break
@@ -109,7 +110,8 @@ class TestIBMBackend(IBMTestCase):
     def test_backend_options(self):
         """Test backend options."""
         provider = self.backend.provider()
-        backends = provider.backends(open_pulse=True, operational=True)
+        backends = provider.backends(open_pulse=True, operational=True, hub=self.backend.hub,
+                                     group=self.backend.group, project=self.backend.project)
         if not backends:
             raise SkipTest('Skipping pulse test since no pulse backend found.')
 
@@ -131,7 +133,8 @@ class TestIBMBackend(IBMTestCase):
     def test_sim_backend_options(self):
         """Test simulator backend options."""
         provider = self.backend.provider()
-        backend = provider.get_backend('ibmq_qasm_simulator')
+        backend = provider.get_backend('ibmq_qasm_simulator', hub=self.backend.hub,
+                                       group=self.backend.group, project=self.backend.project)
         backend.options.shots = 2048
         backend.set_options(memory=True)
         job = backend.run(ReferenceCircuits.bell(), shots=1024, foo='foo')
@@ -177,11 +180,14 @@ class TestIBMBackendService(IBMTestCase):
 
     @classmethod
     @requires_provider
-    def setUpClass(cls, provider):
+    def setUpClass(cls, provider, hub, group, project):
         """Initial class level setup."""
         # pylint: disable=arguments-differ
         super().setUpClass()
         cls.provider = provider
+        cls.hub = hub
+        cls.group = group
+        cls.project = project
         cls.last_week = datetime.now() - timedelta(days=7)
 
     def test_my_reservations(self):

@@ -24,7 +24,6 @@ from qiskit_ibm.random.cqcextractor import CQCExtractor
 from qiskit_ibm.random.utils import bitarray_to_bytes
 from qiskit_ibm.random.ibm_random_service import IBMRandomService
 from qiskit_ibm.exceptions import IBMError
-from qiskit_ibm import IBMProvider
 
 from ..ibm_test_case import IBMTestCase
 from ..decorators import requires_provider
@@ -43,11 +42,14 @@ class TestRandomIntegration(IBMTestCase):
 
     @classmethod
     @requires_provider
-    def setUpClass(cls, provider):
+    def setUpClass(cls, provider, hub, group, project):
         """Initial class level setup."""
         # pylint: disable=arguments-differ
         super().setUpClass()
         cls.provider = provider
+        cls.hub = hub
+        cls.group = group
+        cls.project = project
 
     def can_access_extractor(self):
         """Return whether there is access to the CQC extractors."""
@@ -60,7 +62,8 @@ class TestRandomIntegration(IBMTestCase):
     @skipIf(QISKIT_RNG_VERSION <= '0.2.2', "Need qiskit_rng > 0.2.2")
     def test_cqc_extractor(self):
         """Test invoking the CQC extractors."""
-        generator = Generator(self.provider.get_backend('ibmq_qasm_simulator'))
+        generator = Generator(self.provider.get_backend('ibmq_qasm_simulator', hub=self.hub,
+                                                        group=self.group, project=self.project))
         output = generator.sample(1024).block_until_ready()
         params = output.get_cqc_extractor_params()
 
@@ -102,12 +105,17 @@ class TestRandom(IBMTestCase):
 
     @classmethod
     @requires_provider
-    def setUpClass(cls, provider):
+    def setUpClass(cls, provider, hub, group, project):
         """Initial class level setup."""
         # pylint: disable=arguments-differ
         super().setUpClass()
         cls.provider = provider
-        random_service = IBMRandomService(provider)  # pylint: disable=no-value-for-parameter
+        cls.hub = hub
+        cls.group = group
+        cls.project = project
+        cls.hub = provider._get_hgp(hub, group, project)
+        # pylint: disable=no-value-for-parameter
+        random_service = IBMRandomService(provider, cls.hub)
         random_service._random_client = FakeRandomClient()
         random_service._initialized = False
         cls.provider._random = random_service
@@ -116,7 +124,6 @@ class TestRandom(IBMTestCase):
     def tearDownClass(cls) -> None:
         """Class level teardown."""
         super().tearDownClass()
-        IBMProvider._disable_account()
 
     def test_list_random_services(self):
         """Test listing random number services."""

@@ -18,7 +18,6 @@ import warnings
 from unittest import skipIf
 from typing import Dict, Any
 import copy
-import sys
 
 from requests_ntlm import HttpNtlmAuth
 from qiskit_ibm import IBMProvider
@@ -26,7 +25,7 @@ from qiskit_ibm.apiconstants import QISKIT_IBM_API_URL
 from qiskit_ibm.credentials import (
     Credentials, discover_credentials,
     read_credentials_from_qiskitrc, store_credentials,
-    store_preferences, HubGroupProject)
+    store_preferences, HubGroupProjectID)
 from qiskit_ibm.credentials import configrc
 from qiskit_ibm.exceptions import IBMProviderError
 
@@ -60,12 +59,6 @@ class TestCredentials(IBMTestCase):
         self.assertIn('No IBM Quantum credentials found',
                       str(context_manager.exception))
 
-    # Test not supported in Python 3.6 since patching a classmethod
-    # (in mock_ibm_provider) incorrectly throws
-    # TypeError: 'NonCallableMagicMock' object is not callable
-    # which was fixed in later versions
-    @skipIf(sys.version_info.major == 3 and sys.version_info.minor == 6,
-            'Test not supported on Python 3.6')
     def test_store_credentials_overwrite(self) -> None:
         """Test overwriting qiskitrc credentials."""
         credentials = Credentials('QISKITRC_TOKEN', url=QISKIT_IBM_API_URL)
@@ -90,8 +83,8 @@ class TestCredentials(IBMTestCase):
                 provider = IBMProvider()
 
         # Ensure that the credentials are the overwritten ones.
-        # pylint: disable=unsubscriptable-object
-        self.assertEqual(provider['credentials'].token, credentials2.token)
+        # pylint: disable=no-member
+        self.assertEqual(provider._hgp['credentials'].token, credentials2.token)
 
     def test_environ_over_qiskitrc(self) -> None:
         """Test credential discovery order."""
@@ -330,11 +323,11 @@ class TestPreferences(IBMTestCase):
 
     def _get_pref_dict(
             self,
-            hgp: str = 'my-hub/my-group/my-project',
+            hgp_id: str = 'my-hub/my-group/my-project',
             cat: str = 'experiment',
             pref_key: str = 'auto_save',
             pref_val: Any = True
     ) -> Dict:
         """Generate a new preference dictionary."""
-        hub, group, project = hgp.split('/')
-        return {HubGroupProject(hub, group, project): {cat: {pref_key: pref_val}}}
+        hub, group, project = hgp_id.split('/')
+        return {HubGroupProjectID(hub, group, project): {cat: {pref_key: pref_val}}}
