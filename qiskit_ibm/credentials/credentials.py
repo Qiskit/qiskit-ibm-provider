@@ -17,7 +17,7 @@ import re
 from typing import Dict, Tuple, Optional, Any
 from requests_ntlm import HttpNtlmAuth
 
-from .hubgroupproject import HubGroupProject
+from .hub_group_project_id import HubGroupProjectID
 
 
 REGEX_IBM_HUBS = (
@@ -52,7 +52,7 @@ class Credentials:
             services: Optional[Dict] = None,
             access_token: Optional[str] = None,
             preferences: Optional[Dict] = None,
-            default_provider: Optional[HubGroupProject] = None,
+            default_provider: Optional[HubGroupProjectID] = None,
     ) -> None:
         """Credentials constructor.
 
@@ -99,16 +99,16 @@ class Credentials:
             return False
         return (self.token == other.token) & (self.unique_id() == other.unique_id())
 
-    def unique_id(self) -> HubGroupProject:
+    def unique_id(self) -> HubGroupProjectID:
         """Return a value that uniquely identifies these credentials.
 
         By convention, two credentials that have the same hub, group,
         and project are considered equivalent.
 
         Returns:
-            A ``HubGroupProject`` instance.
+            A ``HubGroupProjectID`` instance.
         """
-        return HubGroupProject(self.hub, self.group, self.project)
+        return HubGroupProjectID(self.hub, self.group, self.project)
 
     def connection_parameters(self) -> Dict[str, Any]:
         """Construct connection related parameters.

@@ -88,6 +88,7 @@ class IBMDashboard(Subscriber):
         self.jobs = []  # type: List
 
         self._init_subscriber()
+        self.provider = None
         self.dashboard = None  # type: Optional[AccordionWithThread]
 
         # Backend dictionary. The keys are the backend names and the values
@@ -104,17 +105,17 @@ class IBMDashboard(Subscriber):
         """Get all the backends accessible with this account."""
 
         ibm_backends = {}
-        for pro in IBMProvider.providers():
-            pro_name = "{hub}/{group}/{project}".format(hub=pro.credentials.hub,
-                                                        group=pro.credentials.group,
-                                                        project=pro.credentials.project)
-            for back in pro.backends():
-                if not back.configuration().simulator:
-                    if back.name() not in ibm_backends.keys():
-                        ibm_backends[back.name()] = \
-                            BackendWithProviders(backend=back, providers=[pro_name])
+        for hgp in self.provider._get_hgps():
+            hgp_name = "{hub}/{group}/{project}".format(hub=hgp.credentials.hub,
+                                                        group=hgp.credentials.group,
+                                                        project=hgp.credentials.project)
+            for backend in hgp.backends.values():
+                if not backend.configuration().simulator:
+                    if backend.name() not in ibm_backends.keys():
+                        ibm_backends[backend.name()] = \
+                            BackendWithProviders(backend=backend, providers=[hgp_name])
                     else:
-                        ibm_backends[back.name()].providers.append(pro_name)
+                        ibm_backends[backend.name()].providers.append(hgp_name)
 
         self.backend_dict = ibm_backends
 
@@ -134,8 +135,9 @@ class IBMDashboard(Subscriber):
                                        args=(back, self.dashboard._device_list))
             _thread.start()
 
-    def start_dashboard(self) -> None:
+    def start_dashboard(self, provider: IBMProvider) -> None:
         """Starts the dashboard."""
+        self.provider = provider
         self.dashboard = build_dashboard_widget()
         self.job_viewer = self.dashboard.children[0].children[1]
         self._get_backends()
@@ -327,20 +329,13 @@ class IBMDashboardMagic(Magics):
     def ibm_quantum_dashboard(self, line='', cell=None) -> None:
         """A Jupyter magic function to enable the dashboard."""
         # pylint: disable=unused-argument
-        pro = IBMProvider.providers()
-        if not pro:
-            try:
-                IBMProvider()
-            except Exception:
-                raise QiskitError(
-                    "Could not load IBM Quantum account from the local file.")
-            else:
-                pro = IBMProvider.providers()
-                if not pro:
-                    raise QiskitError(
-                        "No providers found. Must load your IBM Quantum account.")
+        try:
+            provider = IBMProvider()
+        except Exception:
+            raise QiskitError(
+                "Could not load IBM Quantum account from the local file.")
         _IBM_DASHBOARD.stop_dashboard()
-        _IBM_DASHBOARD.start_dashboard()
+        _IBM_DASHBOARD.start_dashboard(provider)
 
     @line_magic
     def disable_ibm_quantum_dashboard(self, line='', cell=None) -> None:
