@@ -56,8 +56,7 @@ class HubGroupProject:
         self._service_urls = {
             'backend': self.credentials.url,
             'experiment': self.credentials.experiment_url,
-            'random': self.credentials.extractor_url,
-            'runtime': self.credentials.runtime_url
+            'random': self.credentials.extractor_url
         }
 
     @property
