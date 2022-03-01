@@ -71,8 +71,6 @@ provider = IBMProvider(token='MY_API_TOKEN')
 Now you're set up and ready to check out some of the tutorials.
 - [Qiskit IBM Provider]
 - [Qiskit]
-- [Qiskit Runtime]
-- [Qiskit Experiments]
 
 ## Contribution Guidelines
 
@@ -107,8 +105,6 @@ project at different levels. If you use Qiskit, please cite as per the included
 [Stack Exchange]: https://quantumcomputing.stackexchange.com/questions/tagged/qiskit
 [Qiskit IBM Provider]: https://github.com/Qiskit-Partners/qiskit-ibm/tree/main/docs/tutorials
 [Qiskit]: https://github.com/Qiskit/qiskit-tutorial
-[Qiskit Runtime]: https://github.com/Qiskit-Partners/qiskit-runtime/tree/main/tutorials
-[Qiskit Experiments]: https://github.com/Qiskit/qiskit-experiments/tree/main/docs/tutorials
 [many people]: https://github.com/Qiskit-Partners/qiskit-ibm/graphs/contributors
 [BibTeX file]: https://github.com/Qiskit/qiskit/blob/master/Qiskit.bib
 [Apache License 2.0]: https://github.com/Qiskit-Partners/qiskit-ibm/blob/main/LICENSE.txt
