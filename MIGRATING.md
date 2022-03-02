@@ -182,7 +182,6 @@ result = job.result()
 | IBMQBackend  | IBMBackend |
 | IBMQBackendService  | IBMBackendService |
 | IBMQJob  | IBMJob |
-| IBMQRandomService  | IBMRandomService |
 | IBMQError | IBMError |
 | IBMQProviderError | IBMProviderError |
 | IBMQAccountError | None (Removed) |

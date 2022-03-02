@@ -54,9 +54,7 @@ class HubGroupProject:
         # Initialize the internal list of backends.
         self._backends: Dict[str, IBMBackend] = {}
         self._service_urls = {
-            'backend': self.credentials.url,
-            'experiment': self.credentials.experiment_url,
-            'random': self.credentials.extractor_url
+            'backend': self.credentials.url
         }
 
     @property
