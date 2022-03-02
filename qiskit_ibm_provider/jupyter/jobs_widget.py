@@ -19,24 +19,24 @@ from typing import Any, Union
 import ipywidgets as wid
 import plotly.graph_objects as go
 from qiskit.test.mock.fake_backend import FakeBackend
-from qiskit_ibm_provider.ibm_backend import IBMBackend
 
 from ..ibm_backend import IBMBackend
 from ..visualization.interactive.plotly_wrapper import PlotlyWidget
 
-MONTH_NAMES = {1: 'Jan.',
-               2: 'Feb.',
-               3: 'Mar.',
-               4: 'Apr.',
-               5: 'May',
-               6: 'June',
-               7: 'July',
-               8: 'Aug.',
-               9: 'Sept.',
-               10: 'Oct.',
-               11: 'Nov.',
-               12: 'Dec.'
-               }
+MONTH_NAMES = {
+    1: "Jan.",
+    2: "Feb.",
+    3: "Mar.",
+    4: "Apr.",
+    5: "May",
+    6: "June",
+    7: "July",
+    8: "Aug.",
+    9: "Sept.",
+    10: "Oct.",
+    11: "Nov.",
+    12: "Dec.",
+}
 
 
 def _title_builder(sel_dict: dict) -> str:
@@ -48,15 +48,19 @@ def _title_builder(sel_dict: dict) -> str:
     Returns:
         HTML string for title.
     """
-    if 'day' not in sel_dict.keys():
-        title_str = 'Jobs in {mon} {yr} ({num})'.format(mon=MONTH_NAMES[sel_dict['month']],
-                                                        yr=sel_dict['year'],
-                                                        num=len(sel_dict['jobs']))
+    if "day" not in sel_dict.keys():
+        title_str = "Jobs in {mon} {yr} ({num})".format(
+            mon=MONTH_NAMES[sel_dict["month"]],
+            yr=sel_dict["year"],
+            num=len(sel_dict["jobs"]),
+        )
     else:
-        title_str = 'Jobs on {day} {mon} {yr} ({num})'.format(day=sel_dict['day'],
-                                                              mon=MONTH_NAMES[sel_dict['month']],
-                                                              yr=sel_dict['year'],
-                                                              num=len(sel_dict['jobs']))
+        title_str = "Jobs on {day} {mon} {yr} ({num})".format(
+            day=sel_dict["day"],
+            mon=MONTH_NAMES[sel_dict["month"]],
+            yr=sel_dict["year"],
+            num=len(sel_dict["jobs"]),
+        )
     return "<h4>{}</h4>".format(title_str)
 
 
@@ -87,23 +91,22 @@ tr:nth-child(even) {background-color: #f6f6f6 !important;}
     table_html += "<tr><th>Date</th><th>Job ID / Name</th><th>Status</th></tr>"
     table_footer = "</table>"
 
-    for jdata in sel_dict['jobs']:
+    for jdata in sel_dict["jobs"]:
         date_str = jdata[0].strftime("%H:%M %Z [%d/%b]")
         _temp_str = "<td>{time}</td><td>{jid}</td><td>{status}</td></tr>"
         # job has a name
         if jdata[2]:
-            name = "{name} [{jid}]".format(name=jdata[2],
-                                           jid=jdata[1])
+            name = "{name} [{jid}]".format(name=jdata[2], jid=jdata[1])
         else:
             name = jdata[1]
-        table_html += _temp_str.format(time=date_str,
-                                       jid=name,
-                                       status=jdata[3])
+        table_html += _temp_str.format(time=date_str, jid=name, status=jdata[3])
     table_html += table_footer
     return table_html
 
 
-def _job_summary(backend: Union[IBMBackend, FakeBackend], **kwargs: Any) -> PlotlyWidget:
+def _job_summary(
+    backend: Union[IBMBackend, FakeBackend], **kwargs: Any
+) -> PlotlyWidget:
     """Interactive jobs summary for a backend.
 
     Args:
@@ -120,14 +123,15 @@ def _job_summary(backend: Union[IBMBackend, FakeBackend], **kwargs: Any) -> Plot
     """
     now = datetime.datetime.now()
     past_year_date = now - datetime.timedelta(days=365)
-    limit = kwargs.pop('limit', None)
-    start_datetime = kwargs.pop('start_datetime', past_year_date)
+    limit = kwargs.pop("limit", None)
+    start_datetime = kwargs.pop("start_datetime", past_year_date)
     provider = backend.provider()
     if not provider:
         jobs = []  # provider will be None when this is used in docs
     else:
-        jobs = provider.backend.jobs(backend_name=backend.name(),
-                                     limit=limit, start_datetime=start_datetime)
+        jobs = provider.backend.jobs(
+            backend_name=backend.name(), limit=limit, start_datetime=start_datetime
+        )
 
     num_jobs = len(jobs)
     main_str = "<b>Total Jobs</b><br>{}".format(num_jobs)
@@ -158,8 +162,16 @@ def _job_summary(backend: Union[IBMBackend, FakeBackend], **kwargs: Any) -> Plot
     parents = [""]
     values = [num_jobs]
 
-    colors = ['#003f5c', '#ffa600', '#2f4b7c', '#f95d6a',
-              '#665191', '#ff7c43', '#a05195', '#d45087']
+    colors = [
+        "#003f5c",
+        "#ffa600",
+        "#2f4b7c",
+        "#f95d6a",
+        "#665191",
+        "#ff7c43",
+        "#a05195",
+        "#d45087",
+    ]
 
     num_colors = len(colors)
 
@@ -173,18 +185,17 @@ def _job_summary(backend: Union[IBMBackend, FakeBackend], **kwargs: Any) -> Plot
             # Adding the months here.  So the total
             # jobs to include must include all the jobs
             # in all the days in that month.
-            month_dict = {'year': yr_key, 'month': key, 'jobs': []}
+            month_dict = {"year": yr_key, "month": key, "jobs": []}
             total_jobs_month = 0
             for day in val.keys():
                 for jjj in val[day]:
                     total_jobs_month += 1
-                    month_dict['jobs'].append(jjj)
+                    month_dict["jobs"].append(jjj)
 
             # add the month jobs to the index
             index_jobs.append(month_dict)
             # Set the label to the year
-            month_label = "{mon} {yr}".format(mon=MONTH_NAMES[int(key)],
-                                              yr=yr_key)
+            month_label = "{mon} {yr}".format(mon=MONTH_NAMES[int(key)], yr=yr_key)
             labels.append(month_label)
             # Set the parents to the main str
             parents.append(main_str)
@@ -195,32 +206,31 @@ def _job_summary(backend: Union[IBMBackend, FakeBackend], **kwargs: Any) -> Plot
             # Do the days
             day_counter = 0
             for day_num, day_jobs in val.items():
-                day_dict = {'year': yr_key, 'month': key,
-                            'day': day_num, 'jobs': []}
-                day_dict['jobs'].extend(day_jobs)
+                day_dict = {"year": yr_key, "month": key, "day": day_num, "jobs": []}
+                day_dict["jobs"].extend(day_jobs)
 
                 index_jobs.append(day_dict)
                 _day_num = str(day_num)
-                if _day_num[0] == '0':
+                if _day_num[0] == "0":
                     _day_num = _day_num[1:]
 
-                if _day_num[-1] == '1':
-                    if _day_num[0] != '1' and len(_day_num) == 1:
-                        _day_num = _day_num+'st'
+                if _day_num[-1] == "1":
+                    if _day_num[0] != "1" and len(_day_num) == 1:
+                        _day_num = _day_num + "st"
                     else:
-                        _day_num = _day_num+'th'
-                elif _day_num[-1] == '2':
-                    if _day_num[0] != '1' and len(_day_num) == 1:
-                        _day_num = _day_num+'nd'
+                        _day_num = _day_num + "th"
+                elif _day_num[-1] == "2":
+                    if _day_num[0] != "1" and len(_day_num) == 1:
+                        _day_num = _day_num + "nd"
                     else:
-                        _day_num = _day_num+'th'
-                elif _day_num[-1] == '3':
-                    if _day_num[0] != '1' and len(_day_num) == 1:
-                        _day_num = _day_num+'rd'
+                        _day_num = _day_num + "th"
+                elif _day_num[-1] == "3":
+                    if _day_num[0] != "1" and len(_day_num) == 1:
+                        _day_num = _day_num + "rd"
                     else:
-                        _day_num = _day_num+'th'
+                        _day_num = _day_num + "th"
                 else:
-                    _day_num = _day_num+'th'
+                    _day_num = _day_num + "th"
 
                 labels.append(_day_num)
                 parents.append(month_label)
@@ -230,21 +240,25 @@ def _job_summary(backend: Union[IBMBackend, FakeBackend], **kwargs: Any) -> Plot
 
     wedge_str = "<b>{label}</b><br><b>{value} Jobs</b>"
 
-    hover_text = [None]+[wedge_str.format(label=labels[kk],
-                                          value=values[kk]) for kk in range(1, len(labels))]
+    hover_text = [None] + [
+        wedge_str.format(label=labels[kk], value=values[kk])
+        for kk in range(1, len(labels))
+    ]
 
-    fig = go.Figure(go.Sunburst(labels=labels,
-                                parents=parents,
-                                values=values,
-                                branchvalues="total",
-                                textfont=dict(size=18),
-                                outsidetextfont=dict(size=20),
-                                maxdepth=2,
-                                hoverinfo="text",
-                                hovertext=hover_text,
-                                marker=dict(colors=wedge_colors),
-                                )
-                    )
+    fig = go.Figure(
+        go.Sunburst(
+            labels=labels,
+            parents=parents,
+            values=values,
+            branchvalues="total",
+            textfont=dict(size=18),
+            outsidetextfont=dict(size=20),
+            maxdepth=2,
+            hoverinfo="text",
+            hovertext=hover_text,
+            marker=dict(colors=wedge_colors),
+        )
+    )
     fig.update_layout(margin=dict(t=10, l=10, r=10, b=10))
     sun_wid = PlotlyWidget(fig)
     sun_wid._active = 0
@@ -257,8 +271,8 @@ def _job_summary(backend: Union[IBMBackend, FakeBackend], **kwargs: Any) -> Plot
                 sun_wid._title.value = _title_builder(sun_wid._job_index[idx])
                 sun_wid._table.value = _job_table_builder(sun_wid._job_index[idx])
             else:
-                sun_wid._title.value = '<h4>Click graph to display jobs</h4>'
-                sun_wid._table.value = ''
+                sun_wid._title.value = "<h4>Click graph to display jobs</h4>"
+                sun_wid._table.value = ""
             sun_wid._active = idx
 
     sun = sun_wid.data[0]
@@ -281,25 +295,31 @@ def jobs_tab(backend: Union[IBMBackend, FakeBackend], **kwargs: Any) -> wid.HBox
     Returns:
         An widget containing job summary.
     """
-    title = wid.HTML('<h4>Click graph to display jobs</h4>')
-    table = wid.HTML('', layout=wid.Layout(max_height='500px',
-                                           height='500px',
-                                           width='100%',
-                                           overflow='hidden scroll',))
+    title = wid.HTML("<h4>Click graph to display jobs</h4>")
+    table = wid.HTML(
+        "",
+        layout=wid.Layout(
+            max_height="500px",
+            height="500px",
+            width="100%",
+            overflow="hidden scroll",
+        ),
+    )
 
     sun_wid = _job_summary(backend, **kwargs)
     sun_wid._table = table
     sun_wid._title = title
 
-    left = wid.Box(children=[sun_wid],
-                   layout=wid.Layout(width='40%',
-                                     overflow='hidden hidden'))
+    left = wid.Box(
+        children=[sun_wid], layout=wid.Layout(width="40%", overflow="hidden hidden")
+    )
 
-    right = wid.VBox(children=[title, table],
-                     layout=wid.Layout(width='60%',
-                                       overflow='hidden hidden'))
+    right = wid.VBox(
+        children=[title, table],
+        layout=wid.Layout(width="60%", overflow="hidden hidden"),
+    )
 
-    out = wid.HBox(children=[left, right],
-                   layout=wid.Layout(max_height='500px',
-                                     margin='10px'))
+    out = wid.HBox(
+        children=[left, right], layout=wid.Layout(max_height="500px", margin="10px")
+    )
     return out

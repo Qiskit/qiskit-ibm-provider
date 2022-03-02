@@ -14,19 +14,19 @@
 
 import logging
 from abc import ABC, abstractmethod
-from typing import Dict, Optional, Any, List, Union
 from datetime import datetime
+from typing import Dict, Optional, Any, List, Union
 
+from qiskit.circuit.quantumcircuit import QuantumCircuit
 from qiskit.providers.job import JobV1 as Job
 from qiskit.providers.models import BackendProperties
-from qiskit.result import Result
-from qiskit.circuit.quantumcircuit import QuantumCircuit
 from qiskit.pulse import Schedule
 from qiskit.qobj import QasmQobj, PulseQobj
+from qiskit.result import Result
 
 from qiskit_ibm_provider import ibm_backend  # pylint: disable=unused-import
-from ..api.clients import AccountClient
 from .queueinfo import QueueInfo
+from ..api.clients import AccountClient
 
 logger = logging.getLogger(__name__)
 
@@ -37,13 +37,13 @@ class IBMJob(Job, ABC):
     _data = {}  # type: Dict
 
     def __init__(
-            self,
-            backend: 'ibm_backend.IBMBackend',
-            api_client: AccountClient,
-            job_id: str,
-            name: Optional[str] = None,
-            tags: Optional[List[str]] = None,
-            **kwargs: Any
+        self,
+        backend: "ibm_backend.IBMBackend",
+        api_client: AccountClient,
+        job_id: str,
+        name: Optional[str] = None,
+        tags: Optional[List[str]] = None,
+        **kwargs: Any
     ) -> None:
         """IBMJob constructor.
 
@@ -64,7 +64,7 @@ class IBMJob(Job, ABC):
         self._data = {}
         for key, value in kwargs.items():
             # Append suffix to key to avoid conflicts.
-            self._data[key + '_'] = value
+            self._data[key + "_"] = value
 
     @abstractmethod
     def properties(self) -> Optional[BackendProperties]:
@@ -78,11 +78,11 @@ class IBMJob(Job, ABC):
 
     @abstractmethod
     def result(
-            self,
-            timeout: Optional[float] = None,
-            wait: float = 5,
-            partial: bool = False,
-            refresh: bool = False
+        self,
+        timeout: Optional[float] = None,
+        wait: float = 5,
+        partial: bool = False,
+        refresh: bool = False,
     ) -> Result:
         """Return the result of the job.
 
@@ -121,10 +121,7 @@ class IBMJob(Job, ABC):
         pass
 
     @abstractmethod
-    def update_tags(
-            self,
-            new_tags: List[str]
-    ) -> List[str]:
+    def update_tags(self, new_tags: List[str]) -> List[str]:
         """Update the tags associated with this job.
 
         Args:
@@ -250,7 +247,7 @@ class IBMJob(Job, ABC):
         try:
             return self._data[name]
         except KeyError:
-            raise AttributeError('Attribute {} is not defined.'.format(name)) from None
+            raise AttributeError("Attribute {} is not defined.".format(name)) from None
 
     @abstractmethod
     def _get_qobj(self) -> Optional[Union[QasmQobj, PulseQobj]]:

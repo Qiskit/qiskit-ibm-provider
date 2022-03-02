@@ -25,13 +25,23 @@ from qiskit.providers.exceptions import QiskitBackendNotFoundError
 from .api.clients import AuthClient, VersionClient
 from .apiconstants import QISKIT_IBM_API_URL
 from .credentials import Credentials, HubGroupProjectID, discover_credentials
-from .credentials.configrc import (remove_credentials, read_credentials_from_qiskitrc,
-                                   store_credentials)
+from .credentials.configrc import (
+    remove_credentials,
+    read_credentials_from_qiskitrc,
+    store_credentials,
+)
 from .credentials.exceptions import HubGroupProjectIDInvalidStateError
-from .exceptions import (IBMNotAuthorizedError, IBMInputValueError, IBMProviderCredentialsNotFound,
-                         IBMProviderCredentialsInvalidFormat, IBMProviderCredentialsInvalidToken,
-                         IBMProviderCredentialsInvalidUrl, IBMProviderError, IBMProviderValueError,
-                         IBMProviderMultipleCredentialsFound)
+from .exceptions import (
+    IBMNotAuthorizedError,
+    IBMInputValueError,
+    IBMProviderCredentialsNotFound,
+    IBMProviderCredentialsInvalidFormat,
+    IBMProviderCredentialsInvalidToken,
+    IBMProviderCredentialsInvalidUrl,
+    IBMProviderError,
+    IBMProviderValueError,
+    IBMProviderMultipleCredentialsFound,
+)
 from .hub_group_project import HubGroupProject  # pylint: disable=cyclic-import
 from .ibm_backend import IBMBackend  # pylint: disable=cyclic-import
 from .ibm_backend_service import IBMBackendService  # pylint: disable=cyclic-import
@@ -122,10 +132,7 @@ class IBMProvider(Provider):
     """
 
     def __init__(
-            self,
-            token: Optional[str] = None,
-            url: Optional[str] = None,
-            **kwargs: Any
+        self, token: Optional[str] = None, url: Optional[str] = None, **kwargs: Any
     ) -> None:
         """IBMProvider constructor
 
@@ -151,18 +158,15 @@ class IBMProvider(Provider):
         # pylint: disable=unused-argument,unsubscriptable-object
         super().__init__()
         account_credentials, account_preferences = self._resolve_credentials(
-            token=token,
-            url=url,
-            **kwargs
+            token=token, url=url, **kwargs
         )
-        self._initialize_hgps(credentials=account_credentials, preferences=account_preferences)
+        self._initialize_hgps(
+            credentials=account_credentials, preferences=account_preferences
+        )
         self._initialize_services()
 
     def _resolve_credentials(
-            self,
-            token: Optional[str] = None,
-            url: Optional[str] = None,
-            **kwargs: Any
+        self, token: Optional[str] = None, url: Optional[str] = None, **kwargs: Any
     ) -> Tuple[Credentials, Dict]:
         """Resolve credentials after looking up env variables and credentials saved on disk
 
@@ -187,10 +191,13 @@ class IBMProvider(Provider):
         if token:
             if not isinstance(token, str):
                 raise IBMProviderCredentialsInvalidToken(
-                    'Invalid IBM Quantum token '
-                    'found: "{}" of type {}.'.format(token, type(token)))
-            url = url or os.getenv('QISKIT_IBM_API_URL') or QISKIT_IBM_API_URL
-            account_credentials = Credentials(token=token, url=url, auth_url=url, **kwargs)
+                    "Invalid IBM Quantum token "
+                    'found: "{}" of type {}.'.format(token, type(token))
+                )
+            url = url or os.getenv("QISKIT_IBM_API_URL") or QISKIT_IBM_API_URL
+            account_credentials = Credentials(
+                token=token, url=url, auth_url=url, **kwargs
+            )
             preferences: Optional[Dict] = {}
         else:
             # Check for valid credentials in env variables or qiskitrc file.
@@ -198,22 +205,22 @@ class IBMProvider(Provider):
                 saved_credentials, preferences = discover_credentials()
             except HubGroupProjectIDInvalidStateError as ex:
                 raise IBMProviderCredentialsInvalidFormat(
-                    'Invalid hub/group/project data found {}'
-                    .format(str(ex))) from ex
+                    "Invalid hub/group/project data found {}".format(str(ex))
+                ) from ex
             credentials_list = list(saved_credentials.values())
             if not credentials_list:
                 raise IBMProviderCredentialsNotFound(
-                    'No IBM Quantum credentials found.')
+                    "No IBM Quantum credentials found."
+                )
             if len(credentials_list) > 1:
                 raise IBMProviderMultipleCredentialsFound(
-                    'Multiple IBM Quantum Experience credentials found.')
+                    "Multiple IBM Quantum Experience credentials found."
+                )
             account_credentials = credentials_list[0]
         return account_credentials, preferences
 
     def _initialize_hgps(
-            self,
-            credentials: Credentials,
-            preferences: Optional[Dict] = None
+        self, credentials: Credentials, preferences: Optional[Dict] = None
     ) -> None:
         """Authenticate against IBM Quantum and populate the hub/group/projects.
 
@@ -229,14 +236,18 @@ class IBMProvider(Provider):
         self._hgps: Dict[HubGroupProjectID, HubGroupProject] = OrderedDict()
         version_info = self._check_api_version(credentials)
         # Check the URL is a valid authentication URL.
-        if not version_info['new_api'] or 'api-auth' not in version_info:
+        if not version_info["new_api"] or "api-auth" not in version_info:
             raise IBMProviderCredentialsInvalidUrl(
-                'The URL specified ({}) is not an IBM Quantum authentication URL. '
-                'Valid authentication URL: {}.'
-                .format(credentials.url, QISKIT_IBM_API_URL))
-        auth_client = AuthClient(credentials.token,
-                                 credentials.base_url,
-                                 **credentials.connection_parameters())
+                "The URL specified ({}) is not an IBM Quantum authentication URL. "
+                "Valid authentication URL: {}.".format(
+                    credentials.url, QISKIT_IBM_API_URL
+                )
+            )
+        auth_client = AuthClient(
+            credentials.token,
+            credentials.base_url,
+            **credentials.connection_parameters(),
+        )
         service_urls = auth_client.current_service_urls()
         user_hubs = auth_client.user_hubs()
         preferences = preferences or {}
@@ -246,28 +257,36 @@ class IBMProvider(Provider):
             hgp_credentials = Credentials(
                 credentials.token,
                 access_token=auth_client.current_access_token(),
-                url=service_urls['http'],
+                url=service_urls["http"],
                 auth_url=credentials.auth_url,
-                websockets_url=service_urls['ws'],
+                websockets_url=service_urls["ws"],
                 proxies=credentials.proxies,
                 verify=credentials.verify,
-                services=service_urls.get('services', {}),
+                services=service_urls.get("services", {}),
                 default_provider=credentials.default_provider,
-                **hub_info
+                **hub_info,
             )
-            hgp_credentials.preferences = \
-                preferences.get(hgp_credentials.unique_id(), {})
+            hgp_credentials.preferences = preferences.get(
+                hgp_credentials.unique_id(), {}
+            )
             # Build the hgp.
             try:
-                hgp = HubGroupProject(credentials=hgp_credentials, provider=self, is_open=is_open)
+                hgp = HubGroupProject(
+                    credentials=hgp_credentials, provider=self, is_open=is_open
+                )
                 self._hgps[hgp.credentials.unique_id()] = hgp
                 is_open = False  # hgps after first are premium and not open access
             except Exception:  # pylint: disable=broad-except
                 # Catch-all for errors instantiating the hgp.
-                logger.warning('Unable to instantiate hub/group/project for %s: %s',
-                               hub_info, traceback.format_exc())
+                logger.warning(
+                    "Unable to instantiate hub/group/project for %s: %s",
+                    hub_info,
+                    traceback.format_exc(),
+                )
         if not self._hgps:
-            raise IBMProviderError('No hub/group/project could be found for this account.')
+            raise IBMProviderError(
+                "No hub/group/project could be found for this account."
+            )
         # Move open hgp to end of the list
         if len(self._hgps) > 1:
             open_hgp = self._get_hgp()
@@ -288,17 +307,18 @@ class IBMProvider(Provider):
         Returns:
             A dictionary with version information.
         """
-        version_finder = VersionClient(credentials.base_url,
-                                       **credentials.connection_parameters())
+        version_finder = VersionClient(
+            credentials.base_url, **credentials.connection_parameters()
+        )
         return version_finder.version()
 
     def _get_hgp(
-            self,
-            hub: Optional[str] = None,
-            group: Optional[str] = None,
-            project: Optional[str] = None,
-            backend_name: Optional[str] = None,
-            service_name: Optional[str] = None
+        self,
+        hub: Optional[str] = None,
+        group: Optional[str] = None,
+        project: Optional[str] = None,
+        backend_name: Optional[str] = None,
+        service_name: Optional[str] = None,
     ) -> HubGroupProject:
         """Return an instance of `HubGroupProject` for a single hub/group/project combination.
 
@@ -323,36 +343,42 @@ class IBMProvider(Provider):
         """
         # If any `hub`, `group`, or `project` is specified, make sure all parameters are set.
         if any([hub, group, project]) and not all([hub, group, project]):
-            raise IBMProviderError('The hub, group, and project parameters must all be '
-                                   'specified. '
-                                   'hub = "{}", group = "{}", project = "{}"'
-                                   .format(hub, group, project))
+            raise IBMProviderError(
+                "The hub, group, and project parameters must all be "
+                "specified. "
+                'hub = "{}", group = "{}", project = "{}"'.format(hub, group, project)
+            )
         hgps = self._get_hgps(hub=hub, group=group, project=project)
         if any([hub, group, project]):
             if not hgps:
-                raise IBMProviderError('No hub/group/project matches the specified criteria: '
-                                       'hub = {}, group = {}, project = {}'
-                                       .format(hub, group, project))
+                raise IBMProviderError(
+                    "No hub/group/project matches the specified criteria: "
+                    "hub = {}, group = {}, project = {}".format(hub, group, project)
+                )
             if len(hgps) > 1:
-                raise IBMProviderError('More than one hub/group/project matches the '
-                                       'specified criteria. hub = {}, group = {}, project = {}'
-                                       .format(hub, group, project))
+                raise IBMProviderError(
+                    "More than one hub/group/project matches the "
+                    "specified criteria. hub = {}, group = {}, project = {}".format(
+                        hub, group, project
+                    )
+                )
         elif not hgps:
             # Prevent edge case where no hub/group/project is available.
-            raise IBMProviderError('No hub/group/project could be found for this account.')
+            raise IBMProviderError(
+                "No hub/group/project could be found for this account."
+            )
         elif backend_name and service_name:
             for hgp in hgps:
-                if hgp.has_service(service_name) and \
-                        hgp.get_backend(backend_name):
+                if hgp.has_service(service_name) and hgp.get_backend(backend_name):
                     return hgp
             raise IBMProviderError("No backend matches the criteria.")
         return hgps[0]
 
     def _get_hgps(
-            self,
-            hub: Optional[str] = None,
-            group: Optional[str] = None,
-            project: Optional[str] = None,
+        self,
+        hub: Optional[str] = None,
+        group: Optional[str] = None,
+        project: Optional[str] = None,
     ) -> List[HubGroupProject]:
         """Return a list of `HubGroupProject` instances, subject to optional filtering.
 
@@ -371,8 +397,7 @@ class IBMProvider(Provider):
             filters.append(lambda hgp: hgp.group == group)
         if project:
             filters.append(lambda hgp: hgp.project == project)
-        hgps = [hgp for key, hgp in self._hgps.items()
-                if all(f(key) for f in filters)]
+        hgps = [hgp for key, hgp in self._hgps.items() if all(f(key) for f in filters)]
         return hgps
 
     def _initialize_services(self) -> None:
@@ -385,7 +410,7 @@ class IBMProvider(Provider):
                 self._backend = IBMBackendService(self, hgp)
             if self._backend:
                 break
-        self._services = {'backend': self._backend}
+        self._services = {"backend": self._backend}
 
     @property
     def backend(self) -> IBMBackendService:
@@ -407,8 +432,8 @@ class IBMProvider(Provider):
             return None
         first_hgp = self._get_hgp()
         return {
-            'token': first_hgp.credentials.token,
-            'url': first_hgp.credentials.auth_url
+            "token": first_hgp.credentials.token,
+            "url": first_hgp.credentials.auth_url,
         }
 
     @staticmethod
@@ -424,22 +449,24 @@ class IBMProvider(Provider):
         stored_credentials, _ = read_credentials_from_qiskitrc()
         if not stored_credentials:
             raise IBMProviderCredentialsNotFound(
-                'No IBM Quantum credentials found on disk.')
+                "No IBM Quantum credentials found on disk."
+            )
         credentials = list(stored_credentials.values())[0]
         if credentials.url != QISKIT_IBM_API_URL:
             raise IBMProviderCredentialsInvalidUrl(
-                'Invalid IBM Quantum credentials found on disk. ')
+                "Invalid IBM Quantum credentials found on disk. "
+            )
         remove_credentials(credentials)
 
     @staticmethod
     def save_account(
-            token: str,
-            url: str = QISKIT_IBM_API_URL,
-            hub: Optional[str] = None,
-            group: Optional[str] = None,
-            project: Optional[str] = None,
-            overwrite: bool = False,
-            **kwargs: Any
+        token: str,
+        url: str = QISKIT_IBM_API_URL,
+        hub: Optional[str] = None,
+        group: Optional[str] = None,
+        project: Optional[str] = None,
+        overwrite: bool = False,
+        **kwargs: Any,
     ) -> None:
         """Save the account to disk for future use.
 
@@ -468,21 +495,31 @@ class IBMProvider(Provider):
         """
         if url != QISKIT_IBM_API_URL:
             raise IBMProviderCredentialsInvalidUrl(
-                'Invalid IBM Quantum credentials found.')
+                "Invalid IBM Quantum credentials found."
+            )
         if not token or not isinstance(token, str):
             raise IBMProviderCredentialsInvalidToken(
-                'Invalid IBM Quantum token '
-                'found: "{}" of type {}.'.format(token, type(token)))
+                "Invalid IBM Quantum token "
+                'found: "{}" of type {}.'.format(token, type(token))
+            )
         # If any `hub`, `group`, or `project` is specified, make sure all parameters are set.
         if any([hub, group, project]) and not all([hub, group, project]):
-            raise IBMProviderValueError('The hub, group, and project parameters must all be '
-                                        'specified when storing a default hub/group/project to '
-                                        'disk: hub = "{}", group = "{}", project = "{}"'
-                                        .format(hub, group, project))
+            raise IBMProviderValueError(
+                "The hub, group, and project parameters must all be "
+                "specified when storing a default hub/group/project to "
+                'disk: hub = "{}", group = "{}", project = "{}"'.format(
+                    hub, group, project
+                )
+            )
         # If specified, get the hub/group/project to store.
-        default_hgp_id = HubGroupProjectID(hub, group, project) \
-            if all([hub, group, project]) else None
-        credentials = Credentials(token=token, url=url, default_provider=default_hgp_id, **kwargs)
+        default_hgp_id = (
+            HubGroupProjectID(hub, group, project)
+            if all([hub, group, project])
+            else None
+        )
+        credentials = Credentials(
+            token=token, url=url, default_provider=default_hgp_id, **kwargs
+        )
         store_credentials(credentials, overwrite=overwrite)
 
     @staticmethod
@@ -502,22 +539,20 @@ class IBMProvider(Provider):
         credentials = list(stored_credentials.values())[0]
         if credentials.url != QISKIT_IBM_API_URL:
             raise IBMProviderCredentialsInvalidUrl(
-                'Invalid IBM Quantum credentials found on disk.')
-        return {
-            'token': credentials.token,
-            'url': credentials.url
-        }
+                "Invalid IBM Quantum credentials found on disk."
+            )
+        return {"token": credentials.token, "url": credentials.url}
 
     def backends(
-            self,
-            name: Optional[str] = None,
-            filters: Optional[Callable[[List[IBMBackend]], bool]] = None,
-            min_num_qubits: Optional[int] = None,
-            input_allowed: Optional[Union[str, List[str]]] = None,
-            hub: Optional[str] = None,
-            group: Optional[str] = None,
-            project: Optional[str] = None,
-            **kwargs: Any
+        self,
+        name: Optional[str] = None,
+        filters: Optional[Callable[[List[IBMBackend]], bool]] = None,
+        min_num_qubits: Optional[int] = None,
+        input_allowed: Optional[Union[str, List[str]]] = None,
+        hub: Optional[str] = None,
+        group: Optional[str] = None,
+        project: Optional[str] = None,
+        **kwargs: Any,
     ) -> List[IBMBackend]:
         """Return all backends accessible via this account, subject to optional filtering.
 
@@ -546,17 +581,24 @@ class IBMProvider(Provider):
             The list of available backends that match the filter.
         """
         # pylint: disable=arguments-differ
-        return self._backend.backends(name=name, filters=filters, min_num_qubits=min_num_qubits,
-                                      input_allowed=input_allowed, hub=hub, group=group,
-                                      project=project, **kwargs)
+        return self._backend.backends(
+            name=name,
+            filters=filters,
+            min_num_qubits=min_num_qubits,
+            input_allowed=input_allowed,
+            hub=hub,
+            group=group,
+            project=project,
+            **kwargs,
+        )
 
     def get_backend(
-            self,
-            name: str = None,
-            hub: Optional[str] = None,
-            group: Optional[str] = None,
-            project: Optional[str] = None,
-            **kwargs: Any
+        self,
+        name: str = None,
+        hub: Optional[str] = None,
+        group: Optional[str] = None,
+        project: Optional[str] = None,
+        **kwargs: Any,
     ) -> Backend:
         """Return a single backend matching the specified filtering.
 
@@ -579,7 +621,9 @@ class IBMProvider(Provider):
         # pylint: disable=arguments-differ
         backends = self.backends(name, hub=hub, group=group, project=project, **kwargs)
         if len(backends) > 1:
-            raise QiskitBackendNotFoundError("More than one backend matches the criteria")
+            raise QiskitBackendNotFoundError(
+                "More than one backend matches the criteria"
+            )
         if not backends:
             raise QiskitBackendNotFoundError("No backend matches the criteria")
         return backends[0]

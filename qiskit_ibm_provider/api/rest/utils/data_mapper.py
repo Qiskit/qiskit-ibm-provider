@@ -27,20 +27,20 @@ def map_job_response(data: Dict[str, Any]) -> Dict[str, Any]:
         Mapped data.
     """
     field_map = {
-        'id': 'job_id',
-        'backend': '_backend_info',
-        'creationDate': 'creation_date',
-        'qObject': 'qobj',
-        'qObjectResult': 'result',
-        'timePerStep': 'time_per_step',
-        'shots': '_api_shots',
-        'runMode': 'run_mode',
-        'experimentTag': 'experiment_id'
+        "id": "job_id",
+        "backend": "_backend_info",
+        "creationDate": "creation_date",
+        "qObject": "qobj",
+        "qObjectResult": "result",
+        "timePerStep": "time_per_step",
+        "shots": "_api_shots",
+        "runMode": "run_mode",
+        "experimentTag": "experiment_id",
     }
-    info_queue = map_info_queue(data.pop('infoQueue', {}))
+    info_queue = map_info_queue(data.pop("infoQueue", {}))
     dict_to_identifier(data, field_map)
     if info_queue:
-        data['info_queue'] = info_queue
+        data["info_queue"] = info_queue
     return data
 
 
@@ -54,11 +54,11 @@ def map_info_queue(data: Dict[str, Any]) -> Dict[str, Any]:
         Mapped data.
     """
     field_map = {
-        'estimatedStartTime': 'estimated_start_time',
-        'estimatedCompleteTime': 'estimated_complete_time',
-        'hubPriority': 'hub_priority',
-        'groupPriority': 'group_priority',
-        'projectPriority': 'project_priority'
+        "estimatedStartTime": "estimated_start_time",
+        "estimatedCompleteTime": "estimated_complete_time",
+        "hubPriority": "hub_priority",
+        "groupPriority": "group_priority",
+        "projectPriority": "project_priority",
     }
     dict_to_identifier(data, field_map)
     return data
@@ -73,10 +73,10 @@ def map_job_status_response(data: Dict[str, Any]) -> Dict[str, Any]:
     Returns:
         Mapped data.
     """
-    info_queue = map_info_queue(data.pop('infoQueue', {}))
+    info_queue = map_info_queue(data.pop("infoQueue", {}))
     dict_to_identifier(data)
     if info_queue:
-        data['info_queue'] = info_queue
+        data["info_queue"] = info_queue
     return data
 
 
@@ -89,10 +89,7 @@ def map_jobs_limit_response(data: Dict[str, Any]) -> Dict[str, Any]:
     Returns:
         Mapped data.
     """
-    field_map = {
-        'maximumJobs': 'maximum_jobs',
-        'runningJobs': 'running_jobs'
-    }
+    field_map = {"maximumJobs": "maximum_jobs", "runningJobs": "running_jobs"}
     dict_to_identifier(data, field_map)
     return data
 
@@ -146,12 +143,14 @@ def to_python_identifier(name: str) -> str:
     # and underscores and cannot start with a digit.
     pattern = re.compile(r"\W|^(?=\d)", re.ASCII)
     if not name.isidentifier():
-        name = re.sub(pattern, '_', name)
+        name = re.sub(pattern, "_", name)
 
     # Convert to snake case
-    name = re.sub('((?<=[a-z0-9])[A-Z]|(?!^)(?<!_)[A-Z](?=[a-z]))', r'_\1', name).lower()
+    name = re.sub(
+        "((?<=[a-z0-9])[A-Z]|(?!^)(?<!_)[A-Z](?=[a-z]))", r"_\1", name
+    ).lower()
 
     while keyword.iskeyword(name):
-        name += '_'
+        name += "_"
 
     return name

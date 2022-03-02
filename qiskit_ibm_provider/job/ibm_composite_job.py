@@ -12,43 +12,49 @@
 
 """IBM Quantum composite job."""
 
-import re
-import logging
-from typing import Dict, Optional, Tuple, Any, List, Callable, Union
-import uuid
-from datetime import datetime
-from concurrent import futures
-from collections import defaultdict
-import threading
 import copy
-from functools import wraps
+import logging
+import re
+import threading
 import time
 import traceback
+import uuid
+from collections import defaultdict
+from concurrent import futures
+from datetime import datetime
+from functools import wraps
+from typing import Dict, Optional, Tuple, Any, List, Callable, Union
 
+from qiskit.assembler.disassemble import disassemble
+from qiskit.circuit.quantumcircuit import QuantumCircuit
 from qiskit.compiler import assemble
 from qiskit.providers.jobstatus import JOB_FINAL_STATES, JobStatus
 from qiskit.providers.models import BackendProperties
+from qiskit.pulse import Schedule
 from qiskit.qobj import QasmQobj, PulseQobj
 from qiskit.result import Result
-from qiskit.assembler.disassemble import disassemble
-from qiskit.circuit.quantumcircuit import QuantumCircuit
-from qiskit.pulse import Schedule
 from qiskit.result.models import ExperimentResult
 
 from qiskit_ibm_provider import ibm_backend  # pylint: disable=unused-import
-from .exceptions import (IBMJobApiError, IBMJobFailureError, IBMJobTimeoutError,
-                         IBMJobInvalidStateError)
-from .queueinfo import QueueInfo
-from .utils import auto_retry, JOB_STATUS_TO_INT, JobStatusQueueInfo, last_job_stat_pos
-from .ibm_job import IBMJob
+from .constants import (
+    IBM_COMPOSITE_JOB_ID_PREFIX,
+    IBM_COMPOSITE_JOB_INDEX_PREFIX,
+    IBM_COMPOSITE_JOB_TAG_PREFIX,
+)
+from .exceptions import (
+    IBMJobApiError,
+    IBMJobFailureError,
+    IBMJobTimeoutError,
+    IBMJobInvalidStateError,
+)
 from .ibm_circuit_job import IBMCircuitJob
+from .ibm_job import IBMJob
+from .queueinfo import QueueInfo
 from .sub_job import SubJob
-from .constants import (IBM_COMPOSITE_JOB_ID_PREFIX, IBM_COMPOSITE_JOB_INDEX_PREFIX,
-                        IBM_COMPOSITE_JOB_TAG_PREFIX)
+from .utils import auto_retry, JOB_STATUS_TO_INT, JobStatusQueueInfo, last_job_stat_pos
 from ..api.clients import AccountClient
-from ..utils.utils import validate_job_tags, api_status_to_job_status
-
 from ..exceptions import IBMBackendJobLimitError
+from ..utils.utils import validate_job_tags, api_status_to_job_status
 
 logger = logging.getLogger(__name__)
 
@@ -99,27 +105,33 @@ class IBMCompositeJob(IBMJob):
     """
 
     _id_suffix = "_"
-    _index_tag = IBM_COMPOSITE_JOB_INDEX_PREFIX + \
-        "{job_index}:{total_jobs}:{start_index}:{end_index}"
-    _index_pattern = re.compile(rf"{IBM_COMPOSITE_JOB_INDEX_PREFIX}"
-                                r"(?P<job_index>\d+):(?P<total_jobs>\d+):"
-                                r"(?P<start_index>\d+):(?P<end_index>\d+)")
+    _index_tag = (
+        IBM_COMPOSITE_JOB_INDEX_PREFIX
+        + "{job_index}:{total_jobs}:{start_index}:{end_index}"
+    )
+    _index_pattern = re.compile(
+        rf"{IBM_COMPOSITE_JOB_INDEX_PREFIX}"
+        r"(?P<job_index>\d+):(?P<total_jobs>\d+):"
+        r"(?P<start_index>\d+):(?P<end_index>\d+)"
+    )
 
     _executor = futures.ThreadPoolExecutor()
     """Threads used for asynchronous processing."""
 
     def __init__(
-            self,
-            backend: 'ibm_backend.IBMBackend',
-            api_client: AccountClient,
-            job_id: Optional[str] = None,
-            creation_date: Optional[datetime] = None,
-            jobs: Optional[List[IBMCircuitJob]] = None,
-            circuits_list: Optional[List[Union[List[QuantumCircuit], List[Schedule]]]] = None,
-            run_config: Optional[Dict] = None,
-            name: Optional[str] = None,
-            tags: Optional[List[str]] = None,
-            client_version: Optional[Dict] = None
+        self,
+        backend: "ibm_backend.IBMBackend",
+        api_client: AccountClient,
+        job_id: Optional[str] = None,
+        creation_date: Optional[datetime] = None,
+        jobs: Optional[List[IBMCircuitJob]] = None,
+        circuits_list: Optional[
+            List[Union[List[QuantumCircuit], List[Schedule]]]
+        ] = None,
+        run_config: Optional[Dict] = None,
+        name: Optional[str] = None,
+        tags: Optional[List[str]] = None,
+        client_version: Optional[Dict] = None,
     ) -> None:
         """IBMCompositeJob constructor.
 
@@ -139,13 +151,24 @@ class IBMCompositeJob(IBMJob):
             IBMJobInvalidStateError: If one or more subjobs is missing.
         """
         if jobs is None and circuits_list is None:
-            raise IBMJobInvalidStateError('"jobs" and "circuits_list" cannot both be None.')
+            raise IBMJobInvalidStateError(
+                '"jobs" and "circuits_list" cannot both be None.'
+            )
 
-        self._job_id = job_id or IBM_COMPOSITE_JOB_ID_PREFIX + uuid.uuid4().hex + self._id_suffix
+        self._job_id = (
+            job_id or IBM_COMPOSITE_JOB_ID_PREFIX + uuid.uuid4().hex + self._id_suffix
+        )
         tags = tags or []
-        filtered_tags = [tag for tag in tags if not tag.startswith(IBM_COMPOSITE_JOB_TAG_PREFIX)]
-        super().__init__(backend=backend, api_client=api_client, job_id=self._job_id,
-                         name=name, tags=filtered_tags)
+        filtered_tags = [
+            tag for tag in tags if not tag.startswith(IBM_COMPOSITE_JOB_TAG_PREFIX)
+        ]
+        super().__init__(
+            backend=backend,
+            api_client=api_client,
+            job_id=self._job_id,
+            name=name,
+            tags=filtered_tags,
+        )
         self._status = JobStatus.INITIALIZING
         self._creation_date = creation_date
         self._client_version = client_version
@@ -167,7 +190,10 @@ class IBMCompositeJob(IBMJob):
         self._user_callback: Optional[Callable] = None
         self._user_wait_value: Optional[float] = None
         # A tuple of status and queue position.
-        self._last_reported_stat: Tuple[Optional[JobStatus], Optional[int]] = (None, None)
+        self._last_reported_stat: Tuple[Optional[JobStatus], Optional[int]] = (
+            None,
+            None,
+        )
         self._last_reported_time = 0.0
         self._job_statuses: Dict[str, JobStatusQueueInfo] = {}
 
@@ -180,22 +206,28 @@ class IBMCompositeJob(IBMJob):
             for job in jobs:
                 job_idx, total, start, end = self._find_circuit_indexes(job)
                 self._sub_jobs.append(
-                    SubJob(start_index=start, end_index=end, job_index=job_idx,
-                           total=total, job=job))
-            missing = set(range(total)) - {sub_job.job_index for sub_job in self._sub_jobs}
+                    SubJob(
+                        start_index=start,
+                        end_index=end,
+                        job_index=job_idx,
+                        total=total,
+                        job=job,
+                    )
+                )
+            missing = set(range(total)) - {
+                sub_job.job_index for sub_job in self._sub_jobs
+            }
             if len(missing) > 0:
                 raise IBMJobInvalidStateError(
                     f"Composite job {self.job_id()} is missing jobs at "
-                    f"indexes {', '.join([str(idx) for idx in missing])}.")
+                    f"indexes {', '.join([str(idx) for idx in missing])}."
+                )
             self._sub_jobs.sort(key=lambda sj: sj.job_index)
 
     @classmethod
     def from_jobs(
-            cls,
-            job_id: str,
-            jobs: List[IBMCircuitJob],
-            api_client: AccountClient
-    ) -> 'IBMCompositeJob':
+        cls, job_id: str, jobs: List[IBMCircuitJob], api_client: AccountClient
+    ) -> "IBMCompositeJob":
         """Return an instance of this class.
 
         The input job ID is used to query for sub-job information from the server.
@@ -208,23 +240,27 @@ class IBMCompositeJob(IBMJob):
         Returns:
             An instance of this class.
         """
-        logger.debug("Restoring IBMCompositeJob from jobs %s", [job.job_id() for job in jobs])
+        logger.debug(
+            "Restoring IBMCompositeJob from jobs %s", [job.job_id() for job in jobs]
+        )
         ref_job = jobs[0]
-        return cls(backend=ref_job.backend(),
-                   api_client=api_client,
-                   job_id=job_id,
-                   creation_date=ref_job.creation_date(),
-                   jobs=jobs,
-                   circuits_list=None,
-                   run_config=None,
-                   name=ref_job.name(),
-                   tags=ref_job.tags(),
-                   client_version=ref_job.client_version)
+        return cls(
+            backend=ref_job.backend(),
+            api_client=api_client,
+            job_id=job_id,
+            creation_date=ref_job.creation_date(),
+            jobs=jobs,
+            circuits_list=None,
+            run_config=None,
+            name=ref_job.name(),
+            tags=ref_job.tags(),
+            client_version=ref_job.client_version,
+        )
 
     def _submit_circuits(
-            self,
-            circuit_lists: List[Union[List[QuantumCircuit], List[Schedule]]],
-            run_config: Dict
+        self,
+        circuit_lists: List[Union[List[QuantumCircuit], List[Schedule]]],
+        run_config: Dict,
     ) -> None:
         """Assemble and submit circuits.
 
@@ -239,18 +275,21 @@ class IBMCompositeJob(IBMJob):
         for idx, circs in enumerate(circuit_lists):
             qobj = assemble(circs, backend=self.backend(), **run_config)
             self._sub_jobs.append(
-                SubJob(start_index=exp_index, end_index=exp_index+len(circs)-1,
-                       job_index=idx, total=len(circuit_lists), qobj=qobj))
+                SubJob(
+                    start_index=exp_index,
+                    end_index=exp_index + len(circs) - 1,
+                    job_index=idx,
+                    total=len(circuit_lists),
+                    qobj=qobj,
+                )
+            )
             exp_index += len(circs)
         self._sub_jobs[0].event.set()  # Tell the first job it can now be submitted.
 
         for sub_job in self._sub_jobs:
             sub_job.future = self._executor.submit(self._async_submit, sub_job=sub_job)
 
-    def _async_submit(
-            self,
-            sub_job: SubJob
-    ) -> None:
+    def _async_submit(self, sub_job: SubJob) -> None:
         """Submit a Qobj asynchronously.
 
         Args:
@@ -263,8 +302,12 @@ class IBMCompositeJob(IBMJob):
         tags.append(sub_job.format_tag(self._index_tag))
         tags.append(self.job_id())
         job: Optional[IBMCircuitJob] = None
-        logger.debug("Submitting job %s for circuits %s-%s.",
-                     sub_job.job_index, sub_job.start_index, sub_job.end_index)
+        logger.debug(
+            "Submitting job %s for circuits %s-%s.",
+            sub_job.job_index,
+            sub_job.start_index,
+            sub_job.end_index,
+        )
         sub_job.event.wait()
 
         try:
@@ -272,41 +315,64 @@ class IBMCompositeJob(IBMJob):
                 if self._user_cancelled:
                     return  # Abandon submit if user cancelled.
                 try:
-                    job = auto_retry(self.backend()._submit_job,
-                                     qobj=sub_job.qobj, job_name=self._name,
-                                     job_tags=tags, composite_job_id=self.job_id())
+                    job = auto_retry(
+                        self.backend()._submit_job,
+                        qobj=sub_job.qobj,
+                        job_name=self._name,
+                        job_tags=tags,
+                        composite_job_id=self.job_id(),
+                    )
                 except IBMBackendJobLimitError:
                     oldest_running = self._provider.backend.jobs(
-                        limit=1, descending=False, ignore_composite_jobs=True,
-                        status=list(set(JobStatus)-set(JOB_FINAL_STATES)))
+                        limit=1,
+                        descending=False,
+                        ignore_composite_jobs=True,
+                        status=list(set(JobStatus) - set(JOB_FINAL_STATES)),
+                    )
                     if oldest_running:
                         oldest_running = oldest_running[0]
-                        logger.warning("Job limit reached, waiting for job %s to finish "
-                                       "before submitting the next one.",
-                                       oldest_running.job_id())
+                        logger.warning(
+                            "Job limit reached, waiting for job %s to finish "
+                            "before submitting the next one.",
+                            oldest_running.job_id(),
+                        )
                         try:
                             # Set a timeout in case the job is stuck.
                             oldest_running.wait_for_final_state(timeout=300)
                         except Exception as err:  # pylint: disable=broad-except
                             # Don't kill the submit if unable to wait for old job.
-                            logger.debug("An error occurred while waiting for "
-                                         "job %s to finish: %s", oldest_running.job_id(), err)
+                            logger.debug(
+                                "An error occurred while waiting for "
+                                "job %s to finish: %s",
+                                oldest_running.job_id(),
+                                err,
+                            )
                 except Exception as err:  # pylint: disable=broad-except
                     sub_job.submit_error = err
-                    logger.debug("An error occurred submitting sub-job %s: %s",
-                                 sub_job.job_index, traceback.format_exc())
+                    logger.debug(
+                        "An error occurred submitting sub-job %s: %s",
+                        sub_job.job_index,
+                        traceback.format_exc(),
+                    )
                     raise
 
             if self._user_cancelled:
                 job.cancel()
             sub_job.job = job
-            logger.debug("Job %s submitted for circuits %s-%s.",
-                         job.job_id(), sub_job.start_index, sub_job.end_index)
+            logger.debug(
+                "Job %s submitted for circuits %s-%s.",
+                job.job_id(),
+                sub_job.start_index,
+                sub_job.end_index,
+            )
         finally:
             try:
                 # Wake up the next submit.
-                next(sub_job.event for sub_job in self._sub_jobs
-                     if not sub_job.event.is_set()).set()
+                next(
+                    sub_job.event
+                    for sub_job in self._sub_jobs
+                    if not sub_job.event.is_set()
+                ).set()
             except StopIteration:
                 pass
 
@@ -342,11 +408,11 @@ class IBMCompositeJob(IBMJob):
         return self._properties
 
     def result(
-            self,
-            timeout: Optional[float] = None,
-            wait: float = 5,
-            partial: bool = False,
-            refresh: bool = False
+        self,
+        timeout: Optional[float] = None,
+        wait: float = 5,
+        partial: bool = False,
+        refresh: bool = False,
     ) -> Result:
         """Return the result of the job.
 
@@ -411,16 +477,20 @@ class IBMCompositeJob(IBMJob):
                 return self._result
 
         if self._status is JobStatus.CANCELLED:
-            raise IBMJobInvalidStateError('Unable to retrieve result for job {}. '
-                                          'Job was cancelled.'.format(self.job_id()))
+            raise IBMJobInvalidStateError(
+                "Unable to retrieve result for job {}. "
+                "Job was cancelled.".format(self.job_id())
+            )
         error_message = self.error_message()
-        if '\n' in error_message:
+        if "\n" in error_message:
             error_message = ". Use the error_message() method to get more details."
         else:
             error_message = ": " + error_message
         raise IBMJobFailureError(
-            'Unable to retrieve result for job {}. Job has failed{}'.format(
-                self.job_id(), error_message))
+            "Unable to retrieve result for job {}. Job has failed{}".format(
+                self.job_id(), error_message
+            )
+        )
 
     def cancel(self) -> bool:
         """Attempt to cancel the job.
@@ -446,7 +516,7 @@ class IBMCompositeJob(IBMJob):
             try:
                 all_cancelled.append(job.cancel())
             except IBMJobApiError as err:
-                if 'Error code: 3209' not in str(err):
+                if "Error code: 3209" not in str(err):
                     raise
 
         return all(all_cancelled)
@@ -472,7 +542,8 @@ class IBMCompositeJob(IBMJob):
         if not isinstance(name, str):
             raise IBMJobInvalidStateError(
                 '"{}" of type "{}" is not a valid job name. '
-                'The job name needs to be a string.'.format(name, type(name)))
+                "The job name needs to be a string.".format(name, type(name))
+            )
 
         self._name = name
         for job in self._get_circuit_jobs():
@@ -481,10 +552,7 @@ class IBMCompositeJob(IBMJob):
         return self._name
 
     @_requires_submit
-    def update_tags(
-            self,
-            new_tags: List[str]
-    ) -> List[str]:
+    def update_tags(self, new_tags: List[str]) -> List[str]:
         """Update the tags associated with this job.
 
         Note:
@@ -507,7 +575,12 @@ class IBMCompositeJob(IBMJob):
 
         for job in self._get_circuit_jobs():
             tags_to_update = new_tags_set.union(  # type: ignore[attr-defined]
-                {tag for tag in job.tags() if tag.startswith(IBM_COMPOSITE_JOB_TAG_PREFIX)})
+                {
+                    tag
+                    for tag in job.tags()
+                    if tag.startswith(IBM_COMPOSITE_JOB_TAG_PREFIX)
+                }
+            )
             auto_retry(job.update_tags, list(tags_to_update))
         self._tags = new_tags
         return self._tags
@@ -557,8 +630,7 @@ class IBMCompositeJob(IBMJob):
         Returns:
             A report on sub-job statuses.
         """
-        report = [f"Composite Job {self.job_id()}:",
-                  "  Summary report:"]
+        report = [f"Composite Job {self.job_id()}:", "  Summary report:"]
 
         status_counts: Dict[JobStatus, int] = defaultdict(int)
         status_by_id = {}  # Used to save status to keep things in sync.
@@ -566,41 +638,56 @@ class IBMCompositeJob(IBMJob):
             status = job.status()
             status_counts[status] += 1
             status_by_id[job.job_id()] = status
-        status_counts[JobStatus.ERROR] += \
-            len([sub_job for sub_job in self._sub_jobs if sub_job.submit_error])
+        status_counts[JobStatus.ERROR] += len(
+            [sub_job for sub_job in self._sub_jobs if sub_job.submit_error]
+        )
 
         # Summary report.
         count_report = []
         # Format header.
-        for stat in ['Total', 'Successful', 'Failed', 'Cancelled', 'Running', 'Pending']:
-            count_report.append(' '*4 + stat + " jobs: {}")
+        for stat in [
+            "Total",
+            "Successful",
+            "Failed",
+            "Cancelled",
+            "Running",
+            "Pending",
+        ]:
+            count_report.append(" " * 4 + stat + " jobs: {}")
         max_text = max(len(text) for text in count_report)
         count_report = [text.rjust(max_text) for text in count_report]
         # Format counts.
         count_report[0] = count_report[0].format(len(self._sub_jobs))
         non_pending_count = 0
-        for idx, stat in enumerate([JobStatus.DONE, JobStatus.ERROR,
-                                    JobStatus.CANCELLED, JobStatus.RUNNING], 1):
+        for idx, stat in enumerate(
+            [JobStatus.DONE, JobStatus.ERROR, JobStatus.CANCELLED, JobStatus.RUNNING], 1
+        ):
             non_pending_count += status_counts[stat]
             count_report[idx] = count_report[idx].format(status_counts[stat])
-        count_report[-1] = count_report[-1].format(len(self._sub_jobs) - non_pending_count)
+        count_report[-1] = count_report[-1].format(
+            len(self._sub_jobs) - non_pending_count
+        )
         report += count_report
 
         # Detailed report.
         if detailed:
             report.append("\n  Detail report:")
             for sub_job in self._sub_jobs:
-                report.append(' '*4 + f'Circuits {sub_job.start_index}-{sub_job.end_index}:')
-                report.append(' '*6 + f'Job index: {sub_job.job_index}')
+                report.append(
+                    " " * 4 + f"Circuits {sub_job.start_index}-{sub_job.end_index}:"
+                )
+                report.append(" " * 6 + f"Job index: {sub_job.job_index}")
                 if sub_job.job and sub_job.job.job_id() in status_by_id:
-                    report.append(' '*6 + f'Job ID: {sub_job.job.job_id()}')
-                    report.append(' '*6 + f'Status: {status_by_id[sub_job.job.job_id()]}')
+                    report.append(" " * 6 + f"Job ID: {sub_job.job.job_id()}")
+                    report.append(
+                        " " * 6 + f"Status: {status_by_id[sub_job.job.job_id()]}"
+                    )
                 elif sub_job.submit_error:
-                    report.append(' '*6 + f"Status: {sub_job.submit_error}")
+                    report.append(" " * 6 + f"Status: {sub_job.submit_error}")
                 else:
-                    report.append(' '*6 + "Status: Job not yet submitted.")
+                    report.append(" " * 6 + "Status: Job not yet submitted.")
 
-        return '\n'.join(report)
+        return "\n".join(report)
 
     def error_message(self) -> Optional[str]:
         """Provide details about the reason of failure.
@@ -703,7 +790,7 @@ class IBMCompositeJob(IBMJob):
         output = None
         creation_date = self.creation_date()
         if creation_date is not None:
-            output = {'CREATING': creation_date}
+            output = {"CREATING": creation_date}
         if self._has_pending_submit():
             return output
 
@@ -717,11 +804,14 @@ class IBMCompositeJob(IBMJob):
 
         self._update_status_queue_info_error()
         for key, val in timestamps.items():
-            if JOB_STATUS_TO_INT[api_status_to_job_status(key)] > JOB_STATUS_TO_INT[self._status]:
+            if (
+                JOB_STATUS_TO_INT[api_status_to_job_status(key)]
+                > JOB_STATUS_TO_INT[self._status]
+            ):
                 continue
-            if key == 'CREATING':
+            if key == "CREATING":
                 continue
-            if key in ['TRANSPILING', 'VALIDATING', 'QUEUED', 'RUNNING']:
+            if key in ["TRANSPILING", "VALIDATING", "QUEUED", "RUNNING"]:
                 output[key] = sorted(val)[0]
             else:
                 output[key] = sorted(val, reverse=True)[0]
@@ -749,8 +839,8 @@ class IBMCompositeJob(IBMJob):
         mode = None
         for job in self._get_circuit_jobs():
             job_mode = job.scheduling_mode()
-            if job_mode == 'fairshare':
-                return 'fairshare'
+            if job_mode == "fairshare":
+                return "fairshare"
             if job_mode:
                 mode = job_mode
         return mode
@@ -824,10 +914,10 @@ class IBMCompositeJob(IBMJob):
 
     @_requires_submit
     def wait_for_final_state(
-            self,
-            timeout: Optional[float] = None,
-            wait: Optional[float] = None,
-            callback: Optional[Callable] = None
+        self,
+        timeout: Optional[float] = None,
+        wait: Optional[float] = None,
+        callback: Optional[Callable] = None,
     ) -> None:
         """Wait until the job progresses to a final state such as ``DONE`` or ``ERROR``.
 
@@ -866,12 +956,20 @@ class IBMCompositeJob(IBMJob):
         # excessive requests.
         job_futures = []
         for job in self._get_circuit_jobs():
-            job_futures.append(self._executor.submit(job.wait_for_final_state, timeout=timeout,
-                                                     wait=wait, callback=status_callback))
+            job_futures.append(
+                self._executor.submit(
+                    job.wait_for_final_state,
+                    timeout=timeout,
+                    wait=wait,
+                    callback=status_callback,
+                )
+            )
         future_stats = futures.wait(job_futures, timeout=timeout)
         self._update_status_queue_info_error()
         if future_stats[1]:
-            raise IBMJobTimeoutError(f"Timeout waiting for job {self.job_id()}") from None
+            raise IBMJobTimeoutError(
+                f"Timeout waiting for job {self.job_id()}"
+            ) from None
         for fut in future_stats[0]:
             exception = fut.exception()
             if exception is not None:
@@ -908,7 +1006,8 @@ class IBMCompositeJob(IBMJob):
         last_index = self._sub_jobs[-1].end_index
         if circuit_index > last_index:
             raise IBMJobInvalidStateError(
-                f"Circuit index {circuit_index} greater than circuit count {last_index}.")
+                f"Circuit index {circuit_index} greater than circuit count {last_index}."
+            )
 
         for sub_job in self._sub_jobs:
             if sub_job.end_index >= circuit_index >= sub_job.start_index:
@@ -928,27 +1027,36 @@ class IBMCompositeJob(IBMJob):
             retrieved from the server.
         """
         for sub_job in self._sub_jobs:
-            if sub_job.submit_error is not None or \
-                    (sub_job.job and sub_job.job.status() in
-                     [JobStatus.ERROR, JobStatus.CANCELLED]):
+            if sub_job.submit_error is not None or (
+                sub_job.job
+                and sub_job.job.status() in [JobStatus.ERROR, JobStatus.CANCELLED]
+            ):
                 sub_job.reset()
-                sub_job.future = self._executor.submit(self._async_submit, sub_job=sub_job)
+                sub_job.future = self._executor.submit(
+                    self._async_submit, sub_job=sub_job
+                )
         try:
-            next(sub_job.event for sub_job in self._sub_jobs if not sub_job.event.is_set()).set()
+            next(
+                sub_job.event
+                for sub_job in self._sub_jobs
+                if not sub_job.event.is_set()
+            ).set()
         except StopIteration:
             pass
         self._status = JobStatus.INITIALIZING
 
     def block_for_submit(self) -> None:
         """Block until all sub-jobs are submitted."""
-        futures.wait([sub_job.future for sub_job in self._sub_jobs if sub_job.future is not None])
+        futures.wait(
+            [sub_job.future for sub_job in self._sub_jobs if sub_job.future is not None]
+        )
 
     def _status_callback(
-            self,
-            job_id: str,
-            job_status: JobStatus,
-            job: IBMCircuitJob,  # pylint: disable=unused-argument
-            queue_info: QueueInfo
+        self,
+        job_id: str,
+        job_status: JobStatus,
+        job: IBMCircuitJob,  # pylint: disable=unused-argument
+        queue_info: QueueInfo,
     ) -> None:
         """Callback function used when a sub-job status changes.
 
@@ -974,8 +1082,11 @@ class IBMCompositeJob(IBMJob):
             self._last_reported_stat = (status, pos)
             self._last_reported_time = cur_time
             if report and self._user_callback:
-                logger.debug("Invoking callback function, job status=%s, queue_info=%s",
-                             status, queue_info)
+                logger.debug(
+                    "Invoking callback function, job status=%s, queue_info=%s",
+                    status,
+                    queue_info,
+                )
                 self._user_callback(self.job_id(), status, self, queue_info=queue_info)
 
     def _update_status_queue_info_error(self) -> None:
@@ -1010,8 +1121,11 @@ class IBMCompositeJob(IBMJob):
             # Sort by queue position. Put `None` to the end.
             last_queued = sorted(
                 statuses[JobStatus.QUEUED],
-                key=lambda sub_j: (sub_j.job.queue_position() is None,
-                                   sub_j.job.queue_position()))[-1]
+                key=lambda sub_j: (
+                    sub_j.job.queue_position() is None,
+                    sub_j.job.queue_position(),
+                ),
+            )[-1]
             self._queue_info = last_queued.job.queue_info()
             return
 
@@ -1044,12 +1158,15 @@ class IBMCompositeJob(IBMJob):
             if sub_job.submit_error:
                 error_text += f"Job submit failed: {sub_job.submit_error}"
             elif sub_job.job:
-                error_text += f"Job {sub_job.job.job_id()} failed: {sub_job.job.error_message()}"
+                error_text += (
+                    f"Job {sub_job.job.job_id()} failed: {sub_job.job.error_message()}"
+                )
             error_list.append(error_text)
 
         if len(error_list) > 1:
-            self._job_error_msg = \
-                'The following circuits failed:\n{}'.format('\n'.join(error_list))
+            self._job_error_msg = "The following circuits failed:\n{}".format(
+                "\n".join(error_list)
+            )
         else:
             self._job_error_msg = error_list[0]
 
@@ -1065,15 +1182,19 @@ class IBMCompositeJob(IBMJob):
         Raises:
             IBMJobInvalidStateError: If a sub-job is missing proper tags.
         """
-        index_tag = [tag for tag in job.tags() if tag.startswith(IBM_COMPOSITE_JOB_INDEX_PREFIX)]
+        index_tag = [
+            tag for tag in job.tags() if tag.startswith(IBM_COMPOSITE_JOB_INDEX_PREFIX)
+        ]
         match = None
         if index_tag:
             match = re.match(self._index_pattern, index_tag[0])
         if match is None:
-            raise IBMJobInvalidStateError(f"Job {job.job_id()} in composite job {self.job_id()}"
-                                          f" is missing proper tags.")
+            raise IBMJobInvalidStateError(
+                f"Job {job.job_id()} in composite job {self.job_id()}"
+                f" is missing proper tags."
+            )
         output = []
-        for name in ['job_index', 'total_jobs', 'start_index', 'end_index']:
+        for name in ["job_index", "total_jobs", "start_index", "end_index"]:
             output.append(int(match.group(name)))
         return output
 
@@ -1083,7 +1204,9 @@ class IBMCompositeJob(IBMJob):
         Returns:
             Whether there are pending job submit futures.
         """
-        sub_fut = [sub_job.future for sub_job in self._sub_jobs if sub_job.future is not None]
+        sub_fut = [
+            sub_job.future for sub_job in self._sub_jobs if sub_job.future is not None
+        ]
         return not all(fut.done() for fut in sub_fut)
 
     def _gather_results(self, refresh: bool, partial: bool) -> Optional[Result]:
@@ -1104,8 +1227,10 @@ class IBMCompositeJob(IBMJob):
         if self._result and not refresh:
             return self._result
 
-        job_results = [sub_job.result(refresh=refresh, partial=partial)
-                       for sub_job in self._sub_jobs]
+        job_results = [
+            sub_job.result(refresh=refresh, partial=partial)
+            for sub_job in self._sub_jobs
+        ]
 
         if not partial and any(result is None for result in job_results):
             return None
@@ -1114,20 +1239,17 @@ class IBMCompositeJob(IBMJob):
         except StopIteration:
             return None
 
-        ref_expr_result = good_result['results'][0]
-        template_expr_result = {
-            'success': False,
-            'data': {},
-            'status': 'ERROR'
-        }
-        for key in ['shots', 'meas_level', 'seed', 'meas_return']:
+        ref_expr_result = good_result["results"][0]
+        template_expr_result = {"success": False, "data": {}, "status": "ERROR"}
+        for key in ["shots", "meas_level", "seed", "meas_return"]:
             template_expr_result[key] = ref_expr_result.get(key, None)
 
-        good_result['job_id'] = self.job_id()
-        good_result['success'] = self._status == JobStatus.DONE
-        good_result['results'] = []
-        good_result['status'] = 'PARTIAL COMPLETED' if self._status != JobStatus.DONE \
-            else 'COMPLETED'
+        good_result["job_id"] = self.job_id()
+        good_result["success"] = self._status == JobStatus.DONE
+        good_result["results"] = []
+        good_result["status"] = (
+            "PARTIAL COMPLETED" if self._status != JobStatus.DONE else "COMPLETED"
+        )
         combined_result = Result.from_dict(good_result)
 
         for idx, result in enumerate(job_results):
@@ -1140,10 +1262,14 @@ class IBMCompositeJob(IBMJob):
                 experiments = qobj.experiments if qobj else None
 
                 expr_results = []
-                for circ_idx in range(sub_job.end_index-sub_job.start_index+1):
+                for circ_idx in range(sub_job.end_index - sub_job.start_index + 1):
                     if experiments:
-                        template_expr_result['header'] = experiments[circ_idx].header.to_dict()
-                    expr_results.append(ExperimentResult.from_dict(template_expr_result))
+                        template_expr_result["header"] = experiments[
+                            circ_idx
+                        ].header.to_dict()
+                    expr_results.append(
+                        ExperimentResult.from_dict(template_expr_result)
+                    )
                 combined_result.results.extend(expr_results)
 
         return combined_result
@@ -1183,5 +1309,7 @@ class IBMCompositeJob(IBMJob):
         Raises:
             NotImplementedError: Upon invocation.
         """
-        raise NotImplementedError("job.submit() is not supported. Please use "
-                                  "IBMBackend.run() to submit a job.")
+        raise NotImplementedError(
+            "job.submit() is not supported. Please use "
+            "IBMBackend.run() to submit a job."
+        )

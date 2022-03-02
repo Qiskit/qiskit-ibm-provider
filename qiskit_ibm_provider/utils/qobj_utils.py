@@ -28,7 +28,7 @@ def dict_to_qobj(qobj_dict: Dict) -> Union[QasmQobj, PulseQobj]:
     Returns:
         The corresponding QasmQobj or PulseQobj instance.
     """
-    if qobj_dict['type'] == 'PULSE':
-        decode_pulse_qobj(qobj_dict)   # Convert to proper types.
+    if qobj_dict["type"] == "PULSE":
+        decode_pulse_qobj(qobj_dict)  # Convert to proper types.
         return PulseQobj.from_dict(qobj_dict)
     return QasmQobj.from_dict(qobj_dict)

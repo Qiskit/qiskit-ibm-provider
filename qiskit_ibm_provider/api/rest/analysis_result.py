@@ -24,11 +24,11 @@ logger = logging.getLogger(__name__)
 class AnalysisResult(RestAdapterBase):
     """Rest adapter for analysis result related endpoints."""
 
-    URL_MAP = {
-        'self': ''
-    }
+    URL_MAP = {"self": ""}
 
-    def __init__(self, session: RetrySession, result_uuid: str, url_prefix: str = '') -> None:
+    def __init__(
+        self, session: RetrySession, result_uuid: str, url_prefix: str = ""
+    ) -> None:
         """AnalysisResult constructor.
 
         Args:
@@ -36,7 +36,7 @@ class AnalysisResult(RestAdapterBase):
             result_uuid: UUID of the analysis result.
             url_prefix: URL prefix.
         """
-        self.url_prefix = '{}/analysis_results/{}'.format(url_prefix, result_uuid)
+        self.url_prefix = "{}/analysis_results/{}".format(url_prefix, result_uuid)
         super().__init__(session, self.url_prefix)
 
     def update(self, analysis_result: str) -> Dict:
@@ -48,9 +48,10 @@ class AnalysisResult(RestAdapterBase):
         Returns:
             JSON response.
         """
-        url = self.get_url('self')
-        return self.session.put(url, data=analysis_result,
-                                headers=self._HEADER_JSON_CONTENT).json()
+        url = self.get_url("self")
+        return self.session.put(
+            url, data=analysis_result, headers=self._HEADER_JSON_CONTENT
+        ).json()
 
     def delete(self) -> Dict:
         """Delete the analysis result.
@@ -58,7 +59,7 @@ class AnalysisResult(RestAdapterBase):
         Returns:
             JSON response.
         """
-        url = self.get_url('self')
+        url = self.get_url("self")
         return self.session.delete(url).json()
 
     def get(self) -> str:
@@ -67,5 +68,5 @@ class AnalysisResult(RestAdapterBase):
         Returns:
             Server response.
         """
-        url = self.get_url('self')
+        url = self.get_url("self")
         return self.session.get(url).text

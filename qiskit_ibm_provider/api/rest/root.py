@@ -26,14 +26,14 @@ class Api(RestAdapterBase):
     """Rest adapter for general endpoints."""
 
     URL_MAP = {
-        'login': '/users/loginWithToken',
-        'user_info': '/users/me',
-        'hubs': '/Network',
-        'version': '/version',
-        'bookings': '/Network/bookings/v2',
-        'experiment_devices': '/devices',
-        'analysis_results': '/analysis_results',
-        'device_components': '/device_components'
+        "login": "/users/loginWithToken",
+        "user_info": "/users/me",
+        "hubs": "/Network",
+        "version": "/version",
+        "bookings": "/Network/bookings/v2",
+        "experiment_devices": "/devices",
+        "analysis_results": "/analysis_results",
+        "device_components": "/device_components",
     }
 
     def analysis_result(self, analysis_result_id: str) -> AnalysisResult:
@@ -47,7 +47,7 @@ class Api(RestAdapterBase):
         """
         return AnalysisResult(self.session, analysis_result_id)
 
-# Client functions.
+    # Client functions.
 
     def hubs(self) -> List[Dict[str, Any]]:
         """Return the list of hub/group/project sets available to the user.
@@ -55,7 +55,7 @@ class Api(RestAdapterBase):
         Returns:
             JSON response.
         """
-        url = self.get_url('hubs')
+        url = self.get_url("hubs")
         return self.session.get(url).json()
 
     def version(self) -> Dict[str, Union[str, bool]]:
@@ -71,17 +71,14 @@ class Api(RestAdapterBase):
 
                 * ``api-*`` (str): The versions of each individual API component
         """
-        url = self.get_url('version')
+        url = self.get_url("version")
         response = self.session.get(url)
 
         try:
             version_info = response.json()
-            version_info['new_api'] = True
+            version_info["new_api"] = True
         except json.JSONDecodeError:
-            return {
-                'new_api': False,
-                'api': response.text
-            }
+            return {"new_api": False, "api": response.text}
 
         return version_info
 
@@ -94,8 +91,8 @@ class Api(RestAdapterBase):
         Returns:
             JSON response.
         """
-        url = self.get_url('login')
-        return self.session.post(url, json={'apiToken': api_token}).json()
+        url = self.get_url("login")
+        return self.session.post(url, json={"apiToken": api_token}).json()
 
     def user_info(self) -> Dict[str, Any]:
         """Return user information.
@@ -103,7 +100,7 @@ class Api(RestAdapterBase):
         Returns:
             JSON response of user information.
         """
-        url = self.get_url('user_info')
+        url = self.get_url("user_info")
         response = self.session.get(url).json()
 
         return response
@@ -114,22 +111,22 @@ class Api(RestAdapterBase):
         Returns:
             JSON response.
         """
-        url = self.get_url('bookings')
+        url = self.get_url("bookings")
         return self.session.get(url).json()
 
     def analysis_results(
-            self,
-            limit: Optional[int],
-            marker: Optional[str],
-            backend_name: Optional[str] = None,
-            device_components: Optional[Union[str, List[str]]] = None,
-            experiment_uuid: Optional[str] = None,
-            result_type: Optional[str] = None,
-            quality: Optional[List[str]] = None,
-            verified: Optional[bool] = None,
-            tags: Optional[List[str]] = None,
-            created_at: Optional[List] = None,
-            sort_by: Optional[str] = None
+        self,
+        limit: Optional[int],
+        marker: Optional[str],
+        backend_name: Optional[str] = None,
+        device_components: Optional[Union[str, List[str]]] = None,
+        experiment_uuid: Optional[str] = None,
+        result_type: Optional[str] = None,
+        quality: Optional[List[str]] = None,
+        verified: Optional[bool] = None,
+        tags: Optional[List[str]] = None,
+        created_at: Optional[List] = None,
+        sort_by: Optional[str] = None,
     ) -> str:
         """Return all analysis results.
 
@@ -149,30 +146,30 @@ class Api(RestAdapterBase):
         Returns:
             Server response.
         """
-        url = self.get_url('analysis_results')
+        url = self.get_url("analysis_results")
         params = {}  # type: Dict[str, Any]
         if backend_name:
-            params['device_name'] = backend_name
+            params["device_name"] = backend_name
         if device_components:
-            params['device_components'] = device_components
+            params["device_components"] = device_components
         if experiment_uuid:
-            params['experiment_uuid'] = experiment_uuid
+            params["experiment_uuid"] = experiment_uuid
         if quality:
-            params['quality'] = quality
+            params["quality"] = quality
         if result_type:
-            params['type'] = result_type
+            params["type"] = result_type
         if limit:
-            params['limit'] = limit
+            params["limit"] = limit
         if marker:
-            params['marker'] = marker
+            params["marker"] = marker
         if verified is not None:
             params["verified"] = "true" if verified else "false"
         if tags:
-            params['tags'] = tags
+            params["tags"] = tags
         if created_at:
-            params['created_at'] = created_at
+            params["created_at"] = created_at
         if sort_by:
-            params['sort'] = sort_by
+            params["sort"] = sort_by
         return self.session.get(url, params=params).text
 
     def analysis_result_upload(self, result: str) -> Dict:
@@ -184,8 +181,10 @@ class Api(RestAdapterBase):
         Returns:
             JSON response.
         """
-        url = self.get_url('analysis_results')
-        return self.session.post(url, data=result, headers=self._HEADER_JSON_CONTENT).json()
+        url = self.get_url("analysis_results")
+        return self.session.post(
+            url, data=result, headers=self._HEADER_JSON_CONTENT
+        ).json()
 
     def device_components(self, backend_name: Optional[str] = None) -> Dict:
         """Return a list of device components for the backend.
@@ -198,6 +197,6 @@ class Api(RestAdapterBase):
         """
         params = {}
         if backend_name:
-            params['device_name'] = backend_name
-        url = self.get_url('device_components')
+            params["device_name"] = backend_name
+        url = self.get_url("device_components")
         return self.session.get(url, params=params).json()

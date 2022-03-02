@@ -32,20 +32,22 @@ class Job(RestAdapterBase):
     """Rest adapter for job related endpoints."""
 
     URL_MAP = {
-        'callback_upload': '/jobDataUploaded',
-        'callback_download': '/resultDownloaded',
-        'cancel': '/cancel',
-        'download_url': '/jobDownloadUrl',
-        'self': '/v/1',
-        'self_update': '',
-        'status': '/status/v/1',
-        'properties': '/properties',
-        'result_url': '/resultDownloadUrl',
-        'upload_url': '/jobUploadUrl',
-        'delete': ''
+        "callback_upload": "/jobDataUploaded",
+        "callback_download": "/resultDownloaded",
+        "cancel": "/cancel",
+        "download_url": "/jobDownloadUrl",
+        "self": "/v/1",
+        "self_update": "",
+        "status": "/status/v/1",
+        "properties": "/properties",
+        "result_url": "/resultDownloadUrl",
+        "upload_url": "/jobUploadUrl",
+        "delete": "",
     }
 
-    def __init__(self, session: RetrySession, job_id: str, url_prefix: str = '') -> None:
+    def __init__(
+        self, session: RetrySession, job_id: str, url_prefix: str = ""
+    ) -> None:
         """Job constructor.
 
         Args:
@@ -54,7 +56,7 @@ class Job(RestAdapterBase):
             url_prefix: Prefix to use in the URL.
         """
         self.job_id = job_id
-        super().__init__(session, '{}/Jobs/{}'.format(url_prefix, job_id))
+        super().__init__(session, "{}/Jobs/{}".format(url_prefix, job_id))
 
     def get(self) -> Dict[str, Any]:
         """Return job information.
@@ -62,19 +64,18 @@ class Job(RestAdapterBase):
         Returns:
             JSON response of job information.
         """
-        url = self.get_url('self')
+        url = self.get_url("self")
 
         response = self.session.get(url).json()
 
-        if 'calibration' in response:
-            response['_properties'] = response.pop('calibration')
+        if "calibration" in response:
+            response["_properties"] = response.pop("calibration")
         response = map_job_response(response)
 
         return response
 
     def update_attribute(
-            self,
-            job_attribute_info: Dict[str, Union[str, List[str]]]
+        self, job_attribute_info: Dict[str, Union[str, List[str]]]
     ) -> Dict[str, Any]:
         """Edit the specified attribute for the job.
 
@@ -87,9 +88,12 @@ class Job(RestAdapterBase):
             JSON response containing the name of the updated attribute and its
             corresponding value.
         """
-        url = self.get_url('self_update')
-        return self.session.put(url, data=json.dumps(job_attribute_info),
-                                headers={'Content-Type': 'application/json'}).json()
+        url = self.get_url("self_update")
+        return self.session.put(
+            url,
+            data=json.dumps(job_attribute_info),
+            headers={"Content-Type": "application/json"},
+        ).json()
 
     def callback_upload(self) -> Dict[str, Any]:
         """Notify the API after uploading a ``Qobj`` via object storage.
@@ -97,9 +101,9 @@ class Job(RestAdapterBase):
         Returns:
             JSON response.
         """
-        url = self.get_url('callback_upload')
+        url = self.get_url("callback_upload")
         data = self.session.post(url).json()
-        mapped_response = {'job': map_job_response(data['job'])}
+        mapped_response = {"job": map_job_response(data["job"])}
         return mapped_response
 
     def callback_download(self) -> Dict[str, Any]:
@@ -108,7 +112,7 @@ class Job(RestAdapterBase):
         Returns:
             JSON response.
         """
-        url = self.get_url('callback_download')
+        url = self.get_url("callback_download")
         return self.session.post(url).json()
 
     def cancel(self) -> Dict[str, Any]:
@@ -117,7 +121,7 @@ class Job(RestAdapterBase):
         Returns:
             JSON response.
         """
-        url = self.get_url('cancel')
+        url = self.get_url("cancel")
         return self.session.post(url).json()
 
     def download_url(self) -> Dict[str, Any]:
@@ -126,7 +130,7 @@ class Job(RestAdapterBase):
         Returns:
             JSON response.
         """
-        url = self.get_url('download_url')
+        url = self.get_url("download_url")
         return self.session.get(url).json()
 
     def properties(self) -> Dict[str, Any]:
@@ -135,7 +139,7 @@ class Job(RestAdapterBase):
         Returns:
             JSON response.
         """
-        url = self.get_url('properties')
+        url = self.get_url("properties")
         return self.session.get(url).json()
 
     def result_url(self) -> Dict[str, Any]:
@@ -144,7 +148,7 @@ class Job(RestAdapterBase):
         Returns:
             JSON response.
         """
-        url = self.get_url('result_url')
+        url = self.get_url("result_url")
         return self.session.get(url).json()
 
     def status(self) -> Dict[str, Any]:
@@ -156,14 +160,15 @@ class Job(RestAdapterBase):
         Raises:
             ApiIBMProtocolError: If an unexpected result is received from the server.
         """
-        url = self.get_url('status')
+        url = self.get_url("status")
         raw_response = self.session.get(url)
         try:
             api_response = raw_response.json()
         except JSONDecodeError as err:
             raise ApiIBMProtocolError(
-                'Unrecognized return value received from the server: {!r}. This could be caused'
-                ' by too many requests.'.format(raw_response.content)) from err
+                "Unrecognized return value received from the server: {!r}. This could be caused"
+                " by too many requests.".format(raw_response.content)
+            ) from err
         return map_job_status_response(api_response)
 
     def upload_url(self) -> Dict[str, Any]:
@@ -172,7 +177,7 @@ class Job(RestAdapterBase):
         Returns:
             JSON response.
         """
-        url = self.get_url('upload_url')
+        url = self.get_url("upload_url")
         return self.session.get(url).json()
 
     def put_object_storage(self, url: str, qobj_dict: Dict[str, Any]) -> str:
@@ -186,9 +191,14 @@ class Job(RestAdapterBase):
             Text response, which is empty if the request was successful.
         """
         data = json.dumps(qobj_dict, cls=json_encoder.IBMJsonEncoder)
-        logger.debug('Uploading to object storage.')
-        response = self.session.put(url, data=data, bare=True, timeout=600,
-                                    headers={'Content-Type': 'application/json'})
+        logger.debug("Uploading to object storage.")
+        response = self.session.put(
+            url,
+            data=data,
+            bare=True,
+            timeout=600,
+            headers={"Content-Type": "application/json"},
+        )
         return response.text
 
     def get_object_storage(self, url: str) -> Dict[str, Any]:
@@ -200,11 +210,11 @@ class Job(RestAdapterBase):
         Returns:
             JSON response.
         """
-        logger.debug('Downloading from object storage.')
+        logger.debug("Downloading from object storage.")
         response = self.session.get(url, bare=True, timeout=600).json()
         return response
 
     def delete(self) -> None:
         """Mark job for deletion."""
-        url = self.get_url('delete')
+        url = self.get_url("delete")
         self.session.delete(url)
