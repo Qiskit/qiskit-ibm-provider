@@ -25,3 +25,4 @@ qiskit_rng
 qiskit-aer
 websockets>=8
 scikit-quant;platform_system != 'Windows'
+coverage>=6.3
