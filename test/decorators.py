@@ -32,10 +32,9 @@ from unittest import SkipTest
 from typing import Tuple
 
 from qiskit.test.testing_options import get_test_options
-from qiskit_ibm import least_busy
-from qiskit_ibm import IBMProvider
-from qiskit_ibm.credentials import (Credentials,
-                                    discover_credentials)
+from qiskit_ibm_provider import least_busy
+from qiskit_ibm_provider import IBMProvider
+from qiskit_ibm_provider.credentials import (Credentials, discover_credentials)
 
 
 def requires_qe_access(func):

@@ -18,7 +18,7 @@ from qiskit import ClassicalRegister, QuantumCircuit, QuantumRegister, execute
 from qiskit.result import Result
 from qiskit.compiler import transpile
 from qiskit.test.reference_circuits import ReferenceCircuits
-from qiskit_ibm.job.exceptions import IBMJobApiError
+from qiskit_ibm_provider.job.exceptions import IBMJobApiError
 
 from ..ibm_test_case import IBMTestCase
 from ..decorators import requires_provider, requires_device, requires_private_provider

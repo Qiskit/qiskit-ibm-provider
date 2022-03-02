@@ -28,7 +28,7 @@ pip install qiskit-ibm-provider
 1. Take your token from step 2, here called `MY_API_TOKEN`, and save it by calling `IBMProvider.save_account()`:
 
    ```python
-   from qiskit_ibm import IBMProvider
+   from qiskit_ibm_provider import IBMProvider
    IBMProvider.save_account(token='MY_API_TOKEN')
    ```
 
@@ -36,7 +36,7 @@ pip install qiskit-ibm-provider
    Once saved you can then instantiate the provider like below and access the backends:
 
    ```python
-   from qiskit_ibm import IBMProvider
+   from qiskit_ibm_provider import IBMProvider
    provider = IBMProvider()
 
    # display current supported backends
@@ -54,7 +54,7 @@ export QISKIT_IBM_API_TOKEN='MY_API_TOKEN'
 
 Then instantiate the provider without any arguments and access the backends:
 ```python
-from qiskit_ibm import IBMProvider
+from qiskit_ibm_provider import IBMProvider
 provider = IBMProvider()
 ```
 
@@ -62,7 +62,7 @@ provider = IBMProvider()
 As another alternative, you can also enable an account just for the current session by instantiating the provider with the token.
 
 ```python
-from qiskit_ibm import IBMProvider
+from qiskit_ibm_provider import IBMProvider
 provider = IBMProvider(token='MY_API_TOKEN')
 ```
 

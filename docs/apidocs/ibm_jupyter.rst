@@ -1,6 +1,6 @@
-.. _qiskit_ibm-jupyter:
+.. _qiskit_ibm_provider-jupyter:
 
-.. automodule:: qiskit_ibm.jupyter
+.. automodule:: qiskit_ibm_provider.jupyter
    :no-members:
    :no-inherited-members:
    :no-special-members:

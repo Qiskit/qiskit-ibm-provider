@@ -14,14 +14,14 @@
 .PHONY: lint style test mypy test1 test2 test3 runtime_integration
 
 lint:
-	pylint -rn qiskit_ibm test
-	tools/verify_headers.py qiskit_ibm test
+	pylint -rn qiskit_ibm_provider test
+	tools/verify_headers.py qiskit_ibm_provider test
 
 mypy:
-	mypy --module qiskit_ibm
+	mypy --module qiskit_ibm_provider
 
 style:
-	pycodestyle qiskit_ibm test
+	pycodestyle qiskit_ibm_provider test
 
 test:
 	python -m unittest -v

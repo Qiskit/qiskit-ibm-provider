@@ -19,8 +19,8 @@ from qiskit import transpile
 from qiskit.test import slow_test
 from qiskit.test.reference_circuits import ReferenceCircuits
 
-from qiskit_ibm import least_busy
-from qiskit_ibm.exceptions import IBMBackendJobLimitError
+from qiskit_ibm_provider import least_busy
+from qiskit_ibm_provider.exceptions import IBMBackendJobLimitError
 
 from ..decorators import requires_providers
 from ..ibm_test_case import IBMTestCase

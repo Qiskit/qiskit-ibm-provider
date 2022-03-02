@@ -14,25 +14,24 @@
 
 """IBMJob states test-suite."""
 
-import time
 import copy
+import time
 from contextlib import suppress
 from unittest import mock
 
+from qiskit import transpile
 from qiskit.providers import JobTimeoutError
 from qiskit.providers.jobstatus import JobStatus
-from qiskit import transpile
 from qiskit.test.mock.backends.bogota.fake_bogota import FakeBogota
 from qiskit.test.reference_circuits import ReferenceCircuits
 
-from qiskit_ibm.apiconstants import API_JOB_FINAL_STATES, ApiJobStatus
-from qiskit_ibm.job.exceptions import IBMJobApiError, IBMJobInvalidStateError
-from qiskit_ibm.api.exceptions import (ApiError, UserTimeoutExceededError,
-                                       ApiIBMProtocolError)
-from qiskit_ibm.exceptions import IBMBackendError
-from qiskit_ibm.ibm_backend import IBMBackend
+from qiskit_ibm_provider.api.exceptions import (ApiError, UserTimeoutExceededError,
+                                                ApiIBMProtocolError)
+from qiskit_ibm_provider.apiconstants import API_JOB_FINAL_STATES, ApiJobStatus
+from qiskit_ibm_provider.exceptions import IBMBackendError
+from qiskit_ibm_provider.ibm_backend import IBMBackend
+from qiskit_ibm_provider.job.exceptions import IBMJobApiError, IBMJobInvalidStateError
 from ..jobtestcase import JobTestCase
-
 
 MOCKED_ERROR_RESULT = {
     'qObjectResult': {

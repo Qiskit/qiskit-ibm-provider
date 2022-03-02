@@ -22,8 +22,8 @@ from qiskit import transpile, schedule, QuantumCircuit
 from qiskit.circuit import Parameter
 from qiskit.version import VERSION as terra_version
 
-from qiskit_ibm import least_busy
-from qiskit_ibm.utils.json_encoder import IBMJsonEncoder
+from qiskit_ibm_provider import least_busy
+from qiskit_ibm_provider.utils.json_encoder import IBMJsonEncoder
 
 from ..decorators import requires_provider
 from ..utils import cancel_job

@@ -12,33 +12,32 @@
 
 """Tests for the IBMProvider class."""
 
-from datetime import datetime
 import os
-from unittest import skipIf, mock
 from configparser import ConfigParser
+from datetime import datetime
+from unittest import skipIf, mock
+
 from qiskit import ClassicalRegister, QuantumCircuit, QuantumRegister
-from qiskit.test import providers, slow_test
 from qiskit.compiler import transpile
 from qiskit.providers.exceptions import QiskitBackendNotFoundError
 from qiskit.providers.models.backendproperties import BackendProperties
+from qiskit.test import providers, slow_test
 
-from qiskit_ibm.ibm_backend import IBMSimulator, IBMBackend
-from qiskit_ibm.ibm_backend_service import IBMBackendService
-from qiskit_ibm.runtime import IBMRuntimeService
-from qiskit_ibm.ibm_provider import IBMProvider
-from qiskit_ibm import hub_group_project
-from qiskit_ibm.api.exceptions import RequestsApiError
-from qiskit_ibm.api.clients import AccountClient
-from qiskit_ibm.exceptions import (IBMProviderError, IBMProviderValueError,
-                                   IBMProviderCredentialsInvalidUrl,
-                                   IBMProviderCredentialsInvalidToken,
-                                   IBMProviderCredentialsNotFound)
-from qiskit_ibm.credentials.hub_group_project_id import HubGroupProjectID
-from qiskit_ibm.apiconstants import QISKIT_IBM_API_URL
-
-from ..ibm_test_case import IBMTestCase
-from ..decorators import requires_device, requires_qe_access, requires_provider
+from qiskit_ibm_provider import hub_group_project
+from qiskit_ibm_provider.api.clients import AccountClient
+from qiskit_ibm_provider.api.exceptions import RequestsApiError
+from qiskit_ibm_provider.apiconstants import QISKIT_IBM_API_URL
+from qiskit_ibm_provider.credentials.hub_group_project_id import HubGroupProjectID
+from qiskit_ibm_provider.exceptions import (IBMProviderError, IBMProviderValueError,
+                                            IBMProviderCredentialsInvalidUrl,
+                                            IBMProviderCredentialsInvalidToken,
+                                            IBMProviderCredentialsNotFound)
+from qiskit_ibm_provider.ibm_backend import IBMSimulator, IBMBackend
+from qiskit_ibm_provider.ibm_backend_service import IBMBackendService
+from qiskit_ibm_provider.ibm_provider import IBMProvider
 from ..contextmanagers import custom_qiskitrc, no_envs, CREDENTIAL_ENV_VARS
+from ..decorators import requires_device, requires_qe_access, requires_provider
+from ..ibm_test_case import IBMTestCase
 from ..utils import get_hgp
 
 API_URL = 'https://api.quantum-computing.ibm.com/api'

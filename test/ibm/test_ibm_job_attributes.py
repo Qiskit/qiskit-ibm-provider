@@ -25,9 +25,9 @@ from qiskit.test.reference_circuits import ReferenceCircuits
 from qiskit.providers.jobstatus import JobStatus, JOB_FINAL_STATES
 from qiskit.compiler import transpile
 
-from qiskit_ibm.job.exceptions import IBMJobFailureError
-from qiskit_ibm.api.clients.account import AccountClient
-from qiskit_ibm.exceptions import IBMBackendValueError, IBMBackendApiProtocolError
+from qiskit_ibm_provider.job.exceptions import IBMJobFailureError
+from qiskit_ibm_provider.api.clients.account import AccountClient
+from qiskit_ibm_provider.exceptions import IBMBackendValueError, IBMBackendApiProtocolError
 
 from ..ibm_test_case import IBMTestCase
 from ..decorators import requires_provider, requires_device

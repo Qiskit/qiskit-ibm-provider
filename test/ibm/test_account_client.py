@@ -20,10 +20,10 @@ from urllib3.exceptions import MaxRetryError
 
 from qiskit.circuit import ClassicalRegister, QuantumCircuit, QuantumRegister
 from qiskit.compiler import assemble, transpile
-from qiskit_ibm.apiconstants import ApiJobStatus
-from qiskit_ibm.api.clients import AccountClient, AuthClient
-from qiskit_ibm.api.exceptions import ApiError, RequestsApiError
-from qiskit_ibm.utils.utils import RefreshQueue
+from qiskit_ibm_provider.apiconstants import ApiJobStatus
+from qiskit_ibm_provider.api.clients import AccountClient, AuthClient
+from qiskit_ibm_provider.api.exceptions import ApiError, RequestsApiError
+from qiskit_ibm_provider.utils.utils import RefreshQueue
 
 from ..ibm_test_case import IBMTestCase
 from ..decorators import requires_qe_access, requires_provider

@@ -26,14 +26,14 @@ from qiskit.test.reference_circuits import ReferenceCircuits
 from qiskit.compiler import transpile
 from qiskit.result import Result
 from qiskit.providers.jobstatus import JobStatus, JOB_FINAL_STATES
-from qiskit_ibm import least_busy
-from qiskit_ibm.apiconstants import ApiJobStatus, API_JOB_FINAL_STATES
-from qiskit_ibm.ibm_backend import IBMRetiredBackend
-from qiskit_ibm.exceptions import IBMBackendApiError
-from qiskit_ibm.utils.utils import api_status_to_job_status
-from qiskit_ibm.job.exceptions import IBMJobTimeoutError, IBMJobNotFoundError
-from qiskit_ibm.api.rest.job import Job as RestJob
-from qiskit_ibm.api.exceptions import RequestsApiError
+from qiskit_ibm_provider import least_busy
+from qiskit_ibm_provider.apiconstants import ApiJobStatus, API_JOB_FINAL_STATES
+from qiskit_ibm_provider.ibm_backend import IBMRetiredBackend
+from qiskit_ibm_provider.exceptions import IBMBackendApiError
+from qiskit_ibm_provider.utils.utils import api_status_to_job_status
+from qiskit_ibm_provider.job.exceptions import IBMJobTimeoutError, IBMJobNotFoundError
+from qiskit_ibm_provider.api.rest.job import Job as RestJob
+from qiskit_ibm_provider.api.exceptions import RequestsApiError
 
 from ..ibm_test_case import IBMTestCase
 from ..decorators import (requires_provider, requires_device)
