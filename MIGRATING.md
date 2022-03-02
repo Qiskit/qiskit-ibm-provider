@@ -46,7 +46,7 @@ provider = IBMQ.load_account() # loads saved account from disk
 ```
 After
 ```python
-from qiskit_ibm import IBMProvider
+from qiskit_ibm_provider import IBMProvider
 IBMProvider.save_account(token='MY_API_TOKEN')
 provider = IBMProvider() # loads saved account from disk
 ```
@@ -66,7 +66,7 @@ After
 export QISKIT_IBM_API_TOKEN='MY_API_TOKEN'
 ```
 ```python
-from qiskit_ibm import IBMProvider
+from qiskit_ibm_provider import IBMProvider
 provider = IBMProvider() # loads account from env variables
 ```
 
@@ -82,7 +82,7 @@ IBMQ.stored_account() # get saved account from qiskitrc file
 ```
 After
 ```python
-from qiskit_ibm import IBMProvider
+from qiskit_ibm_provider import IBMProvider
 IBMProvider.saved_account() # get saved account from qiskitrc file
 
 # {'token': 'MY_API_TOKEN',
@@ -98,7 +98,7 @@ IBMQ.delete_account() # delete saved account from qiskitrc file
 ```
 After
 ```python
-from qiskit_ibm import IBMProvider
+from qiskit_ibm_provider import IBMProvider
 IBMProvider.delete_account() # delete saved account from qiskitrc file
 ```
 
@@ -111,7 +111,7 @@ provider = IBMQ.enable_account(token='MY_API_TOKEN') # enable account for curren
 ```
 After
 ```python
-from qiskit_ibm import IBMProvider
+from qiskit_ibm_provider import IBMProvider
 provider = IBMProvider(token='MY_API_TOKEN') # enable account for current session
 ```
 
@@ -128,7 +128,7 @@ IBMQ.active_account() # check active account
 ```
 After
 ```python
-from qiskit_ibm import IBMProvider
+from qiskit_ibm_provider import IBMProvider
 provider = IBMProvider() # load saved account
 IBMProvider.active_account() # check active account
 

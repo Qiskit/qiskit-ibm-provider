@@ -12,32 +12,32 @@
 
 """Tests for the IBMCompositeJob."""
 
-import re
 import copy
-import time
 import random
+import re
+import time
 import uuid
 from datetime import datetime, timedelta, timezone
-from dateutil import tz
 
+from dateutil import tz
 from qiskit import transpile
-from qiskit.exceptions import QiskitError
 from qiskit.circuit.random import random_circuit
-from qiskit.providers.models import BackendProperties
+from qiskit.exceptions import QiskitError
 from qiskit.providers.jobstatus import JobStatus, JOB_FINAL_STATES
+from qiskit.providers.models import BackendProperties
 from qiskit.test.reference_circuits import ReferenceCircuits
 
-from qiskit_ibm.job.exceptions import (IBMJobFailureError, IBMJobInvalidStateError,
-                                       IBMJobNotFoundError, IBMJobTimeoutError)
-from qiskit_ibm.job import IBMCompositeJob
-from qiskit_ibm.job.constants import IBM_COMPOSITE_JOB_TAG_PREFIX, IBM_COMPOSITE_JOB_ID_PREFIX
-from qiskit_ibm.apiconstants import ApiJobStatus
-
-from ..ibm_test_case import IBMTestCase
+from qiskit_ibm_provider.apiconstants import ApiJobStatus
+from qiskit_ibm_provider.job import IBMCompositeJob
+from qiskit_ibm_provider.job.constants import (IBM_COMPOSITE_JOB_TAG_PREFIX,
+                                               IBM_COMPOSITE_JOB_ID_PREFIX)
+from qiskit_ibm_provider.job.exceptions import (IBMJobFailureError, IBMJobInvalidStateError,
+                                                IBMJobNotFoundError, IBMJobTimeoutError)
 from ..decorators import requires_provider
 from ..fake_account_client import (BaseFakeAccountClient, CancelableFakeJob,
                                    JobSubmitFailClient, BaseFakeJob, FailedFakeJob,
                                    JobTimeoutClient, FixedStatusFakeJob, MissingFieldFakeJob)
+from ..ibm_test_case import IBMTestCase
 
 
 class TestIBMCompositeJob(IBMTestCase):

@@ -20,10 +20,10 @@ from functools import partialmethod
 
 from qiskit.test.base import BaseQiskitTestCase
 
-from qiskit_ibm import QISKIT_IBM_PROVIDER_LOGGER_NAME
-from qiskit_ibm.api.clients.account import AccountClient
-from qiskit_ibm.apiconstants import ApiJobStatus, API_JOB_FINAL_STATES
-from qiskit_ibm.job.exceptions import IBMJobNotFoundError
+from qiskit_ibm_provider import QISKIT_IBM_PROVIDER_LOGGER_NAME
+from qiskit_ibm_provider.api.clients.account import AccountClient
+from qiskit_ibm_provider.apiconstants import ApiJobStatus, API_JOB_FINAL_STATES
+from qiskit_ibm_provider.job.exceptions import IBMJobNotFoundError
 
 from .utils import setup_test_logging
 

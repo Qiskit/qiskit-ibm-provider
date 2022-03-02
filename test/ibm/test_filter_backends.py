@@ -16,8 +16,8 @@ from unittest import mock
 from datetime import datetime
 
 from dateutil import tz
-from qiskit_ibm import least_busy
-from qiskit_ibm import IBMError
+from qiskit_ibm_provider import least_busy
+from qiskit_ibm_provider import IBMError
 
 from ..ibm_test_case import IBMTestCase
 from ..decorators import requires_provider, requires_device
