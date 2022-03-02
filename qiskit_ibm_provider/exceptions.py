@@ -17,79 +17,95 @@ from qiskit.exceptions import QiskitError
 
 class IBMError(QiskitError):
     """Base class for errors raised by the provider modules."""
+
     pass
 
 
 class IBMProviderError(IBMError):
     """Base class for rrrors raise by IBMProvider."""
+
     pass
 
 
 class IBMProviderValueError(IBMProviderError):
     """Value errors raised by IBMProvider."""
+
     pass
 
 
 class IBMProviderCredentialsNotFound(IBMProviderError):
     """Errors raised when credentials are not found."""
+
     pass
 
 
 class IBMProviderMultipleCredentialsFound(IBMProviderError):
     """Errors raised when multiple credentials are found."""
+
     pass
 
 
 class IBMProviderCredentialsInvalidFormat(IBMProviderError):
     """Errors raised when the credentials format is invalid."""
+
     pass
 
 
 class IBMProviderCredentialsInvalidToken(IBMProviderError):
     """Errors raised when an IBM Quantum token is invalid."""
+
     pass
 
 
 class IBMProviderCredentialsInvalidUrl(IBMProviderError):
     """Errors raised when an IBM Quantum URL is invalid."""
+
     pass
 
 
 class IBMBackendError(IBMError):
     """Base class for errors raised by the backend modules."""
+
     pass
 
 
 class IBMBackendApiError(IBMBackendError):
     """Errors that occur unexpectedly when querying the server."""
+
     pass
 
 
 class IBMBackendApiProtocolError(IBMBackendApiError):
     """Errors raised when an unexpected value is received from the server."""
+
     pass
 
 
 class IBMBackendValueError(IBMBackendError, ValueError):
     """Value errors raised by the backend modules."""
+
     pass
 
 
 class IBMBackendJobLimitError(IBMBackendError):
     """Errors raised when job limit is reached."""
+
     pass
 
 
 class IBMInputValueError(IBMError):
     """Error raised due to invalid input value."""
+
     pass
 
 
 class IBMNotAuthorizedError(IBMError):
     """Error raised when a service is invoked from an unauthorized account."""
+
     pass
 
 
 class IBMApiError(IBMError):
     """Error raised when a server error encountered."""
+
     pass

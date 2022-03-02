@@ -12,14 +12,14 @@
 
 """Utilities for working with IBM Quantum jobs."""
 
-from typing import Dict, List, Generator, Any, Callable, Optional, NamedTuple, Tuple
 from contextlib import contextmanager
+from typing import Dict, List, Generator, Any, Callable, Optional, NamedTuple, Tuple
 
 from qiskit.providers.jobstatus import JobStatus
 
-from ..api.exceptions import ApiError
 from .exceptions import IBMJobApiError
 from .queueinfo import QueueInfo
+from ..api.exceptions import ApiError
 
 JOB_STATUS_TO_INT = {
     JobStatus.INITIALIZING: 0,
@@ -28,7 +28,7 @@ JOB_STATUS_TO_INT = {
     JobStatus.RUNNING: 3,
     JobStatus.ERROR: 4,
     JobStatus.CANCELLED: 5,
-    JobStatus.DONE: 6
+    JobStatus.DONE: 6,
 }
 
 
@@ -43,10 +43,10 @@ def build_error_report(results: List[Dict[str, Any]]) -> str:
     """
     error_list = []
     for index, result in enumerate(results):
-        if not result['success']:
-            error_list.append('Experiment {}: {}'.format(index, result['status']))
+        if not result["success"]:
+            error_list.append("Experiment {}: {}".format(index, result["status"]))
 
-    error_report = 'The following experiments failed:\n{}'.format('\n'.join(error_list))
+    error_report = "The following experiments failed:\n{}".format("\n".join(error_list))
     return error_report
 
 
@@ -60,7 +60,7 @@ def get_cancel_status(cancel_response: Dict[str, Any]) -> bool:
     Returns:
         Whether the job cancel is successful.
     """
-    return 'error' not in cancel_response and cancel_response.get('cancelled', False)
+    return "error" not in cancel_response and cancel_response.get("cancelled", False)
 
 
 @contextmanager
@@ -88,7 +88,7 @@ def auto_retry(func: Callable, *args: Any, **kwargs: Any) -> Any:
         IBMJobApiError: If an unexpected error occurred when communicating
             with the server.
     """
-    max_retry = kwargs.pop('max_retry', 3)
+    max_retry = kwargs.pop("max_retry", 3)
     while True:
         try:
             return func(*args, **kwargs)
@@ -100,6 +100,7 @@ def auto_retry(func: Callable, *args: Any, **kwargs: Any) -> Any:
 
 class JobStatusQueueInfo(NamedTuple):
     """A named tuple of job status and queue info."""
+
     status: JobStatus
     queue_info: Optional[QueueInfo]
 
@@ -127,7 +128,12 @@ def last_job_stat_pos(jobs: List[JobStatusQueueInfo]) -> JobStatusQueueInfo:
         queue_info = elem.queue_info
         queue_pos = queue_info.position if queue_info else None
         est_comp = queue_info.estimated_complete_time if queue_info else None
-        return JOB_STATUS_TO_INT[elem.status] * -1, queue_pos is None, \
-            queue_pos, est_comp is None, est_comp
+        return (
+            JOB_STATUS_TO_INT[elem.status] * -1,
+            queue_pos is None,
+            queue_pos,
+            est_comp is None,
+            est_comp,
+        )
 
     return sorted(jobs, key=sort_3_keys)[-1]

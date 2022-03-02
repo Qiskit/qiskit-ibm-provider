@@ -31,16 +31,18 @@ class Account(RestAdapterBase):
     """Rest adapter for hub/group/project related endpoints."""
 
     URL_MAP = {
-        'backends': '/devices/v/1',
-        'jobs': '/Jobs',
-        'jobs_status': '/Jobs/status/v/1',
+        "backends": "/devices/v/1",
+        "jobs": "/Jobs",
+        "jobs_status": "/Jobs/status/v/1",
     }
 
-    TEMPLATE_IBM_HUBS = '/Network/{hub}/Groups/{group}/Projects/{project}'
+    TEMPLATE_IBM_HUBS = "/Network/{hub}/Groups/{group}/Projects/{project}"
     """str: Template for creating an IBM Quantum URL with
     hub/group/project information."""
 
-    def __init__(self, session: RetrySession, hub: str, group: str, project: str) -> None:
+    def __init__(
+        self, session: RetrySession, hub: str, group: str, project: str
+    ) -> None:
         """Account constructor.
 
         Args:
@@ -49,7 +51,9 @@ class Account(RestAdapterBase):
             group: The group to use.
             project: The project to use.
         """
-        self.url_prefix = self.TEMPLATE_IBM_HUBS.format(hub=hub, group=group, project=project)
+        self.url_prefix = self.TEMPLATE_IBM_HUBS.format(
+            hub=hub, group=group, project=project
+        )
         super().__init__(session, self.url_prefix)
 
     # Function-specific rest adapters.
@@ -87,15 +91,15 @@ class Account(RestAdapterBase):
         Returns:
             JSON response.
         """
-        url = self.get_url('backends')
+        url = self.get_url("backends")
         return self.session.get(url, timeout=timeout).json()
 
     def jobs(
-            self,
-            limit: int = 10,
-            skip: int = 0,
-            descending: bool = True,
-            extra_filter: Dict[str, Any] = None
+        self,
+        limit: int = 10,
+        skip: int = 0,
+        descending: bool = True,
+        extra_filter: Dict[str, Any] = None,
     ) -> List[Dict[str, Any]]:
         """Return a list of job information.
 
@@ -108,32 +112,35 @@ class Account(RestAdapterBase):
         Returns:
             JSON response.
         """
-        url = self.get_url('jobs_status')
-        order = 'DESC' if descending else 'ASC'
+        url = self.get_url("jobs_status")
+        order = "DESC" if descending else "ASC"
 
         query = {
-            'order': 'creationDate ' + order,
-            'limit': limit,
-            'skip': skip,
+            "order": "creationDate " + order,
+            "limit": limit,
+            "skip": skip,
         }
         if extra_filter:
-            query['where'] = extra_filter
+            query["where"] = extra_filter
 
         if logger.getEffectiveLevel() is logging.DEBUG:
-            logger.debug("Endpoint: %s. Method: GET. Request Data: {'filter': %s}",
-                         url, filter_data(query))
+            logger.debug(
+                "Endpoint: %s. Method: GET. Request Data: {'filter': %s}",
+                url,
+                filter_data(query),
+            )
 
-        data = self.session.get(url, params={'filter': json.dumps(query)}).json()
+        data = self.session.get(url, params={"filter": json.dumps(query)}).json()
         for job_data in data:
             map_job_response(job_data)
         return data
 
     def create_remote_job(
-            self,
-            backend_name: str,
-            job_name: Optional[str] = None,
-            job_tags: Optional[List[str]] = None,
-            experiment_id: Optional[str] = None
+        self,
+        backend_name: str,
+        job_name: Optional[str] = None,
+        job_tags: Optional[List[str]] = None,
+        experiment_id: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Create a job instance on the remote server.
 
@@ -146,21 +153,18 @@ class Account(RestAdapterBase):
         Returns:
             JSON response.
         """
-        url = self.get_url('jobs')
+        url = self.get_url("jobs")
 
-        payload = {
-            'backend': {'name': backend_name},
-            'allowObjectStorage': True
-        }
+        payload = {"backend": {"name": backend_name}, "allowObjectStorage": True}
 
         if job_name:
-            payload['name'] = job_name
+            payload["name"] = job_name
 
         if job_tags:
-            payload['tags'] = job_tags
+            payload["tags"] = job_tags
 
         if experiment_id:
-            payload['experimentTag'] = experiment_id
+            payload["experimentTag"] = experiment_id
 
         return self.session.post(url, json=payload).json()
 
@@ -174,11 +178,8 @@ class Account(RestAdapterBase):
         Returns:
             JSON response.
         """
-        url = self.get_url('circuit')
+        url = self.get_url("circuit")
 
-        payload = {
-            'name': name,
-            'params': kwargs
-        }
+        payload = {"name": name, "params": kwargs}
 
         return self.session.post(url, json=payload).json()

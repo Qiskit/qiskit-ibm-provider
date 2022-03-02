@@ -21,11 +21,13 @@ from websocket import WebSocketApp, STATUS_NORMAL
 
 from qiskit_ibm_provider.apiconstants import ApiJobStatus, API_JOB_FINAL_STATES
 from qiskit_ibm_provider.utils.utils import filter_data
-from ..exceptions import (WebsocketError,
-                          WebsocketIBMProtocolError,
-                          WebsocketAuthenticationError)
-from ..rest.utils.data_mapper import map_job_status_response
 from .base import BaseWebsocketClient, WebsocketClientCloseCode
+from ..exceptions import (
+    WebsocketError,
+    WebsocketIBMProtocolError,
+    WebsocketAuthenticationError,
+)
+from ..rest.utils.data_mapper import map_job_status_response
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +57,7 @@ class WebsocketMessage(ABC):
 
     def as_json(self) -> str:
         """Return a JSON representation of the message."""
-        return json.dumps({'type': self._type, 'data': self._data})
+        return json.dumps({"type": self._type, "data": self._data})
 
 
 class WebsocketAuthenticationMessage(WebsocketMessage):
@@ -67,26 +69,32 @@ class WebsocketAuthenticationMessage(WebsocketMessage):
         Args:
             access_token: Access token.
         """
-        super().__init__(type_='authentication', data=access_token)
+        super().__init__(type_="authentication", data=access_token)
 
 
 class WebsocketResponseMethod(WebsocketMessage):
     """Container for a message received via websockets."""
 
     @classmethod
-    def from_json(cls, json_string: str) -> 'WebsocketResponseMethod':
+    def from_json(cls, json_string: str) -> "WebsocketResponseMethod":
         """Instantiate a message from a JSON response."""
         try:
             parsed_dict = json.loads(json_string)
         except (ValueError, AttributeError) as ex:
             exception_to_raise = WebsocketIBMProtocolError(
-                'Unable to parse the message received from the server: {!r}'.format(json_string))
+                "Unable to parse the message received from the server: {!r}".format(
+                    json_string
+                )
+            )
 
-            logger.info('An exception occurred. Raising "%s" from "%s"',
-                        repr(exception_to_raise), repr(ex))
+            logger.info(
+                'An exception occurred. Raising "%s" from "%s"',
+                repr(exception_to_raise),
+                repr(ex),
+            )
             raise exception_to_raise from ex
 
-        return cls(parsed_dict['type'], parsed_dict.get('data', None))
+        return cls(parsed_dict["type"], parsed_dict.get("data", None))
 
 
 class WebsocketClient(BaseWebsocketClient):
@@ -140,21 +148,20 @@ class WebsocketClient(BaseWebsocketClient):
         """
         response = WebsocketResponseMethod.from_json(message)
         if logger.getEffectiveLevel() is logging.DEBUG:
-            logger.debug('Received message from websocket: %s',
-                         filter_data(response.data))
+            logger.debug(
+                "Received message from websocket: %s", filter_data(response.data)
+            )
         self._last_message = map_job_status_response(response.data)
         if self._message_queue is not None:
             self._message_queue.put(self._last_message)
         self._current_retry = 0
 
-        job_status = response.data.get('status')
+        job_status = response.data.get("status")
         if job_status and ApiJobStatus(job_status) in API_JOB_FINAL_STATES:
             self.disconnect()
 
     def get_job_status(
-            self,
-            retries: int = 5,
-            backoff_factor: float = 0.5
+        self, retries: int = 5, backoff_factor: float = 0.5
     ) -> Dict[str, str]:
         """Return the status of a job.
 
@@ -190,14 +197,15 @@ class WebsocketClient(BaseWebsocketClient):
             WebsocketError: If the websocket connection ended unexpectedly.
             WebsocketTimeoutError: If the timeout has been reached.
         """
-        url = '{}/jobs/{}/status/v/1'.format(self._websocket_url, self._job_id)
+        url = "{}/jobs/{}/status/v/1".format(self._websocket_url, self._job_id)
         return self.stream(url=url, retries=retries, backoff_factor=backoff_factor)
 
     def _handle_stream_iteration(self) -> None:
         """Handle a streaming iteration."""
         if not self._authenticated:
             raise WebsocketAuthenticationError(
-                f"Failed to authenticate against the server: {self._error}")
+                f"Failed to authenticate against the server: {self._error}"
+            )
 
         if self._server_close_code == self._API_STATUS_JOB_DONE:
             self._server_close_code = STATUS_NORMAL
@@ -205,4 +213,5 @@ class WebsocketClient(BaseWebsocketClient):
         if self._server_close_code == self._API_STATUS_JOB_NOT_FOUND:
             raise WebsocketError(
                 f"Connection with websocket closed with code {self._server_close_code}: "
-                f"Job ID {self._job_id} not found.")
+                f"Job ID {self._job_id} not found."
+            )

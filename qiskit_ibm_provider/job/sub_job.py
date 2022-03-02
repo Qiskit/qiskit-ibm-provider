@@ -12,16 +12,16 @@
 
 """IBM Quantum sub job."""
 
-from typing import Optional, Union
 import threading
 from concurrent.futures import Future
+from typing import Optional, Union
 
 from qiskit.qobj import QasmQobj, PulseQobj
 from qiskit.result import Result
 
 from .exceptions import IBMJobFailureError, IBMJobInvalidStateError
-from .utils import auto_retry
 from .ibm_circuit_job import IBMCircuitJob
+from .utils import auto_retry
 
 
 class SubJob:
@@ -32,13 +32,13 @@ class SubJob:
     """
 
     def __init__(
-            self,
-            start_index: int,
-            end_index: int,
-            job_index: int,
-            total: int,
-            qobj: Optional[Union[QasmQobj, PulseQobj]] = None,
-            job: IBMCircuitJob = None
+        self,
+        start_index: int,
+        end_index: int,
+        job_index: int,
+        total: int,
+        qobj: Optional[Union[QasmQobj, PulseQobj]] = None,
+        job: IBMCircuitJob = None,
     ) -> None:
         """SubJob constructor.
 
@@ -69,8 +69,12 @@ class SubJob:
         Returns:
             Formatted tag.
         """
-        return tag_template.format(job_index=self.job_index, total_jobs=self.total_jobs,
-                                   start_index=self.start_index, end_index=self.end_index)
+        return tag_template.format(
+            job_index=self.job_index,
+            total_jobs=self.total_jobs,
+            start_index=self.start_index,
+            end_index=self.end_index,
+        )
 
     @property
     def qobj(self) -> Optional[Union[QasmQobj, PulseQobj]]:
@@ -152,5 +156,7 @@ class SubJob:
 
     def __repr__(self) -> str:
         job_id = self.job.job_id() if self.job else None
-        return f"<{self.__class__.__name__}> {self.job_index} (job ID {job_id}) " \
-               f" for circuits {self.start_index}-{self.end_index}"
+        return (
+            f"<{self.__class__.__name__}> {self.job_index} (job ID {job_id}) "
+            f" for circuits {self.start_index}-{self.end_index}"
+        )

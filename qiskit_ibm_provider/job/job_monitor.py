@@ -21,10 +21,12 @@ from .ibm_job import IBMJob
 from ..utils.converters import duration_difference
 
 
-def _text_checker(job: IBMJob,
-                  interval: float,
-                  _interval_set: bool = False,
-                  output: TextIO = sys.stdout) -> None:
+def _text_checker(
+    job: IBMJob,
+    interval: float,
+    _interval_set: bool = False,
+    output: TextIO = sys.stdout,
+) -> None:
     """A text-based job status checker.
 
     Args:
@@ -39,15 +41,15 @@ def _text_checker(job: IBMJob,
     msg = status.value
     prev_msg = msg
     msg_len = len(msg)
-    prev_time_str = ''
+    prev_time_str = ""
 
-    print('\r%s: %s' % ('Job Status', msg), end='', file=output)
-    while status.name not in ['DONE', 'CANCELLED', 'ERROR']:
+    print("\r%s: %s" % ("Job Status", msg), end="", file=output)
+    while status.name not in ["DONE", "CANCELLED", "ERROR"]:
         time.sleep(interval)
         status = job.status()
         msg = status.value
 
-        if status.name == 'QUEUED':
+        if status.name == "QUEUED":
             queue_info = job.queue_info()
 
             if queue_info:
@@ -59,8 +61,9 @@ def _text_checker(job: IBMJob,
             else:
                 time_str = prev_time_str
 
-            msg += ' ({queue}) [Est. wait time: {time}]'.format(queue=job.queue_position(),
-                                                                time=time_str)
+            msg += " ({queue}) [Est. wait time: {time}]".format(
+                queue=job.queue_position(), time=time_str
+            )
 
             if job.queue_position() is None:
                 if not _interval_set:
@@ -71,31 +74,31 @@ def _text_checker(job: IBMJob,
             if not _interval_set:
                 interval = 2
 
-        if status.name == 'RUNNING':
-            msg = 'RUNNING'
+        if status.name == "RUNNING":
+            msg = "RUNNING"
             job_mode = job.scheduling_mode()
             if job_mode:
-                msg += ' - {}'.format(job_mode)
+                msg += " - {}".format(job_mode)
 
-        elif status.name == 'ERROR':
-            msg = 'ERROR - {}'.format(job.error_message())
+        elif status.name == "ERROR":
+            msg = "ERROR - {}".format(job.error_message())
 
         # Adjust length of message so there are no artifacts
         if len(msg) < msg_len:
-            msg += ' ' * (msg_len - len(msg))
+            msg += " " * (msg_len - len(msg))
         elif len(msg) > msg_len:
             msg_len = len(msg)
 
         if msg != prev_msg:
-            print('\r%s: %s' % ('Job Status', msg), end='', file=output)
+            print("\r%s: %s" % ("Job Status", msg), end="", file=output)
             prev_msg = msg
 
-    print('', file=output)
+    print("", file=output)
 
 
-def job_monitor(job: IBMJob,
-                interval: Optional[float] = None,
-                output: TextIO = sys.stdout) -> None:
+def job_monitor(
+    job: IBMJob, interval: Optional[float] = None, output: TextIO = sys.stdout
+) -> None:
     """Monitor the status of an ``IBMJob`` instance.
 
     Args:
@@ -110,5 +113,4 @@ def job_monitor(job: IBMJob,
     else:
         _interval_set = True
 
-    _text_checker(job, interval, _interval_set,
-                  output=output)
+    _text_checker(job, interval, _interval_set, output=output)

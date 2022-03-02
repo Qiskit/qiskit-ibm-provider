@@ -13,19 +13,19 @@
 """A hub, group and project in an IBM Quantum account."""
 
 import logging
-from collections import OrderedDict
 import traceback
+from collections import OrderedDict
 from typing import Any, Dict, Optional
 
 from qiskit.providers.backend import BackendV1 as Backend
 from qiskit.providers.models import PulseBackendConfiguration, QasmBackendConfiguration
+
 from qiskit_ibm_provider import ibm_provider  # pylint: disable=unused-import
 from qiskit_ibm_provider.exceptions import IBMInputValueError
-
-from .utils.json_decoder import decode_backend_configuration
-from .ibm_backend import IBMBackend, IBMSimulator
 from .api.clients import AccountClient
 from .credentials import Credentials
+from .ibm_backend import IBMBackend, IBMSimulator
+from .utils.json_decoder import decode_backend_configuration
 
 logger = logging.getLogger(__name__)
 
@@ -34,10 +34,10 @@ class HubGroupProject:
     """Represents a hub/group/project with IBM Quantum backends and services associated with it."""
 
     def __init__(
-            self,
-            credentials: Credentials,
-            provider: 'ibm_provider.IBMProvider',
-            is_open: bool
+        self,
+        credentials: Credentials,
+        provider: "ibm_provider.IBMProvider",
+        is_open: bool,
     ) -> None:
         """HubGroupProject constructor
 
@@ -49,13 +49,12 @@ class HubGroupProject:
         self.credentials = credentials
         self._provider = provider
         self.is_open = is_open
-        self._api_client = AccountClient(self.credentials,
-                                         **self.credentials.connection_parameters())
+        self._api_client = AccountClient(
+            self.credentials, **self.credentials.connection_parameters()
+        )
         # Initialize the internal list of backends.
         self._backends: Dict[str, IBMBackend] = {}
-        self._service_urls = {
-            'backend': self.credentials.url
-        }
+        self._service_urls = {"backend": self.credentials.url}
 
     @property
     def backends(self) -> Dict[str, IBMBackend]:
@@ -77,7 +76,9 @@ class HubGroupProject:
         """
         self._backends = value
 
-    def _discover_remote_backends(self, timeout: Optional[float] = None) -> Dict[str, IBMBackend]:
+    def _discover_remote_backends(
+        self, timeout: Optional[float] = None
+    ) -> Dict[str, IBMBackend]:
         """Return the remote backends available for this hub/group/project.
 
         Args:
@@ -92,8 +93,10 @@ class HubGroupProject:
         for raw_config in configs_list:
             # Make sure the raw_config is of proper type
             if not isinstance(raw_config, dict):
-                logger.warning("An error occurred when retrieving backend "
-                               "information. Some backends might not be available.")
+                logger.warning(
+                    "An error occurred when retrieving backend "
+                    "information. Some backends might not be available."
+                )
                 continue
             try:
                 decode_backend_configuration(raw_config)
@@ -106,13 +109,16 @@ class HubGroupProject:
                     configuration=config,
                     provider=self._provider,
                     credentials=self.credentials,
-                    api_client=self._api_client)
+                    api_client=self._api_client,
+                )
             except Exception:  # pylint: disable=broad-except
                 logger.warning(
                     'Remote backend "%s" for provider %s could not be instantiated due to an '
-                    'invalid config: %s',
-                    raw_config.get('backend_name', raw_config.get('name', 'unknown')),
-                    repr(self), traceback.format_exc())
+                    "invalid config: %s",
+                    raw_config.get("backend_name", raw_config.get("name", "unknown")),
+                    repr(self),
+                    traceback.format_exc(),
+                )
         return ret
 
     def get_backend(self, name: str) -> Optional[Backend]:
@@ -127,13 +133,11 @@ class HubGroupProject:
 
     def __repr__(self) -> str:
         credentials_info = "hub='{}', group='{}', project='{}'".format(
-            self.credentials.hub, self.credentials.group, self.credentials.project)
+            self.credentials.hub, self.credentials.group, self.credentials.project
+        )
         return "<{}({})>".format(self.__class__.__name__, credentials_info)
 
-    def __eq__(
-            self,
-            other: Any
-    ) -> bool:
+    def __eq__(self, other: Any) -> bool:
         if not isinstance(other, HubGroupProject):
             return False
         return self.credentials == other.credentials
