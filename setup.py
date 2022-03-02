@@ -12,7 +12,7 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-"""Setup qiskit_ibm"""
+"""Setup qiskit_ibm_provider"""
 
 import os
 
@@ -30,7 +30,7 @@ REQUIREMENTS = [
 
 # Handle version.
 VERSION_PATH = os.path.join(os.path.dirname(__file__),
-                            "qiskit_ibm", "VERSION.txt")
+                            "qiskit_ibm_provider", "VERSION.txt")
 with open(VERSION_PATH, "r") as version_file:
     VERSION = version_file.read().strip()
 

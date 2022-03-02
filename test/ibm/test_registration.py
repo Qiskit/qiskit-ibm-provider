@@ -20,14 +20,14 @@ from typing import Dict, Any
 import copy
 
 from requests_ntlm import HttpNtlmAuth
-from qiskit_ibm import IBMProvider
-from qiskit_ibm.apiconstants import QISKIT_IBM_API_URL
-from qiskit_ibm.credentials import (
+from qiskit_ibm_provider import IBMProvider
+from qiskit_ibm_provider.apiconstants import QISKIT_IBM_API_URL
+from qiskit_ibm_provider.credentials import (
     Credentials, discover_credentials,
     read_credentials_from_qiskitrc, store_credentials,
     store_preferences, HubGroupProjectID)
-from qiskit_ibm.credentials import configrc
-from qiskit_ibm.exceptions import IBMProviderError
+from qiskit_ibm_provider.credentials import configrc
+from qiskit_ibm_provider.exceptions import IBMProviderError
 
 from ..ibm_test_case import IBMTestCase
 from ..contextmanagers import (custom_envs, no_envs, custom_qiskitrc, CREDENTIAL_ENV_VARS,

@@ -16,11 +16,11 @@ import sys
 import importlib
 import threading
 
-from qiskit_ibm.api.exceptions import WebsocketError, WebsocketTimeoutError
-from qiskit_ibm.api.clients.websocket import WebsocketClient
-from qiskit_ibm.utils.utils import RefreshQueue
-from qiskit_ibm.credentials import Credentials
-from qiskit_ibm.api.clients.account import AccountClient
+from qiskit_ibm_provider.api.exceptions import WebsocketError, WebsocketTimeoutError
+from qiskit_ibm_provider.api.clients.websocket import WebsocketClient
+from qiskit_ibm_provider.utils.utils import RefreshQueue
+from qiskit_ibm_provider.credentials import Credentials
+from qiskit_ibm_provider.api.clients.account import AccountClient
 
 from ...ibm_test_case import IBMTestCase
 from ...ws_server import MockWsServer
@@ -48,7 +48,7 @@ class TestWebsocketClient(IBMTestCase):
 
         def _import_websocket():
             try:
-                importlib.reload(sys.modules["qiskit_ibm.api.clients.websocket"])
+                importlib.reload(sys.modules["qiskit_ibm_provider.api.clients.websocket"])
             except RuntimeError:
                 self.fail("Importing websocket in new thread failed!")
 

@@ -12,18 +12,17 @@
 
 """Tests for the AuthClient and VersionClient proxy support."""
 
-import urllib
 import subprocess
+import urllib
 
 from requests.exceptions import ProxyError
 
-from qiskit_ibm import IBMProvider
-from qiskit_ibm.api.clients import (AuthClient,
-                                    VersionClient)
-from qiskit_ibm.api.exceptions import RequestsApiError
-from qiskit_ibm.credentials import Credentials
-from ..ibm_test_case import IBMTestCase
+from qiskit_ibm_provider import IBMProvider
+from qiskit_ibm_provider.api.clients import (AuthClient, VersionClient)
+from qiskit_ibm_provider.api.exceptions import RequestsApiError
+from qiskit_ibm_provider.credentials import Credentials
 from ..decorators import requires_qe_access
+from ..ibm_test_case import IBMTestCase
 
 ADDRESS = '127.0.0.1'
 PORT = 8085
