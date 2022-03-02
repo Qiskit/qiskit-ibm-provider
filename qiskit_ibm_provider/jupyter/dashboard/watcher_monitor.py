@@ -13,16 +13,16 @@
 """A module of widgets for job monitoring."""
 
 import sys
-import time
 import threading
+import time
 
 from qiskit.providers.jobstatus import JobStatus
-from qiskit_ibm_provider.job.ibm_job import IBMJob
 
+from qiskit_ibm_provider.job.ibm_job import IBMJob
 from ...utils.converters import duration_difference
 
 
-def _job_monitor(job: IBMJob, status: JobStatus, watcher: 'IBMDashboard') -> None:
+def _job_monitor(job: IBMJob, status: JobStatus, watcher: "IBMDashboard") -> None:
     """Monitor the status of an ``IBMJob`` instance.
 
     Args:
@@ -34,7 +34,7 @@ def _job_monitor(job: IBMJob, status: JobStatus, watcher: 'IBMDashboard') -> Non
     thread.start()
 
 
-def _job_checker(job: IBMJob, status: JobStatus, watcher: 'IBMDashboard') -> None:
+def _job_checker(job: IBMJob, status: JobStatus, watcher: "IBMDashboard") -> None:
     """A simple job status checker.
 
     Args:
@@ -46,14 +46,14 @@ def _job_checker(job: IBMJob, status: JobStatus, watcher: 'IBMDashboard') -> Non
     prev_queue_pos = None
     interval = 2
     exception_count = 0
-    prev_est_time = ''
-    while status.name not in ['DONE', 'CANCELLED', 'ERROR']:
+    prev_est_time = ""
+    while status.name not in ["DONE", "CANCELLED", "ERROR"]:
         time.sleep(interval)
         try:
             status = job.status()
             exception_count = 0
 
-            if status.name == 'QUEUED':
+            if status.name == "QUEUED":
                 queue_pos = job.queue_position()
                 if queue_pos != prev_queue_pos:
                     queue_info = job.queue_info()
@@ -63,8 +63,12 @@ def _job_checker(job: IBMJob, status: JobStatus, watcher: 'IBMDashboard') -> Non
                     else:
                         est_time = prev_est_time
 
-                    update_info = (job.job_id(), status.name+' ({})'.format(queue_pos),
-                                   est_time, status.value)
+                    update_info = (
+                        job.job_id(),
+                        status.name + " ({})".format(queue_pos),
+                        est_time,
+                        status.value,
+                    )
 
                     watcher.update_single_job(update_info)
                     if queue_pos is not None:
@@ -75,10 +79,10 @@ def _job_checker(job: IBMJob, status: JobStatus, watcher: 'IBMDashboard') -> Non
 
             elif status.name != prev_status_name:
                 msg = status.name
-                if msg == 'RUNNING':
+                if msg == "RUNNING":
                     job_mode = job.scheduling_mode()
                     if job_mode:
-                        msg += ' [{}]'.format(job_mode[0].upper())
+                        msg += " [{}]".format(job_mode[0].upper())
 
                 update_info = (job.job_id(), msg, 0, status.value)
 
@@ -90,6 +94,6 @@ def _job_checker(job: IBMJob, status: JobStatus, watcher: 'IBMDashboard') -> Non
         except Exception:
             exception_count += 1
             if exception_count == 5:
-                update_info = (job.job_id(), 'NA', 0, "Could not query job.")
+                update_info = (job.job_id(), "NA", 0, "Could not query job.")
                 watcher.update_single_job(update_info)
                 sys.exit()

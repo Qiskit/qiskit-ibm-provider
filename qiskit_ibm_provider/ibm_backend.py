@@ -12,42 +12,49 @@
 
 """Module for interfacing with an IBM Quantum Backend."""
 
+import copy
 import logging
 import warnings
-import copy
-
-from typing import Dict, List, Union, Optional, Any
 from datetime import datetime as python_datetime
+from typing import Dict, List, Union, Optional, Any
 
-from qiskit.compiler import assemble
 from qiskit.circuit import QuantumCircuit, Parameter, Delay
 from qiskit.circuit.duration import duration_in_dt
+from qiskit.compiler import assemble
+from qiskit.providers.backend import BackendV1 as Backend
+from qiskit.providers.models import (
+    BackendStatus,
+    BackendProperties,
+    PulseDefaults,
+    GateConfig,
+)
+from qiskit.providers.models import QasmBackendConfiguration, PulseBackendConfiguration
+from qiskit.providers.options import Options
 from qiskit.pulse import Schedule, LoConfig
 from qiskit.pulse.channels import PulseChannel
 from qiskit.qobj import QasmQobj, PulseQobj
 from qiskit.qobj.utils import MeasLevel, MeasReturnType
-from qiskit.providers.backend import BackendV1 as Backend
-from qiskit.providers.options import Options
-from qiskit.providers.models import (BackendStatus, BackendProperties,
-                                     PulseDefaults, GateConfig)
 from qiskit.tools.events.pubsub import Publisher
-from qiskit.providers.models import (QasmBackendConfiguration,
-                                     PulseBackendConfiguration)
-from qiskit_ibm_provider import ibm_provider  # pylint: disable=unused-import
 
-from .apiconstants import ApiJobStatus, API_JOB_FINAL_STATES
+from qiskit_ibm_provider import ibm_provider  # pylint: disable=unused-import
 from .api.clients import AccountClient
 from .api.exceptions import ApiError
+from .apiconstants import ApiJobStatus, API_JOB_FINAL_STATES
 from .backendjoblimit import BackendJobLimit
 from .backendreservation import BackendReservation
 from .credentials import Credentials
-from .exceptions import (IBMBackendError, IBMBackendValueError, IBMBackendJobLimitError,
-                         IBMBackendApiError, IBMBackendApiProtocolError)
+from .exceptions import (
+    IBMBackendError,
+    IBMBackendValueError,
+    IBMBackendJobLimitError,
+    IBMBackendApiError,
+    IBMBackendApiProtocolError,
+)
 from .job import IBMJob, IBMCircuitJob, IBMCompositeJob
 from .utils import validate_job_tags
+from .utils.backend import convert_reservation_data
 from .utils.converters import utc_to_local_all, local_to_utc
 from .utils.json_decoder import decode_pulse_defaults, decode_backend_properties
-from .utils.backend import convert_reservation_data
 from .utils.utils import api_status_to_job_status
 
 logger = logging.getLogger(__name__)
@@ -103,11 +110,11 @@ class IBMBackend(Backend):
     id_warning_issued = False
 
     def __init__(
-            self,
-            configuration: Union[QasmBackendConfiguration, PulseBackendConfiguration],
-            provider: 'ibm_provider.IBMProvider',
-            credentials: Credentials,
-            api_client: AccountClient
+        self,
+        configuration: Union[QasmBackendConfiguration, PulseBackendConfiguration],
+        provider: "ibm_provider.IBMProvider",
+        credentials: Credentials,
+        api_client: AccountClient,
     ) -> None:
         """IBMBackend constructor.
 
@@ -132,39 +139,51 @@ class IBMBackend(Backend):
     @classmethod
     def _default_options(cls) -> Options:
         """Default runtime options."""
-        return Options(shots=4000, memory=False,
-                       qubit_lo_freq=None, meas_lo_freq=None,
-                       schedule_los=None,
-                       meas_level=MeasLevel.CLASSIFIED,
-                       meas_return=MeasReturnType.AVERAGE,
-                       memory_slots=None, memory_slot_size=100,
-                       rep_time=None, rep_delay=None,
-                       init_qubits=True, use_measure_esp=None)
+        return Options(
+            shots=4000,
+            memory=False,
+            qubit_lo_freq=None,
+            meas_lo_freq=None,
+            schedule_los=None,
+            meas_level=MeasLevel.CLASSIFIED,
+            meas_return=MeasReturnType.AVERAGE,
+            memory_slots=None,
+            memory_slot_size=100,
+            rep_time=None,
+            rep_delay=None,
+            init_qubits=True,
+            use_measure_esp=None,
+        )
 
     def run(
-            self,
-            circuits: Union[QuantumCircuit, Schedule,
-                            List[Union[QuantumCircuit, Schedule]]],
-            job_name: Optional[str] = None,
-            job_tags: Optional[List[str]] = None,
-            max_circuits_per_job: Optional[int] = None,
-            header: Optional[Dict] = None,
-            shots: Optional[Union[int, float]] = None,
-            memory: Optional[bool] = None,
-            qubit_lo_freq: Optional[List[int]] = None,
-            meas_lo_freq: Optional[List[int]] = None,
-            schedule_los: Optional[Union[List[Union[Dict[PulseChannel, float], LoConfig]],
-                                         Union[Dict[PulseChannel, float], LoConfig]]] = None,
-            meas_level: Optional[Union[int, MeasLevel]] = None,
-            meas_return: Optional[Union[str, MeasReturnType]] = None,
-            memory_slots: Optional[int] = None,
-            memory_slot_size: Optional[int] = None,
-            rep_time: Optional[int] = None,
-            rep_delay: Optional[float] = None,
-            init_qubits: Optional[bool] = None,
-            parameter_binds: Optional[List[Dict[Parameter, float]]] = None,
-            use_measure_esp: Optional[bool] = None,
-            **run_config: Dict
+        self,
+        circuits: Union[
+            QuantumCircuit, Schedule, List[Union[QuantumCircuit, Schedule]]
+        ],
+        job_name: Optional[str] = None,
+        job_tags: Optional[List[str]] = None,
+        max_circuits_per_job: Optional[int] = None,
+        header: Optional[Dict] = None,
+        shots: Optional[Union[int, float]] = None,
+        memory: Optional[bool] = None,
+        qubit_lo_freq: Optional[List[int]] = None,
+        meas_lo_freq: Optional[List[int]] = None,
+        schedule_los: Optional[
+            Union[
+                List[Union[Dict[PulseChannel, float], LoConfig]],
+                Union[Dict[PulseChannel, float], LoConfig],
+            ]
+        ] = None,
+        meas_level: Optional[Union[int, MeasLevel]] = None,
+        meas_return: Optional[Union[str, MeasReturnType]] = None,
+        memory_slots: Optional[int] = None,
+        memory_slot_size: Optional[int] = None,
+        rep_time: Optional[int] = None,
+        rep_delay: Optional[float] = None,
+        init_qubits: Optional[bool] = None,
+        parameter_binds: Optional[List[Dict[Parameter, float]]] = None,
+        use_measure_esp: Optional[bool] = None,
+        **run_config: Dict,
     ) -> IBMJob:
         """Run on the backend.
 
@@ -252,9 +271,11 @@ class IBMBackend(Backend):
 
         sim_method = None
         if self.configuration().simulator:
-            sim_method = getattr(self.configuration(), 'simulation_method', None)
+            sim_method = getattr(self.configuration(), "simulation_method", None)
 
-        measure_esp_enabled = getattr(self.configuration(), "measure_esp_enabled", False)
+        measure_esp_enabled = getattr(
+            self.configuration(), "measure_esp_enabled", False
+        )
         # set ``use_measure_esp`` to backend value if not set by user
         if use_measure_esp is None:
             use_measure_esp = measure_esp_enabled
@@ -284,29 +305,38 @@ class IBMBackend(Backend):
             rep_delay=rep_delay,
             init_qubits=init_qubits,
             use_measure_esp=use_measure_esp,
-            **run_config)
+            **run_config,
+        )
         if parameter_binds:
-            run_config_dict['parameter_binds'] = parameter_binds
-        if sim_method and 'method' not in run_config_dict:
-            run_config_dict['method'] = sim_method
+            run_config_dict["parameter_binds"] = parameter_binds
+        if sim_method and "method" not in run_config_dict:
+            run_config_dict["method"] = sim_method
 
         if isinstance(circuits, list):
             chunk_size = None
-            if hasattr(self.configuration(), 'max_experiments'):
+            if hasattr(self.configuration(), "max_experiments"):
                 backend_max = self.configuration().max_experiments
-                chunk_size = backend_max if max_circuits_per_job is None \
+                chunk_size = (
+                    backend_max
+                    if max_circuits_per_job is None
                     else min(backend_max, max_circuits_per_job)
+                )
             elif max_circuits_per_job:
                 chunk_size = max_circuits_per_job
 
             if chunk_size and len(circuits) > chunk_size:
-                circuits_list = [circuits[x:x + chunk_size]
-                                 for x in range(0, len(circuits), chunk_size)]
-                return IBMCompositeJob(backend=self, api_client=self._api_client,
-                                       circuits_list=circuits_list,
-                                       run_config=run_config_dict,
-                                       name=job_name,
-                                       tags=job_tags)
+                circuits_list = [
+                    circuits[x : x + chunk_size]
+                    for x in range(0, len(circuits), chunk_size)
+                ]
+                return IBMCompositeJob(
+                    backend=self,
+                    api_client=self._api_client,
+                    circuits_list=circuits_list,
+                    run_config=run_config_dict,
+                    name=job_name,
+                    tags=job_tags,
+                )
 
         qobj = assemble(circuits, self, **run_config_dict)
 
@@ -318,17 +348,21 @@ class IBMBackend(Backend):
         for key, val in kwargs.items():
             if val is not None:
                 run_config_dict[key] = val
-                if key not in self.options.__dict__ and not isinstance(self, IBMSimulator):
-                    warnings.warn(f"{key} is not a recognized runtime"  # type: ignore[unreachable]
-                                  f" option and may be ignored by the backend.", stacklevel=4)
+                if key not in self.options.__dict__ and not isinstance(
+                    self, IBMSimulator
+                ):
+                    warnings.warn(  # type: ignore[unreachable]
+                        f"{key} is not a recognized runtime option and may be ignored by the backend.",
+                        stacklevel=4,
+                    )
         return run_config_dict
 
     def _submit_job(
-            self,
-            qobj: Union[QasmQobj, PulseQobj],
-            job_name: Optional[str] = None,
-            job_tags: Optional[List[str]] = None,
-            composite_job_id: Optional[str] = None
+        self,
+        qobj: Union[QasmQobj, PulseQobj],
+        job_name: Optional[str] = None,
+        job_tags: Optional[List[str]] = None,
+        composite_job_id: Optional[str] = None,
     ) -> IBMJob:
         """Submit the Qobj to the backend.
 
@@ -364,34 +398,39 @@ class IBMBackend(Backend):
                 qobj_dict=qobj_dict,
                 job_name=job_name,
                 job_tags=job_tags,
-                experiment_id=composite_job_id)
+                experiment_id=composite_job_id,
+            )
         except ApiError as ex:
-            if 'Error code: 3458' in str(ex):
-                raise IBMBackendJobLimitError('Error submitting job: {}'.format(str(ex))) from ex
-            raise IBMBackendApiError('Error submitting job: {}'.format(str(ex))) from ex
+            if "Error code: 3458" in str(ex):
+                raise IBMBackendJobLimitError(
+                    "Error submitting job: {}".format(str(ex))
+                ) from ex
+            raise IBMBackendApiError("Error submitting job: {}".format(str(ex))) from ex
 
         # Error in the job after submission:
         # Transition to the `ERROR` final state.
-        if 'error' in submit_info:
+        if "error" in submit_info:
             raise IBMBackendError(
-                'Error submitting job: {}'.format(str(submit_info['error'])))
+                "Error submitting job: {}".format(str(submit_info["error"]))
+            )
 
         # Submission success.
         try:
-            job = IBMCircuitJob(backend=self, api_client=self._api_client,
-                                qobj=qobj, **submit_info)
-            logger.debug('Job %s was successfully submitted.', job.job_id())
+            job = IBMCircuitJob(
+                backend=self, api_client=self._api_client, qobj=qobj, **submit_info
+            )
+            logger.debug("Job %s was successfully submitted.", job.job_id())
         except TypeError as err:
             logger.debug("Invalid job data received: %s", submit_info)
-            raise IBMBackendApiProtocolError('Unexpected return value received from the server '
-                                             'when submitting job: {}'.format(str(err))) from err
+            raise IBMBackendApiProtocolError(
+                "Unexpected return value received from the server "
+                "when submitting job: {}".format(str(err))
+            ) from err
         Publisher().publish("ibm.job.start", job)
         return job
 
     def properties(
-            self,
-            refresh: bool = False,
-            datetime: Optional[python_datetime] = None
+        self, refresh: bool = False, datetime: Optional[python_datetime] = None
     ) -> Optional[BackendProperties]:
         """Return the backend properties, subject to optional filtering.
 
@@ -419,8 +458,10 @@ class IBMBackend(Backend):
         """
         # pylint: disable=arguments-differ
         if not isinstance(refresh, bool):
-            raise TypeError("The 'refresh' argument needs to be a boolean. "
-                            "{} is of type {}".format(refresh, type(refresh)))
+            raise TypeError(
+                "The 'refresh' argument needs to be a boolean. "
+                "{} is of type {}".format(refresh, type(refresh))
+            )
         if datetime and not isinstance(datetime, python_datetime):
             raise TypeError("'{}' is not of type 'datetime'.")
 
@@ -428,13 +469,15 @@ class IBMBackend(Backend):
             datetime = local_to_utc(datetime)
 
         if datetime or refresh or self._properties is None:
-            api_properties = self._api_client.backend_properties(self.name(), datetime=datetime)
+            api_properties = self._api_client.backend_properties(
+                self.name(), datetime=datetime
+            )
             if not api_properties:
                 return None
             decode_backend_properties(api_properties)
             api_properties = utc_to_local_all(api_properties)
             backend_properties = BackendProperties.from_dict(api_properties)
-            if datetime:    # Don't cache result.
+            if datetime:  # Don't cache result.
                 return backend_properties
             self._properties = backend_properties
         return self._properties
@@ -459,8 +502,9 @@ class IBMBackend(Backend):
             return BackendStatus.from_dict(api_status)
         except TypeError as ex:
             raise IBMBackendApiProtocolError(
-                'Unexpected return value received from the server when '
-                'getting backend status: {}'.format(str(ex))) from ex
+                "Unexpected return value received from the server when "
+                "getting backend status: {}".format(str(ex))
+            ) from ex
 
     def defaults(self, refresh: bool = False) -> Optional[PulseDefaults]:
         """Return the pulse defaults for the backend.
@@ -527,8 +571,9 @@ class IBMBackend(Backend):
             return job_limit
         except TypeError as ex:
             raise IBMBackendApiProtocolError(
-                'Unexpected return value received from the server when '
-                'querying job limit data for the backend: {}.'.format(ex)) from ex
+                "Unexpected return value received from the server when "
+                "querying job limit data for the backend: {}.".format(ex)
+            ) from ex
 
     def remaining_jobs_count(self) -> Optional[int]:
         """Return the number of remaining jobs that could be submitted to the backend.
@@ -572,16 +617,20 @@ class IBMBackend(Backend):
             A list of the unfinished jobs for this backend on this provider.
         """
         # Get the list of api job statuses which are not a final api job status.
-        active_job_states = list({api_status_to_job_status(status)
-                                  for status in ApiJobStatus
-                                  if status not in API_JOB_FINAL_STATES})
+        active_job_states = list(
+            {
+                api_status_to_job_status(status)
+                for status in ApiJobStatus
+                if status not in API_JOB_FINAL_STATES
+            }
+        )
         provider = self.provider()
         return provider.backend.jobs(status=active_job_states, limit=limit)
 
     def reservations(
-            self,
-            start_datetime: Optional[python_datetime] = None,
-            end_datetime: Optional[python_datetime] = None
+        self,
+        start_datetime: Optional[python_datetime] = None,
+        end_datetime: Optional[python_datetime] = None,
     ) -> List[BackendReservation]:
         """Return backend reservations.
 
@@ -601,10 +650,13 @@ class IBMBackend(Backend):
         start_datetime = local_to_utc(start_datetime) if start_datetime else None
         end_datetime = local_to_utc(end_datetime) if end_datetime else None
         raw_response = self._api_client.backend_reservations(
-            self.name(), start_datetime, end_datetime)
+            self.name(), start_datetime, end_datetime
+        )
         return convert_reservation_data(raw_response, self.name())
 
-    def configuration(self) -> Union[QasmBackendConfiguration, PulseBackendConfiguration]:
+    def configuration(
+        self,
+    ) -> Union[QasmBackendConfiguration, PulseBackendConfiguration]:
         """Return the backend configuration.
 
         Backend configuration contains fixed information about the backend, such
@@ -623,9 +675,10 @@ class IBMBackend(Backend):
         return "<{}('{}')>".format(self.__class__.__name__, self.name())
 
     def _deprecate_id_instruction(
-            self,
-            circuits: Union[QuantumCircuit, Schedule,
-                            List[Union[QuantumCircuit, Schedule]]]
+        self,
+        circuits: Union[
+            QuantumCircuit, Schedule, List[Union[QuantumCircuit, Schedule]]
+        ],
     ) -> None:
         """Raise a DeprecationWarning if any circuit contains an 'id' instruction.
 
@@ -641,8 +694,10 @@ class IBMBackend(Backend):
             None
         """
 
-        id_support = 'id' in getattr(self.configuration(), 'basis_gates', [])
-        delay_support = 'delay' in getattr(self.configuration(), 'supported_instructions', [])
+        id_support = "id" in getattr(self.configuration(), "basis_gates", [])
+        delay_support = "delay" in getattr(
+            self.configuration(), "supported_instructions", []
+        )
 
         if not delay_support:
             return
@@ -650,27 +705,35 @@ class IBMBackend(Backend):
         if not isinstance(circuits, List):
             circuits = [circuits]
 
-        circuit_has_id = any(instr.name == 'id'
-                             for circuit in circuits
-                             if isinstance(circuit, QuantumCircuit)
-                             for instr, qargs, cargs in circuit.data)
+        circuit_has_id = any(
+            instr.name == "id"
+            for circuit in circuits
+            if isinstance(circuit, QuantumCircuit)
+            for instr, qargs, cargs in circuit.data
+        )
 
         if not circuit_has_id:
             return
 
         if not self.id_warning_issued:
             if id_support and delay_support:
-                warnings.warn("Support for the 'id' instruction has been deprecated "
-                              "from IBM hardware backends. Any 'id' instructions "
-                              "will be replaced with their equivalent 'delay' instruction. "
-                              "Please use the 'delay' instruction instead.", DeprecationWarning,
-                              stacklevel=4)
+                warnings.warn(
+                    "Support for the 'id' instruction has been deprecated "
+                    "from IBM hardware backends. Any 'id' instructions "
+                    "will be replaced with their equivalent 'delay' instruction. "
+                    "Please use the 'delay' instruction instead.",
+                    DeprecationWarning,
+                    stacklevel=4,
+                )
             else:
-                warnings.warn("Support for the 'id' instruction has been removed "
-                              "from IBM hardware backends. Any 'id' instructions "
-                              "will be replaced with their equivalent 'delay' instruction. "
-                              "Please use the 'delay' instruction instead.", DeprecationWarning,
-                              stacklevel=4)
+                warnings.warn(
+                    "Support for the 'id' instruction has been removed "
+                    "from IBM hardware backends. Any 'id' instructions "
+                    "will be replaced with their equivalent 'delay' instruction. "
+                    "Please use the 'delay' instruction instead.",
+                    DeprecationWarning,
+                    stacklevel=4,
+                )
 
             self.id_warning_issued = True
 
@@ -681,9 +744,9 @@ class IBMBackend(Backend):
                 continue
 
             for idx, (instr, qargs, cargs) in enumerate(circuit.data):
-                if instr.name == 'id':
+                if instr.name == "id":
 
-                    sx_duration = self.properties().gate_length('sx', qargs[0].index)
+                    sx_duration = self.properties().gate_length("sx", qargs[0].index)
                     sx_duration_in_dt = duration_in_dt(sx_duration, dt_in_s)
 
                     delay_instr = Delay(sx_duration_in_dt)
@@ -702,22 +765,21 @@ class IBMSimulator(IBMBackend):
         return options
 
     def properties(
-            self,
-            refresh: bool = False,
-            datetime: Optional[python_datetime] = None
+        self, refresh: bool = False, datetime: Optional[python_datetime] = None
     ) -> None:
         """Return ``None``, simulators do not have backend properties."""
         return None
 
-    def run(    # type: ignore[override]
-            self,
-            circuits: Union[QuantumCircuit, Schedule,
-                            List[Union[QuantumCircuit, Schedule]]],
-            job_name: Optional[str] = None,
-            job_tags: Optional[List[str]] = None,
-            backend_options: Optional[Dict] = None,
-            noise_model: Any = None,
-            **kwargs: Dict
+    def run(  # type: ignore[override]
+        self,
+        circuits: Union[
+            QuantumCircuit, Schedule, List[Union[QuantumCircuit, Schedule]]
+        ],
+        job_name: Optional[str] = None,
+        job_tags: Optional[List[str]] = None,
+        backend_options: Optional[Dict] = None,
+        noise_model: Any = None,
+        **kwargs: Dict,
     ) -> IBMJob:
         """Run a Circuit asynchronously.
 
@@ -742,11 +804,14 @@ class IBMSimulator(IBMBackend):
         """
         # pylint: disable=arguments-differ
         if backend_options is not None:
-            warnings.warn("Use of `backend_options` is deprecated and will "
-                          "be removed in a future release."
-                          "You can now pass backend options as key-value pairs to the "
-                          "run() method. For example: backend.run(circs, shots=2048).",
-                          DeprecationWarning, stacklevel=2)
+            warnings.warn(
+                "Use of `backend_options` is deprecated and will "
+                "be removed in a future release."
+                "You can now pass backend options as key-value pairs to the "
+                "run() method. For example: backend.run(circs, shots=2048).",
+                DeprecationWarning,
+                stacklevel=2,
+            )
         backend_options = backend_options or {}
         run_config = copy.deepcopy(backend_options)
         if noise_model:
@@ -755,20 +820,24 @@ class IBMSimulator(IBMBackend):
             except AttributeError:
                 pass
         run_config.update(kwargs)
-        return super().run(circuits, job_name=job_name,
-                           job_tags=job_tags,
-                           noise_model=noise_model, **run_config)
+        return super().run(
+            circuits,
+            job_name=job_name,
+            job_tags=job_tags,
+            noise_model=noise_model,
+            **run_config,
+        )
 
 
 class IBMRetiredBackend(IBMBackend):
     """Backend class interfacing with an IBM Quantum device no longer available."""
 
     def __init__(
-            self,
-            configuration: Union[QasmBackendConfiguration, PulseBackendConfiguration],
-            provider: 'ibm_provider.IBMProvider',
-            credentials: Credentials,
-            api_client: AccountClient
+        self,
+        configuration: Union[QasmBackendConfiguration, PulseBackendConfiguration],
+        provider: "ibm_provider.IBMProvider",
+        credentials: Credentials,
+        api_client: AccountClient,
     ) -> None:
         """IBMRetiredBackend constructor.
 
@@ -784,7 +853,8 @@ class IBMRetiredBackend(IBMBackend):
             backend_version=self.configuration().backend_version,
             operational=False,
             pending_jobs=0,
-            status_msg='This backend is no longer available.')
+            status_msg="This backend is no longer available.",
+        )
 
     @classmethod
     def _default_options(cls) -> Options:
@@ -792,9 +862,7 @@ class IBMRetiredBackend(IBMBackend):
         return Options()
 
     def properties(
-            self,
-            refresh: bool = False,
-            datetime: Optional[python_datetime] = None
+        self, refresh: bool = False, datetime: Optional[python_datetime] = None
     ) -> None:
         """Return the backend properties."""
         return None
@@ -820,33 +888,31 @@ class IBMRetiredBackend(IBMBackend):
         return None
 
     def reservations(
-            self,
-            start_datetime: Optional[python_datetime] = None,
-            end_datetime: Optional[python_datetime] = None
+        self,
+        start_datetime: Optional[python_datetime] = None,
+        end_datetime: Optional[python_datetime] = None,
     ) -> List[BackendReservation]:
         return []
 
-    def run(    # type: ignore[override]
-            self,
-            *args: Any,
-            **kwargs: Any
-    ) -> None:
+    def run(self, *args: Any, **kwargs: Any) -> None:  # type: ignore[override]
         """Run a Circuit."""
         # pylint: disable=arguments-differ
-        raise IBMBackendError('This backend ({}) is no longer available.'.format(self.name()))
+        raise IBMBackendError(
+            "This backend ({}) is no longer available.".format(self.name())
+        )
 
     @classmethod
     def from_name(
-            cls,
-            backend_name: str,
-            provider: 'ibm_provider.IBMProvider',
-            credentials: Credentials,
-            api: AccountClient
-    ) -> 'IBMRetiredBackend':
+        cls,
+        backend_name: str,
+        provider: "ibm_provider.IBMProvider",
+        credentials: Credentials,
+        api: AccountClient,
+    ) -> "IBMRetiredBackend":
         """Return a retired backend from its name."""
         configuration = QasmBackendConfiguration(
             backend_name=backend_name,
-            backend_version='0.0.0',
+            backend_version="0.0.0",
             n_qubits=1,
             basis_gates=[],
             simulator=False,
@@ -855,7 +921,7 @@ class IBMRetiredBackend(IBMBackend):
             open_pulse=False,
             memory=False,
             max_shots=1,
-            gates=[GateConfig(name='TODO', parameters=[], qasm_def='TODO')],
+            gates=[GateConfig(name="TODO", parameters=[], qasm_def="TODO")],
             coupling_map=[[0, 1]],
         )
         return cls(configuration, provider, credentials, api)

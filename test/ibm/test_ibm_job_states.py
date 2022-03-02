@@ -25,8 +25,11 @@ from qiskit.providers.jobstatus import JobStatus
 from qiskit.test.mock.backends.bogota.fake_bogota import FakeBogota
 from qiskit.test.reference_circuits import ReferenceCircuits
 
-from qiskit_ibm_provider.api.exceptions import (ApiError, UserTimeoutExceededError,
-                                                ApiIBMProtocolError)
+from qiskit_ibm_provider.api.exceptions import (
+    ApiError,
+    UserTimeoutExceededError,
+    ApiIBMProtocolError,
+)
 from qiskit_ibm_provider.apiconstants import API_JOB_FINAL_STATES, ApiJobStatus
 from qiskit_ibm_provider.exceptions import IBMBackendError
 from qiskit_ibm_provider.ibm_backend import IBMBackend
@@ -34,92 +37,69 @@ from qiskit_ibm_provider.job.exceptions import IBMJobApiError, IBMJobInvalidStat
 from ..jobtestcase import JobTestCase
 
 MOCKED_ERROR_RESULT = {
-    'qObjectResult': {
-        'backend_name': 'fake_backend',
-        'backend_version': '0.1.1',
-        'qobj_id': '123',
-        'job_id': '123',
-        'success': False,
-        'results': [
-            {
-                'status': 'DONE',
-                'success': True,
-                'shots': 1,
-                'data': {}
-            },
-            {
-                'status': 'Error 1',
-                'success': False,
-                'shots': 1,
-                'data': {}
-            },
-            {
-                'status': 'Error 2',
-                'success': False,
-                'shots': 1,
-                'data': {}
-            }
-        ]
+    "qObjectResult": {
+        "backend_name": "fake_backend",
+        "backend_version": "0.1.1",
+        "qobj_id": "123",
+        "job_id": "123",
+        "success": False,
+        "results": [
+            {"status": "DONE", "success": True, "shots": 1, "data": {}},
+            {"status": "Error 1", "success": False, "shots": 1, "data": {}},
+            {"status": "Error 2", "success": False, "shots": 1, "data": {}},
+        ],
     }
 }
 
 VALID_QOBJ_RESPONSE = {
-    'status': 'COMPLETED',
-    'kind': 'q-object',
-    'creationDate': '2019-01-01T12:57:15.052Z',
-    'id': '0123456789',
-    'qObjectResult': {
-        'backend_name': 'ibmqx2',
-        'backend_version': '1.1.1',
-        'job_id': 'XC1323XG2',
-        'qobj_id': 'Experiment1',
-        'success': True,
-        'status': 'COMPLETED',
-        'results': [
+    "status": "COMPLETED",
+    "kind": "q-object",
+    "creationDate": "2019-01-01T12:57:15.052Z",
+    "id": "0123456789",
+    "qObjectResult": {
+        "backend_name": "ibmqx2",
+        "backend_version": "1.1.1",
+        "job_id": "XC1323XG2",
+        "qobj_id": "Experiment1",
+        "success": True,
+        "status": "COMPLETED",
+        "results": [
             {
-                'header': {
-                    'name': 'Bell state',
-                    'memory_slots': 2,
-                    'creg_sizes': [['c', 2]],
-                    'clbit_labels': [['c', 0], ['c', 1]],
-                    'qubit_labels': [['q', 0], ['q', 1]]
+                "header": {
+                    "name": "Bell state",
+                    "memory_slots": 2,
+                    "creg_sizes": [["c", 2]],
+                    "clbit_labels": [["c", 0], ["c", 1]],
+                    "qubit_labels": [["q", 0], ["q", 1]],
                 },
-                'shots': 1024,
-                'status': 'DONE',
-                'success': True,
-                'data': {
-                    'counts': {
-                        '0x0': 480, '0x3': 490, '0x1': 20, '0x2': 34
-                    }
-                }
+                "shots": 1024,
+                "status": "DONE",
+                "success": True,
+                "data": {"counts": {"0x0": 480, "0x3": 490, "0x1": 20, "0x2": 34}},
             },
             {
-                'header': {
-                    'name': 'Bell state XY',
-                    'memory_slots': 2,
-                    'creg_sizes': [['c', 2]],
-                    'clbit_labels': [['c', 0], ['c', 1]],
-                    'qubit_labels': [['q', 0], ['q', 1]]
+                "header": {
+                    "name": "Bell state XY",
+                    "memory_slots": 2,
+                    "creg_sizes": [["c", 2]],
+                    "clbit_labels": [["c", 0], ["c", 1]],
+                    "qubit_labels": [["q", 0], ["q", 1]],
                 },
-                'shots': 1024,
-                'status': 'DONE',
-                'success': True,
-                'data': {
-                    'counts': {
-                        '0x0': 29, '0x3': 15, '0x1': 510, '0x2': 480
-                    }
-                }
-            }
-        ]
-    }
+                "shots": 1024,
+                "status": "DONE",
+                "success": True,
+                "data": {"counts": {"0x0": 29, "0x3": 15, "0x1": 510, "0x2": 480}},
+            },
+        ],
+    },
 }
 
 
 VALID_JOB_RESPONSE = {
-    'job_id': 'TEST_ID',
-    'kind': 'q-object',
-    'status': 'CREATING',
-    'creation_date': '2019-01-01T13:15:58.425972'
+    "job_id": "TEST_ID",
+    "kind": "q-object",
+    "status": "CREATING",
+    "creation_date": "2019-01-01T13:15:58.425972",
 }
 
 
@@ -285,8 +265,8 @@ class TestIBMJobStates(JobTestCase):
 
         self._current_api.progress()
         self.assertEqual(job.status(), JobStatus.ERROR)
-        self.assertIn('Error 1', job.error_message())
-        self.assertIn('Error 2', job.error_message())
+        self.assertIn("Error 1", job.error_message())
+        self.assertIn("Error 2", job.error_message())
 
     def test_cancelled_result(self):
         """Test getting results for a cancelled job."""
@@ -343,6 +323,7 @@ class TestIBMJobStates(JobTestCase):
     def test_block_on_result_waiting_until_exception(self):
         """Test getting API error while waiting for job results."""
         from concurrent.futures import ThreadPoolExecutor
+
         job = self.run_with_api(ThrowingAPI())
 
         with ThreadPoolExecutor() as executor:
@@ -363,10 +344,12 @@ class TestIBMJobStates(JobTestCase):
         """Test job status call does not provide detailed information."""
         # The state ERROR_CREATING_JOB is only handled when running the job,
         # and not while checking the status, so it is not tested.
-        all_state_apis = {'COMPLETED': NonQueuedAPI,
-                          'CANCELLED': CancellableAPI,
-                          'ERROR_VALIDATING_JOB': ErrorWhileValidatingAPI,
-                          'ERROR_RUNNING_JOB': ErrorWhileRunningAPI}
+        all_state_apis = {
+            "COMPLETED": NonQueuedAPI,
+            "CANCELLED": CancellableAPI,
+            "ERROR_VALIDATING_JOB": ErrorWhileValidatingAPI,
+            "ERROR_RUNNING_JOB": ErrorWhileRunningAPI,
+        }
 
         for status, api in all_state_apis.items():
             with self.subTest(status=status):
@@ -376,8 +359,9 @@ class TestIBMJobStates(JobTestCase):
                 with suppress(BaseFakeAPI.NoMoreStatesError):
                     self._current_api.progress()
 
-                with mock.patch.object(self._current_api, 'job_get',
-                                       wraps=self._current_api.job_get):
+                with mock.patch.object(
+                    self._current_api, "job_get", wraps=self._current_api.job_get
+                ):
                     job.status()
                     if ApiJobStatus(status) in API_JOB_FINAL_STATES:
                         self.assertTrue(self._current_api.job_get.called)
@@ -399,8 +383,9 @@ class TestIBMJobStates(JobTestCase):
 
     def run_with_api(self, api):
         """Creates a new ``IBMJob`` running with the provided API object."""
-        backend = IBMBackend(FakeBogota().configuration(), mock.Mock(),
-                             mock.Mock(), api_client=api)
+        backend = IBMBackend(
+            FakeBogota().configuration(), mock.Mock(), mock.Mock(), api_client=api
+        )
         circuit = transpile(ReferenceCircuits.bell())
         self._current_api = api
         self._current_qjob = backend.run(circuit)
@@ -431,30 +416,31 @@ class BaseFakeAPI:
     def __init__(self):
         """BaseFakeAPI constructor."""
         self._state = 0
-        self.config = {'hub': None, 'group': None, 'project': None}
+        self.config = {"hub": None, "group": None, "project": None}
         if self._can_cancel:
-            self.config.update({
-                'hub': 'test-hub',
-                'group': 'test-group',
-                'project': 'test-project'
-            })
+            self.config.update(
+                {"hub": "test-hub", "group": "test-group", "project": "test-project"}
+            )
 
     def job_get(self, job_id):
         """Return information about a job."""
         if not job_id:
-            return {'status': 'Error', 'error': 'Job ID not specified'}
+            return {"status": "Error", "error": "Job ID not specified"}
         return self._job_status[self._state]
 
     def job_status(self, job_id):
         """Return the status of a job."""
-        summary_fields = ['status', 'error', 'info_queue']
+        summary_fields = ["status", "error", "info_queue"]
         complete_response = self.job_get(job_id)
         try:
-            ApiJobStatus(complete_response['status'])
+            ApiJobStatus(complete_response["status"])
         except ValueError:
-            raise ApiIBMProtocolError('Api Error')
-        return {key: value for key, value in complete_response.items()
-                if key in summary_fields}
+            raise ApiIBMProtocolError("Api Error")
+        return {
+            key: value
+            for key, value in complete_response.items()
+            if key in summary_fields
+        }
 
     def job_submit(self, *_args, **_kwargs):
         """Submit the job."""
@@ -464,27 +450,31 @@ class BaseFakeAPI:
     def job_cancel(self, job_id, *_args, **_kwargs):
         """Cancel the job."""
         if not job_id:
-            return {'status': 'Error', 'error': 'Job ID not specified'}
-        return {'cancelled': True} if self._can_cancel else {
-            'error': 'testing fake API can not cancel'}
+            return {"status": "Error", "error": "Job ID not specified"}
+        return (
+            {"cancelled": True}
+            if self._can_cancel
+            else {"error": "testing fake API can not cancel"}
+        )
 
     def job_final_status(self, job_id, *_args, **_kwargs):
         """Wait for job to enter a final state."""
         start_time = time.time()
         status_response = self.job_status(job_id)
-        while ApiJobStatus(status_response['status']) not in API_JOB_FINAL_STATES:
+        while ApiJobStatus(status_response["status"]) not in API_JOB_FINAL_STATES:
             elapsed_time = time.time() - start_time
-            timeout = _kwargs.get('timeout', None)
+            timeout = _kwargs.get("timeout", None)
             if timeout is not None and elapsed_time >= timeout:
                 raise UserTimeoutExceededError(
-                    'Timeout while waiting for job {}'.format(job_id))
+                    "Timeout while waiting for job {}".format(job_id)
+                )
             time.sleep(5)
             status_response = self.job_status(job_id)
         return status_response
 
     def job_result(self, job_id, *_args, **_kwargs):
         """Get job result."""
-        return self.job_get(job_id)['qObjectResult']
+        return self.job_get(job_id)["qObjectResult"]
 
     def progress(self):
         """Progress to the next job state."""
@@ -496,70 +486,56 @@ class BaseFakeAPI:
 class UnknownStatusAPI(BaseFakeAPI):
     """Class for emulating an API with unknown status codes."""
 
-    _job_status = [
-        {'status': 'UNKNOWN'}
-    ]
+    _job_status = [{"status": "UNKNOWN"}]
 
 
 class ValidatingAPI(BaseFakeAPI):
     """Class for emulating an API with job validation."""
 
-    _job_status = [
-        {'status': 'VALIDATING'},
-        {'status': 'RUNNING'}
-    ]
+    _job_status = [{"status": "VALIDATING"}, {"status": "RUNNING"}]
 
 
 class ErrorWhileValidatingAPI(BaseFakeAPI):
     """Class for emulating an API processing an invalid job."""
 
     _job_status = [
-        {'status': 'VALIDATING'},
-        {'status': 'ERROR_VALIDATING_JOB', **MOCKED_ERROR_RESULT}
+        {"status": "VALIDATING"},
+        {"status": "ERROR_VALIDATING_JOB", **MOCKED_ERROR_RESULT},
     ]
 
 
 class NonQueuedAPI(BaseFakeAPI):
     """Class for emulating a successfully-completed non-queued API."""
 
-    _job_status = [
-        {'status': 'RUNNING'},
-        VALID_QOBJ_RESPONSE
-    ]
+    _job_status = [{"status": "RUNNING"}, VALID_QOBJ_RESPONSE]
 
 
 class ErrorWhileCreatingAPI(BaseFakeAPI):
     """Class emulating an API processing a job that errors while creating the job."""
 
-    _job_status = [
-        {'status': 'ERROR_CREATING_JOB', **MOCKED_ERROR_RESULT}
-    ]
+    _job_status = [{"status": "ERROR_CREATING_JOB", **MOCKED_ERROR_RESULT}]
 
 
 class ErrorWhileRunningAPI(BaseFakeAPI):
     """Class emulating an API processing a job that errors while running."""
 
     _job_status = [
-        {'status': 'RUNNING'},
-        {'status': 'ERROR_RUNNING_JOB', **MOCKED_ERROR_RESULT}
+        {"status": "RUNNING"},
+        {"status": "ERROR_RUNNING_JOB", **MOCKED_ERROR_RESULT},
     ]
 
 
 class QueuedAPI(BaseFakeAPI):
     """Class for emulating a successfully-completed queued API."""
 
-    _job_status = [
-        {'status': 'QUEUED'},
-        {'status': 'RUNNING'},
-        {'status': 'COMPLETED'}
-    ]
+    _job_status = [{"status": "QUEUED"}, {"status": "RUNNING"}, {"status": "COMPLETED"}]
 
 
 class RejectingJobAPI(BaseFakeAPI):
     """Class for emulating an API unable of initializing."""
 
     def job_submit(self, *_args, **_kwargs):
-        return {'error': 'invalid qobj'}
+        return {"error": "invalid qobj"}
 
 
 class UnavailableRunAPI(BaseFakeAPI):
@@ -567,18 +543,16 @@ class UnavailableRunAPI(BaseFakeAPI):
 
     def job_submit(self, *_args, **_kwargs):
         time.sleep(0.2)
-        raise ApiError('Api Error')
+        raise ApiError("Api Error")
 
 
 class ThrowingAPI(BaseFakeAPI):
     """Class for emulating an API throwing in the middle of execution."""
 
-    _job_status = [
-        {'status': 'RUNNING'}
-    ]
+    _job_status = [{"status": "RUNNING"}]
 
     def job_get(self, job_id):
-        raise ApiError('Api Error')
+        raise ApiError("Api Error")
 
 
 class ThrowingNonJobRelatedErrorAPI(BaseFakeAPI):
@@ -586,9 +560,7 @@ class ThrowingNonJobRelatedErrorAPI(BaseFakeAPI):
     fails some times for non job-related errors.
     """
 
-    _job_status = [
-        {'status': 'COMPLETED'}
-    ]
+    _job_status = [{"status": "COMPLETED"}]
 
     def __init__(self, errors_before_success=2):
         super().__init__()
@@ -597,7 +569,7 @@ class ThrowingNonJobRelatedErrorAPI(BaseFakeAPI):
     def job_get(self, job_id):
         if self._number_of_exceptions_to_throw != 0:
             self._number_of_exceptions_to_throw -= 1
-            raise ApiError('Api Error')
+            raise ApiError("Api Error")
 
         return super().job_get(job_id)
 
@@ -607,24 +579,19 @@ class ThrowingGetJobAPI(BaseFakeAPI):
     ``job_status()``, just in ``job_get()``.
     """
 
-    _job_status = [
-        {'status': 'COMPLETED'}
-    ]
+    _job_status = [{"status": "COMPLETED"}]
 
     def job_status(self, job_id):
         return self._job_status[self._state]
 
     def job_get(self, job_id):
-        raise ApiError('Unexpected error')
+        raise ApiError("Unexpected error")
 
 
 class CancellableAPI(BaseFakeAPI):
     """Class for emulating an API with cancellation."""
 
-    _job_status = [
-        {'status': 'RUNNING'},
-        {'status': 'CANCELLED'}
-    ]
+    _job_status = [{"status": "RUNNING"}, {"status": "CANCELLED"}]
 
     _can_cancel = True
 
@@ -632,37 +599,27 @@ class CancellableAPI(BaseFakeAPI):
 class NonCancellableAPI(BaseFakeAPI):
     """Class for emulating an API without cancellation running a long job."""
 
-    _job_status = [
-        {'status': 'RUNNING'},
-        {'status': 'RUNNING'},
-        {'status': 'RUNNING'}
-    ]
+    _job_status = [{"status": "RUNNING"}, {"status": "RUNNING"}, {"status": "RUNNING"}]
 
 
 class ErroredCancellationAPI(BaseFakeAPI):
     """Class for emulating an API with cancellation but throwing while trying."""
 
-    _job_status = [
-        {'status': 'RUNNING'},
-        {'status': 'RUNNING'},
-        {'status': 'RUNNING'}
-    ]
+    _job_status = [{"status": "RUNNING"}, {"status": "RUNNING"}, {"status": "RUNNING"}]
 
     _can_cancel = True
 
     def job_cancel(self, job_id, *_args, **_kwargs):
-        return {'status': 'Error', 'error': 'test-error-while-cancelling'}
+        return {"status": "Error", "error": "test-error-while-cancelling"}
 
 
 class NoKindJobAPI(BaseFakeAPI):
     """Class for emulating an API with QASM jobs."""
 
-    _job_status = [
-        {'status': 'COMPLETED'}
-    ]
+    _job_status = [{"status": "COMPLETED"}]
 
     no_kind_response = copy.deepcopy(VALID_JOB_RESPONSE)
-    del no_kind_response['kind']
+    del no_kind_response["kind"]
 
     def job_submit(self, *_args, **_kwargs):
         return self.no_kind_response
@@ -674,7 +631,4 @@ class NoKindJobAPI(BaseFakeAPI):
 class TranspilingStatusAPI(BaseFakeAPI):
     """Class for emulating an API with transpiling status codes."""
 
-    _job_status = [
-        {'status': 'TRANSPILING'},
-        {'status': 'TRANSPILED'}
-    ]
+    _job_status = [{"status": "TRANSPILING"}, {"status": "TRANSPILED"}]

@@ -13,35 +13,39 @@
 """IBM Quantum job."""
 
 import logging
-from typing import Dict, Optional, Tuple, Any, List, Callable, Union
-from datetime import datetime
 from concurrent import futures
-from threading import Event
+from datetime import datetime
 from queue import Empty
-import dateutil.parser
+from threading import Event
+from typing import Dict, Optional, Tuple, Any, List, Callable, Union
 
-from qiskit.providers.jobstatus import JOB_FINAL_STATES, JobStatus
-from qiskit.providers.models import BackendProperties
-from qiskit.qobj import QasmQobj, PulseQobj
-from qiskit.result import Result
+import dateutil.parser
 from qiskit.assembler.disassemble import disassemble
 from qiskit.circuit.quantumcircuit import QuantumCircuit
+from qiskit.providers.jobstatus import JOB_FINAL_STATES, JobStatus
+from qiskit.providers.models import BackendProperties
 from qiskit.pulse import Schedule
+from qiskit.qobj import QasmQobj, PulseQobj
+from qiskit.result import Result
 
 from qiskit_ibm_provider import ibm_backend  # pylint: disable=unused-import
-from ..apiconstants import ApiJobStatus, ApiJobKind
-from ..api.clients import AccountClient
-from ..api.exceptions import ApiError, UserTimeoutExceededError
-from ..utils.utils import RefreshQueue, validate_job_tags, api_status_to_job_status
-from ..utils.qobj_utils import dict_to_qobj
-from ..utils.json_decoder import decode_backend_properties, decode_result
-from ..utils.converters import utc_to_local, utc_to_local_all
-from .exceptions import (IBMJobApiError, IBMJobFailureError,
-                         IBMJobTimeoutError, IBMJobInvalidStateError)
+from .constants import IBM_COMPOSITE_JOB_TAG_PREFIX, IBM_MANAGED_JOB_ID_PREFIX
+from .exceptions import (
+    IBMJobApiError,
+    IBMJobFailureError,
+    IBMJobTimeoutError,
+    IBMJobInvalidStateError,
+)
+from .ibm_job import IBMJob
 from .queueinfo import QueueInfo
 from .utils import build_error_report, api_to_job_error, get_cancel_status
-from .ibm_job import IBMJob
-from .constants import IBM_COMPOSITE_JOB_TAG_PREFIX, IBM_MANAGED_JOB_ID_PREFIX
+from ..api.clients import AccountClient
+from ..api.exceptions import ApiError, UserTimeoutExceededError
+from ..apiconstants import ApiJobStatus, ApiJobKind
+from ..utils.converters import utc_to_local, utc_to_local_all
+from ..utils.json_decoder import decode_backend_properties, decode_result
+from ..utils.qobj_utils import dict_to_qobj
+from ..utils.utils import RefreshQueue, validate_job_tags, api_status_to_job_status
 
 logger = logging.getLogger(__name__)
 
@@ -104,22 +108,22 @@ class IBMCircuitJob(IBMJob):
     """Threads used for asynchronous processing."""
 
     def __init__(
-            self,
-            backend: 'ibm_backend.IBMBackend',
-            api_client: AccountClient,
-            job_id: str,
-            creation_date: str,
-            status: str,
-            kind: Optional[str] = None,
-            name: Optional[str] = None,
-            time_per_step: Optional[dict] = None,
-            result: Optional[dict] = None,
-            qobj: Optional[Union[dict, QasmQobj, PulseQobj]] = None,
-            error: Optional[dict] = None,
-            tags: Optional[List[str]] = None,
-            run_mode: Optional[str] = None,
-            client_info: Optional[Dict[str, str]] = None,
-            **kwargs: Any
+        self,
+        backend: "ibm_backend.IBMBackend",
+        api_client: AccountClient,
+        job_id: str,
+        creation_date: str,
+        status: str,
+        kind: Optional[str] = None,
+        name: Optional[str] = None,
+        time_per_step: Optional[dict] = None,
+        result: Optional[dict] = None,
+        qobj: Optional[Union[dict, QasmQobj, PulseQobj]] = None,
+        error: Optional[dict] = None,
+        tags: Optional[List[str]] = None,
+        run_mode: Optional[str] = None,
+        client_info: Optional[Dict[str, str]] = None,
+        **kwargs: Any
     ) -> None:
         """IBMCircuitJob constructor.
 
@@ -140,8 +144,9 @@ class IBMCircuitJob(IBMJob):
             client_info: Client information from the API.
             kwargs: Additional job attributes.
         """
-        super().__init__(backend=backend, api_client=api_client, job_id=job_id,
-                         name=name, tags=tags)
+        super().__init__(
+            backend=backend, api_client=api_client, job_id=job_id, name=name, tags=tags
+        )
         self._creation_date = dateutil.parser.isoparse(creation_date)
         self._api_status = status
         self._kind = ApiJobKind(kind) if kind else None
@@ -151,16 +156,17 @@ class IBMCircuitJob(IBMJob):
         self._qobj = qobj
         self._error = error
         self._run_mode = run_mode
-        self._status, self._queue_info = \
-            self._get_status_position(status, kwargs.pop('info_queue', None))
-        self._use_object_storage = (self._kind == ApiJobKind.QOBJECT_STORAGE)
+        self._status, self._queue_info = self._get_status_position(
+            status, kwargs.pop("info_queue", None)
+        )
+        self._use_object_storage = self._kind == ApiJobKind.QOBJECT_STORAGE
         self._client_version = self._extract_client_version(client_info)
         self._set_result(result)
 
         self._data = {}
         for key, value in kwargs.items():
             # Append suffix to key to avoid conflicts.
-            self._data[key + '_'] = value
+            self._data[key + "_"] = value
 
         # Properties used for caching.
         self._cancelled = False
@@ -189,11 +195,11 @@ class IBMCircuitJob(IBMJob):
         return BackendProperties.from_dict(properties)
 
     def result(
-            self,
-            timeout: Optional[float] = None,
-            wait: float = 5,
-            partial: bool = False,
-            refresh: bool = False
+        self,
+        timeout: Optional[float] = None,
+        wait: float = 5,
+        partial: bool = False,
+        refresh: bool = False,
     ) -> Result:
         """Return the result of the job.
 
@@ -245,23 +251,30 @@ class IBMCircuitJob(IBMJob):
                 with the server.
         """
         # pylint: disable=arguments-differ
-        if not self._wait_for_completion(timeout=timeout, wait=wait,
-                                         required_status=(JobStatus.DONE,)):
+        if not self._wait_for_completion(
+            timeout=timeout, wait=wait, required_status=(JobStatus.DONE,)
+        ):
             if self._status is JobStatus.CANCELLED:
-                raise IBMJobInvalidStateError('Unable to retrieve result for job {}. '
-                                              'Job was cancelled.'.format(self.job_id()))
+                raise IBMJobInvalidStateError(
+                    "Unable to retrieve result for job {}. "
+                    "Job was cancelled.".format(self.job_id())
+                )
             # Job failed.
             if partial:
                 self._retrieve_result(refresh=refresh)
             if not partial or not self._result or not self._result.results:
                 error_message = self.error_message()
-                if '\n' in error_message:
-                    error_message = ". Use the error_message() method to get more details"
+                if "\n" in error_message:
+                    error_message = (
+                        ". Use the error_message() method to get more details"
+                    )
                 else:
                     error_message = ": " + error_message
                 raise IBMJobFailureError(
-                    'Unable to retrieve result for job {}. Job has failed{}'.format(
-                        self.job_id(), error_message))
+                    "Unable to retrieve result for job {}. Job has failed{}".format(
+                        self.job_id(), error_message
+                    )
+                )
         else:
             self._retrieve_result(refresh=refresh)
 
@@ -284,13 +297,20 @@ class IBMCircuitJob(IBMJob):
         try:
             response = self._api_client.job_cancel(self.job_id())
             self._cancelled = get_cancel_status(response)
-            logger.debug('Job %s cancel status is "%s". Response data: %s.',
-                         self.job_id(), self._cancelled, response)
+            logger.debug(
+                'Job %s cancel status is "%s". Response data: %s.',
+                self.job_id(),
+                self._cancelled,
+                response,
+            )
             return self._cancelled
         except ApiError as error:
             self._cancelled = False
-            raise IBMJobApiError('Unexpected error when cancelling job {}: {}'.format(
-                self.job_id(), str(error))) from error
+            raise IBMJobApiError(
+                "Unexpected error when cancelling job {}: {}".format(
+                    self.job_id(), str(error)
+                )
+            ) from error
 
     def update_name(self, name: str) -> str:
         """Update the name associated with this job.
@@ -309,28 +329,29 @@ class IBMCircuitJob(IBMJob):
         if not isinstance(name, str):
             raise IBMJobInvalidStateError(
                 '"{}" of type "{}" is not a valid job name. '
-                'The job name needs to be a string.'.format(name, type(name)))
+                "The job name needs to be a string.".format(name, type(name))
+            )
 
         with api_to_job_error():
             response = self._api_client.job_update_attribute(
-                job_id=self.job_id(), attr_name='name', attr_value=name)
+                job_id=self.job_id(), attr_name="name", attr_value=name
+            )
 
         # Get the name from the response and check if the update was successful.
-        updated_name = response.get('name', None)
+        updated_name = response.get("name", None)
         if (updated_name is None) or (name != updated_name):
-            raise IBMJobApiError('An unexpected error occurred when updating the '
-                                 'name for job {}. The name was not updated for '
-                                 'the job.'.format(self.job_id()))
+            raise IBMJobApiError(
+                "An unexpected error occurred when updating the "
+                "name for job {}. The name was not updated for "
+                "the job.".format(self.job_id())
+            )
 
         # Cache updated name.
         self._name = updated_name
 
         return self._name
 
-    def update_tags(
-            self,
-            new_tags: List[str]
-    ) -> List[str]:
+    def update_tags(self, new_tags: List[str]) -> List[str]:
         """Update the tags associated with this job.
 
         Args:
@@ -355,15 +376,17 @@ class IBMCircuitJob(IBMJob):
 
         with api_to_job_error():
             response = self._api_client.job_update_attribute(
-                job_id=self.job_id(), attr_name='tags',
-                attr_value=list(tags_to_update))
+                job_id=self.job_id(), attr_name="tags", attr_value=list(tags_to_update)
+            )
 
         # Get the tags from the response and check if the update was successful.
-        updated_tags = response.get('tags', None)
+        updated_tags = response.get("tags", None)
         if (updated_tags is None) or (set(updated_tags) != set(tags_to_update)):
-            raise IBMJobApiError('An unexpected error occurred when updating the '
-                                 'tags for job {}. The tags were not updated for '
-                                 'the job.'.format(self.job_id()))
+            raise IBMJobApiError(
+                "An unexpected error occurred when updating the "
+                "tags for job {}. The tags were not updated for "
+                "the job.".format(self.job_id())
+            )
 
         # Cache the updated tags.
         self._tags = updated_tags
@@ -395,9 +418,10 @@ class IBMCircuitJob(IBMJob):
 
         with api_to_job_error():
             api_response = self._api_client.job_status(self.job_id())
-            self._api_status = api_response['status']
+            self._api_status = api_response["status"]
             self._status, self._queue_info = self._get_status_position(
-                self._api_status, api_response.get('info_queue', None))
+                self._api_status, api_response.get("info_queue", None)
+            )
 
         # Get all job attributes if the job is done.
         if self._status in JOB_FINAL_STATES:
@@ -425,7 +449,7 @@ class IBMCircuitJob(IBMJob):
                 self.refresh()
             if self._error:
                 self._job_error_msg = self._format_message_from_error(self._error)
-            elif self._api_status.startswith('ERROR'):
+            elif self._api_status.startswith("ERROR"):
                 self._job_error_msg = self._api_status
             else:
                 self._job_error_msg = "Unknown error."
@@ -476,8 +500,10 @@ class IBMCircuitJob(IBMJob):
 
         # Return queue information only if it has any useful information.
         if self._queue_info and any(
-                value is not None for attr, value in self._queue_info.__dict__.items()
-                if not attr.startswith('_') and attr != 'job_id'):
+            value is not None
+            for attr, value in self._queue_info.__dict__.items()
+            if not attr.startswith("_") and attr != "job_id"
+        ):
             return self._queue_info
         return None
 
@@ -541,7 +567,10 @@ class IBMCircuitJob(IBMJob):
         """
         if self._run_mode is None:
             self.refresh()
-            if self._status in [JobStatus.RUNNING, JobStatus.DONE] and self._run_mode is None:
+            if (
+                self._status in [JobStatus.RUNNING, JobStatus.DONE]
+                and self._run_mode is None
+            ):
                 self._run_mode = "fairshare"
 
         return self._run_mode
@@ -572,30 +601,36 @@ class IBMCircuitJob(IBMJob):
             api_response = self._api_client.job_get(self.job_id())
 
         try:
-            api_response.pop('job_id')
-            self._creation_date = dateutil.parser.isoparse(api_response.pop('creation_date'))
-            self._api_status = api_response.pop('status')
-            if 'kind' in api_response:
-                self._kind = ApiJobKind(api_response.pop('kind'))
-            if 'qobj' in api_response:
-                self._qobj = dict_to_qobj(api_response.pop('qobj'))
+            api_response.pop("job_id")
+            self._creation_date = dateutil.parser.isoparse(
+                api_response.pop("creation_date")
+            )
+            self._api_status = api_response.pop("status")
+            if "kind" in api_response:
+                self._kind = ApiJobKind(api_response.pop("kind"))
+            if "qobj" in api_response:
+                self._qobj = dict_to_qobj(api_response.pop("qobj"))
         except (KeyError, TypeError) as err:
-            raise IBMJobApiError("Unexpected return value received "
-                                 "from the server: {}".format(err)) from err
+            raise IBMJobApiError(
+                "Unexpected return value received " "from the server: {}".format(err)
+            ) from err
 
-        self._name = api_response.pop('name', None)
-        self._time_per_step = api_response.pop('time_per_step', None)
-        self._error = api_response.pop('error', None)
-        self._tags = api_response.pop('tags', [])
-        self._run_mode = api_response.pop('run_mode', None)
-        self._use_object_storage = (self._kind == ApiJobKind.QOBJECT_STORAGE)
-        self._status, self._queue_info = \
-            self._get_status_position(self._api_status, api_response.pop('info_queue', None))
-        self._client_version = self._extract_client_version(api_response.pop('client_info', None))
-        self._set_result(api_response.pop('result', None))
+        self._name = api_response.pop("name", None)
+        self._time_per_step = api_response.pop("time_per_step", None)
+        self._error = api_response.pop("error", None)
+        self._tags = api_response.pop("tags", [])
+        self._run_mode = api_response.pop("run_mode", None)
+        self._use_object_storage = self._kind == ApiJobKind.QOBJECT_STORAGE
+        self._status, self._queue_info = self._get_status_position(
+            self._api_status, api_response.pop("info_queue", None)
+        )
+        self._client_version = self._extract_client_version(
+            api_response.pop("client_info", None)
+        )
+        self._set_result(api_response.pop("result", None))
 
         for key, value in api_response.items():
-            self._data[key + '_'] = value
+            self._data[key + "_"] = value
         self._refreshed = True
 
     def circuits(self) -> List[Union[QuantumCircuit, Schedule]]:
@@ -644,10 +679,10 @@ class IBMCircuitJob(IBMJob):
         return header
 
     def wait_for_final_state(
-            self,
-            timeout: Optional[float] = None,
-            wait: Optional[float] = None,
-            callback: Optional[Callable] = None
+        self,
+        timeout: Optional[float] = None,
+        wait: Optional[float] = None,
+        callback: Optional[Callable] = None,
     ) -> None:
         """Wait until the job progresses to a final state such as ``DONE`` or ``ERROR``.
 
@@ -678,11 +713,13 @@ class IBMCircuitJob(IBMJob):
         status_queue = RefreshQueue(maxsize=1)
         future = None
         if callback:
-            future = self._executor.submit(self._status_callback,
-                                           status_queue=status_queue,
-                                           exit_event=exit_event,
-                                           callback=callback,
-                                           wait=wait)
+            future = self._executor.submit(
+                self._status_callback,
+                status_queue=status_queue,
+                exit_event=exit_event,
+                callback=callback,
+                wait=wait,
+            )
         try:
             self._wait_for_completion(timeout=timeout, status_queue=status_queue)
         finally:
@@ -693,11 +730,11 @@ class IBMCircuitJob(IBMJob):
                 future.result()
 
     def _wait_for_completion(
-            self,
-            timeout: Optional[float] = None,
-            wait: float = 5,
-            required_status: Tuple[JobStatus] = JOB_FINAL_STATES,
-            status_queue: Optional[RefreshQueue] = None
+        self,
+        timeout: Optional[float] = None,
+        wait: float = 5,
+        required_status: Tuple[JobStatus] = JOB_FINAL_STATES,
+        status_queue: Optional[RefreshQueue] = None,
     ) -> bool:
         """Wait until the job progress to a final state such as ``DONE`` or ``ERROR``.
 
@@ -721,19 +758,26 @@ class IBMCircuitJob(IBMJob):
 
         try:
             status_response = self._api_client.job_final_status(
-                self.job_id(), timeout=timeout, wait=wait, status_queue=status_queue)
+                self.job_id(), timeout=timeout, wait=wait, status_queue=status_queue
+            )
         except UserTimeoutExceededError:
             raise IBMJobTimeoutError(
-                'Timeout while waiting for job {}.'.format(self._job_id)) from None
+                "Timeout while waiting for job {}.".format(self._job_id)
+            ) from None
         except ApiError as api_err:
-            logger.error('Maximum retries exceeded: '
-                         'Error checking job status due to a network error.')
-            raise IBMJobApiError('Error checking job status due to a network '
-                                 'error: {}'.format(str(api_err))) from api_err
+            logger.error(
+                "Maximum retries exceeded: "
+                "Error checking job status due to a network error."
+            )
+            raise IBMJobApiError(
+                "Error checking job status due to a network "
+                "error: {}".format(str(api_err))
+            ) from api_err
 
-        self._api_status = status_response['status']
+        self._api_status = status_response["status"]
         self._status, self._queue_info = self._get_status_position(
-            self._api_status, status_response.get('info_queue', None))
+            self._api_status, status_response.get("info_queue", None)
+        )
 
         # Get all job attributes when the job is done.
         self.refresh()
@@ -751,16 +795,19 @@ class IBMCircuitJob(IBMJob):
             IBMJobApiError: If an unexpected error occurred when communicating
                 with the server.
         """
-        if self._api_status in (ApiJobStatus.ERROR_CREATING_JOB.value,
-                                ApiJobStatus.ERROR_VALIDATING_JOB.value,
-                                ApiJobStatus.ERROR_TRANSPILING_JOB.value):
+        if self._api_status in (
+            ApiJobStatus.ERROR_CREATING_JOB.value,
+            ApiJobStatus.ERROR_VALIDATING_JOB.value,
+            ApiJobStatus.ERROR_TRANSPILING_JOB.value,
+        ):
             # No results if job was never executed.
             return
 
         if not self._result or refresh:  # type: ignore[has-type]
             try:
                 result_response = self._api_client.job_result(
-                    self.job_id(), self._use_object_storage)
+                    self.job_id(), self._use_object_storage
+                )
                 self._set_result(result_response)
                 if self._status is JobStatus.ERROR:
                     # Look for error message in result response.
@@ -768,8 +815,9 @@ class IBMCircuitJob(IBMJob):
             except ApiError as err:
                 if self._status not in (JobStatus.ERROR, JobStatus.CANCELLED):
                     raise IBMJobApiError(
-                        'Unable to retrieve result for '
-                        'job {}: {}'.format(self.job_id(), str(err))) from err
+                        "Unable to retrieve result for "
+                        "job {}: {}".format(self.job_id(), str(err))
+                    ) from err
 
     def _set_result(self, raw_data: Optional[Dict]) -> None:
         """Set the job result.
@@ -785,18 +833,20 @@ class IBMCircuitJob(IBMJob):
         if raw_data is None:
             self._result = None
             return
-        raw_data['client_version'] = self.client_version
+        raw_data["client_version"] = self.client_version
         decode_result(raw_data)
         try:
             self._result = Result.from_dict(raw_data)
         except (KeyError, TypeError) as err:
             if not self._kind:
                 raise IBMJobInvalidStateError(
-                    'Unable to retrieve result for job {}. Job result '
-                    'is in an unsupported format.'.format(self.job_id())) from err
+                    "Unable to retrieve result for job {}. Job result "
+                    "is in an unsupported format.".format(self.job_id())
+                ) from err
             raise IBMJobApiError(
-                'Unable to retrieve result for '
-                'job {}: {}'.format(self.job_id(), str(err))) from err
+                "Unable to retrieve result for "
+                "job {}: {}".format(self.job_id(), str(err))
+            ) from err
 
     def _check_for_error_message(self, result_response: Dict[str, Any]) -> None:
         """Retrieves the error message from the result response.
@@ -804,11 +854,13 @@ class IBMCircuitJob(IBMJob):
         Args:
             result_response: Dictionary of the result response.
         """
-        if result_response.get('results', None):
+        if result_response.get("results", None):
             # If individual errors given
-            self._job_error_msg = build_error_report(result_response['results'])
-        elif 'error' in result_response:
-            self._job_error_msg = self._format_message_from_error(result_response['error'])
+            self._job_error_msg = build_error_report(result_response["results"])
+        elif "error" in result_response:
+            self._job_error_msg = self._format_message_from_error(
+                result_response["error"]
+            )
 
     def _format_message_from_error(self, error: Dict) -> str:
         """Format message from the error field.
@@ -823,17 +875,19 @@ class IBMCircuitJob(IBMJob):
             IBMJobApiError: If invalid data received from the server.
         """
         try:
-            return "{}. Error code: {}.".format(error['message'], error['code'])
+            return "{}. Error code: {}.".format(error["message"], error["code"])
         except KeyError as ex:
-            raise IBMJobApiError('Failed to get error message for job {}. Invalid error '
-                                 'data received: {}'.format(self.job_id(), error)) from ex
+            raise IBMJobApiError(
+                "Failed to get error message for job {}. Invalid error "
+                "data received: {}".format(self.job_id(), error)
+            ) from ex
 
     def _status_callback(
-            self,
-            status_queue: RefreshQueue,
-            exit_event: Event,
-            callback: Callable,
-            wait: Optional[float]
+        self,
+        status_queue: RefreshQueue,
+        exit_event: Event,
+        callback: Callable,
+        wait: Optional[float],
     ) -> None:
         """Invoke the callback function with the latest job status.
 
@@ -846,7 +900,10 @@ class IBMCircuitJob(IBMJob):
                 has changed.
         """
         status_response = None
-        last_data = (None, None)  # type: Tuple[Optional[JobStatus], Optional[QueueInfo]]
+        last_data = (
+            None,
+            None,
+        )  # type: Tuple[Optional[JobStatus], Optional[QueueInfo]]
 
         while not exit_event.is_set():
             try:
@@ -863,7 +920,8 @@ class IBMCircuitJob(IBMJob):
 
             try:
                 status, queue_info = self._get_status_position(
-                    status_response['status'], status_response.get('info_queue', None))
+                    status_response["status"], status_response.get("info_queue", None)
+                )
             except IBMJobApiError as ex:
                 logger.warning("Unexpected error when getting job status: %s", ex)
                 continue
@@ -874,14 +932,15 @@ class IBMCircuitJob(IBMJob):
                 if (status, queue_info) == last_data:
                     continue
                 last_data = (status, queue_info)
-            logger.debug("Invoking callback function, job status=%s, queue_info=%s",
-                         status, queue_info)
+            logger.debug(
+                "Invoking callback function, job status=%s, queue_info=%s",
+                status,
+                queue_info,
+            )
             callback(self.job_id(), status, self, queue_info=queue_info)
 
     def _get_status_position(
-            self,
-            api_status: str,
-            api_info_queue: Optional[Dict] = None
+        self, api_status: str, api_info_queue: Optional[Dict] = None
     ) -> Tuple[JobStatus, Optional[QueueInfo]]:
         """Return the corresponding job status for the input server job status.
 
@@ -921,7 +980,8 @@ class IBMCircuitJob(IBMJob):
         if not self._qobj:
             with api_to_job_error():
                 qobj = self._api_client.job_download_qobj(
-                    self.job_id(), self._use_object_storage)
+                    self.job_id(), self._use_object_storage
+                )
                 self._qobj = dict_to_qobj(qobj)
 
         return self._qobj
@@ -936,10 +996,10 @@ class IBMCircuitJob(IBMJob):
             Extracted client version.
         """
         if data:
-            if data.get('name', '').startswith('qiskit'):
-                return dict(zip(data['name'].split(','), data['version'].split(',')))
+            if data.get("name", "").startswith("qiskit"):
+                return dict(zip(data["name"].split(","), data["version"].split(",")))
 
-            return {data.get('name', 'unknown'): data.get('version', 'unknown')}
+            return {data.get("name", "unknown"): data.get("version", "unknown")}
         return {}
 
     def submit(self) -> None:
@@ -953,11 +1013,13 @@ class IBMCircuitJob(IBMJob):
         Raises:
             NotImplementedError: Upon invocation.
         """
-        raise NotImplementedError("job.submit() is not supported. Please use "
-                                  "IBMBackend.run() to submit a job.")
+        raise NotImplementedError(
+            "job.submit() is not supported. Please use "
+            "IBMBackend.run() to submit a job."
+        )
 
     def __getattr__(self, name: str) -> Any:
         try:
             return self._data[name]
         except KeyError:
-            raise AttributeError('Attribute {} is not defined.'.format(name)) from None
+            raise AttributeError("Attribute {} is not defined.".format(name)) from None

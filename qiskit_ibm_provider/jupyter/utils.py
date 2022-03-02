@@ -12,17 +12,17 @@
 
 """Utility functions for Jupyter modules."""
 
-from typing import Optional, Union
 from datetime import datetime, timedelta
+from typing import Optional, Union
 
 from qiskit.test.mock.fake_backend import FakeBackend
-from qiskit_ibm_provider.ibm_backend import IBMBackend
+
 from qiskit_ibm_provider.backendreservation import BackendReservation
+from qiskit_ibm_provider.ibm_backend import IBMBackend
 
 
 def get_next_reservation(
-        backend: Union[IBMBackend, FakeBackend],
-        time_period_hr: int = 24
+    backend: Union[IBMBackend, FakeBackend], time_period_hr: int = 24
 ) -> Optional[BackendReservation]:
     """Get the next reservation within the input time period for the backend.
 
@@ -37,7 +37,8 @@ def get_next_reservation(
         return None
     reservations = backend.reservations(
         start_datetime=datetime.now(),
-        end_datetime=datetime.now() + timedelta(hours=time_period_hr))
+        end_datetime=datetime.now() + timedelta(hours=time_period_hr),
+    )
     if reservations:
         next_reservation = min(reservations, key=lambda rsvr: rsvr.start_datetime)
         return next_reservation

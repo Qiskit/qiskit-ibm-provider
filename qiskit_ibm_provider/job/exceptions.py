@@ -19,29 +19,35 @@ from ..exceptions import IBMError
 
 class IBMJobError(JobError, IBMError):
     """Base class for errors raised by the job modules."""
+
     pass
 
 
 class IBMJobApiError(IBMJobError):
     """Errors that occur unexpectedly when querying the server."""
+
     pass
 
 
 class IBMJobFailureError(IBMJobError):
     """Errors raised when a job failed."""
+
     pass
 
 
 class IBMJobInvalidStateError(IBMJobError):
     """Errors raised when a job is not in a valid state for the operation."""
+
     pass
 
 
 class IBMJobTimeoutError(JobTimeoutError, IBMJobError):
     """Errors raised when a job operation times out."""
+
     pass
 
 
 class IBMJobNotFoundError(IBMJobError):
     """Errors raised when a job cannot be found."""
+
     pass

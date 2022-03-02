@@ -19,15 +19,18 @@ from typing import Union
 import ipyvuetify as vue
 from IPython.display import display  # pylint: disable=import-error
 from qiskit.test.mock.fake_backend import FakeBackend
+
 from qiskit_ibm_provider.ibm_backend import IBMBackend
 from .config_widget import config_tab
-from .qubits_widget import qubits_tab
 from .gates_widget import gates_tab
 from .jobs_widget import jobs_tab
+from .qubits_widget import qubits_tab
 from ..visualization.interactive import iplot_error_map
 
 
-def _async_job_loader(tab: vue.TabItem, backend: Union[IBMBackend, FakeBackend]) -> None:
+def _async_job_loader(
+    tab: vue.TabItem, backend: Union[IBMBackend, FakeBackend]
+) -> None:
     """Asynchronous job loader.
 
     Args:
@@ -45,35 +48,50 @@ def backend_widget(backend: Union[IBMBackend, FakeBackend]) -> None:
     """
     cred = backend._credentials
     last_tab = vue.TabItem(children=[])
-    card = vue.Card(height=600, outlined=True,
-                    children=[
-                        vue.Toolbar(flat=True, color="#002d9c",
-                                    children=[
-                                        vue.ToolbarTitle(children=['{} @ ({}/{}/{})'.format(
-                                            backend.name(),
-                                            cred.hub,
-                                            cred.group,
-                                            cred.project)],
-                                                         style_="color:white")]),
-                        vue.Tabs(vertical=True,
-                                 children=[
-                                     vue.Tab(children=['Configuration']),
-                                     vue.Tab(children=['Qubits']),
-                                     vue.Tab(children=['Non-local Gates']),
-                                     vue.Tab(children=['Error map']),
-                                     vue.Tab(children=['Job Summary']),
-                                     vue.TabItem(children=[config_tab(backend)]),
-                                     vue.TabItem(children=[qubits_tab(backend)]),
-                                     vue.TabItem(children=[gates_tab(backend)]),
-                                     vue.TabItem(children=[iplot_error_map(backend,
-                                                                           figsize=(None, None),
-                                                                           as_widget=True)]),
-                                     last_tab])
-                    ])
+    card = vue.Card(
+        height=600,
+        outlined=True,
+        children=[
+            vue.Toolbar(
+                flat=True,
+                color="#002d9c",
+                children=[
+                    vue.ToolbarTitle(
+                        children=[
+                            "{} @ ({}/{}/{})".format(
+                                backend.name(), cred.hub, cred.group, cred.project
+                            )
+                        ],
+                        style_="color:white",
+                    )
+                ],
+            ),
+            vue.Tabs(
+                vertical=True,
+                children=[
+                    vue.Tab(children=["Configuration"]),
+                    vue.Tab(children=["Qubits"]),
+                    vue.Tab(children=["Non-local Gates"]),
+                    vue.Tab(children=["Error map"]),
+                    vue.Tab(children=["Job Summary"]),
+                    vue.TabItem(children=[config_tab(backend)]),
+                    vue.TabItem(children=[qubits_tab(backend)]),
+                    vue.TabItem(children=[gates_tab(backend)]),
+                    vue.TabItem(
+                        children=[
+                            iplot_error_map(
+                                backend, figsize=(None, None), as_widget=True
+                            )
+                        ]
+                    ),
+                    last_tab,
+                ],
+            ),
+        ],
+    )
 
     # Load job data async for a bit better performance
-    thread = threading.Thread(target=_async_job_loader,
-                              args=(last_tab, backend))
+    thread = threading.Thread(target=_async_job_loader, args=(last_tab, backend))
     thread.start()
 
     display(card)
