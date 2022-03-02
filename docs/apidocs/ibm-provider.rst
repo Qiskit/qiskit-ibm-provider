@@ -11,4 +11,3 @@ Qiskit IBM Quantum Provider API Reference
    ibm_visualization
    ibm_jupyter
    ibm_utils
-   ibm_random

@@ -35,7 +35,6 @@ from .exceptions import (IBMNotAuthorizedError, IBMInputValueError, IBMProviderC
 from .hub_group_project import HubGroupProject  # pylint: disable=cyclic-import
 from .ibm_backend import IBMBackend  # pylint: disable=cyclic-import
 from .ibm_backend_service import IBMBackendService  # pylint: disable=cyclic-import
-from .random.ibm_random_service import IBMRandomService  # pylint: disable=cyclic-import
 
 logger = logging.getLogger(__name__)
 
@@ -139,9 +138,7 @@ class IBMProvider(Provider):
                 * verify (bool): verify the server's TLS certificate.
 
         Returns:
-            An instance of IBMProvider with services like :class:`~qiskit_ibm.IBMBackendService` and
-            :class:`~qiskit_ibm.random.IBMRandomService`
-            as available to the account.
+            An instance of IBMProvider
 
         Raises:
             IBMProviderCredentialsInvalidFormat: If the default hub/group/project saved on
@@ -381,20 +378,14 @@ class IBMProvider(Provider):
     def _initialize_services(self) -> None:
         """Initialize all services."""
         self._backend = None
-        self._random = None
         hgps = self._get_hgps()
         for hgp in hgps:
             # Initialize backend service
             if not self._backend:
                 self._backend = IBMBackendService(self, hgp)
-            # Initialize other services.
-            if not self._random:
-                self._random = IBMRandomService(self, hgp) \
-                    if hgp.has_service('random') else None
-            if all([self._backend, self._random]):
+            if self._backend:
                 break
-        self._services = {'backend': self._backend,
-                          'random': self._random}
+        self._services = {'backend': self._backend}
 
     @property
     def backend(self) -> IBMBackendService:
@@ -404,22 +395,6 @@ class IBMProvider(Provider):
             The backend service instance.
         """
         return self._backend
-
-    @property
-    def random(self) -> IBMRandomService:
-        """Return the random number service.
-
-        Returns:
-            The random number service instance.
-
-        Raises:
-            IBMNotAuthorizedError: If the account is not authorized to use
-                the service.
-        """
-        if self._random:
-            return self._random
-        else:
-            raise IBMNotAuthorizedError("You are not authorized to use the service.")
 
     def active_account(self) -> Optional[Dict[str, str]]:
         """Return the IBM Quantum account currently in use for the session.
