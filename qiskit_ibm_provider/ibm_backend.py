@@ -796,7 +796,7 @@ class IBMSimulator(IBMBackend):
                 <qiskit_ibm_provider.ibm_backend_service.IBMBackendService.jobs>` method.
             backend_options: DEPRECATED dictionary of backend options for the execution.
             noise_model: Noise model.
-            kwargs: Additional runtime configuration options. They take
+            **kwargs: Additional runtime configuration options. They take
                 precedence over options of the same names specified in `backend_options`.
 
         Returns:

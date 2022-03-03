@@ -128,7 +128,7 @@ class IBMBackendService:
             hub: Name of the hub.
             group: Name of the group.
             project: Name of the project.
-            kwargs: Simple filters that specify a ``True``/``False`` criteria in the
+            **kwargs: Simple filters that specify a ``True``/``False`` criteria in the
                 backend configuration, backends status, or provider credentials.
                 An example to get the operational backends with 5 qubits::
 
@@ -141,7 +141,7 @@ class IBMBackendService:
             IBMBackendValueError: If only one or two parameters from `hub`, `group`,
                 `project` are specified.
         """
-        backends: List[IBMBackend] = list()
+        backends: List[IBMBackend] = []
         if all([hub, group, project]):
             hgp = self._provider._get_hgp(hub, group, project)
             backends = list(hgp.backends.values())

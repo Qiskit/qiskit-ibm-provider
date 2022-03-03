@@ -127,8 +127,7 @@ def _mock_initialize_hgps(
     self, credentials: Credentials, preferences: Optional[Dict] = None
 ) -> None:
     """Mock ``_initialize_hgps()``, just storing the credentials."""
-    hgp = dict()
-    hgp["credentials"] = credentials
+    hgp = {"credentials": credentials}
     self._hgp = hgp
     self._hgps = {}
     if preferences:

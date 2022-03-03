@@ -184,14 +184,14 @@ class TestWebsocketIntegration(IBMTestCase):
     def test_websockets_multi_job(self):
         """Test checking status of multiple jobs in parallel via websockets."""
 
-        def _run_job_get_result(q):
+        def _run_job_get_result(queue):
             """Run a job and get its result."""
             job = self.sim_backend.run(self.bell)
             # Manually disable the non-websocket polling.
             job._api_client._job_final_status_polling = self._job_final_status_polling
             job._wait_for_completion()
             if job._status is not JobStatus.DONE:
-                q.put(
+                queue.put(
                     "Job {} status should be DONE but is {}".format(
                         job.job_id(), job._status.name
                     )

@@ -41,33 +41,37 @@ class TestIBMQasmSimulator(IBMTestCase):
 
     def test_execute_one_circuit_simulator_online(self):
         """Test execute_one_circuit_simulator_online."""
-        qr = QuantumRegister(1)
-        cr = ClassicalRegister(1)
-        qc = QuantumCircuit(qr, cr, name="qc")
-        qc.h(qr[0])
-        qc.measure(qr[0], cr[0])
-        circs = transpile(qc, backend=self.sim_backend, seed_transpiler=73846087)
+        quantum_register = QuantumRegister(1)
+        classical_register = ClassicalRegister(1)
+        quantum_circuit = QuantumCircuit(
+            quantum_register, classical_register, name="qc"
+        )
+        quantum_circuit.h(quantum_register[0])
+        quantum_circuit.measure(quantum_register[0], classical_register[0])
+        circs = transpile(
+            quantum_circuit, backend=self.sim_backend, seed_transpiler=73846087
+        )
         shots = 1024
         job = self.sim_backend.run(circs, shots=shots)
         result = job.result()
-        counts = result.get_counts(qc)
+        counts = result.get_counts(quantum_circuit)
         target = {"0": shots / 2, "1": shots / 2}
         threshold = 0.1 * shots
         self.assertDictAlmostEqual(counts, target, threshold)
 
     def test_execute_several_circuits_simulator_online(self):
         """Test execute_several_circuits_simulator_online."""
-        qr = QuantumRegister(2)
-        cr = ClassicalRegister(2)
-        qcr1 = QuantumCircuit(qr, cr, name="qc1")
-        qcr2 = QuantumCircuit(qr, cr, name="qc2")
-        qcr1.h(qr)
-        qcr2.h(qr[0])
-        qcr2.cx(qr[0], qr[1])
-        qcr1.measure(qr[0], cr[0])
-        qcr1.measure(qr[1], cr[1])
-        qcr2.measure(qr[0], cr[0])
-        qcr2.measure(qr[1], cr[1])
+        quantum_register = QuantumRegister(2)
+        classical_register = ClassicalRegister(2)
+        qcr1 = QuantumCircuit(quantum_register, classical_register, name="qc1")
+        qcr2 = QuantumCircuit(quantum_register, classical_register, name="qc2")
+        qcr1.h(quantum_register)
+        qcr2.h(quantum_register[0])
+        qcr2.cx(quantum_register[0], quantum_register[1])
+        qcr1.measure(quantum_register[0], classical_register[0])
+        qcr1.measure(quantum_register[1], classical_register[1])
+        qcr2.measure(quantum_register[0], classical_register[0])
+        qcr2.measure(quantum_register[1], classical_register[1])
         shots = 1024
         circs = transpile(
             [qcr1, qcr2], backend=self.sim_backend, seed_transpiler=73846087
@@ -110,13 +114,13 @@ class TestIBMQasmSimulator(IBMTestCase):
 
     def test_conditional_operation(self):
         """Test conditional operation."""
-        qr = QuantumRegister(4)
-        cr = ClassicalRegister(4)
-        circuit = QuantumCircuit(qr, cr)
-        circuit.x(qr[0])
-        circuit.x(qr[2])
-        circuit.measure(qr[0], cr[0])
-        circuit.x(qr[0]).c_if(cr, 1)
+        quantum_register = QuantumRegister(4)
+        classical_register = ClassicalRegister(4)
+        circuit = QuantumCircuit(quantum_register, classical_register)
+        circuit.x(quantum_register[0])
+        circuit.x(quantum_register[2])
+        circuit.measure(quantum_register[0], classical_register[0])
+        circuit.x(quantum_register[0]).c_if(classical_register, 1)
 
         result = self.sim_backend.run(
             transpile(circuit, backend=self.sim_backend)

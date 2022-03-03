@@ -45,13 +45,13 @@ class TestIBMIntegration(IBMTestCase):
 
     def setUp(self):
         super().setUp()
-        qr = QuantumRegister(1)
-        cr = ClassicalRegister(1)
-        self._qc1 = QuantumCircuit(qr, cr, name="qc1")
-        self._qc2 = QuantumCircuit(qr, cr, name="qc2")
-        self._qc1.measure(qr[0], cr[0])
-        self._qc2.x(qr[0])
-        self._qc2.measure(qr[0], cr[0])
+        quantum_register = QuantumRegister(1)
+        classical_register = ClassicalRegister(1)
+        self._qc1 = QuantumCircuit(quantum_register, classical_register, name="qc1")
+        self._qc2 = QuantumCircuit(quantum_register, classical_register, name="qc2")
+        self._qc1.measure(quantum_register[0], classical_register[0])
+        self._qc2.x(quantum_register[0])
+        self._qc2.measure(quantum_register[0], classical_register[0])
 
     def test_ibm_result_fields(self):
         """Test components of a result from a remote simulator."""
@@ -67,12 +67,12 @@ class TestIBMIntegration(IBMTestCase):
         """Test transpile with a remote backend."""
         qubit_reg = QuantumRegister(2, name="q")
         clbit_reg = ClassicalRegister(2, name="c")
-        qc = QuantumCircuit(qubit_reg, clbit_reg, name="bell")
-        qc.h(qubit_reg[0])
-        qc.cx(qubit_reg[0], qubit_reg[1])
-        qc.measure(qubit_reg, clbit_reg)
+        quantum_circuit = QuantumCircuit(qubit_reg, clbit_reg, name="bell")
+        quantum_circuit.h(qubit_reg[0])
+        quantum_circuit.cx(qubit_reg[0], qubit_reg[1])
+        quantum_circuit.measure(qubit_reg, clbit_reg)
 
-        circuits = transpile(qc, backend=backend)
+        circuits = transpile(quantum_circuit, backend=backend)
         self.assertIsInstance(circuits, QuantumCircuit)
 
     @requires_device
@@ -80,13 +80,13 @@ class TestIBMIntegration(IBMTestCase):
         """Test transpile with a remote backend on two circuits."""
         qubit_reg = QuantumRegister(2, name="q")
         clbit_reg = ClassicalRegister(2, name="c")
-        qc = QuantumCircuit(qubit_reg, clbit_reg, name="bell")
-        qc.h(qubit_reg[0])
-        qc.cx(qubit_reg[0], qubit_reg[1])
-        qc.measure(qubit_reg, clbit_reg)
+        quantum_circuit = QuantumCircuit(qubit_reg, clbit_reg, name="bell")
+        quantum_circuit.h(qubit_reg[0])
+        quantum_circuit.cx(qubit_reg[0], qubit_reg[1])
+        quantum_circuit.measure(qubit_reg, clbit_reg)
         qc_extra = QuantumCircuit(qubit_reg, clbit_reg, name="extra")
         qc_extra.measure(qubit_reg, clbit_reg)
-        circuits = transpile([qc, qc_extra], backend)
+        circuits = transpile([quantum_circuit, qc_extra], backend)
         self.assertIsInstance(circuits[0], QuantumCircuit)
         self.assertIsInstance(circuits[1], QuantumCircuit)
 
@@ -94,14 +94,16 @@ class TestIBMIntegration(IBMTestCase):
         """Test transpile and run two circuits."""
         qubit_reg = QuantumRegister(2, name="q")
         clbit_reg = ClassicalRegister(2, name="c")
-        qc = QuantumCircuit(qubit_reg, clbit_reg, name="bell")
-        qc.h(qubit_reg[0])
-        qc.cx(qubit_reg[0], qubit_reg[1])
-        qc.measure(qubit_reg, clbit_reg)
+        quantum_circuit = QuantumCircuit(qubit_reg, clbit_reg, name="bell")
+        quantum_circuit.h(qubit_reg[0])
+        quantum_circuit.cx(qubit_reg[0], qubit_reg[1])
+        quantum_circuit.measure(qubit_reg, clbit_reg)
         qc_extra = QuantumCircuit(qubit_reg, clbit_reg, name="extra")
         qc_extra.measure(qubit_reg, clbit_reg)
         circs = transpile(
-            [qc, qc_extra], backend=self.sim_backend, seed_transpiler=self.seed
+            [quantum_circuit, qc_extra],
+            backend=self.sim_backend,
+            seed_transpiler=self.seed,
         )
         job = self.sim_backend.run(circs)
         result = job.result()
@@ -109,10 +111,12 @@ class TestIBMIntegration(IBMTestCase):
 
     def test_execute_two_remote(self):
         """Test executing two circuits on a remote backend."""
-        qc = ReferenceCircuits.bell()
+        quantum_circuit = ReferenceCircuits.bell()
         qc_extra = QuantumCircuit(2, 2)
         qc_extra.measure_all()
-        job = execute([qc, qc_extra], self.sim_backend, seed_transpiler=self.seed)
+        job = execute(
+            [quantum_circuit, qc_extra], self.sim_backend, seed_transpiler=self.seed
+        )
         results = job.result()
         self.assertIsInstance(results, Result)
 
@@ -120,8 +124,8 @@ class TestIBMIntegration(IBMTestCase):
     def test_private_job(self, provider, hub, group, project):
         """Test a private job."""
         backend = provider.get_backend("ibmq_qasm_simulator", hub, group, project)
-        qc = ReferenceCircuits.bell()
-        job = execute(qc, backend=backend)
+        quantum_circuit = ReferenceCircuits.bell()
+        job = execute(quantum_circuit, backend=backend)
         self.assertIsNotNone(job.circuits())
         self.assertIsNotNone(job.result())
 

@@ -55,7 +55,7 @@ class PlotlyFigure:
         import plotly.io as pio
 
         config = {}
-        if "config" not in kwargs.keys():
+        if "config" not in kwargs:
             config = {"displayModeBar": False, "editable": False}
 
         pio.show(self._fig, *args, config=config, **kwargs)
@@ -101,7 +101,7 @@ class PlotlyWidget(go.FigureWidget):
         import plotly.io as pio
 
         config = {}
-        if "config" not in kwargs.keys():
+        if "config" not in kwargs:
             config = {"scrollZoom": False, "displayModeBar": False, "editable": False}
 
         pio.show(self, *args, config=config, **kwargs)

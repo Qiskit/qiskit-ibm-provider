@@ -30,7 +30,9 @@ TUTORIAL_PATH = "docs/tutorials/**/*.ipynb"
 class TutorialsTestCaseMeta(type):
     """Metaclass that dynamically appends a "test_TUTORIAL_NAME" method to the class."""
 
-    def __new__(mcs, name, bases, dict_):
+    def __new__(
+        mcs, name, bases, dict_
+    ):  # pylint: disable=bad-mcs-classmethod-argument
         def create_test(filename):
             """Return a new test function."""
 
@@ -46,7 +48,9 @@ class TutorialsTestCaseMeta(type):
             test_name = "test_%s" % to_python_identifier(filename)
             dict_[test_name] = create_test(filename)
             dict_[test_name].__doc__ = 'Test tutorial "%s"' % filename
-        return type.__new__(mcs, name, bases, dict_)
+        return type.__new__(
+            mcs, name, bases, dict_
+        )  # pylint: disable=bad-mcs-classmethod-argument
 
 
 @skipIf(not TEST_OPTIONS["run_slow"], "Skipping slow tests.")
@@ -60,7 +64,7 @@ class TestTutorials(IBMTestCase, metaclass=TutorialsTestCaseMeta):
 
         # Open the notebook.
         file_path = os.path.dirname(os.path.abspath(filename))
-        with open(filename) as file_:
+        with open(filename, encoding="utf-8") as file_:
             notebook = nbformat.read(file_, as_version=4)
 
         with warnings.catch_warnings():

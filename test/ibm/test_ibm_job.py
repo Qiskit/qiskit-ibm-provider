@@ -88,15 +88,15 @@ class TestIBMJob(IBMTestCase):
     def test_run_multiple_simulator(self):
         """Test running multiple jobs in a simulator."""
         num_qubits = 16
-        qr = QuantumRegister(num_qubits, "qr")
-        cr = ClassicalRegister(num_qubits, "cr")
-        qc = QuantumCircuit(qr, cr)
+        quantum_register = QuantumRegister(num_qubits, "qr")
+        classical_register = ClassicalRegister(num_qubits, "cr")
+        quantum_circuit = QuantumCircuit(quantum_register, classical_register)
         for i in range(num_qubits - 1):
-            qc.cx(qr[i], qr[i + 1])
-        qc.measure(qr, cr)
+            quantum_circuit.cx(quantum_register[i], quantum_register[i + 1])
+        quantum_circuit.measure(quantum_register, classical_register)
         num_jobs = 5
         job_array = [
-            self.sim_backend.run(transpile([qc] * 20), shots=2048)
+            self.sim_backend.run(transpile([quantum_circuit] * 20), shots=2048)
             for _ in range(num_jobs)
         ]
         timeout = 30
@@ -106,7 +106,7 @@ class TestIBMJob(IBMTestCase):
             if check >= 2:
                 self.log.info("found %d simultaneous jobs", check)
                 break
-            if all([job.status() is JobStatus.DONE for job in job_array]):
+            if all((job.status() is JobStatus.DONE for job in job_array)):
                 # done too soon? don't generate error
                 self.log.warning(
                     "all jobs completed before simultaneous jobs " "could be detected"
@@ -134,8 +134,8 @@ class TestIBMJob(IBMTestCase):
         result_array = [job.result() for job in job_array]
         self.log.info("got back all job results")
         # Ensure all jobs have finished.
-        self.assertTrue(all([job.status() is JobStatus.DONE for job in job_array]))
-        self.assertTrue(all([result.success for result in result_array]))
+        self.assertTrue(all((job.status() is JobStatus.DONE for job in job_array)))
+        self.assertTrue(all((result.success for result in result_array)))
 
         # Ensure job ids are unique.
         job_ids = [job.job_id() for job in job_array]
@@ -146,15 +146,16 @@ class TestIBMJob(IBMTestCase):
     def test_run_multiple_device(self, backend):
         """Test running multiple jobs in a real device."""
         num_qubits = 5
-        qr = QuantumRegister(num_qubits, "qr")
-        cr = ClassicalRegister(num_qubits, "cr")
-        qc = QuantumCircuit(qr, cr)
+        quantum_register = QuantumRegister(num_qubits, "qr")
+        classical_register = ClassicalRegister(num_qubits, "cr")
+        quantum_circuit = QuantumCircuit(quantum_register, classical_register)
         for i in range(num_qubits - 1):
-            qc.cx(qr[i], qr[i + 1])
-        qc.measure(qr, cr)
+            quantum_circuit.cx(quantum_register[i], quantum_register[i + 1])
+        quantum_circuit.measure(quantum_register, classical_register)
         num_jobs = 3
         job_array = [
-            backend.run(transpile(qc, backend=backend)) for _ in range(num_jobs)
+            backend.run(transpile(quantum_circuit, backend=backend))
+            for _ in range(num_jobs)
         ]
         time.sleep(3)  # give time for jobs to start (better way?)
         job_status = [job.status() for job in job_array]
@@ -178,8 +179,8 @@ class TestIBMJob(IBMTestCase):
         result_array = [job.result() for job in job_array]
 
         # Ensure all jobs have finished.
-        self.assertTrue(all([job.status() is JobStatus.DONE for job in job_array]))
-        self.assertTrue(all([result.success for result in result_array]))
+        self.assertTrue(all((job.status() is JobStatus.DONE for job in job_array)))
+        self.assertTrue(all((result.success for result in result_array)))
 
         # Ensure job ids are unique.
         job_ids = [job.job_id() for job in job_array]
@@ -524,10 +525,10 @@ class TestIBMJob(IBMTestCase):
         inst_map = defaults.instruction_schedule_map
 
         # Run 2 experiments - 1 with x pulse and 1 without
-        x = inst_map.get("x", 0)
-        measure = inst_map.get("measure", range(config.n_qubits)) << x.duration
+        x_pulse = inst_map.get("x", 0)
+        measure = inst_map.get("measure", range(config.n_qubits)) << x_pulse.duration
         ground_sched = measure
-        excited_sched = x | measure
+        excited_sched = x_pulse | measure
         schedules = [ground_sched, excited_sched]
 
         job = backend.run(schedules, meas_level=1, shots=256)

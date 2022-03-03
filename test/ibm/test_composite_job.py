@@ -902,7 +902,7 @@ class TestIBMCompositeJobIntegration(IBMTestCase):
                     )
                     with self.assertRaises(IBMJobInvalidStateError) as err_cm:
                         self.provider.backend.job(job_set.job_id())
-                    self.assertIn(f"tags", str(err_cm.exception))
+                    self.assertIn("tags", str(err_cm.exception))
                 finally:
                     job._api_client.job_update_attribute(
                         job_id=job.job_id(), attr_name="tags", attr_value=saved_tags

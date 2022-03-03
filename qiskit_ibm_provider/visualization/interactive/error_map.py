@@ -93,7 +93,7 @@ def iplot_error_map(
     n_qubits = config.n_qubits
     cmap = config.coupling_map
 
-    if n_qubits in DEVICE_LAYOUTS.keys():
+    if n_qubits in DEVICE_LAYOUTS:
         grid_data = DEVICE_LAYOUTS[n_qubits]
     else:
         fig = go.Figure()

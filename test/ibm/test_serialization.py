@@ -71,9 +71,9 @@ class TestSerialization(IBMTestCase):
         defaults = backend.defaults()
         inst_map = defaults.instruction_schedule_map
 
-        x = inst_map.get("x", 0)
-        measure = inst_map.get("measure", range(config.n_qubits)) << x.duration
-        schedules = x | measure
+        x_pulse = inst_map.get("x", 0)
+        measure = inst_map.get("measure", range(config.n_qubits)) << x_pulse.duration
+        schedules = x_pulse | measure
 
         job = backend.run(schedules, meas_level=1, shots=256)
         rqobj = self.provider.backend.job(job.job_id())._get_qobj()
@@ -176,10 +176,10 @@ class TestSerialization(IBMTestCase):
             raise SkipTest("Skipping pulse test since no pulse backend found.")
 
         backend = least_busy(backends)
-        qc = QuantumCircuit(1, 1)
-        qc.x(0)
-        qc.measure([0], [0])
-        sched = schedule(transpile(qc, backend=backend), backend=backend)
+        quantum_circuit = QuantumCircuit(1, 1)
+        quantum_circuit.x(0)
+        quantum_circuit.measure([0], [0])
+        sched = schedule(transpile(quantum_circuit, backend=backend), backend=backend)
         job = backend.run(sched)
         result = job.result()
 

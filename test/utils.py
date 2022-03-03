@@ -98,9 +98,9 @@ def get_large_circuit(backend: IBMBackend) -> QuantumCircuit:
     """
     n_qubits = min(backend.configuration().n_qubits, 20)
     circuit = QuantumCircuit(n_qubits, n_qubits)
-    for n in range(n_qubits - 1):
-        circuit.h(n)
-        circuit.cx(n, n + 1)
+    for num_qubits in range(n_qubits - 1):
+        circuit.h(num_qubits)
+        circuit.cx(num_qubits, num_qubits + 1)
     circuit.measure(list(range(n_qubits)), list(range(n_qubits)))
 
     return circuit
@@ -210,10 +210,10 @@ def get_pulse_schedule(backend: IBMBackend) -> Schedule:
     inst_map = defaults.instruction_schedule_map
 
     # Run 2 experiments - 1 with x pulse and 1 without
-    x = inst_map.get("x", 0)
-    measure = inst_map.get("measure", range(config.n_qubits)) << x.duration
+    x_pulse = inst_map.get("x", 0)
+    measure = inst_map.get("measure", range(config.n_qubits)) << x_pulse.duration
     ground_sched = measure
-    excited_sched = x | measure
+    excited_sched = x_pulse | measure
     schedules = [ground_sched, excited_sched]
     return schedules
 

@@ -16,6 +16,8 @@
 
 import copy
 import time
+from concurrent import futures
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import suppress
 from unittest import mock
 
@@ -297,7 +299,6 @@ class TestIBMJobStates(JobTestCase):
 
     def test_block_on_result_waiting_until_completed(self):
         """Test waiting for job results."""
-        from concurrent import futures
 
         job = self.run_with_api(NonQueuedAPI())
         with futures.ThreadPoolExecutor() as executor:
@@ -309,7 +310,6 @@ class TestIBMJobStates(JobTestCase):
 
     def test_block_on_result_waiting_until_cancelled(self):
         """Test canceling job while waiting for results."""
-        from concurrent.futures import ThreadPoolExecutor
 
         job = self.run_with_api(CancellableAPI())
         with ThreadPoolExecutor() as executor:
@@ -322,7 +322,6 @@ class TestIBMJobStates(JobTestCase):
 
     def test_block_on_result_waiting_until_exception(self):
         """Test getting API error while waiting for job results."""
-        from concurrent.futures import ThreadPoolExecutor
 
         job = self.run_with_api(ThrowingAPI())
 
