@@ -15,16 +15,15 @@
 import asyncio
 import json
 
-from qiskit_ibm.api.clients.websocket import WebsocketResponseMethod
+from qiskit_ibm_provider.api.clients.websocket import WebsocketResponseMethod
 
-
-TOKEN_JOB_COMPLETED = 'token_job_completed'
-TOKEN_JOB_TRANSITION = 'token_job_transition'
-TOKEN_TIMEOUT = 'token_timeout'
-TOKEN_WRONG_FORMAT = 'token_wrong_format'
-TOKEN_WEBSOCKET_RETRY_SUCCESS = 'token_websocket_retry_success'
-TOKEN_WEBSOCKET_RETRY_FAILURE = 'token_websocket_retry_failure'
-TOKEN_WEBSOCKET_JOB_NOT_FOUND = 'token_websocket_job_not_found'
+TOKEN_JOB_COMPLETED = "token_job_completed"
+TOKEN_JOB_TRANSITION = "token_job_transition"
+TOKEN_TIMEOUT = "token_timeout"
+TOKEN_WRONG_FORMAT = "token_wrong_format"
+TOKEN_WEBSOCKET_RETRY_SUCCESS = "token_websocket_retry_success"
+TOKEN_WEBSOCKET_RETRY_FAILURE = "token_websocket_retry_failure"
+TOKEN_WEBSOCKET_JOB_NOT_FOUND = "token_websocket_job_not_found"
 
 
 async def websocket_handler(websocket, path):
@@ -35,16 +34,18 @@ async def websocket_handler(websocket, path):
     auth_message = json.loads(msg_in)
 
     # Check for valid access tokens.
-    token = auth_message['data']
-    if token in (TOKEN_JOB_COMPLETED,
-                 TOKEN_JOB_TRANSITION,
-                 TOKEN_TIMEOUT,
-                 TOKEN_WRONG_FORMAT,
-                 TOKEN_WEBSOCKET_RETRY_SUCCESS,
-                 TOKEN_WEBSOCKET_RETRY_FAILURE,
-                 TOKEN_WEBSOCKET_JOB_NOT_FOUND):
-        msg_out = json.dumps({'type': 'authenticated'})
-        await websocket.send(msg_out.encode('utf8'))
+    token = auth_message["data"]
+    if token in (
+        TOKEN_JOB_COMPLETED,
+        TOKEN_JOB_TRANSITION,
+        TOKEN_TIMEOUT,
+        TOKEN_WRONG_FORMAT,
+        TOKEN_WEBSOCKET_RETRY_SUCCESS,
+        TOKEN_WEBSOCKET_RETRY_FAILURE,
+        TOKEN_WEBSOCKET_JOB_NOT_FOUND,
+    ):
+        msg_out = json.dumps({"type": "authenticated"})
+        await websocket.send(msg_out.encode("utf8"))
     else:
         # Close the connection.
         await websocket.close()
@@ -68,23 +69,20 @@ async def websocket_handler(websocket, path):
 
 async def handle_token_job_completed(websocket):
     """Return a final job status, and close with 4002."""
-    msg_out = WebsocketResponseMethod(type_='job-status',
-                                      data={'status': 'COMPLETED'})
+    msg_out = WebsocketResponseMethod(type_="job-status", data={"status": "COMPLETED"})
 
-    await websocket.send(msg_out.as_json().encode('utf8'))
+    await websocket.send(msg_out.as_json().encode("utf8"))
     await websocket.close(code=4002)
 
 
 async def handle_token_job_transition(websocket):
     """Send several job status, and close with 4002."""
-    msg_out = WebsocketResponseMethod(type_='job-status',
-                                      data={'status': 'RUNNING'})
-    await websocket.send(msg_out.as_json().encode('utf8'))
+    msg_out = WebsocketResponseMethod(type_="job-status", data={"status": "RUNNING"})
+    await websocket.send(msg_out.as_json().encode("utf8"))
 
     await asyncio.sleep(1)
-    msg_out = WebsocketResponseMethod(type_='job-status',
-                                      data={'status': 'COMPLETED'})
-    await websocket.send(msg_out.as_json().encode('utf8'))
+    msg_out = WebsocketResponseMethod(type_="job-status", data={"status": "COMPLETED"})
+    await websocket.send(msg_out.as_json().encode("utf8"))
 
     await websocket.close(code=4002)
 
@@ -97,14 +95,14 @@ async def handle_token_timeout(websocket):
 
 async def handle_token_wrong_format(websocket):
     """Return a status in an invalid format."""
-    await websocket.send('INVALID'.encode('utf8'))
+    await websocket.send("INVALID".encode("utf8"))
     await websocket.close()
 
 
 async def handle_token_retry_success(websocket):
     """Close the socket once and force a retry."""
-    if not hasattr(handle_token_retry_success, 'retry_attempt'):
-        setattr(handle_token_retry_success, 'retry_attempt', True)
+    if not hasattr(handle_token_retry_success, "retry_attempt"):
+        setattr(handle_token_retry_success, "retry_attempt", True)
         await handle_token_retry_failure(websocket)
     else:
         await handle_token_job_completed(websocket)

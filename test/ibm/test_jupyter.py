@@ -12,21 +12,21 @@
 
 """Tests for Jupyter tools."""
 
-from unittest import mock
 from datetime import datetime, timedelta
+from unittest import mock
 
 from qiskit import transpile
 from qiskit.test.reference_circuits import ReferenceCircuits
-from qiskit_ibm.jupyter.qubits_widget import qubits_tab
-from qiskit_ibm.jupyter.config_widget import config_tab
-from qiskit_ibm.jupyter.gates_widget import gates_tab
-from qiskit_ibm.jupyter.jobs_widget import jobs_tab
-from qiskit_ibm.visualization.interactive.error_map import iplot_error_map
-from qiskit_ibm.jupyter.dashboard.backend_widget import make_backend_widget
-from qiskit_ibm.jupyter.dashboard.utils import BackendWithProviders
-from qiskit_ibm.jupyter.dashboard.job_widgets import create_job_widget
-from qiskit_ibm.jupyter.dashboard.watcher_monitor import _job_checker
 
+from qiskit_ibm_provider.jupyter.config_widget import config_tab
+from qiskit_ibm_provider.jupyter.dashboard.backend_widget import make_backend_widget
+from qiskit_ibm_provider.jupyter.dashboard.job_widgets import create_job_widget
+from qiskit_ibm_provider.jupyter.dashboard.utils import BackendWithProviders
+from qiskit_ibm_provider.jupyter.dashboard.watcher_monitor import _job_checker
+from qiskit_ibm_provider.jupyter.gates_widget import gates_tab
+from qiskit_ibm_provider.jupyter.jobs_widget import jobs_tab
+from qiskit_ibm_provider.jupyter.qubits_widget import qubits_tab
+from qiskit_ibm_provider.visualization.interactive.error_map import iplot_error_map
 from ..decorators import requires_provider
 from ..ibm_test_case import IBMTestCase
 
@@ -60,8 +60,8 @@ class TestBackendInfo(IBMTestCase):
             with self.subTest(backend=backend):
                 tab_str = str(qubits_tab(backend))
                 props = backend.properties().to_dict()
-                q0_t1 = round(props['qubits'][0][0]['value'], 3)
-                q0_t2 = round(props['qubits'][0][1]['value'], 3)
+                q0_t1 = round(props["qubits"][0][0]["value"], 3)
+                q0_t2 = round(props["qubits"][0][1]["value"], 3)
                 self.assertIn(str(q0_t1), tab_str)
                 self.assertIn(str(q0_t2), tab_str)
 
@@ -104,19 +104,23 @@ class TestIBMDashboard(IBMTestCase):
         """Test devices tab."""
         for backend in self.backends:
             with self.subTest(backend=backend):
-                provider_str = "{}/{}/{}".format(backend.hub, backend.group, backend.project)
+                provider_str = "{}/{}/{}".format(
+                    backend.hub, backend.group, backend.project
+                )
                 b_w_p = BackendWithProviders(backend=backend, providers=[provider_str])
                 make_backend_widget(b_w_p)
 
     def test_job_widget(self):
         """Test jobs tab."""
-        backend = self.provider.get_backend('ibmq_qasm_simulator')
+        backend = self.provider.get_backend("ibmq_qasm_simulator")
         job = backend.run(transpile(ReferenceCircuits.bell(), backend))
-        create_job_widget(mock.MagicMock(), job, backend=backend.name(), status=job.status().value)
+        create_job_widget(
+            mock.MagicMock(), job, backend=backend.name(), status=job.status().value
+        )
 
     def test_watcher_monitor(self):
         """Test job watcher."""
-        backend = self.provider.get_backend('ibmq_qasm_simulator')
+        backend = self.provider.get_backend("ibmq_qasm_simulator")
         job = backend.run(transpile(ReferenceCircuits.bell(), backend))
         _job_checker(job=job, status=job.status(), watcher=mock.MagicMock())
 
@@ -127,7 +131,8 @@ def _get_backends(provider):
     n_qubits = [1, 5]
     for n_qb in n_qubits:
         filtered_backends = provider.backends(
-            operational=True, simulator=False, n_qubits=n_qb)
+            operational=True, simulator=False, n_qubits=n_qb
+        )
         if filtered_backends:
             backends.append(filtered_backends[0])
     return backends

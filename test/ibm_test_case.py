@@ -12,19 +12,18 @@
 
 """Custom TestCase for IBM Provider."""
 
-import os
-import logging
 import inspect
+import logging
+import os
 import time
 from functools import partialmethod
 
 from qiskit.test.base import BaseQiskitTestCase
 
-from qiskit_ibm import QISKIT_IBM_PROVIDER_LOGGER_NAME
-from qiskit_ibm.api.clients.account import AccountClient
-from qiskit_ibm.apiconstants import ApiJobStatus, API_JOB_FINAL_STATES
-from qiskit_ibm.job.exceptions import IBMJobNotFoundError
-
+from qiskit_ibm_provider import QISKIT_IBM_PROVIDER_LOGGER_NAME
+from qiskit_ibm_provider.api.clients.account import AccountClient
+from qiskit_ibm_provider.apiconstants import ApiJobStatus, API_JOB_FINAL_STATES
+from qiskit_ibm_provider.job.exceptions import IBMJobNotFoundError
 from .utils import setup_test_logging
 
 
@@ -35,7 +34,7 @@ class IBMTestCase(BaseQiskitTestCase):
     def setUpClass(cls):
         super().setUpClass()
         cls.log = logging.getLogger(cls.__name__)
-        filename = '%s.log' % os.path.splitext(inspect.getfile(cls))[0]
+        filename = "%s.log" % os.path.splitext(inspect.getfile(cls))[0]
         setup_test_logging(cls.log, filename)
         cls._set_logging_level(logging.getLogger(QISKIT_IBM_PROVIDER_LOGGER_NAME))
 
@@ -43,8 +42,10 @@ class IBMTestCase(BaseQiskitTestCase):
     def simple_job_callback(cls, job_id, job_status, job, **kwargs):
         """A callback function that logs current job status."""
         # pylint: disable=unused-argument
-        queue_info = kwargs.get('queue_info', 'unknown')
-        cls.log.info("Job %s status is %s, queue_info is %s", job_id, job_status, queue_info)
+        queue_info = kwargs.get("queue_info", "unknown")
+        cls.log.info(
+            "Job %s status is %s, queue_info is %s", job_id, job_status, queue_info
+        )
 
     @classmethod
     def _set_logging_level(cls, logger: logging.Logger) -> None:
@@ -59,8 +60,13 @@ class IBMTestCase(BaseQiskitTestCase):
             except Exception as ex:  # pylint: disable=broad-except
                 logger.warning(
                     'Error while trying to set the level for the "%s" logger to %s. %s.',
-                    logger, os.getenv('LOG_LEVEL'), str(ex))
-        if not any(isinstance(handler, logging.StreamHandler) for handler in logger.handlers):
+                    logger,
+                    os.getenv("LOG_LEVEL"),
+                    str(ex),
+                )
+        if not any(
+            isinstance(handler, logging.StreamHandler) for handler in logger.handlers
+        ):
             logger.addHandler(logging.StreamHandler())
             logger.propagate = False
 
@@ -85,7 +91,7 @@ class IBMTestCase(BaseQiskitTestCase):
         if not failed:
             for client, job_id in self._jobs:
                 try:
-                    job_status = client.job_get(job_id)['status']
+                    job_status = client.job_get(job_id)["status"]
                     if ApiJobStatus(job_status) not in API_JOB_FINAL_STATES:
                         client.job_cancel(job_id)
                         time.sleep(1)
@@ -103,5 +109,5 @@ class IBMTestCase(BaseQiskitTestCase):
     def _recorded_submit(self, client, *args, **kwargs):
         """Record submitted jobs."""
         submit_info = self._saved_submit(client, *args, **kwargs)
-        self._jobs.append((client, submit_info['job_id']))
+        self._jobs.append((client, submit_info["job_id"]))
         return submit_info

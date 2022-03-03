@@ -12,22 +12,21 @@
 
 """Test for the Websocket client integration."""
 
-from unittest import mock
-from threading import Thread
 from queue import Queue
+from threading import Thread
+from unittest import mock
 
 from qiskit import transpile
-from qiskit.test.reference_circuits import ReferenceCircuits
-from qiskit.test import slow_test
 from qiskit.providers import JobTimeoutError
 from qiskit.providers.jobstatus import JobStatus
+from qiskit.test import slow_test
+from qiskit.test.reference_circuits import ReferenceCircuits
 
-from qiskit_ibm.api.clients import AccountClient, websocket
-
-from ...ibm_test_case import IBMTestCase
+from qiskit_ibm_provider.api.clients import AccountClient, websocket
 from ...decorators import requires_provider, requires_device
-from ...utils import most_busy_backend, cancel_job
+from ...ibm_test_case import IBMTestCase
 from ...proxy_server import MockProxyServer, use_proxies
+from ...utils import most_busy_backend, cancel_job
 
 
 class TestWebsocketIntegration(IBMTestCase):
@@ -43,19 +42,24 @@ class TestWebsocketIntegration(IBMTestCase):
         cls.hub = hub
         cls.group = group
         cls.project = project
-        cls.sim_backend = provider.get_backend('ibmq_qasm_simulator', hub=cls.hub,
-                                               group=cls.group, project=cls.project)
+        cls.sim_backend = provider.get_backend(
+            "ibmq_qasm_simulator", hub=cls.hub, group=cls.group, project=cls.project
+        )
         cls.bell = transpile(ReferenceCircuits.bell(), cls.sim_backend)
 
     def setUp(self):
         """Initial test setup."""
         super().setUp()
-        self.saved_status_polling = self.sim_backend._api_client._job_final_status_polling
+        self.saved_status_polling = (
+            self.sim_backend._api_client._job_final_status_polling
+        )
 
     def tearDown(self):
         """Test tear down."""
         super().tearDown()
-        self.sim_backend._api_client._job_final_status_polling = self.saved_status_polling
+        self.sim_backend._api_client._job_final_status_polling = (
+            self.saved_status_polling
+        )
 
     def _job_final_status_polling(self, *args, **kwargs):
         """Replaces the actual _job_final_status_polling and fails the test."""
@@ -70,7 +74,7 @@ class TestWebsocketIntegration(IBMTestCase):
         job._api_client._job_final_status_polling = self._job_final_status_polling
         result = job.result()
 
-        self.assertEqual(result.status, 'COMPLETED')
+        self.assertEqual(result.status, "COMPLETED")
 
     @slow_test
     @requires_device
@@ -108,7 +112,7 @@ class TestWebsocketIntegration(IBMTestCase):
 
         try:
             # Use fake websocket address.
-            job._api_client._credentials.websockets_url = 'wss://wss.localhost'
+            job._api_client._credentials.websockets_url = "wss://wss.localhost"
 
             # _wait_for_completion() should retry with http successfully
             # after getting websockets error.
@@ -122,10 +126,11 @@ class TestWebsocketIntegration(IBMTestCase):
         """Test http retry after websocket error due to a failed authentication."""
         job = self.sim_backend.run(self.bell)
 
-        with mock.patch.object(websocket.WebsocketAuthenticationMessage, 'as_json',
-                               return_value='foo'), \
-             mock.patch.object(AccountClient, 'job_status',
-                               side_effect=job._api_client.job_status) as mocked_wait:
+        with mock.patch.object(
+            websocket.WebsocketAuthenticationMessage, "as_json", return_value="foo"
+        ), mock.patch.object(
+            AccountClient, "job_status", side_effect=job._api_client.job_status
+        ) as mocked_wait:
             job._wait_for_completion()
             self.assertIs(job._status, JobStatus.DONE)
             mocked_wait.assert_called_with(job.job_id())
@@ -145,22 +150,30 @@ class TestWebsocketIntegration(IBMTestCase):
         saved_job_id = job._job_id
         saved_job_status = job._api_client.job_status
         # Use bad job ID to fail the status retrieval.
-        job._job_id = '12345'
+        job._job_id = "12345"
 
         # job.result() should retry with http successfully after getting websockets error.
-        with mock.patch.object(AccountClient, 'job_status',
-                               side_effect=_job_status_side_effect):
+        with mock.patch.object(
+            AccountClient, "job_status", side_effect=_job_status_side_effect
+        ):
             job._wait_for_completion()
             self.assertIs(
-                job._status, JobStatus.DONE,
-                "Job {} status is {} when it should be DONE.".format(job.job_id(), job._status))
+                job._status,
+                JobStatus.DONE,
+                "Job {} status is {} when it should be DONE.".format(
+                    job.job_id(), job._status
+                ),
+            )
 
     def test_websockets_timeout(self):
         """Test timeout checking status of a job via websockets."""
-        backend = most_busy_backend(self.provider, hub=self.hub,
-                                    group=self.group, project=self.project)
-        job = backend.run(transpile(ReferenceCircuits.bell(), backend),
-                          shots=backend.configuration().max_shots)
+        backend = most_busy_backend(
+            self.provider, hub=self.hub, group=self.group, project=self.project
+        )
+        job = backend.run(
+            transpile(ReferenceCircuits.bell(), backend),
+            shots=backend.configuration().max_shots,
+        )
 
         try:
             with self.assertRaises(JobTimeoutError):
@@ -178,16 +191,23 @@ class TestWebsocketIntegration(IBMTestCase):
             job._api_client._job_final_status_polling = self._job_final_status_polling
             job._wait_for_completion()
             if job._status is not JobStatus.DONE:
-                q.put("Job {} status should be DONE but is {}".format(
-                    job.job_id(), job._status.name))
+                q.put(
+                    "Job {} status should be DONE but is {}".format(
+                        job.job_id(), job._status.name
+                    )
+                )
 
         max_threads = 2
         result_q = Queue()
         job_threads = []
 
         for i in range(max_threads):
-            job_thread = Thread(target=_run_job_get_result, args=(result_q,),
-                                name="job_result_{}".format(i), daemon=True)
+            job_thread = Thread(
+                target=_run_job_get_result,
+                args=(result_q,),
+                name="job_result_{}".format(i),
+                daemon=True,
+            )
             job_thread.start()
             job_threads.append(job_thread)
 
@@ -205,20 +225,25 @@ class TestWebsocketIntegration(IBMTestCase):
 
         # Manually disable the non-websocket polling.
         job._api_client._job_final_status_polling = self._job_final_status_polling
-        with use_proxies(self.provider.backend._default_hgp, MockProxyServer.VALID_PROXIES):
+        with use_proxies(
+            self.provider.backend._default_hgp, MockProxyServer.VALID_PROXIES
+        ):
             result = job.result()
 
-        self.assertEqual(result.status, 'COMPLETED')
+        self.assertEqual(result.status, "COMPLETED")
 
     def test_websocket_proxy_invalid_port(self):
         """Test connecting to websocket via invalid proxy port."""
         MockProxyServer(self, self.log).start()
         job = self.sim_backend.run(self.bell, shots=1)
 
-        invalid_proxy = {'https': 'http://{}:{}'.format(MockProxyServer.PROXY_IP_ADDRESS,
-                                                        MockProxyServer.INVALID_PROXY_PORT)}
+        invalid_proxy = {
+            "https": "http://{}:{}".format(
+                MockProxyServer.PROXY_IP_ADDRESS, MockProxyServer.INVALID_PROXY_PORT
+            )
+        }
         with use_proxies(self.provider.backend._default_hgp, invalid_proxy):
-            with self.assertLogs('qiskit_ibm', 'INFO') as log_cm:
+            with self.assertLogs("qiskit_ibm_provider", "INFO") as log_cm:
                 job.wait_for_final_state()
 
-        self.assertIn("retrying using HTTP", ','.join(log_cm.output))
+        self.assertIn("retrying using HTTP", ",".join(log_cm.output))

@@ -12,23 +12,27 @@
 
 """Test for the Websocket client."""
 
-import sys
 import importlib
+import sys
 import threading
 
-from qiskit_ibm.api.exceptions import WebsocketError, WebsocketTimeoutError
-from qiskit_ibm.api.clients.websocket import WebsocketClient
-from qiskit_ibm.utils.utils import RefreshQueue
-from qiskit_ibm.credentials import Credentials
-from qiskit_ibm.api.clients.account import AccountClient
-
+from qiskit_ibm_provider.api.clients.account import AccountClient
+from qiskit_ibm_provider.api.clients.websocket import WebsocketClient
+from qiskit_ibm_provider.api.exceptions import WebsocketError, WebsocketTimeoutError
+from qiskit_ibm_provider.credentials import Credentials
+from qiskit_ibm_provider.utils.utils import RefreshQueue
+from .ws_handler import (
+    TOKEN_JOB_COMPLETED,
+    TOKEN_JOB_TRANSITION,
+    TOKEN_WRONG_FORMAT,
+    TOKEN_TIMEOUT,
+    TOKEN_WEBSOCKET_RETRY_SUCCESS,
+    TOKEN_WEBSOCKET_RETRY_FAILURE,
+    TOKEN_WEBSOCKET_JOB_NOT_FOUND,
+    websocket_handler,
+)
 from ...ibm_test_case import IBMTestCase
 from ...ws_server import MockWsServer
-from .ws_handler import (
-    TOKEN_JOB_COMPLETED, TOKEN_JOB_TRANSITION, TOKEN_WRONG_FORMAT,
-    TOKEN_TIMEOUT, TOKEN_WEBSOCKET_RETRY_SUCCESS,
-    TOKEN_WEBSOCKET_RETRY_FAILURE, TOKEN_WEBSOCKET_JOB_NOT_FOUND,
-    websocket_handler)
 
 
 class TestWebsocketClient(IBMTestCase):
@@ -48,7 +52,9 @@ class TestWebsocketClient(IBMTestCase):
 
         def _import_websocket():
             try:
-                importlib.reload(sys.modules["qiskit_ibm.api.clients.websocket"])
+                importlib.reload(
+                    sys.modules["qiskit_ibm_provider.api.clients.websocket"]
+                )
             except RuntimeError:
                 self.fail("Importing websocket in new thread failed!")
 
@@ -59,6 +65,7 @@ class TestWebsocketClient(IBMTestCase):
 
 class TestWebsocketClientMock(IBMTestCase):
     """Tests for the the websocket client against a mock server."""
+
     @classmethod
     def setUpClass(cls):
         """Initial class level setup."""
@@ -74,8 +81,7 @@ class TestWebsocketClientMock(IBMTestCase):
         cls.server.stop()
 
     def _get_ws_client(self, token=TOKEN_JOB_COMPLETED, url=MockWsServer.VALID_WS_URL):
-        cred = Credentials(token="", url="", websockets_url=url,
-                           access_token=token)
+        cred = Credentials(token="", url="", websockets_url=url, access_token=token)
         return WebsocketClient(url, cred, "job_id")
 
     def test_job_final_status(self):
@@ -83,21 +89,25 @@ class TestWebsocketClientMock(IBMTestCase):
         client = self._get_ws_client(TOKEN_JOB_COMPLETED)
         response = client.get_job_status()
         self.assertIsInstance(response, dict)
-        self.assertIn('status', response)
-        self.assertEqual(response['status'], 'COMPLETED')
+        self.assertIn("status", response)
+        self.assertEqual(response["status"], "COMPLETED")
 
     def test_job_transition(self):
         """Test retrieving a job that transitions to final status."""
         client = self._get_ws_client(TOKEN_JOB_TRANSITION)
         response = client.get_job_status()
         self.assertIsInstance(response, dict)
-        self.assertIn('status', response)
-        self.assertEqual(response['status'], 'COMPLETED')
+        self.assertIn("status", response)
+        self.assertEqual(response["status"], "COMPLETED")
 
     def test_timeout(self):
         """Test timeout during retrieving a job status."""
-        cred = Credentials(token="", url="", websockets_url=MockWsServer.VALID_WS_URL,
-                           access_token=TOKEN_TIMEOUT)
+        cred = Credentials(
+            token="",
+            url="",
+            websockets_url=MockWsServer.VALID_WS_URL,
+            access_token=TOKEN_TIMEOUT,
+        )
         account_client = AccountClient(cred)
         with self.assertRaises(WebsocketTimeoutError):
             account_client._job_final_status_websocket("job_id", timeout=2)
@@ -113,8 +123,8 @@ class TestWebsocketClientMock(IBMTestCase):
         client = self._get_ws_client(TOKEN_WEBSOCKET_RETRY_SUCCESS)
         response = client.get_job_status()
         self.assertIsInstance(response, dict)
-        self.assertIn('status', response)
-        self.assertEqual(response['status'], 'COMPLETED')
+        self.assertIn("status", response)
+        self.assertEqual(response["status"], "COMPLETED")
 
     def test_websocket_retry_failure(self):
         """Test exceeding the retry limit for retrieving a job status."""
@@ -131,8 +141,14 @@ class TestWebsocketClientMock(IBMTestCase):
     def test_websocket_status_queue(self):
         """Test status queue used by websocket client."""
         status_queue = RefreshQueue(maxsize=10)
-        cred = Credentials(token="", url="", websockets_url=MockWsServer.VALID_WS_URL,
-                           access_token=TOKEN_JOB_TRANSITION)
-        client = WebsocketClient(MockWsServer.VALID_WS_URL, cred, "job_id", status_queue)
+        cred = Credentials(
+            token="",
+            url="",
+            websockets_url=MockWsServer.VALID_WS_URL,
+            access_token=TOKEN_JOB_TRANSITION,
+        )
+        client = WebsocketClient(
+            MockWsServer.VALID_WS_URL, cred, "job_id", status_queue
+        )
         client.get_job_status()
         self.assertEqual(status_queue.qsize(), 2)
