@@ -25,6 +25,10 @@ style:
 test:
 	python -m unittest -v
 
+test-coverage:
+	coverage run -m unittest -v
+	coverage lcov
+
 test1:
 	python -m unittest -v test/ibm/test_ibm_backend.py test/ibm/test_account_client.py test/ibm/test_ibm_job_states.py test/ibm/test_tutorials.py test/ibm/test_basic_server_paths.py test/ibm/test_proxies.py test/ibm/test_ibm_integration.py test/ibm/test_ibm_logger.py test/ibm/test_filter_backends.py test/ibm/test_registration.py
 
