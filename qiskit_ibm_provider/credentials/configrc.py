@@ -195,7 +195,7 @@ def write_qiskit_rc(
         unrolled_credentials[_PREFERENCES_SECTION_NAME] = unrolled_pref
 
     # Write the configuration file.
-    with open(filename, "w") as config_file:
+    with open(filename, "w", encoding="utf-8") as config_file:
         config_parser = ConfigParser()
         config_parser.optionxform = str  # type: ignore
         config_parser.read_dict(unrolled_credentials)

@@ -143,7 +143,7 @@ def _job_summary(
         _id = job.job_id()
         _name = job.name()
         _status = job.status().name
-        if _year not in jobs_dates.keys():
+        if _year not in jobs_dates:
             jobs_dates[_year] = {}
 
         _month = _date.month

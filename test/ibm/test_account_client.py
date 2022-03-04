@@ -50,17 +50,17 @@ class TestAccountClient(IBMTestCase):
     def setUp(self):
         """Initial test setup."""
         super().setUp()
-        qr = QuantumRegister(2)
-        cr = ClassicalRegister(2)
-        self.qc1 = QuantumCircuit(qr, cr, name="qc1")
-        self.qc2 = QuantumCircuit(qr, cr, name="qc2")
-        self.qc1.h(qr)
-        self.qc2.h(qr[0])
-        self.qc2.cx(qr[0], qr[1])
-        self.qc1.measure(qr[0], cr[0])
-        self.qc1.measure(qr[1], cr[1])
-        self.qc2.measure(qr[0], cr[0])
-        self.qc2.measure(qr[1], cr[1])
+        quantum_register = QuantumRegister(2)
+        classical_register = ClassicalRegister(2)
+        self.qc1 = QuantumCircuit(quantum_register, classical_register, name="qc1")
+        self.qc2 = QuantumCircuit(quantum_register, classical_register, name="qc2")
+        self.qc1.h(quantum_register)
+        self.qc2.h(quantum_register[0])
+        self.qc2.cx(quantum_register[0], quantum_register[1])
+        self.qc1.measure(quantum_register[0], classical_register[0])
+        self.qc1.measure(quantum_register[1], classical_register[1])
+        self.qc2.measure(quantum_register[0], classical_register[0])
+        self.qc2.measure(quantum_register[1], classical_register[1])
         self.seed = 73846087
 
         self.fake_server = None
@@ -214,9 +214,9 @@ class TestAccountClientJobs(IBMTestCase):
     def _get_qobj(backend):
         """Return a Qobj."""
         # Create a circuit.
-        qr = QuantumRegister(2)
-        cr = ClassicalRegister(2)
-        qc1 = QuantumCircuit(qr, cr, name="qc1")
+        quantum_register = QuantumRegister(2)
+        classical_register = ClassicalRegister(2)
+        qc1 = QuantumCircuit(quantum_register, classical_register, name="qc1")
         seed = 73846087
 
         # Assemble the Qobj.

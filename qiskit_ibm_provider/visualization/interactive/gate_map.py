@@ -87,7 +87,7 @@ def iplot_gate_map(
     if isinstance(line_color, str):
         line_color = [line_color] * len(cmap) if cmap else []
 
-    if n_qubits in DEVICE_LAYOUTS.keys():
+    if n_qubits in DEVICE_LAYOUTS:
         grid_data = DEVICE_LAYOUTS[n_qubits]
     else:
         fig = go.Figure()

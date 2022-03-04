@@ -221,10 +221,7 @@ class BaseWebsocketClient(BaseClient, ABC):
 
                 self._current_retry += 1
                 if self._current_retry > retries:
-                    error_message = (
-                        "Max retries exceeded: Failed to establish a "
-                        f"websocket connection."
-                    )
+                    error_message = "Max retries exceeded: Failed to establish a websocket connection."
                     if self._error:
                         error_message += f" Error: {self._error}"
 

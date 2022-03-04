@@ -136,6 +136,6 @@ class TestBasicServerPaths(IBMTestCase):
                 limit_error = err
                 time.sleep(1)
 
-        self.fail(
+        return self.fail(
             "Unable to submit job after {} retries: {}".format(max_retry, limit_error)
         )

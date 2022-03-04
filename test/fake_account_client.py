@@ -164,7 +164,7 @@ class BaseFakeJob:
 
         time_per_step = {}
         timestamp = self._creation_date
-        for api_stat in API_STATUS_TO_INT:
+        for api_stat in API_STATUS_TO_INT:  # pylint: disable=consider-using-dict-items
             if API_STATUS_TO_INT[status] > API_STATUS_TO_INT[api_stat]:
                 time_per_step[api_stat.value] = timestamp.isoformat()
                 timestamp += timedelta(seconds=30)

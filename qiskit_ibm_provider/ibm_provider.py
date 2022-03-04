@@ -571,7 +571,7 @@ class IBMProvider(Provider):
             hub: Name of the hub.
             group: Name of the group.
             project: Name of the project.
-            kwargs: Simple filters that specify a ``True``/``False`` criteria in the
+            **kwargs: Simple filters that specify a ``True``/``False`` criteria in the
                 backend configuration, backends status, or provider credentials.
                 An example to get the operational backends with 5 qubits::
 

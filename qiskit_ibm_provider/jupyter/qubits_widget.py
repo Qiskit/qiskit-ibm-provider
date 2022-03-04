@@ -65,7 +65,7 @@ tr:nth-child(even) {background-color: #f6f6f6 !important;}
         for nduv in qubit_data:
             if nduv.name == "readout_error":
                 cali_data[nduv.name] = str(round(nduv.value * 100, 3))
-            elif nduv.name in cali_data.keys():
+            elif nduv.name in cali_data:
                 cali_data[nduv.name] = str(round(nduv.value, 3)) + " " + nduv.unit
 
         gate_names = []

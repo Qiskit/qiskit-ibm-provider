@@ -298,7 +298,9 @@ class TestIBMProviderAccounts(IBMTestCase):
                     # Save the account.
                     IBMProvider.save_account(token=self.token, url=QISKIT_IBM_API_URL)
                     # Add an invalid provider field to the account stored.
-                    with open(temp_qiskitrc.tmp_file.name, "a") as _file:
+                    with open(
+                        temp_qiskitrc.tmp_file.name, "a", encoding="utf-8"
+                    ) as _file:
                         _file.write("default_provider = {}".format(invalid_hgp))
                     # Ensure an error is raised if the stored provider is in an invalid format.
                     with self.assertRaises(IBMProviderError) as context_manager:
@@ -378,11 +380,11 @@ class TestIBMProviderServices(IBMTestCase, providers.ProviderTestCase):
     def setUp(self):
         """Initial test setup."""
         super().setUp()
-        qr = QuantumRegister(1)
-        cr = ClassicalRegister(1)
-        self.qc1 = QuantumCircuit(qr, cr, name="circuit0")
-        self.qc1.h(qr[0])
-        self.qc1.measure(qr, cr)
+        quantum_register = QuantumRegister(1)
+        classical_register = ClassicalRegister(1)
+        self.qc1 = QuantumCircuit(quantum_register, classical_register, name="circuit0")
+        self.qc1.h(quantum_register[0])
+        self.qc1.measure(quantum_register, classical_register)
 
     @requires_provider
     def _get_provider(self, provider, hub, group, project):
