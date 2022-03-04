@@ -13,7 +13,6 @@
 """Tests for the IBMProvider class."""
 
 import os
-from configparser import ConfigParser
 from datetime import datetime
 from unittest import skipIf, mock
 
@@ -30,10 +29,6 @@ from qiskit_ibm_provider.apiconstants import QISKIT_IBM_API_URL
 from qiskit_ibm_provider.credentials.hub_group_project_id import HubGroupProjectID
 from qiskit_ibm_provider.exceptions import (
     IBMProviderError,
-    IBMProviderValueError,
-    IBMProviderCredentialsInvalidUrl,
-    IBMProviderCredentialsInvalidToken,
-    IBMProviderCredentialsNotFound,
 )
 from qiskit_ibm_provider.ibm_backend import IBMSimulator, IBMBackend
 from qiskit_ibm_provider.ibm_backend_service import IBMBackendService

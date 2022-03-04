@@ -23,10 +23,10 @@ from qiskit.test import slow_test
 from qiskit.test.reference_circuits import ReferenceCircuits
 
 from qiskit_ibm_provider.api.clients import AccountClient, websocket
-from ...decorators import requires_provider, requires_device
-from ...ibm_test_case import IBMTestCase
-from ...proxy_server import MockProxyServer, use_proxies
-from ...utils import most_busy_backend, cancel_job
+from ..decorators import requires_provider, requires_device
+from ..ibm_test_case import IBMTestCase
+from ..proxy_server import MockProxyServer, use_proxies
+from ..utils import most_busy_backend, cancel_job
 
 
 class TestWebsocketIntegration(IBMTestCase):
