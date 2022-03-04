@@ -22,24 +22,26 @@ mypy:
 
 style:
 	black --check qiskit_ibm_provider test setup.py docs/tutorials
-test:
-	python -m unittest -v
 
-test-coverage:
-	coverage run -m unittest -v
+unit-test:
+	python -m unittest discover --verbose --top-level-directory . --start-directory test/unit
+
+unit-test-coverage:
+	coverage run -m unittest discover --verbose --top-level-directory . --start-directory test/unit
 	coverage lcov
 
+integration-test:
+	python -m unittest discover --verbose --top-level-directory . --start-directory test/integration
+
 test1:
-	python -m unittest -v test/ibm/test_ibm_backend.py test/ibm/test_account_client.py test/ibm/test_ibm_job_states.py test/ibm/test_tutorials.py test/ibm/test_basic_server_paths.py test/ibm/test_proxies.py test/ibm/test_ibm_integration.py test/ibm/test_ibm_logger.py test/ibm/test_filter_backends.py test/ibm/test_registration.py
+	python -m unittest -v test/integration/test_ibm_backend.py test/integration/test_account_client.py test/integration/test_ibm_job_states.py test/integration/test_tutorials.py test/integration/test_basic_server_paths.py test/integration/test_proxies.py test/integration/test_ibm_integration.py test/integration/test_ibm_logger.py test/integration/test_filter_backends.py test/integration/test_registration.py
 
 test2:
-	python -m unittest -v test/ibm/test_ibm_qasm_simulator.py test/ibm/test_serialization.py test/ibm/test_jupyter.py test/ibm/test_composite_job.py test/ibm/test_ibm_provider.py
+	python -m unittest -v test/integration/test_ibm_qasm_simulator.py test/integration/test_serialization.py test/integration/test_jupyter.py test/integration/test_composite_job.py test/integration/test_ibm_provider.py
 
 test3:
-	python -m unittest -v test/ibm/test_ibm_job_attributes.py test/ibm/test_ibm_job.py test/ibm/websocket/test_websocket.py test/ibm/websocket/test_websocket_integration.py
+	python -m unittest -v test/integration/test_ibm_job_attributes.py test/integration/test_ibm_job.py test/integration/websocket/test_websocket.py test/integration/websocket/test_websocket_integration.py
 
-runtime_integration:
-	python -m unittest -v test/ibm/runtime/test_runtime_integration.py
 
 black:
 	black qiskit_ibm_provider test setup.py docs/tutorials

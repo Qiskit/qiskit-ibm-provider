@@ -21,7 +21,7 @@ from qiskit_ibm_provider.api.clients.websocket import WebsocketClient
 from qiskit_ibm_provider.api.exceptions import WebsocketError, WebsocketTimeoutError
 from qiskit_ibm_provider.credentials import Credentials
 from qiskit_ibm_provider.utils.utils import RefreshQueue
-from .ws_handler import (
+from .utils.ws_handler import (
     TOKEN_JOB_COMPLETED,
     TOKEN_JOB_TRANSITION,
     TOKEN_WRONG_FORMAT,
@@ -31,8 +31,8 @@ from .ws_handler import (
     TOKEN_WEBSOCKET_JOB_NOT_FOUND,
     websocket_handler,
 )
-from ...ibm_test_case import IBMTestCase
-from ...ws_server import MockWsServer
+from ..ibm_test_case import IBMTestCase
+from ..ws_server import MockWsServer
 
 
 class TestWebsocketClient(IBMTestCase):
