@@ -39,7 +39,7 @@ jobs:
           pip install -c constraints.txt -e .
           pip install -U -c constraints.txt -r requirements-dev.txt
       - name: Run Tests
-        run: make test
+        run: make integration-test
   terra-main:
     name: terra-main
     runs-on: macOS-latest
@@ -66,4 +66,4 @@ jobs:
           pip install -U git+https://github.com/Qiskit/qiskit-terra.git
           pip install -U git+https://github.com/Qiskit/qiskit-aer.git
       - name: Run Tests
-        run: make test
+        run: make integration-test
