@@ -17,12 +17,12 @@ IBM Quantum Provider (:mod:`qiskit_ibm_provider`)
 
 .. currentmodule:: qiskit_ibm_provider
 
-Modules representing the IBM Quantum Provider.
+Modules representing the Qiskit IBM Quantum Provider.
 
 Logging
 =====================
 
-The IBM Quantum Provider uses the ``qiskit_ibm_provider`` logger.
+The qiskit-ibm-provider uses the ``qiskit_ibm_provider`` logger.
 
 Two environment variables can be used to control the logging:
 

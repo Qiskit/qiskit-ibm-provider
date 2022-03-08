@@ -12,7 +12,7 @@ assignees: ''
 
 ### Information
 
-- **Qiskit IBM Provider version**:
+- **qiskit-ibm-provider version**:
 - **Python version**:
 - **Operating system**:
 

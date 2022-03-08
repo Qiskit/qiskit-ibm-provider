@@ -39,8 +39,8 @@ import os
 os.environ['QISKIT_DOCS'] = 'TRUE'
 
 # -- Project information -----------------------------------------------------
-project = 'Qiskit IBM Provider'
-copyright = '2021, Qiskit Development Team'  # pylint: disable=redefined-builtin
+project = 'Qiskit IBM Quantum Provider'
+copyright = '2022, Qiskit Development Team'  # pylint: disable=redefined-builtin
 author = 'Qiskit Development Team'
 
 # The short X.Y version

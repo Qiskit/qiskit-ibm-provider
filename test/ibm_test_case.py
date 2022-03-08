@@ -28,7 +28,7 @@ from .utils import setup_test_logging
 
 
 class IBMTestCase(BaseQiskitTestCase):
-    """Custom TestCase for use with the IBM Provider."""
+    """Custom TestCase for use with qiskit-ibm-provider."""
 
     @classmethod
     def setUpClass(cls):
