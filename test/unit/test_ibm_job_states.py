@@ -20,6 +20,7 @@ from concurrent import futures
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import suppress
 from unittest import mock
+from typing import List, Any, Dict
 
 from qiskit import transpile
 from qiskit.providers import JobTimeoutError
@@ -38,7 +39,7 @@ from qiskit_ibm_provider.ibm_backend import IBMBackend
 from qiskit_ibm_provider.job.exceptions import IBMJobApiError, IBMJobInvalidStateError
 from ..jobtestcase import JobTestCase
 
-MOCKED_ERROR_RESULT = {
+MOCKED_ERROR_RESULT: Dict[str, Any] = {
     "qObjectResult": {
         "backend_name": "fake_backend",
         "backend_version": "0.1.1",
@@ -408,7 +409,7 @@ class BaseFakeAPI:
     class NoMoreStatesError(Exception):
         """Raised when it is not possible to progress more."""
 
-    _job_status = []
+    _job_status: List[Any] = []
 
     _can_cancel = False
 

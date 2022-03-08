@@ -110,10 +110,10 @@ class TestCredentials(IBMTestCase):
                     "QISKIT_IBM_API_URL": "ENVIRON_URL",
                 }
             ):
-                credentials, _ = discover_credentials()
+                credentials, _ = discover_credentials()  # type: ignore
 
-        self.assertEqual(len(credentials), 1)
-        self.assertEqual(list(credentials.values())[0].token, "ENVIRON_TOKEN")
+        self.assertEqual(len(credentials), 1)  # type: ignore
+        self.assertEqual(list(credentials.values())[0].token, "ENVIRON_TOKEN")  # type: ignore
 
 
 class TestCredentialsKwargs(IBMTestCase):

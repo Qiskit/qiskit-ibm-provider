@@ -30,7 +30,7 @@ from qiskit_ibm_provider.ibm_provider import IBMProvider
 from qiskit_ibm_provider.job import IBMJob
 
 
-def setup_test_logging(logger: logging.Logger, filename: str):
+def setup_test_logging(logger: logging.Logger, filename: str) -> None:
     """Set logging to file and stdout for a logger.
 
     Args:
