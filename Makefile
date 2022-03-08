@@ -18,7 +18,7 @@ lint:
 	tools/verify_headers.py qiskit_ibm_provider test
 
 mypy:
-	mypy --module qiskit_ibm_provider
+	mypy --module qiskit_ibm_provider --package test
 
 style:
 	black --check qiskit_ibm_provider test setup.py docs/tutorials

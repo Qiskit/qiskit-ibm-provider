@@ -16,6 +16,7 @@ import inspect
 import logging
 import os
 import time
+from typing import List, Any
 from functools import partialmethod
 
 from qiskit.test.base import BaseQiskitTestCase
@@ -74,9 +75,9 @@ class IBMTestCase(BaseQiskitTestCase):
         """Test level setup."""
         super().setUp()
         # Record submitted jobs.
-        self._jobs = []
+        self._jobs: List[Any] = []
         self._saved_submit = AccountClient.job_submit
-        AccountClient.job_submit = partialmethod(self._recorded_submit)
+        AccountClient.job_submit = partialmethod(self._recorded_submit)  # type: ignore
 
     def tearDown(self) -> None:
         """Test level tear down."""
