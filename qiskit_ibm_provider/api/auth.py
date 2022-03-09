@@ -18,6 +18,24 @@ from requests import PreparedRequest
 from requests.auth import AuthBase
 
 
+class CloudAuth(AuthBase):
+    """Attaches IBM Cloud Authentication to the given Request object."""
+
+    def __init__(self, api_key: str, crn: str):
+        self.api_key = api_key
+        self.crn = crn
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, CloudAuth):
+            return all(
+                [
+                    self.api_key == other.api_key,
+                    self.crn == other.crn,
+                ]
+            )
+        return False
+
+
 class LegacyAuth(AuthBase):
     """Attaches Legacy Authentication to the given Request object."""
 

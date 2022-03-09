@@ -11,7 +11,7 @@
 # that they have been altered from the originals.
 
 """
-Account management functionality related to the IBM Runtime Services.
+Account management functionality.
 """
 
 from .account import Account, AccountType
@@ -20,5 +20,4 @@ from .exceptions import (
     AccountNotFoundError,
     AccountAlreadyExistsError,
     InvalidAccountError,
-    CloudResourceNameResolutionError,
 )
