@@ -1,5 +1,5 @@
 *****************************************
-Qiskit IBM Quantum Provider API Reference
+qiskit-ibm-provider API Reference
 *****************************************
 
 .. toctree::

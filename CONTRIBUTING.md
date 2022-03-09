@@ -7,11 +7,11 @@ included in the qiskit documentation:
 https://qiskit.org/documentation/contributing_to_qiskit.html
 
 
-Contributing to Qiskit IBM Provider
+Contributing to qiskit-ibm-provider
 ---------------------------
 
 In addition to the general guidelines there are specific details for
-contributing to the Qiskit IBM Provider, these are documented below.
+contributing to the qiskit-ibm-provider, these are documented below.
 
 ### Pull request checklist
 

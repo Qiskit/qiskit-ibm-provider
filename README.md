@@ -1,4 +1,4 @@
-# Qiskit IBM Provider
+# Qiskit IBM Quantum Provider
 
 [![License](https://img.shields.io/github/license/Qiskit/qiskit-ibm-provider.svg?style=popout-square)](https://opensource.org/licenses/Apache-2.0)
 [![CI](https://github.com/Qiskit/qiskit-ibm-provider/actions/workflows/ci.yml/badge.svg)](https://github.com/Qiskit/qiskit-ibm-provider/actions/workflows/ci.yml)
@@ -79,7 +79,7 @@ Now you're set up and ready to check out some of the tutorials.
 
 ## Contribution Guidelines
 
-If you'd like to contribute to IBM Quantum Provider, please take a look at our
+If you'd like to contribute to qiskit-ibm-provider, please take a look at our
 [contribution guidelines]. This project adheres to Qiskit's [code of conduct].
 By participating, you are expect to uphold to this code.
 

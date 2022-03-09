@@ -44,7 +44,7 @@ with open(README_PATH) as readme_file:
 setuptools.setup(
     name="qiskit-ibm-provider",
     version=VERSION,
-    description="Qiskit provider for accessing the quantum devices and "
+    description="Qiskit IBM Quantum Provider for accessing the quantum devices and "
     "simulators at IBM",
     long_description=README,
     long_description_content_type="text/markdown",
