@@ -15,7 +15,7 @@
 import os
 from contextlib import ContextDecorator, contextmanager
 from tempfile import NamedTemporaryFile
-from typing import Optional, Dict
+from typing import Optional, Dict, Any
 from unittest.mock import patch
 
 from qiskit_ibm_provider import IBMProvider
@@ -124,7 +124,7 @@ class no_file(ContextDecorator):
 
 
 def _mock_initialize_hgps(
-    self, credentials: Credentials, preferences: Optional[Dict] = None
+    self: Any, credentials: Credentials, preferences: Optional[Dict] = None
 ) -> None:
     """Mock ``_initialize_hgps()``, just storing the credentials."""
     hgp = {"credentials": credentials}
