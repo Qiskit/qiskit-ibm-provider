@@ -392,7 +392,6 @@ class IBMBackendService:
             backend = IBMRetiredBackend.from_name(
                 backend_name=backend_name,
                 provider=self._provider,
-                credentials=self._provider.credentials,
                 api=self._default_hgp._api_client,
             )
         try:

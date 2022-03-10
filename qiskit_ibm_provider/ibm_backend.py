@@ -42,7 +42,6 @@ from .api.exceptions import ApiError
 from .apiconstants import ApiJobStatus, API_JOB_FINAL_STATES
 from .backendjoblimit import BackendJobLimit
 from .backendreservation import BackendReservation
-from .credentials import Credentials
 from .exceptions import (
     IBMBackendError,
     IBMBackendValueError,
@@ -113,7 +112,6 @@ class IBMBackend(Backend):
         self,
         configuration: Union[QasmBackendConfiguration, PulseBackendConfiguration],
         provider: "ibm_provider.IBMProvider",
-        credentials: Credentials,
         api_client: AccountClient,
     ) -> None:
         """IBMBackend constructor.
@@ -121,16 +119,11 @@ class IBMBackend(Backend):
         Args:
             configuration: Backend configuration.
             provider: IBM Quantum account provider.
-            credentials: IBM Quantum credentials.
             api_client: IBM Quantum client used to communicate with the server.
         """
         super().__init__(provider=provider, configuration=configuration)
 
         self._api_client = api_client
-        self._credentials = credentials
-        self.hub = credentials.hub
-        self.group = credentials.group
-        self.project = credentials.project
 
         # Attributes used by caching functions.
         self._properties = None
@@ -836,7 +829,6 @@ class IBMRetiredBackend(IBMBackend):
         self,
         configuration: Union[QasmBackendConfiguration, PulseBackendConfiguration],
         provider: "ibm_provider.IBMProvider",
-        credentials: Credentials,
         api_client: AccountClient,
     ) -> None:
         """IBMRetiredBackend constructor.
@@ -847,7 +839,7 @@ class IBMRetiredBackend(IBMBackend):
             credentials: IBM Quantum credentials.
             api_client: IBM Quantum client used to communicate with the server.
         """
-        super().__init__(configuration, provider, credentials, api_client)
+        super().__init__(configuration, provider, api_client)
         self._status = BackendStatus(
             backend_name=self.name(),
             backend_version=self.configuration().backend_version,
@@ -906,7 +898,6 @@ class IBMRetiredBackend(IBMBackend):
         cls,
         backend_name: str,
         provider: "ibm_provider.IBMProvider",
-        credentials: Credentials,
         api: AccountClient,
     ) -> "IBMRetiredBackend":
         """Return a retired backend from its name."""
@@ -924,4 +915,4 @@ class IBMRetiredBackend(IBMBackend):
             gates=[GateConfig(name="TODO", parameters=[], qasm_def="TODO")],
             coupling_map=[[0, 1]],
         )
-        return cls(configuration, provider, credentials, api)
+        return cls(configuration, provider, api)
