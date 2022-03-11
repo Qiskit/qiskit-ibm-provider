@@ -30,7 +30,6 @@ from .exceptions import IBMAccountError
 from .exceptions import (
     IBMNotAuthorizedError,
     IBMInputValueError,
-    IBMProviderError,
 )
 from .hub_group_project import HubGroupProject  # pylint: disable=cyclic-import
 from .ibm_backend import IBMBackend  # pylint: disable=cyclic-import
@@ -263,7 +262,9 @@ class IBMProvider(Provider):
             # Build the hgp.
             try:
                 hgp = HubGroupProject(
-                    client_params=hgp_params, instance=hgp_params.instance
+                    client_params=hgp_params,
+                    instance=hgp_params.instance,
+                    provider=self,
                 )
                 hgps[hgp.name] = hgp
             except Exception:  # pylint: disable=broad-except

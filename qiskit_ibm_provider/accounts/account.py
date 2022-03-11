@@ -20,7 +20,7 @@ from requests.auth import AuthBase
 from typing_extensions import Literal
 
 from .exceptions import InvalidAccountError
-from ..api.auth import LegacyAuth, CloudAuth
+from ..api.auth import LegacyAuth
 from ..proxies import ProxyConfiguration
 from ..utils.hgp import from_instance_format
 
@@ -84,9 +84,6 @@ class Account:
 
     def get_auth_handler(self) -> AuthBase:
         """Returns the respective authentication handler."""
-        if self.auth == "cloud":
-            return CloudAuth(api_key=self.token, crn=self.instance)
-
         return LegacyAuth(access_token=self.token)
 
     def __eq__(self, other: object) -> bool:

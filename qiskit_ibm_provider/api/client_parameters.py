@@ -14,7 +14,7 @@
 
 from typing import Dict, Optional, Any, Union
 
-from ..api.auth import LegacyAuth, CloudAuth
+from ..api.auth import LegacyAuth
 from ..proxies import ProxyConfiguration
 
 TEMPLATE_IBM_HUBS = "{prefix}/Network/{hub}/Groups/{group}/Projects/{project}"
@@ -50,11 +50,8 @@ class ClientParameters:
         self.proxies = proxies
         self.verify = verify
 
-    def get_auth_handler(self) -> Union[CloudAuth, LegacyAuth]:
+    def get_auth_handler(self) -> LegacyAuth:
         """Returns the respective authentication handler."""
-        if self.auth_type == "cloud":
-            return CloudAuth(api_key=self.token, crn=self.instance)
-
         return LegacyAuth(access_token=self.token)
 
     def connection_parameters(self) -> Dict[str, Any]:

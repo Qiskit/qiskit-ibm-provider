@@ -50,6 +50,7 @@ class AccountClient(BaseClient):
         self._session = RetrySession(
             params.url, auth=params.get_auth_handler(), **params.connection_parameters()
         )
+        self._params = params
         hub, group, project = from_instance_format(params.instance)
         # base_api is used to handle endpoints that don't include h/g/p.
         # account_api is for h/g/p.
@@ -410,8 +411,8 @@ class AccountClient(BaseClient):
             WebsocketTimeoutError: If the timeout has been reached.
         """
         ws_client = WebsocketClient(
-            websocket_url=self._credentials.websockets_url.rstrip("/"),
-            credentials=self._credentials,
+            websocket_url=self._params.url.replace("https", "wss").rstrip("/"),
+            client_params=self._params,
             job_id=job_id,
             message_queue=status_queue,
         )

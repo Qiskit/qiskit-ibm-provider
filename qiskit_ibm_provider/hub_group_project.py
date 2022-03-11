@@ -18,6 +18,7 @@ from typing import Any, Dict, Optional
 
 from qiskit_ibm_provider import (  # pylint: disable=unused-import
     ibm_backend,
+    ibm_provider,
 )
 
 from .api.clients import AccountClient
@@ -35,6 +36,7 @@ class HubGroupProject:
         self,
         client_params: ClientParameters,
         instance: str,
+        provider: "ibm_provider.IBMProvider",
     ) -> None:
         """HubGroupProject constructor
 
@@ -43,6 +45,7 @@ class HubGroupProject:
             instance: Hub/group/project.
         """
         self._api_client = AccountClient(client_params)
+        self._provider = provider
         # Initialize the internal list of backends.
         self._backends: Dict[str, "ibm_backend.IBMBackend"] = {}
         self._hub, self._group, self._project = from_instance_format(instance)
@@ -84,6 +87,7 @@ class HubGroupProject:
             ret[config.backend_name] = ibm_backend.IBMBackend(
                 configuration=config,
                 api_client=self._api_client,
+                provider=self._provider,
             )
         return ret
 
