@@ -20,7 +20,7 @@ from tempfile import NamedTemporaryFile
 from unittest.mock import patch
 
 from qiskit_ibm_provider.accounts import management
-from qiskit_ibm_provider.accounts.account import CLOUD_API_URL, LEGACY_API_URL
+from qiskit_ibm_provider.accounts.account import LEGACY_API_URL
 
 
 class custom_envs(ContextDecorator):
@@ -99,7 +99,7 @@ class no_file(ContextDecorator):
 
 
 class temporary_account_config_file(ContextDecorator):
-    """Context manager that uses a temporary qiskitrc."""
+    """Context manager that uses a temporary account configuration file."""
 
     # pylint: disable=invalid-name
 
@@ -127,7 +127,7 @@ class temporary_account_config_file(ContextDecorator):
 
 def get_account_config_contents(
     name=None,
-    auth="cloud",
+    auth="legacy",
     token=None,
     url=None,
     instance=None,
@@ -145,7 +145,7 @@ def get_account_config_contents(
             else management._DEFAULT_ACCOUNT_NAME_LEGACY
         )
     if url is None:
-        url = CLOUD_API_URL if auth == "cloud" else LEGACY_API_URL
+        url = LEGACY_API_URL
     out = {
         name: {
             "auth": auth,

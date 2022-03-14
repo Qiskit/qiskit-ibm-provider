@@ -383,9 +383,7 @@ class TestIBMJobStates(JobTestCase):
 
     def run_with_api(self, api):
         """Creates a new ``IBMJob`` running with the provided API object."""
-        backend = IBMBackend(
-            FakeBogota().configuration(), mock.Mock(), mock.Mock(), api_client=api
-        )
+        backend = IBMBackend(FakeBogota().configuration(), mock.Mock(), api_client=api)
         circuit = transpile(ReferenceCircuits.bell())
         self._current_api = api
         self._current_qjob = backend.run(circuit)

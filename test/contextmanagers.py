@@ -14,15 +14,10 @@
 
 import os
 from contextlib import ContextDecorator, contextmanager
-from tempfile import NamedTemporaryFile
 from typing import Optional, Dict, Any
 from unittest.mock import patch
 
 from qiskit_ibm_provider import IBMProvider
-from qiskit_ibm_provider.credentials import configrc, Credentials
-from qiskit_ibm_provider.credentials.environ import VARIABLES_MAP
-
-CREDENTIAL_ENV_VARS = VARIABLES_MAP.keys()
 
 
 class custom_envs(ContextDecorator):
@@ -76,29 +71,6 @@ class no_envs(ContextDecorator):
         os.environ = self.os_environ_original
 
 
-class custom_qiskitrc(ContextDecorator):
-    """Context manager that uses a temporary qiskitrc."""
-
-    # pylint: disable=invalid-name
-
-    def __init__(self, contents=b""):
-        # Create a temporary file with the contents.
-        self.tmp_file = NamedTemporaryFile()
-        self.tmp_file.write(contents)
-        self.tmp_file.flush()
-        self.default_qiskitrc_file_original = configrc.DEFAULT_QISKITRC_FILE
-
-    def __enter__(self):
-        # Temporarily modify the default location of the qiskitrc file.
-        configrc.DEFAULT_QISKITRC_FILE = self.tmp_file.name
-        return self
-
-    def __exit__(self, *exc):
-        # Delete the temporary file and restore the default location.
-        self.tmp_file.close()
-        configrc.DEFAULT_QISKITRC_FILE = self.default_qiskitrc_file_original
-
-
 class no_file(ContextDecorator):
     """Context manager that disallows access to a file."""
 
@@ -123,15 +95,15 @@ class no_file(ContextDecorator):
         return self.isfile_original(filename_)
 
 
-def _mock_initialize_hgps(
-    self: Any, credentials: Credentials, preferences: Optional[Dict] = None
-) -> None:
+def _mock_initialize_hgps(self: Any, preferences: Optional[Dict] = None) -> None:
     """Mock ``_initialize_hgps()``, just storing the credentials."""
-    hgp = {"credentials": credentials}
+    # TODO - update mock initialization
+    hgp: Any = {}
     self._hgp = hgp
     self._hgps = {}
     if preferences:
-        credentials.preferences = preferences.get(credentials.unique_id(), {})
+        pass
+        # credentials.preferences = preferences.get(credentials.unique_id(), {})
 
 
 @contextmanager

@@ -25,7 +25,7 @@ _DEFAULT_ACCOUNT_CONFIG_JSON_FILE = os.path.join(
 _DEFAULT_ACCOUNT_NAME = "default"
 _DEFAULT_ACCOUNT_NAME_LEGACY = "default-legacy"
 _DEFAULT_ACCOUNT_NAME_CLOUD = "default-cloud"
-_DEFAULT_ACCOUNT_TYPE: AccountType = "cloud"
+_DEFAULT_ACCOUNT_TYPE: AccountType = "legacy"
 _ACCOUNT_TYPES = [_DEFAULT_ACCOUNT_TYPE, "legacy"]
 
 

@@ -12,7 +12,7 @@
 
 """Represent IBM Quantum account client parameters."""
 
-from typing import Dict, Optional, Any, Union
+from typing import Dict, Optional, Any
 
 from ..api.auth import LegacyAuth
 from ..proxies import ProxyConfiguration
@@ -26,7 +26,6 @@ class ClientParameters:
 
     def __init__(
         self,
-        auth_type: str,
         token: str,
         url: str = None,
         instance: Optional[str] = None,
@@ -36,7 +35,6 @@ class ClientParameters:
         """ClientParameters constructor.
 
         Args:
-            auth_type: Authentication type. ``cloud`` or ``legacy``.
             token: IBM Quantum API token.
             url: IBM Quantum URL (gets replaced with a new-style URL with hub, group, project).
             instance: Service instance to use.
@@ -45,7 +43,6 @@ class ClientParameters:
         """
         self.token = token
         self.instance = instance
-        self.auth_type = auth_type
         self.url = url
         self.proxies = proxies
         self.verify = verify

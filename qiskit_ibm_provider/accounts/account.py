@@ -27,7 +27,6 @@ from ..utils.hgp import from_instance_format
 AccountType = Optional[Literal["cloud", "legacy"]]
 
 LEGACY_API_URL = "https://auth.quantum-computing.ibm.com/api"
-CLOUD_API_URL = "https://cloud.ibm.com"
 logger = logging.getLogger(__name__)
 
 
@@ -53,7 +52,7 @@ class Account:
             proxies: Proxy configuration.
             verify: Whether to verify server's TLS certificate.
         """
-        resolved_url = url or (LEGACY_API_URL if auth == "legacy" else CLOUD_API_URL)
+        resolved_url = url or LEGACY_API_URL
 
         self.auth = auth
         self.token = token

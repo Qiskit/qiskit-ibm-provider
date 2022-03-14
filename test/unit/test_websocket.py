@@ -17,9 +17,9 @@ import sys
 import threading
 
 from qiskit_ibm_provider.api.clients.account import AccountClient
+from qiskit_ibm_provider.api.client_parameters import ClientParameters
 from qiskit_ibm_provider.api.clients.websocket import WebsocketClient
 from qiskit_ibm_provider.api.exceptions import WebsocketError, WebsocketTimeoutError
-from qiskit_ibm_provider.credentials import Credentials
 from qiskit_ibm_provider.utils.utils import RefreshQueue
 from .utils.ws_handler import (
     TOKEN_JOB_COMPLETED,
@@ -41,7 +41,7 @@ class TestWebsocketClient(IBMTestCase):
     def test_invalid_url(self):
         """Test connecting to an invalid URL."""
         ws_url = f"wss://{MockWsServer.WS_IP_ADDRESS}:{MockWsServer.WS_INVALID_PORT}"
-        cred = Credentials(token="my_token", url="", websockets_url=ws_url)
+        cred = ClientParameters(token="my_token", url=ws_url)
         client = WebsocketClient(ws_url, cred, "job_id")
 
         with self.assertRaises(WebsocketError):
@@ -81,7 +81,7 @@ class TestWebsocketClientMock(IBMTestCase):
         cls.server.stop()
 
     def _get_ws_client(self, token=TOKEN_JOB_COMPLETED, url=MockWsServer.VALID_WS_URL):
-        cred = Credentials(token="", url="", websockets_url=url, access_token=token)
+        cred = ClientParameters(token=token, url=url)
         return WebsocketClient(url, cred, "job_id")
 
     def test_job_final_status(self):
@@ -102,11 +102,8 @@ class TestWebsocketClientMock(IBMTestCase):
 
     def test_timeout(self):
         """Test timeout during retrieving a job status."""
-        cred = Credentials(
-            token="",
-            url="",
-            websockets_url=MockWsServer.VALID_WS_URL,
-            access_token=TOKEN_TIMEOUT,
+        cred = ClientParameters(
+            token=TOKEN_TIMEOUT, url=MockWsServer.VALID_WS_URL, instance="h/g/p"
         )
         account_client = AccountClient(cred)
         with self.assertRaises(WebsocketTimeoutError):
@@ -141,11 +138,9 @@ class TestWebsocketClientMock(IBMTestCase):
     def test_websocket_status_queue(self):
         """Test status queue used by websocket client."""
         status_queue = RefreshQueue(maxsize=10)
-        cred = Credentials(
-            token="",
-            url="",
-            websockets_url=MockWsServer.VALID_WS_URL,
-            access_token=TOKEN_JOB_TRANSITION,
+        cred = ClientParameters(
+            token=TOKEN_JOB_TRANSITION,
+            url=MockWsServer.VALID_WS_URL,
         )
         client = WebsocketClient(
             MockWsServer.VALID_WS_URL, cred, "job_id", status_queue

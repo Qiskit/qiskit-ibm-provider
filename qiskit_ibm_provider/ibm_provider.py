@@ -164,7 +164,6 @@ class IBMProvider(Provider):
         )
 
         self._client_params = ClientParameters(
-            auth_type=self._account.auth,
             token=self._account.token,
             url=self._account.url,
             instance=self._account.instance,
@@ -249,7 +248,6 @@ class IBMProvider(Provider):
         for hub_info in user_hubs:
             # Build credentials.
             hgp_params = ClientParameters(
-                auth_type=self._account.auth,
                 token=auth_client.current_access_token(),
                 url=service_urls["http"],
                 instance=to_instance_format(
