@@ -7,7 +7,6 @@ qiskit-ibm-provider API Reference
 
    ibm_provider
    ibm_job
-   ibm_credentials
    ibm_visualization
    ibm_jupyter
    ibm_utils
