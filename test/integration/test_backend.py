@@ -135,7 +135,7 @@ class TestIBMBackend(IBMTestCase):
         )
         if not backends:
             raise SkipTest("Skipping pulse test since no pulse backend found.")
-        #
+
         backend = backends[0]
         backend.options.shots = 2048
         backend.set_options(
