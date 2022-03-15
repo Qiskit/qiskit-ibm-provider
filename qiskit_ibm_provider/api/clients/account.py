@@ -19,10 +19,10 @@ from threading import Timer
 from typing import List, Dict, Any, Optional, Union
 
 from qiskit_ibm_provider.apiconstants import API_JOB_FINAL_STATES, ApiJobStatus
-from qiskit_ibm_provider.credentials import Credentials
 from qiskit_ibm_provider.utils.utils import RefreshQueue
 from .base import BaseClient
 from .websocket import WebsocketClient, WebsocketClientCloseCode
+from ..client_parameters import ClientParameters
 from ..exceptions import ApiIBMProtocolError
 from ..exceptions import (
     RequestsApiError,
@@ -33,6 +33,7 @@ from ..exceptions import (
 from ..rest import Api, Account
 from ..rest.backend import Backend
 from ..session import RetrySession
+from ...utils.hgp import from_instance_format
 
 logger = logging.getLogger(__name__)
 
@@ -40,26 +41,26 @@ logger = logging.getLogger(__name__)
 class AccountClient(BaseClient):
     """Client for accessing an individual IBM Quantum account."""
 
-    def __init__(self, credentials: Credentials, **request_kwargs: Any) -> None:
+    def __init__(self, params: ClientParameters) -> None:
         """AccountClient constructor.
 
         Args:
-            credentials: Account credentials.
-            **request_kwargs: Arguments for the request ``Session``.
+            params: Parameters used for server connection.
         """
         self._session = RetrySession(
-            credentials.base_url, credentials.access_token, **request_kwargs
+            params.url, auth=params.get_auth_handler(), **params.connection_parameters()
         )
+        self._params = params
+        hub, group, project = from_instance_format(params.instance)
         # base_api is used to handle endpoints that don't include h/g/p.
         # account_api is for h/g/p.
         self.base_api = Api(self._session)
         self.account_api = Account(
             session=self._session,
-            hub=credentials.hub,
-            group=credentials.group,
-            project=credentials.project,
+            hub=hub,
+            group=group,
+            project=project,
         )
-        self._credentials = credentials
 
     # Backend-related public functions.
 
@@ -410,8 +411,8 @@ class AccountClient(BaseClient):
             WebsocketTimeoutError: If the timeout has been reached.
         """
         ws_client = WebsocketClient(
-            websocket_url=self._credentials.websockets_url.rstrip("/"),
-            credentials=self._credentials,
+            websocket_url=self._params.url.replace("https", "wss").rstrip("/"),
+            client_params=self._params,
             job_id=job_id,
             message_queue=status_queue,
         )

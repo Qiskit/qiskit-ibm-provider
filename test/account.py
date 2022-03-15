@@ -12,12 +12,15 @@
 
 """Context managers for using with IBM Provider unit tests."""
 
+import json
 import os
-from contextlib import ContextDecorator, contextmanager
-from typing import Optional, Dict, Any
+import uuid
+from contextlib import ContextDecorator
+from tempfile import NamedTemporaryFile
 from unittest.mock import patch
 
-from qiskit_ibm_provider import IBMProvider
+from qiskit_ibm_provider.accounts import management
+from qiskit_ibm_provider.accounts.account import LEGACY_API_URL
 
 
 class custom_envs(ContextDecorator):
@@ -95,33 +98,64 @@ class no_file(ContextDecorator):
         return self.isfile_original(filename_)
 
 
-def _mock_initialize_hgps(self: Any, preferences: Optional[Dict] = None) -> None:
-    """Mock ``_initialize_hgps()``, just storing the credentials."""
-    # TODO - update mock initialization
-    hgp: Any = {}
-    self._hgp = hgp
-    self._hgps = {}
-    if preferences:
-        pass
-        # credentials.preferences = preferences.get(credentials.unique_id(), {})
+class temporary_account_config_file(ContextDecorator):
+    """Context manager that uses a temporary account configuration file."""
+
+    # pylint: disable=invalid-name
+
+    def __init__(self, contents=None, **kwargs):
+        # Create a temporary file with the contents.
+        contents = (
+            contents if contents is not None else get_account_config_contents(**kwargs)
+        )
+
+        self.tmp_file = NamedTemporaryFile(mode="w+")
+        json.dump(contents, self.tmp_file)
+        self.tmp_file.flush()
+        self.account_config_json_backup = management._DEFAULT_ACCOUNT_CONFIG_JSON_FILE
+
+    def __enter__(self):
+        # Temporarily modify the default location of the configuration file.
+        management._DEFAULT_ACCOUNT_CONFIG_JSON_FILE = self.tmp_file.name
+        return self
+
+    def __exit__(self, *exc):
+        # Delete the temporary file and restore the default location.
+        self.tmp_file.close()
+        management._DEFAULT_ACCOUNT_CONFIG_JSON_FILE = self.account_config_json_backup
 
 
-@contextmanager
-def mock_ibm_provider():
-    """Mock the initialization of ``IBMProvider``, so it does not query the API."""
-    patcher = patch.object(
-        IBMProvider,
-        "_initialize_hgps",
-        side_effect=_mock_initialize_hgps,
-        autospec=True,
-    )
-    patcher2 = patch.object(
-        IBMProvider,
-        "_check_api_version",
-        return_value={"new_api": True, "api-auth": "0.1"},
-    )
-    patcher.start()
-    patcher2.start()
-    yield
-    patcher2.stop()
-    patcher.stop()
+def get_account_config_contents(
+    name=None,
+    auth="legacy",
+    token=None,
+    url=None,
+    instance=None,
+    verify=None,
+    proxies=None,
+):
+    """Generate qiskitrc content"""
+    if instance is None:
+        instance = "some_instance" if auth == "cloud" else "hub/group/project"
+    token = token or uuid.uuid4().hex
+    if name is None:
+        name = (
+            management._DEFAULT_ACCOUNT_NAME_CLOUD
+            if auth == "cloud"
+            else management._DEFAULT_ACCOUNT_NAME_LEGACY
+        )
+    if url is None:
+        url = LEGACY_API_URL
+    out = {
+        name: {
+            "auth": auth,
+            "url": url,
+            "token": token,
+            "instance": instance,
+        }
+    }
+    if verify is not None:
+        out["verify"] = verify
+    if proxies is not None:
+        out["proxies"] = proxies
+    return out

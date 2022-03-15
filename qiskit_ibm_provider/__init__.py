@@ -66,10 +66,6 @@ Exceptions
     IBMError
     IBMProviderError
     IBMProviderValueError
-    IBMProviderCredentialsNotFound
-    IBMProviderCredentialsInvalidFormat
-    IBMProviderCredentialsInvalidToken
-    IBMProviderCredentialsInvalidUrl
     IBMBackendError
     IBMBackendApiError
     IBMBackendApiProtocolError

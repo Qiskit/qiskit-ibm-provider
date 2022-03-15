@@ -21,6 +21,12 @@ class IBMError(QiskitError):
     pass
 
 
+class IBMAccountError(IBMError):
+    """Account related errors."""
+
+    pass
+
+
 class IBMProviderError(IBMError):
     """Base class for rrrors raise by IBMProvider."""
 

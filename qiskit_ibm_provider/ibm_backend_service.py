@@ -143,7 +143,7 @@ class IBMBackendService:
         """
         backends: List[IBMBackend] = []
         if all([hub, group, project]):
-            hgp = self._provider._get_hgp(hub, group, project)
+            hgp = self._provider._get_hgp(f"{hub}/{group}/{project}")
             backends = list(hgp.backends.values())
         else:
             backends = list(self._backends.values())
@@ -392,7 +392,6 @@ class IBMBackendService:
             backend = IBMRetiredBackend.from_name(
                 backend_name=backend_name,
                 provider=self._provider,
-                credentials=self._provider.credentials,
                 api=self._default_hgp._api_client,
             )
         try:
