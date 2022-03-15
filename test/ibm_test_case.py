@@ -16,9 +16,8 @@ import inspect
 import logging
 import os
 import time
-from typing import List, Any
 from functools import partialmethod
-
+from typing import List, Any
 from qiskit.test.base import BaseQiskitTestCase
 
 from qiskit_ibm_provider import QISKIT_IBM_PROVIDER_LOGGER_NAME

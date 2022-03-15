@@ -105,9 +105,7 @@ class IBMBackendService:
         filters: Optional[Callable[[List[IBMBackend]], bool]] = None,
         min_num_qubits: Optional[int] = None,
         input_allowed: Optional[Union[str, List[str]]] = None,
-        hub: Optional[str] = None,
-        group: Optional[str] = None,
-        project: Optional[str] = None,
+        instance: Optional[str] = None,
         **kwargs: Any,
     ) -> List[IBMBackend]:
         """Return all backends accessible via this account, subject to optional filtering.
@@ -125,9 +123,7 @@ class IBMBackendService:
                 For example, ``inputs_allowed='runtime'`` will return all backends
                 that support Qiskit Runtime. If a list is given, the backend must
                 support all types specified in the list.
-            hub: Name of the hub.
-            group: Name of the group.
-            project: Name of the project.
+            instance: The provider in the hub/group/project format.
             **kwargs: Simple filters that specify a ``True``/``False`` criteria in the
                 backend configuration, backends status, or provider credentials.
                 An example to get the operational backends with 5 qubits::
@@ -142,8 +138,8 @@ class IBMBackendService:
                 `project` are specified.
         """
         backends: List[IBMBackend] = []
-        if all([hub, group, project]):
-            hgp = self._provider._get_hgp(f"{hub}/{group}/{project}")
+        if instance:
+            hgp = self._provider._get_hgp(instance=instance)
             backends = list(hgp.backends.values())
         else:
             backends = list(self._backends.values())
