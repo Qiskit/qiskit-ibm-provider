@@ -170,9 +170,9 @@ class IBMProvider(Provider):
             proxies=self._account.proxies,
             verify=self._account.verify,
         )
-        auth_client = self._authenticate_legacy_account(self._client_params)
+        self._auth_client = self._authenticate_legacy_account(self._client_params)
 
-        self._hgps = self._initialize_hgps(auth_client)
+        self._hgps = self._initialize_hgps(self._auth_client)
         self._initialize_services()
 
     @staticmethod
