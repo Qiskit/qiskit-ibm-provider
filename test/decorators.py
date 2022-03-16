@@ -17,7 +17,7 @@ from dataclasses import dataclass
 from functools import wraps
 from typing import Callable, Optional
 
-from qiskit_ibm_provider import IBMProvider
+from qiskit_ibm_provider import IBMProvider, least_busy
 from .unit.mock.fake_provider import FakeProvider
 
 
@@ -44,28 +44,54 @@ def _get_integration_test_config():
     return token, url, instance
 
 
-def run_integration_test(func):
-    """Decorator that injects preinitialized service and device parameters.
+def integration_test_setup_with_backend(
+    backend_name: Optional[str] = None,
+    simulator: Optional[bool] = True,
+) -> Callable:
+    """Returns a decorator that retrieves the appropriate backend to use for testing.
 
-    To be used in combinatino with the integration_test_setup decorator function."""
+    Either retrieves the backend via its name (if specified), or selects the least busy backend that
+    matches all given filter criteria.
 
-    @wraps(func)
-    def _wrapper(self, *args, **kwargs):
-        with self.subTest(service=self.dependencies.service):
-            if self.dependencies.service:
-                kwargs["service"] = self.dependencies.service
+    Args:
+        backend_name: The name of the backend.
+        simulator: If set to True, the list of suitable backends is limited to simulators.
+    """
+
+    def _decorator(func):
+        @wraps(func)
+        @integration_test_setup()
+        def _wrapper(self, *args, **kwargs):
+            dependencies: IntegrationTestDependencies = kwargs["dependencies"]
+            provider: IBMProvider = dependencies.provider
+            if backend_name:
+                _backend = provider.get_backend(
+                    name=backend_name, instance=dependencies.instance
+                )
+            else:
+                _backend = least_busy(
+                    provider.backends(
+                        simulator=simulator, instance=dependencies.instance
+                    )
+                )
+            if not _backend:
+                raise Exception("Unable to find a suitable backend.")
+
+            kwargs["backend"] = _backend
             func(self, *args, **kwargs)
 
-    return _wrapper
+        return _wrapper
+
+    return _decorator
 
 
 def integration_test_setup(
-    init_service: Optional[bool] = True,
+    init_provider: Optional[bool] = True,
 ) -> Callable:
     """Returns a decorator for integration test initialization.
 
     Args:
-        init_service: to initialize the IBMRuntimeService based on the current environment
+        init_provider: to initialize the IBMProvider based on the current environment
             configuration and return it via the test dependencies
 
     Returns:
@@ -79,14 +105,14 @@ def integration_test_setup(
             if not all([token, url]):
                 raise Exception("Configuration Issue. Token and URL must be set.")
 
-            service = None
-            if init_service:
-                service = IBMProvider(token=token, url=url, instance=instance)
+            provider = None
+            if init_provider:
+                provider = IBMProvider(token=token, url=url, instance=instance)
             dependencies = IntegrationTestDependencies(
                 token=token,
                 url=url,
                 instance=instance,
-                provider=service,
+                provider=provider,
             )
             kwargs["dependencies"] = dependencies
             func(self, *args, **kwargs)

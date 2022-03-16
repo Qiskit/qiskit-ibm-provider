@@ -504,9 +504,7 @@ class IBMProvider(Provider):
         filters: Optional[Callable[[List[IBMBackend]], bool]] = None,
         min_num_qubits: Optional[int] = None,
         input_allowed: Optional[Union[str, List[str]]] = None,
-        hub: Optional[str] = None,
-        group: Optional[str] = None,
-        project: Optional[str] = None,
+        instance: Optional[str] = None,
         **kwargs: Any,
     ) -> List[IBMBackend]:
         """Return all backends accessible via this account, subject to optional filtering.
@@ -523,9 +521,7 @@ class IBMProvider(Provider):
                 For example, ``inputs_allowed='runtime'`` will return all backends
                 that support Qiskit Runtime. If a list is given, the backend must
                 support all types specified in the list.
-            hub: Name of the hub.
-            group: Name of the group.
-            project: Name of the project.
+            instance: The provider in the hub/group/project format.
             **kwargs: Simple filters that specify a ``True``/``False`` criteria in the
                 backend configuration, backends status, or provider credentials.
                 An example to get the operational backends with 5 qubits::
@@ -541,9 +537,7 @@ class IBMProvider(Provider):
             filters=filters,
             min_num_qubits=min_num_qubits,
             input_allowed=input_allowed,
-            hub=hub,
-            group=group,
-            project=project,
+            instance=instance,
             **kwargs,
         )
 
