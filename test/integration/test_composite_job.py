@@ -43,7 +43,7 @@ from qiskit_ibm_provider.job.exceptions import (
     IBMJobNotFoundError,
     IBMJobTimeoutError,
 )
-from ..decorators import requires_provider
+from ..decorators import integration_test_setup, IntegrationTestDependencies
 from ..fake_account_client import (
     BaseFakeAccountClient,
     CancelableFakeJob,
@@ -61,18 +61,13 @@ class TestIBMCompositeJob(IBMTestCase):
     """Tests for IBMCompositeJob."""
 
     @classmethod
-    @requires_provider
-    def setUpClass(cls, provider, hub, group, project):
+    @integration_test_setup()
+    def setUpClass(cls, dependencies: IntegrationTestDependencies):
         """Initial class level setup."""
         # pylint: disable=arguments-differ
         super().setUpClass()
-        cls.provider = provider
-        cls.hub = hub
-        cls.group = group
-        cls.project = project
-        cls.sim_backend = provider.get_backend(
-            "ibmq_qasm_simulator", hub=cls.hub, group=cls.group, project=cls.project
-        )
+        cls.dependencies = dependencies
+        cls.sim_backend = cls.dependencies.provider.get_backend("ibmq_qasm_simulator")
         cls.last_week = datetime.now() - timedelta(days=7)
 
     def setUp(self):
@@ -82,7 +77,7 @@ class TestIBMCompositeJob(IBMTestCase):
         # TODO: We can remove all the deepcopy and do a disable_account
         # instead once issue 84 is resolved.
         self.fake_backend = copy.deepcopy(self.sim_backend)
-        self.fake_provider = copy.deepcopy(self.provider)
+        self.fake_provider = copy.deepcopy(self.dependencies.provider)
         self._set_fake_client(BaseFakeAccountClient())
         self.fake_backend._provider = self.fake_provider
         self.fake_provider.backend._provider = self.fake_provider
@@ -812,18 +807,13 @@ class TestIBMCompositeJobIntegration(IBMTestCase):
     """Integration tests for IBMCompositeJob."""
 
     @classmethod
-    @requires_provider
-    def setUpClass(cls, provider, hub, group, project):
+    @integration_test_setup()
+    def setUpClass(cls, dependencies: IntegrationTestDependencies):
         """Initial class level setup."""
         # pylint: disable=arguments-differ
         super().setUpClass()
-        cls.provider = provider
-        cls.hub = hub
-        cls.group = group
-        cls.project = project
-        cls.sim_backend = provider.get_backend(
-            "ibmq_qasm_simulator", hub=cls.hub, group=cls.group, project=cls.project
-        )
+        cls.dependencies = dependencies
+        cls.sim_backend = cls.dependencies.provider.get_backend("ibmq_qasm_simulator")
         cls._qc = transpile(ReferenceCircuits.bell(), backend=cls.sim_backend)
         cls.last_week = datetime.now() - timedelta(days=7)
 
@@ -844,7 +834,7 @@ class TestIBMCompositeJobIntegration(IBMTestCase):
                 job_set.block_for_submit()
                 self.assertEqual(job_set.tags(), tags)
 
-                rjob_set = self.provider.backend.job(job_set.job_id())
+                rjob_set = self.dependencies.provider.backend.job(job_set.job_id())
                 self.assertIsInstance(rjob_set, IBMCompositeJob)
                 self.assertEqual(rjob_set.job_id(), job_set.job_id())
                 self.assertEqual(len(rjob_set.sub_jobs()), len(job_set.sub_jobs()))
@@ -872,7 +862,7 @@ class TestIBMCompositeJobIntegration(IBMTestCase):
         job_set.block_for_submit()
         circ_job = self.sim_backend.run(self._qc, job_tags=job_tags)
 
-        rjobs = self.provider.backend.jobs(
+        rjobs = self.dependencies.provider.backend.jobs(
             job_tags=job_tags, start_datetime=self.last_week
         )
         self.assertEqual(len(rjobs), 2)
@@ -905,7 +895,7 @@ class TestIBMCompositeJobIntegration(IBMTestCase):
                         job_id=job.job_id(), attr_name="tags", attr_value=[]
                     )
                     with self.assertRaises(IBMJobInvalidStateError) as err_cm:
-                        self.provider.backend.job(job_set.job_id())
+                        self.dependencies.provider.backend.job(job_set.job_id())
                     self.assertIn("tags", str(err_cm.exception))
                 finally:
                     job._api_client.job_update_attribute(
