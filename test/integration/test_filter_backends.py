@@ -32,7 +32,9 @@ class TestBackendFilters(IBMTestCase):
 
     @classmethod
     @integration_test_setup_with_backend()
-    def setUpClass(cls, backend: IBMBackend, dependencies: IntegrationTestDependencies) -> None:
+    def setUpClass(
+        cls, backend: IBMBackend, dependencies: IntegrationTestDependencies
+    ) -> None:
         """Initial class level setup."""
         # pylint: disable=arguments-differ
         super().setUpClass()
