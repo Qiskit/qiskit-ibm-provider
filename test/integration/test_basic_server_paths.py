@@ -1,7 +1,3 @@
-# pylint: disable-all
-# type: ignore
-# TODO: Reenable and fix integration tests.
-
 # This code is part of Qiskit.
 #
 # (C) Copyright IBM 2021.
@@ -25,7 +21,10 @@ from qiskit.test.reference_circuits import ReferenceCircuits
 
 from qiskit_ibm_provider import least_busy
 from qiskit_ibm_provider.exceptions import IBMBackendJobLimitError
-from ..decorators import requires_providers
+from ..decorators import (
+    IntegrationTestDependencies,
+    integration_test_setup,
+)
 from ..ibm_test_case import IBMTestCase
 from ..utils import cancel_job
 
@@ -34,23 +33,21 @@ class TestBasicServerPaths(IBMTestCase):
     """Test the basic server endpoints using both a public and premium provider."""
 
     @classmethod
-    @requires_providers
-    def setUpClass(cls, provider, hgps):
+    @integration_test_setup()
+    def setUpClass(cls, dependencies: IntegrationTestDependencies) -> None:
         # pylint: disable=arguments-differ
         super().setUpClass()
-        cls.provider = provider  # Dict[str, IBMProvider]
-        cls.hgps = hgps
+        cls.dependencies = dependencies
         cls.last_week = datetime.now() - timedelta(days=7)
 
     @slow_test
     def test_job_submission(self):
         """Test running a job against a device."""
-        for desc, hgp in self.hgps.items():
+        for desc in self.dependencies.provider._hgps.items():
             backend = least_busy(
-                self.provider.backends(
+                self.dependencies.provider.backends(
                     simulator=False,
                     filters=lambda b: b.configuration().n_qubits >= 5,
-                    **hgp
                 )
             )
             with self.subTest(desc=desc, backend=backend):
@@ -66,12 +63,11 @@ class TestBasicServerPaths(IBMTestCase):
 
     def test_job_backend_properties_and_status(self):
         """Test the backend properties and status of a job."""
-        for desc, hgp in self.hgps.items():
-            backend = self.provider.backends(
+        for desc in self.dependencies.provider._hgps.items():
+            backend = self.dependencies.provider.backends(
                 simulator=False,
                 operational=True,
                 filters=lambda b: b.configuration().n_qubits >= 5,
-                **hgp
             )[0]
             with self.subTest(desc=desc, backend=backend):
                 job = self._submit_job_with_retry(ReferenceCircuits.bell(), backend)
@@ -83,13 +79,13 @@ class TestBasicServerPaths(IBMTestCase):
     def test_retrieve_jobs(self):
         """Test retrieving jobs."""
         backend_name = "ibmq_qasm_simulator"
-        for desc, hgp in self.hgps.items():
-            backend = self.provider.get_backend(backend_name, **hgp)
+        for desc in self.dependencies.provider._hgps.items():
+            backend = self.dependencies.provider.get_backend(backend_name)
             with self.subTest(desc=desc, backend=backend):
                 job = self._submit_job_with_retry(ReferenceCircuits.bell(), backend)
                 job_id = job.job_id()
 
-                retrieved_jobs = self.provider.backend.jobs(
+                retrieved_jobs = self.dependencies.provider.backend.jobs(
                     backend_name=backend_name,
                     start_datetime=self.last_week,
                     ignore_composite_jobs=True,
@@ -100,9 +96,9 @@ class TestBasicServerPaths(IBMTestCase):
 
     def test_device_properties_and_defaults(self):
         """Test the properties and defaults for an open pulse device."""
-        for desc, hgp in self.hgps.items():
-            pulse_backends = self.provider.backends(
-                open_pulse=True, operational=True, **hgp
+        for desc in self.dependencies.provider._hgps.items():
+            pulse_backends = self.dependencies.provider.backends(
+                open_pulse=True, operational=True
             )
             if not pulse_backends:
                 raise self.skipTest(
@@ -117,10 +113,10 @@ class TestBasicServerPaths(IBMTestCase):
 
     def test_device_status_and_job_limit(self):
         """Test the status and job limit for a device."""
-        for desc, hgp in self.hgps.items():
-            backend = self.provider.backends(simulator=False, operational=True, **hgp)[
-                0
-            ]
+        for desc in self.dependencies.provider._hgps.items():
+            backend = self.dependencies.provider.backends(
+                simulator=False, operational=True
+            )[0]
             with self.subTest(desc=desc, backend=backend):
                 self.assertTrue(backend.status())
                 job_limit = backend.job_limit()
