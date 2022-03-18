@@ -31,7 +31,7 @@ class TestBackendFilters(IBMTestCase):
     """Qiskit Backend Filtering Tests."""
 
     @classmethod
-    @integration_test_setup_with_backend()
+    @integration_test_setup_with_backend(backend_name="ibmq_qasm_simulator")
     def setUpClass(
         cls, backend: IBMBackend, dependencies: IntegrationTestDependencies
     ) -> None:
@@ -49,7 +49,6 @@ class TestBackendFilters(IBMTestCase):
         filtered_backends = self.dependencies.provider.backends(
             n_qubits=n_qubits, local=False, instance=self.dependencies.instance
         )
-        print(filtered_backends)
         self.assertTrue(filtered_backends)
         for filtered_backend in filtered_backends[:5]:
             with self.subTest(filtered_backend=filtered_backend):
