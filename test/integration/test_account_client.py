@@ -1,7 +1,3 @@
-# pylint: disable-all
-# type: ignore
-# TODO: Reenable and fix integration tests.
-
 # This code is part of Qiskit.
 #
 # (C) Copyright IBM 2021.
@@ -17,20 +13,22 @@
 """Tests for the AccountClient class."""
 
 import re
-import traceback
-from unittest import mock
 
 from qiskit.circuit import ClassicalRegister, QuantumCircuit, QuantumRegister
 from qiskit.compiler import assemble, transpile
-from urllib3.connectionpool import HTTPConnectionPool
-from urllib3.exceptions import MaxRetryError
 
+from qiskit_ibm_provider import IBMBackend
+from qiskit_ibm_provider.api.client_parameters import ClientParameters
 from qiskit_ibm_provider.api.clients import AccountClient, AuthClient
 from qiskit_ibm_provider.api.exceptions import ApiError, RequestsApiError
 from qiskit_ibm_provider.apiconstants import ApiJobStatus
 from qiskit_ibm_provider.utils.utils import RefreshQueue
 from ..contextmanagers import custom_envs, no_envs
-from ..decorators import requires_qe_access, requires_provider
+from ..decorators import (
+    integration_test_setup,
+    integration_test_setup_with_backend,
+    IntegrationTestDependencies,
+)
 from ..http_server import SimpleServer, ServerErrorOnceHandler, ClientErrorHandler
 from ..ibm_test_case import IBMTestCase
 
@@ -39,17 +37,13 @@ class TestAccountClient(IBMTestCase):
     """Tests for AccountClient."""
 
     @classmethod
-    @requires_provider
-    def setUpClass(cls, provider, hub, group, project):
+    @integration_test_setup()
+    def setUpClass(cls, dependencies: IntegrationTestDependencies) -> None:
         """Initial class level setup."""
         # pylint: disable=arguments-differ
         super().setUpClass()
-        cls.provider = provider
-        cls.hub = hub
-        cls.group = group
-        cls.project = project
-        default_hgp = cls.provider.backend._default_hgp
-        cls.access_token = default_hgp._api_client.account_api.session._access_token
+        cls.dependencies = dependencies
+        cls.access_token = cls.dependencies.provider._auth_client.current_access_token()
 
     def setUp(self):
         """Initial test setup."""
@@ -77,8 +71,7 @@ class TestAccountClient(IBMTestCase):
 
     def _get_client(self):
         """Helper for instantiating an AccountClient."""
-        # pylint: disable=no-value-for-parameter
-        return AccountClient(self.provider.backend._default_hgp.credentials)
+        return AccountClient(self.dependencies.provider._client_params)
 
     def test_exception_message(self):
         """Check exception has proper message."""
@@ -115,37 +108,6 @@ class TestAccountClient(IBMTestCase):
             self.assertNotIn(
                 custom_header, client._session.headers["X-Qx-Client-Application"]
             )
-
-    def test_access_token_not_in_exception_traceback(self):
-        """Check that access token is replaced within chained request exceptions."""
-        backend_name = "ibmq_qasm_simulator"
-        backend = self.provider.get_backend(
-            backend_name, hub=self.hub, group=self.group, project=self.project
-        )
-        circuit = transpile(self.qc1, backend, seed_transpiler=self.seed)
-        qobj = assemble(circuit, backend, shots=1)
-        client = backend._api_client
-
-        exception_message = (
-            "The access token in this exception "
-            "message should be replaced: {}".format(self.access_token)
-        )
-        exception_traceback_str = ""
-        try:
-            with mock.patch.object(
-                HTTPConnectionPool,
-                "urlopen",
-                side_effect=MaxRetryError(
-                    HTTPConnectionPool("host"), "url", reason=exception_message
-                ),
-            ):
-                _ = client.job_submit(backend.name(), qobj.to_dict())
-        except RequestsApiError:
-            exception_traceback_str = traceback.format_exc()
-
-        self.assertTrue(exception_traceback_str)
-        if self.access_token in exception_traceback_str:
-            self.fail("Access token not replaced in request exception traceback.")
 
     def test_job_submit_retry(self):
         """Test job submit requests get retried."""
@@ -195,23 +157,19 @@ class TestAccountClientJobs(IBMTestCase):
     """
 
     @classmethod
-    @requires_provider
-    def setUpClass(cls, provider, hub, group, project):
+    @integration_test_setup_with_backend(backend_name="ibmq_qasm_simulator")
+    def setUpClass(
+        cls, dependencies: IntegrationTestDependencies, backend: IBMBackend
+    ) -> None:
         # pylint: disable=arguments-differ
         super().setUpClass()
-        cls.provider = provider
-        cls.hub = hub
-        cls.group = group
-        cls.project = project
-        default_hgp = cls.provider.backend._default_hgp
-        cls.access_token = default_hgp._api_client.account_api.session._access_token
+        cls.dependencies = dependencies
+        cls.access_token = cls.dependencies.provider._auth_client.current_access_token()
 
-        backend_name = "ibmq_qasm_simulator"
-        backend = cls.provider.get_backend(
-            backend_name, hub=cls.hub, group=cls.group, project=cls.project
-        )
         cls.client = backend._api_client
-        cls.job = cls.client.job_submit(backend_name, cls._get_qobj(backend).to_dict())
+        cls.job = cls.client.job_submit(
+            "ibmq_qasm_simulator", cls._get_qobj(backend).to_dict()
+        )
         cls.job_id = cls.job["job_id"]
 
     @staticmethod
@@ -262,52 +220,55 @@ class TestAccountClientJobs(IBMTestCase):
 class TestAuthClient(IBMTestCase):
     """Tests for the AuthClient."""
 
-    @requires_qe_access
-    def test_valid_login(self, qe_token, qe_url):
+    @classmethod
+    @integration_test_setup()
+    def setUpClass(cls, dependencies: IntegrationTestDependencies) -> None:
+        # pylint: disable=arguments-differ
+        super().setUpClass()
+        cls.dependencies = dependencies
+
+    def test_valid_login(self):
         """Test valid authentication."""
-        client = AuthClient(qe_token, qe_url)
-        self.assertTrue(client.base_api.session._access_token)
+        client = AuthClient(self.dependencies.provider._client_params)
+        self.assertTrue(client.access_token)
+        self.assertTrue(client.api_token)
 
-    @requires_qe_access
-    def test_url_404(self, qe_token, qe_url):
+    def test_url_404(self):
         """Test login against a 404 URL"""
-        url_404 = re.sub(r"/api.*$", "/api/TEST_404", qe_url)
+        url_404 = re.sub(r"/api.*$", "/api/TEST_404", self.dependencies.url)
         with self.assertRaises(ApiError):
-            _ = AuthClient(qe_token, url_404)
+            _ = AuthClient(ClientParameters(token=self.dependencies.token, url=url_404))
 
-    @requires_qe_access
-    def test_invalid_token(self, qe_token, qe_url):
+    def test_invalid_token(self):
         """Test login using invalid token."""
-        qe_token = "INVALID_TOKEN"
         with self.assertRaises(ApiError):
-            _ = AuthClient(qe_token, qe_url)
+            _ = AuthClient(
+                ClientParameters(token="INVALID_TOKEN", url=self.dependencies.url)
+            )
 
-    @requires_qe_access
-    def test_url_unreachable(self, qe_token, qe_url):
+    def test_url_unreachable(self):
         """Test login against an invalid (malformed) URL."""
-        qe_url = "INVALID_URL"
         with self.assertRaises(ApiError):
-            _ = AuthClient(qe_token, qe_url)
+            _ = AuthClient(
+                ClientParameters(token=self.dependencies.token, url="INVALID_URL")
+            )
 
-    @requires_qe_access
-    def test_api_version(self, qe_token, qe_url):
+    def test_api_version(self):
         """Check the version of the QX API."""
-        client = AuthClient(qe_token, qe_url)
+        client = AuthClient(self.dependencies.provider._client_params)
         version = client.api_version()
         self.assertIsNotNone(version)
 
-    @requires_qe_access
-    def test_user_urls(self, qe_token, qe_url):
+    def test_user_urls(self):
         """Check the user urls of the QX API."""
-        client = AuthClient(qe_token, qe_url)
+        client = AuthClient(self.dependencies.provider._client_params)
         user_urls = client.user_urls()
         self.assertIsNotNone(user_urls)
         self.assertTrue("http" in user_urls and "ws" in user_urls)
 
-    @requires_qe_access
-    def test_user_hubs(self, qe_token, qe_url):
+    def test_user_hubs(self):
         """Check the user hubs of the QX API."""
-        client = AuthClient(qe_token, qe_url)
+        client = AuthClient(self.dependencies.provider._client_params)
         user_hubs = client.user_hubs()
         self.assertIsNotNone(user_hubs)
         for user_hub in user_hubs:
