@@ -1,7 +1,3 @@
-# pylint: disable-all
-# type: ignore
-# TODO: Reenable and fix integration tests.
-
 # This code is part of Qiskit.
 #
 # (C) Copyright IBM 2021.
@@ -28,7 +24,7 @@ from qiskit.version import VERSION as terra_version
 
 from qiskit_ibm_provider import least_busy
 from qiskit_ibm_provider.utils.json_encoder import IBMJsonEncoder
-from ..decorators import requires_provider
+from ..decorators import IntegrationTestDependencies, integration_test_setup
 from ..ibm_test_case import IBMTestCase
 from ..utils import cancel_job
 
@@ -37,35 +33,28 @@ class TestSerialization(IBMTestCase):
     """Test data serialization."""
 
     @classmethod
-    @requires_provider
-    def setUpClass(cls, provider, hub, group, project):
+    @integration_test_setup()
+    def setUpClass(cls, dependencies: IntegrationTestDependencies) -> None:
         """Initial class level setup."""
         # pylint: disable=arguments-differ
         super().setUpClass()
-        cls.provider = provider
-        cls.hub = hub
-        cls.group = group
-        cls.project = project
-        cls.sim_backend = provider.get_backend(
-            "ibmq_qasm_simulator", hub=cls.hub, group=cls.group, project=cls.project
+        cls.dependencies = dependencies
+        cls.sim_backend = cls.dependencies.provider.get_backend(
+            "ibmq_qasm_simulator",
         )
         cls.bell = transpile(ReferenceCircuits.bell(), backend=cls.sim_backend)
 
     def test_qasm_qobj(self):
         """Test serializing qasm qobj data."""
         job = self.sim_backend.run(self.bell)
-        rqobj = self.provider.backend.job(job.job_id())._get_qobj()
+        rqobj = self.dependencies.provider.backend.job(job.job_id())._get_qobj()
 
         self.assertEqual(_array_to_list(job._get_qobj().to_dict()), rqobj.to_dict())
 
     def test_pulse_qobj(self):
         """Test serializing pulse qobj data."""
-        backends = self.provider.backends(
-            operational=True,
-            open_pulse=True,
-            hub=self.hub,
-            group=self.group,
-            project=self.project,
+        backends = self.dependencies.provider.backends(
+            operational=True, open_pulse=True, instance=self.dependencies.instance
         )
         if not backends:
             self.skipTest("Need pulse backends.")
@@ -80,7 +69,7 @@ class TestSerialization(IBMTestCase):
         schedules = x_pulse | measure
 
         job = backend.run(schedules, meas_level=1, shots=256)
-        rqobj = self.provider.backend.job(job.job_id())._get_qobj()
+        rqobj = self.dependencies.provider.backend.job(job.job_id())._get_qobj()
         # Convert numpy arrays to lists since they now get converted right
         # before being sent to the server.
         self.assertEqual(_array_to_list(job._get_qobj().to_dict()), rqobj.to_dict())
@@ -89,12 +78,8 @@ class TestSerialization(IBMTestCase):
 
     def test_backend_configuration(self):
         """Test deserializing backend configuration."""
-        backends = self.provider.backends(
-            operational=True,
-            simulator=False,
-            hub=self.hub,
-            group=self.group,
-            project=self.project,
+        backends = self.dependencies.provider.backends(
+            operational=True, simulator=False, instance=self.dependencies.instance
         )
 
         # Known keys that look like a serialized complex number.
@@ -119,12 +104,8 @@ class TestSerialization(IBMTestCase):
 
     def test_pulse_defaults(self):
         """Test deserializing backend configuration."""
-        backends = self.provider.backends(
-            operational=True,
-            open_pulse=True,
-            hub=self.hub,
-            group=self.group,
-            project=self.project,
+        backends = self.dependencies.provider.backends(
+            operational=True, open_pulse=True, instance=self.dependencies.instance
         )
         if not backends:
             self.skipTest("Need pulse backends.")
@@ -138,12 +119,8 @@ class TestSerialization(IBMTestCase):
 
     def test_backend_properties(self):
         """Test deserializing backend properties."""
-        backends = self.provider.backends(
-            operational=True,
-            simulator=False,
-            hub=self.hub,
-            group=self.group,
-            project=self.project,
+        backends = self.dependencies.provider.backends(
+            operational=True, simulator=False, instance=self.dependencies.instance
         )
 
         # Known keys that look like a serialized object.
@@ -169,12 +146,8 @@ class TestSerialization(IBMTestCase):
     @slow_test
     def test_pulse_job_result(self):
         """Test deserializing a pulse job result."""
-        backends = self.provider.backends(
-            open_pulse=True,
-            operational=True,
-            hub=self.hub,
-            group=self.group,
-            project=self.project,
+        backends = self.dependencies.provider.backends(
+            open_pulse=True, operational=True, instance=self.dependencies.instance
         )
         if not backends:
             raise SkipTest("Skipping pulse test since no pulse backend found.")
