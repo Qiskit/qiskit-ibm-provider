@@ -24,16 +24,16 @@ from qiskit.providers.jobstatus import JobStatus, JOB_FINAL_STATES
 from qiskit.test import slow_test
 from qiskit.test.reference_circuits import ReferenceCircuits
 from qiskit_ibm_provider.ibm_backend import IBMBackend
-from ..decorators import (
-    IntegrationTestDependencies,
-    integration_test_setup_with_backend,
-)
 from qiskit_ibm_provider.api.clients.account import AccountClient
 from qiskit_ibm_provider.exceptions import (
     IBMBackendValueError,
     IBMBackendApiProtocolError,
 )
 from qiskit_ibm_provider.job.exceptions import IBMJobFailureError
+from ..decorators import (
+    IntegrationTestDependencies,
+    integration_test_setup_with_backend,
+)
 from ..fake_account_client import BaseFakeAccountClient, MissingFieldFakeJob
 from ..ibm_test_case import IBMTestCase
 from ..utils import (
