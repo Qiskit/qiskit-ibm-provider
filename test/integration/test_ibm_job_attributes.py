@@ -1,7 +1,3 @@
-# pylint: disable-all
-# type: ignore
-# TODO: Reenable and fix integration tests.
-
 # This code is part of Qiskit.
 #
 # (C) Copyright IBM 2021.
@@ -27,14 +23,17 @@ from qiskit.compiler import transpile
 from qiskit.providers.jobstatus import JobStatus, JOB_FINAL_STATES
 from qiskit.test import slow_test
 from qiskit.test.reference_circuits import ReferenceCircuits
-
+from qiskit_ibm_provider.ibm_backend import IBMBackend
 from qiskit_ibm_provider.api.clients.account import AccountClient
 from qiskit_ibm_provider.exceptions import (
     IBMBackendValueError,
     IBMBackendApiProtocolError,
 )
 from qiskit_ibm_provider.job.exceptions import IBMJobFailureError
-from ..decorators import requires_provider, requires_device
+from ..decorators import (
+    IntegrationTestDependencies,
+    integration_test_setup_with_backend,
+)
 from ..fake_account_client import BaseFakeAccountClient, MissingFieldFakeJob
 from ..ibm_test_case import IBMTestCase
 from ..utils import (
@@ -50,18 +49,15 @@ class TestIBMJobAttributes(IBMTestCase):
     """Test IBMJob instance attributes."""
 
     @classmethod
-    @requires_provider
-    def setUpClass(cls, provider, hub, group, project):
+    @integration_test_setup_with_backend(backend_name="ibmq_qasm_simulator")
+    def setUpClass(
+        cls, backend: IBMBackend, dependencies: IntegrationTestDependencies
+    ) -> None:
         """Initial class level setup."""
         # pylint: disable=arguments-differ
         super().setUpClass()
-        cls.provider = provider
-        cls.hub = hub
-        cls.group = group
-        cls.project = project
-        cls.sim_backend = provider.get_backend(
-            "ibmq_qasm_simulator", hub=cls.hub, group=cls.group, project=cls.project
-        )
+        cls.dependencies = dependencies
+        cls.sim_backend = backend
         cls.bell = transpile(ReferenceCircuits.bell(), cls.sim_backend)
         cls.sim_job = cls.sim_backend.run(cls.bell)
         cls.last_week = datetime.now() - timedelta(days=7)
@@ -80,7 +76,6 @@ class TestIBMJobAttributes(IBMTestCase):
         self.assertTrue(self.sim_job.backend().name() == self.sim_backend.name())
 
     @slow_test
-    @requires_device
     def test_running_job_properties(self, backend):
         """Test fetching properties of a running job."""
 
@@ -102,12 +97,12 @@ class TestIBMJobAttributes(IBMTestCase):
         job_name = str(time.time()).replace(".", "")
         job = self.sim_backend.run(self.bell, job_name=job_name)
         job_id = job.job_id()
-        rjob = self.provider.backend.job(job_id)
+        rjob = self.dependencies.provider.backend.job(job_id)
         self.assertEqual(rjob.name(), job_name)
 
         # Check using partial matching.
         job_name_partial = job_name[8:]
-        retrieved_jobs = self.provider.backend.jobs(
+        retrieved_jobs = self.dependencies.provider.backend.jobs(
             backend_name=self.sim_backend.name(),
             job_name=job_name_partial,
             start_datetime=self.last_week,
@@ -118,7 +113,7 @@ class TestIBMJobAttributes(IBMTestCase):
 
         # Check using regular expressions.
         job_name_regex = "^{}$".format(job_name)
-        retrieved_jobs = self.provider.backend.jobs(
+        retrieved_jobs = self.dependencies.provider.backend.jobs(
             backend_name=self.sim_backend.name(),
             job_name=job_name_regex,
             start_datetime=self.last_week,
@@ -159,7 +154,7 @@ class TestIBMJobAttributes(IBMTestCase):
             job = self.sim_backend.run(self.bell, job_name=job_name)
             job_ids.add(job.job_id())
 
-        retrieved_jobs = self.provider.backend.jobs(
+        retrieved_jobs = self.dependencies.provider.backend.jobs(
             backend_name=self.sim_backend.name(),
             job_name=job_name,
             start_datetime=self.last_week,
@@ -176,13 +171,12 @@ class TestIBMJobAttributes(IBMTestCase):
             self.assertEqual(job.name(), job_name)
 
     @slow_test
-    @requires_device
     def test_error_message_device(self, backend):
         """Test retrieving job error messages from a device backend."""
         job = submit_job_one_bad_instr(backend)
         job.wait_for_final_state(wait=300, callback=self.simple_job_callback)
 
-        rjob = self.provider.backend.job(job.job_id())
+        rjob = self.dependencies.provider.backend.job(job.job_id())
 
         for q_job, partial in [(job, False), (rjob, True)]:
             with self.subTest(partial=partial):
@@ -211,7 +205,7 @@ class TestIBMJobAttributes(IBMTestCase):
     def test_error_message_validation(self):
         """Test retrieving job error message for a validation error."""
         job = submit_job_bad_shots(self.sim_backend)
-        rjob = self.provider.backend.job(job.job_id())
+        rjob = self.dependencies.provider.backend.job(job.job_id())
 
         for q_job, partial in [(job, False), (rjob, True)]:
             with self.subTest(partial=partial):
@@ -231,7 +225,7 @@ class TestIBMJobAttributes(IBMTestCase):
         if "COMPLETED" not in self.sim_job.time_per_step():
             self.sim_job.refresh()
 
-        rjob = self.provider.backend.job(self.sim_job.job_id())
+        rjob = self.dependencies.provider.backend.job(self.sim_job.job_id())
         rjob.refresh()
         self.assertEqual(rjob._time_per_step, self.sim_job._time_per_step)
 
@@ -279,7 +273,7 @@ class TestIBMJobAttributes(IBMTestCase):
                 ),
             )
 
-        rjob = self.provider.backend.job(job.job_id())
+        rjob = self.dependencies.provider.backend.job(job.job_id())
         self.assertTrue(rjob.time_per_step())
 
     def test_new_job_attributes(self):
@@ -301,9 +295,7 @@ class TestIBMJobAttributes(IBMTestCase):
     def test_queue_info(self):
         """Test retrieving queue information."""
         # Find the most busy backend.
-        backend = most_busy_backend(
-            self.provider, hub=self.hub, group=self.group, project=self.project
-        )
+        backend = most_busy_backend(self.dependencies.provider)
         leave_states = list(JOB_FINAL_STATES) + [JobStatus.RUNNING]
         job = backend.run(self.bell)
         queue_info = None
@@ -411,7 +403,7 @@ class TestIBMJobAttributes(IBMTestCase):
         job_tags = [uuid.uuid4().hex, uuid.uuid4().hex, uuid.uuid4().hex]
         job = self.sim_backend.run(self.bell, job_tags=job_tags)
 
-        rjobs = self.provider.backend.jobs(
+        rjobs = self.dependencies.provider.backend.jobs(
             job_tags=["phantom_tag"], start_datetime=self.last_week
         )
         self.assertEqual(
@@ -422,7 +414,7 @@ class TestIBMJobAttributes(IBMTestCase):
         tags_to_check = [job_tags, job_tags[1:2], job_tags[0:1] + ["phantom_tag"]]
         for tags in tags_to_check:
             with self.subTest(tags=tags):
-                rjobs = self.provider.backend.jobs(
+                rjobs = self.dependencies.provider.backend.jobs(
                     job_tags=tags, start_datetime=self.last_week
                 )
                 self.assertEqual(
@@ -449,7 +441,7 @@ class TestIBMJobAttributes(IBMTestCase):
         has_rjobs_tags = [job_tags, job_tags[1:3]]
         for tags in has_rjobs_tags:
             with self.subTest(tags=tags):
-                rjobs = self.provider.backend.jobs(
+                rjobs = self.dependecies.provider.backend.jobs(
                     job_tags=tags,
                     job_tags_operator="AND",
                     start_datetime=self.last_week,
@@ -489,7 +481,9 @@ class TestIBMJobAttributes(IBMTestCase):
             IBMBackendValueError, self.sim_backend.run, self.bell, job_tags={"foo"}
         )
         self.assertRaises(
-            IBMBackendValueError, self.provider.backend.jobs, job_tags=[1, 2, 3]
+            IBMBackendValueError,
+            self.dependencies.provider.backend.jobs,
+            job_tags=[1, 2, 3],
         )
 
     def test_run_mode(self):
@@ -503,7 +497,7 @@ class TestIBMJobAttributes(IBMTestCase):
             ),
         )
 
-        rjob = self.provider.backend.job(self.sim_job.job_id())
+        rjob = self.dependencies.provider.backend.job(self.sim_job.job_id())
         self.assertEqual(
             rjob.scheduling_mode(),
             "fairshare",
