@@ -450,7 +450,7 @@ class IBMBackendService:
         Returns:
             A list of ``IBMJob`` instances.
         Raises:
-            IBMQBackendValueError: If a keyword value is not recognized.
+            IBMBackendValueError: If a keyword value is not recognized.
             TypeError: If the input `start_datetime` or `end_datetime` parameter value
                 is not valid.
         """

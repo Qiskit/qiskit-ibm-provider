@@ -81,7 +81,7 @@ class LiveDataKeys(str, Enum):
 
 def is_qlab_notebook():
     """Check if running from Quantum Lab"""
-    import os
+    import os  # pylint: disable=import-outside-toplevel
 
     client = os.getenv("QE_CUSTOM_CLIENT_APP_HEADER", "")
     return "quantum-computing.ibm.com" in client
@@ -368,7 +368,7 @@ class LiveDataVisualization:
             await asyncio.get_event_loop().run_in_executor(None, self.ws_run_forever)
             logger.debug("Running forever")
 
-        except BaseException as error:
+        except BaseException as error:  # pylint: disable=broad-except
             logger.debug(
                 "💥 ws@job_id #%s errored/closed: %s", self.selected_job["id"], error
             )
@@ -573,8 +573,8 @@ class LivePlot:
             data (dict): information to be plotter.
 
         """
-        from matplotlib import get_backend
-        import matplotlib.pyplot as plt
+        from matplotlib import get_backend  # pylint: disable=import-outside-toplevel
+        import matplotlib.pyplot as plt  # pylint: disable=import-outside-toplevel
 
         self.update_channel_dd_content(data)
 
@@ -725,9 +725,9 @@ class LivePlot:
                 l1d.set_data(range(n_circuits), avg_data_oq)
                 self.set_view_limits(self._oq_plot, None, avg_data_oq)
             else:
-                x = [0, 0]
-                y = [real_list[0], imag_list[0]]
-                l1b.set_offsets(np.c_[x, y])
+                coord_x = [0, 0]
+                coord_y = [real_list[0], imag_list[0]]
+                l1b.set_offsets(np.c_[coord_x, coord_y])
 
         encoded = self.fig_to_base64(self.fig)
         html_image = '<img src="data:image/png;base64, {}">'.format(
@@ -951,10 +951,12 @@ class LivePlot:
             view.legend(handles=[sc_a, sc_b], loc="upper right", frameon=True)
         else:
             view.xaxis.set_ticks(range(0, 1), minor=False)
-            x = [0, 0]
-            y = [real_list[0], imag_list[0]]
+            coord_x = [0, 0]
+            coord_y = [real_list[0], imag_list[0]]
             sc_a = view.scatter(
-                x, y, color=[CarbonColors.PURPLE60.value, CarbonColors.CYAN60.value]
+                coord_x,
+                coord_y,
+                color=[CarbonColors.PURPLE60.value, CarbonColors.CYAN60.value],
             )
             sc_b = None
 
@@ -1110,13 +1112,7 @@ class ProgressBar:
         return self._widget
 
     def update_progress_bar(self, _max: int, _value: int, _min: int = 0) -> None:
-        """Update progress bar values
-
-        Args:
-            _max (int): max value
-            _value (int): current value
-            _min (int): min value
-        """
+        """Update progress bar values"""
         self._progress_bar.min = _min
         self._progress_bar.max = _max
         self._progress_bar.value = _value
@@ -1310,7 +1306,7 @@ class JobInformationView:
 
         try:
             completion_time = job.queue_info().estimated_complete_time
-        except BaseException:
+        except BaseException:  # pylint: disable=broad-except
             return "..."
 
         formated_completion = self.format_timedate(completion_time)
