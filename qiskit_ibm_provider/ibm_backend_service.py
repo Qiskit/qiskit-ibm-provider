@@ -421,6 +421,7 @@ class IBMBackendService:
         if desired. Note that the server has a limit for the number of jobs
         returned in a single call. As a result, this function might involve
         making several calls to the server.
+
         Args:
             limit: Number of jobs to retrieve. ``None`` means no limit.
             skip: Starting index for the job retrieval.
