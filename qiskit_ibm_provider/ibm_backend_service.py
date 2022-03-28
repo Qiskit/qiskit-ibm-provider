@@ -416,7 +416,8 @@ class IBMBackendService:
         job_tags_operator: Optional[str] = "OR",
         descending: bool = True,
     ) -> List[IBMJob]:
-        """Return a list of job IDs, subject to optional filtering.
+        """
+        Return a list of job IDs, subject to optional filtering.
         Retrieve jobs that match the given filters and paginate the results
         if desired. Note that the server has a limit for the number of jobs
         returned in a single call. As a result, this function might involve
@@ -441,15 +442,17 @@ class IBMBackendService:
                 local date/time.
             job_tags: Filter by tags assigned to jobs.
             job_tags_operator: Logical operator to use when filtering by job tags. Valid
-                values are "AND" and "OR":
-                    * If "AND" is specified, then a job must have all of the tags
-                      specified in ``job_tags`` to be included.
-                    * If "OR" is specified, then a job only needs to have any
-                      of the tags specified in ``job_tags`` to be included.
+                values are "AND" and "OR"
+                * If "AND" is specified, then a job must have all of the tags
+                    specified in ``job_tags`` to be included.
+                * If "OR" is specified, then a job only needs to have any
+                    of the tags specified in ``job_tags`` to be included.
             descending: If ``True``, return the jobs in descending order of the job
                 creation date (i.e. newest first) until the limit is reached.
+
         Returns:
             A list of ``IBMJob`` instances.
+
         Raises:
             IBMBackendValueError: If a keyword value is not recognized.
             TypeError: If the input `start_datetime` or `end_datetime` parameter value
