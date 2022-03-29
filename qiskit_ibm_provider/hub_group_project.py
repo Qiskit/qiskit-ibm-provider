@@ -44,6 +44,7 @@ class HubGroupProject:
             client_params: Parameters used for server connection.
             instance: Hub/group/project.
         """
+        self._client_params = client_params
         self._api_client = AccountClient(client_params)
         self._provider = provider
         # Initialize the internal list of backends.
