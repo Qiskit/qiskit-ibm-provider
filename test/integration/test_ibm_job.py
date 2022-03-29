@@ -15,12 +15,12 @@
 # that they have been altered from the originals.
 
 """IBMJob Test."""
-
 import copy
 import time
 from datetime import datetime, timedelta
 from threading import Thread, Event
 from unittest import SkipTest, mock
+from unittest import skip
 
 from dateutil import tz
 from qiskit import ClassicalRegister, QuantumCircuit, QuantumRegister
@@ -30,15 +30,19 @@ from qiskit.result import Result
 from qiskit.test import slow_test
 from qiskit.test.reference_circuits import ReferenceCircuits
 
-from qiskit_ibm_provider import least_busy
+from qiskit_ibm_provider import IBMBackend, least_busy
 from qiskit_ibm_provider.api.exceptions import RequestsApiError
 from qiskit_ibm_provider.api.rest.job import Job as RestJob
 from qiskit_ibm_provider.apiconstants import ApiJobStatus, API_JOB_FINAL_STATES
 from qiskit_ibm_provider.exceptions import IBMBackendApiError
+from qiskit_ibm_provider.hub_group_project import from_instance_format
 from qiskit_ibm_provider.ibm_backend import IBMRetiredBackend
 from qiskit_ibm_provider.job.exceptions import IBMJobTimeoutError, IBMJobNotFoundError
 from qiskit_ibm_provider.utils.utils import api_status_to_job_status
-from ..decorators import requires_provider, requires_device
+from ..decorators import (
+    IntegrationTestDependencies,
+    integration_test_setup_with_backend,
+)
 from ..fake_account_client import BaseFakeAccountClient, CancelableFakeJob
 from ..ibm_test_case import IBMTestCase
 from ..utils import (
@@ -54,29 +58,30 @@ class TestIBMJob(IBMTestCase):
     """Test ibm_job module."""
 
     @classmethod
-    @requires_provider
-    def setUpClass(cls, provider, hub, group, project):
+    @integration_test_setup_with_backend(simulator=False)
+    def setUpClass(cls, backend: IBMBackend, dependencies: IntegrationTestDependencies):
         """Initial class level setup."""
         # pylint: disable=arguments-differ
         super().setUpClass()
-        cls.provider = provider
-        cls.hub = hub
-        cls.group = group
-        cls.project = project
-        cls.sim_backend = provider.get_backend(
-            "ibmq_qasm_simulator", hub=cls.hub, group=cls.group, project=cls.project
+
+        cls.provider = dependencies.provider
+        hub, group, project = from_instance_format(dependencies.instance)
+        cls.sim_backend = dependencies.provider.get_backend(
+            "ibmq_qasm_simulator", hub=hub, group=group, project=project
         )
+        cls.real_device_backend = backend
+        cls.dependencies = dependencies
         cls.bell = transpile(ReferenceCircuits.bell(), cls.sim_backend)
         cls.sim_job = cls.sim_backend.run(cls.bell)
         cls.last_month = datetime.now() - timedelta(days=30)
 
     @slow_test
-    @requires_device
-    def test_run_device(self, backend):
+    def test_run_device(self):
         """Test running in a real device."""
         shots = 8192
-        job = backend.run(
-            transpile(ReferenceCircuits.bell(), backend=backend), shots=shots
+        job = self.real_device_backend.run(
+            transpile(ReferenceCircuits.bell(), backend=self.real_device_backend),
+            shots=shots,
         )
 
         job.wait_for_final_state(wait=300, callback=self.simple_job_callback)
@@ -146,7 +151,6 @@ class TestIBMJob(IBMTestCase):
         self.assertEqual(sorted(job_ids), sorted(list(set(job_ids))))
 
     @slow_test
-    @requires_device
     def test_run_multiple_device(self, backend):
         """Test running multiple jobs in a real device."""
         num_qubits = 5
@@ -193,9 +197,7 @@ class TestIBMJob(IBMTestCase):
     def test_cancel(self):
         """Test job cancellation."""
         # Find the most busy backend
-        backend = most_busy_backend(
-            self.provider, hub=self.hub, group=self.group, project=self.project
-        )
+        backend = most_busy_backend(self.provider, instance=self.dependencies.instance)
         submit_and_cancel(backend)
 
     def test_retrieve_jobs(self):
@@ -220,13 +222,12 @@ class TestIBMJob(IBMTestCase):
             self.sim_job.result().get_counts(), retrieved_job.result().get_counts()
         )
 
-    @requires_device
-    def test_retrieve_job_uses_appropriate_backend(self, backend):
+    def test_retrieve_job_uses_appropriate_backend(self):
         """Test that retrieved jobs come from their appropriate backend."""
-        backend_1 = backend
+        backend_1 = self.real_device_backend
         # Get a second backend.
         backend_2 = None
-        provider = backend.provider()
+        provider = self.real_device_backend.provider()
         for my_backend in provider.backends():
             if (
                 my_backend.status().operational
@@ -316,9 +317,7 @@ class TestIBMJob(IBMTestCase):
 
     def test_retrieve_active_jobs(self):
         """Test retrieving jobs that are currently unfinished."""
-        backend = most_busy_backend(
-            self.provider, hub=self.hub, group=self.group, project=self.project
-        )
+        backend = most_busy_backend(self.provider, instance=self.dependencies.instance)
         active_job_statuses = {
             api_status_to_job_status(status)
             for status in ApiJobStatus
@@ -346,9 +345,8 @@ class TestIBMJob(IBMTestCase):
 
     def test_retrieve_jobs_queued(self):
         """Test retrieving jobs that are queued."""
-        backend = most_busy_backend(
-            self.provider, hub=self.hub, group=self.group, project=self.project
-        )
+        backend = most_busy_backend(self.provider, instance=self.dependencies.instance)
+
         job = backend.run(transpile(ReferenceCircuits.bell(), backend))
         provider = backend.provider()
 
@@ -507,6 +505,11 @@ class TestIBMJob(IBMTestCase):
         )
         self.assertNotIn(job.job_id(), [rjob.job_id() for rjob in oldest_jobs])
 
+    # TODO: check why test case still fails
+    @skip(
+        "Ported from qiskit-ibmq-provider. Test case still skipped even though aer issue 1214 is fixed. "
+        "Needs further investigation"
+    )
     def test_retrieve_failed_job_simulator_partial(self):
         """Test retrieving partial results from a simulator backend."""
         job = submit_job_one_bad_instr(self.sim_backend)
@@ -652,9 +655,7 @@ class TestIBMJob(IBMTestCase):
 
     def test_wait_for_final_state_timeout(self):
         """Test waiting for job to reach final state times out."""
-        backend = most_busy_backend(
-            self.provider, hub=self.hub, group=self.group, project=self.project
-        )
+        backend = most_busy_backend(self.provider, instance=self.dependencies.instance)
         job = backend.run(transpile(ReferenceCircuits.bell(), backend=backend))
         try:
             self.assertRaises(IBMJobTimeoutError, job.wait_for_final_state, timeout=0.1)

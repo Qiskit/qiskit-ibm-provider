@@ -59,9 +59,7 @@ def setup_test_logging(logger: logging.Logger, filename: str) -> None:
 
 def most_busy_backend(
     provider: IBMProvider,
-    hub: Optional[str] = None,
-    group: Optional[str] = None,
-    project: Optional[str] = None,
+    instance: Optional[str] = None,
 ) -> IBMBackend:
     """Return the most busy backend for the provider given.
 
@@ -71,16 +69,12 @@ def most_busy_backend(
 
     Args:
         provider: IBM Quantum account provider.
-        hub: Name of the hub.
-        group: Name of the group.
-        project: Name of the project.
+        instance: The provider in the hub/group/project format.
 
     Returns:
         The most busy backend.
     """
-    backends = provider.backends(
-        simulator=False, operational=True, hub=hub, group=group, project=project
-    )
+    backends = provider.backends(simulator=False, operational=True, instance=instance)
     return max(
         [b for b in backends if b.configuration().n_qubits >= 5],
         key=lambda b: b.status().pending_jobs,
