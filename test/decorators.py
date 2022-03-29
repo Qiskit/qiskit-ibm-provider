@@ -36,12 +36,13 @@ def run_fake_provider(func):
 
 
 def _get_integration_test_config():
-    token, url, instance = (
+    token, url, instance, instance_private = (
         os.getenv("QISKIT_IBM_TOKEN"),
         os.getenv("QISKIT_IBM_URL"),
         os.getenv("QISKIT_IBM_INSTANCE"),
+        os.getenv("QISKIT_IBM_INSTANCE_PRIVATE"),
     )
-    return token, url, instance
+    return token, url, instance, instance_private
 
 
 def integration_test_setup_with_backend(
@@ -101,7 +102,7 @@ def integration_test_setup(
     def _decorator(func):
         @wraps(func)
         def _wrapper(self, *args, **kwargs):
-            token, url, instance = _get_integration_test_config()
+            token, url, instance, instance_private = _get_integration_test_config()
             if not all([token, url]):
                 raise Exception("Configuration Issue. Token and URL must be set.")
 
@@ -112,6 +113,7 @@ def integration_test_setup(
                 token=token,
                 url=url,
                 instance=instance,
+                instance_private=instance_private,
                 provider=provider,
             )
             kwargs["dependencies"] = dependencies
@@ -128,5 +130,6 @@ class IntegrationTestDependencies:
 
     provider: IBMProvider
     instance: Optional[str]
+    instance_private: Optional[str]
     token: str
     url: str
