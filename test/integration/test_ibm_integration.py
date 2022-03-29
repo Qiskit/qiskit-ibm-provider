@@ -1,7 +1,3 @@
-# pylint: disable-all
-# type: ignore
-# TODO: Reenable and fix integration tests.
-
 # This code is part of Qiskit.
 #
 # (C) Copyright IBM 2021.
@@ -23,8 +19,13 @@ from qiskit.compiler import transpile
 from qiskit.result import Result
 from qiskit.test.reference_circuits import ReferenceCircuits
 
+from qiskit_ibm_provider import IBMBackend
+from qiskit_ibm_provider.hub_group_project import from_instance_format
 from qiskit_ibm_provider.job.exceptions import IBMJobApiError
-from ..decorators import requires_provider, requires_device, requires_private_provider
+from ..decorators import (
+    IntegrationTestDependencies,
+    integration_test_setup_with_backend,
+)
 from ..ibm_test_case import IBMTestCase
 
 
@@ -34,18 +35,19 @@ class TestIBMIntegration(IBMTestCase):
     seed = 42
 
     @classmethod
-    @requires_provider
-    def setUpClass(cls, provider, hub, group, project):
+    @integration_test_setup_with_backend(simulator=False)
+    def setUpClass(
+        cls, backend: IBMBackend, dependencies: IntegrationTestDependencies
+    ) -> None:
         """Initial class level setup."""
         # pylint: disable=arguments-differ
         super().setUpClass()
-        cls.provider = provider
-        cls.hub = hub
-        cls.group = group
-        cls.project = project
-        cls.sim_backend = provider.get_backend(
-            "ibmq_qasm_simulator", hub=cls.hub, group=cls.group, project=cls.project
+        hub, group, project = from_instance_format(dependencies.instance)
+        cls.sim_backend = dependencies.provider.get_backend(
+            "ibmq_qasm_simulator", hub=hub, group=group, project=project
         )
+        cls.real_device_backend = backend
+        cls.dependencies = dependencies
 
     def setUp(self):
         super().setUp()
@@ -66,8 +68,7 @@ class TestIBMIntegration(IBMTestCase):
         self.assertEqual(remote_result.status, "COMPLETED")
         self.assertEqual(remote_result.results[0].status, "DONE")
 
-    @requires_device
-    def test_compile_remote(self, backend):
+    def test_compile_remote(self):
         """Test transpile with a remote backend."""
         qubit_reg = QuantumRegister(2, name="q")
         clbit_reg = ClassicalRegister(2, name="c")
@@ -76,11 +77,10 @@ class TestIBMIntegration(IBMTestCase):
         quantum_circuit.cx(qubit_reg[0], qubit_reg[1])
         quantum_circuit.measure(qubit_reg, clbit_reg)
 
-        circuits = transpile(quantum_circuit, backend=backend)
+        circuits = transpile(quantum_circuit, backend=self.real_device_backend)
         self.assertIsInstance(circuits, QuantumCircuit)
 
-    @requires_device
-    def test_compile_two_remote(self, backend):
+    def test_compile_two_remote(self):
         """Test transpile with a remote backend on two circuits."""
         qubit_reg = QuantumRegister(2, name="q")
         clbit_reg = ClassicalRegister(2, name="c")
@@ -90,7 +90,7 @@ class TestIBMIntegration(IBMTestCase):
         quantum_circuit.measure(qubit_reg, clbit_reg)
         qc_extra = QuantumCircuit(qubit_reg, clbit_reg, name="extra")
         qc_extra.measure(qubit_reg, clbit_reg)
-        circuits = transpile([quantum_circuit, qc_extra], backend)
+        circuits = transpile([quantum_circuit, qc_extra], self.real_device_backend)
         self.assertIsInstance(circuits[0], QuantumCircuit)
         self.assertIsInstance(circuits[1], QuantumCircuit)
 
@@ -124,10 +124,15 @@ class TestIBMIntegration(IBMTestCase):
         results = job.result()
         self.assertIsInstance(results, Result)
 
-    @requires_private_provider
-    def test_private_job(self, provider, hub, group, project):
+    def test_private_job(self):
         """Test a private job."""
-        backend = provider.get_backend("ibmq_qasm_simulator", hub, group, project)
+        if not self.dependencies.instance_private:
+            print(self.skipTest("Skip test because no private instance is configured"))
+
+        hub, group, project = from_instance_format(self.dependencies.instance_private)
+        backend = self.dependencies.provider.get_backend(
+            "ibmq_qasm_simulator", hub, group, project
+        )
         quantum_circuit = ReferenceCircuits.bell()
         job = execute(quantum_circuit, backend=backend)
         self.assertIsNotNone(job.circuits())
@@ -135,7 +140,7 @@ class TestIBMIntegration(IBMTestCase):
 
         # Wait a bit for databases to update.
         time.sleep(2)
-        rjob = provider.backend.job(job.job_id())
+        rjob = self.dependencies.provider.backend.job(job.job_id())
 
         with self.assertRaises(IBMJobApiError) as err_cm:
             rjob.circuits()
