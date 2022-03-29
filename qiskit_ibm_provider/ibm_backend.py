@@ -146,6 +146,7 @@ class IBMBackend(Backend):
             rep_delay=None,
             init_qubits=True,
             use_measure_esp=None,
+            live_data_enabled=None,
         )
 
     def run(
@@ -176,6 +177,7 @@ class IBMBackend(Backend):
         init_qubits: Optional[bool] = None,
         parameter_binds: Optional[List[Dict[Parameter, float]]] = None,
         use_measure_esp: Optional[bool] = None,
+        live_data_enabled: Optional[bool] = None,
         **run_config: Dict,
     ) -> IBMJob:
         """Run on the backend.
@@ -245,6 +247,8 @@ class IBMBackend(Backend):
                 Default: ``True`` if backend supports ESP readout, else ``False``. Backend support
                 for ESP readout is determined by the flag ``measure_esp_enabled`` in
                 ``backend.configuration()``.
+            live_data_enabled (bool): Activate the live data in the backend, to receive data
+                from the instruments.
             **run_config: Extra arguments used to configure the run.
 
         Returns:
@@ -333,7 +337,7 @@ class IBMBackend(Backend):
 
         qobj = assemble(circuits, self, **run_config_dict)
 
-        return self._submit_job(qobj, job_name, job_tags)
+        return self._submit_job(qobj, job_name, job_tags, live_data_enabled)
 
     def _get_run_config(self, **kwargs: Any) -> Dict:
         """Return the consolidated runtime configuration."""
@@ -356,6 +360,7 @@ class IBMBackend(Backend):
         job_name: Optional[str] = None,
         job_tags: Optional[List[str]] = None,
         composite_job_id: Optional[str] = None,
+        live_data_enabled: Optional[bool] = None,
     ) -> IBMJob:
         """Submit the Qobj to the backend.
 
@@ -367,6 +372,7 @@ class IBMBackend(Backend):
                 Job names do not need to be unique.
             job_tags: Tags to be assigned to the job.
             composite_job_id: Composite job ID, if this Qobj belongs to a composite job.
+            live_data_enabled: Used to activate/deactivate live data on the backend.
 
         Returns:
             The job to be executed.
@@ -392,6 +398,7 @@ class IBMBackend(Backend):
                 job_name=job_name,
                 job_tags=job_tags,
                 experiment_id=composite_job_id,
+                live_data_enabled=live_data_enabled,
             )
         except ApiError as ex:
             if "Error code: 3458" in str(ex):
