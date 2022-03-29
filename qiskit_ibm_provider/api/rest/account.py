@@ -34,6 +34,7 @@ class Account(RestAdapterBase):
         "backends": "/devices/v/1",
         "jobs": "/Jobs",
         "jobs_status": "/Jobs/status/v/1",
+        "jobs_id": "/Jobs/v/1",
     }
 
     TEMPLATE_IBM_HUBS = "/Network/{hub}/Groups/{group}/Projects/{project}"
@@ -135,12 +136,53 @@ class Account(RestAdapterBase):
             map_job_response(job_data)
         return data
 
+    def jobs_ids(
+        self,
+        limit: int = 10,
+        skip: int = 0,
+        descending: bool = True,
+        extra_filter: Dict[str, Any] = None,
+    ) -> List[Dict[str, Any]]:
+        """Return a list of job ids plus their liveDataEnabled flag and their creationDate field.
+        Args:
+            limit: Maximum number of items to return.
+            skip: Offset for the items to return.
+            descending: Whether the jobs should be in descending order.
+            extra_filter: Additional filtering passed to the query.
+        Returns:
+            JSON response.
+        """
+        url = self.get_url("jobs_id")
+
+        order = "DESC" if descending else "ASC"
+
+        query = {
+            "order": "creationDate " + order,
+            "limit": limit,
+            "skip": skip,
+            "fields": {"id": True, "liveDataEnabled": True, "creationDate": True},
+        }
+        if extra_filter:
+            query["where"] = extra_filter
+
+        if logger.getEffectiveLevel() is logging.DEBUG:
+            logger.debug(
+                "Endpoint: %s. Method: GET. Request Data: {'filter': %s}",
+                url,
+                filter_data(query),
+            )
+
+        data = self.session.get(url, params={"filter": json.dumps(query)}).json()
+
+        return data
+
     def create_remote_job(
         self,
         backend_name: str,
         job_name: Optional[str] = None,
         job_tags: Optional[List[str]] = None,
         experiment_id: Optional[str] = None,
+        live_data_enabled: Optional[bool] = None,
     ) -> Dict[str, Any]:
         """Create a job instance on the remote server.
 
@@ -149,13 +191,18 @@ class Account(RestAdapterBase):
             job_name: Custom name to be assigned to the job.
             job_tags: Tags to be assigned to the job.
             experiment_id: Used to add a job to an experiment.
+            live_data_enabled: Used to activate/deactivate live data on the backend.
 
         Returns:
             JSON response.
         """
         url = self.get_url("jobs")
 
-        payload = {"backend": {"name": backend_name}, "allowObjectStorage": True}
+        payload = {
+            "backend": {"name": backend_name},
+            "allowObjectStorage": True,
+            "liveDataEnabled": live_data_enabled,
+        }
 
         if job_name:
             payload["name"] = job_name

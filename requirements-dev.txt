@@ -24,3 +24,4 @@ qiskit-aer
 websockets>=8
 black==22.3.0
 coverage>=6.3
+scikit-learn>=0.20.0
