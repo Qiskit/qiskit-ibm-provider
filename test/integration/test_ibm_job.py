@@ -1,7 +1,3 @@
-# pylint: disable-all
-# type: ignore
-# TODO: Reenable and fix integration tests.
-
 # This code is part of Qiskit.
 #
 # (C) Copyright IBM 2021.
@@ -59,7 +55,7 @@ class TestIBMJob(IBMTestCase):
 
     @classmethod
     @integration_test_setup_with_backend(simulator=False)
-    def setUpClass(cls, backend: IBMBackend, dependencies: IntegrationTestDependencies):
+    def setUpClass(cls, backend: IBMBackend, dependencies: IntegrationTestDependencies) -> None:
         """Initial class level setup."""
         # pylint: disable=arguments-differ
         super().setUpClass()
