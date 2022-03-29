@@ -33,7 +33,7 @@ unit-test-coverage:
 integration-test:
 	# TODO: enable all tests in "test/integration" directory
 	python -m unittest -v test/integration/test_backend.py test/integration/test_account_client.py test/integration/test_filter_backends.py \
-	test/integration/test_serialization.py test/integration/test_ibm_job_attributes.py test/integration/test_basic_server_paths.py
-
+	test/integration/test_serialization.py test/integration/test_ibm_job_attributes.py test/integration/test_basic_server_paths.py \
+    test/integration/test_ibm_integration.py
 black:
 	black qiskit_ibm_provider test setup.py docs/tutorials
