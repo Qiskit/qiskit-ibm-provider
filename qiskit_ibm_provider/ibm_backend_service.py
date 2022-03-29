@@ -426,9 +426,8 @@ class IBMBackendService:
             limit: Number of jobs to retrieve. ``None`` means no limit.
             skip: Starting index for the job retrieval.
             backend_name: Name of the backend to retrieve jobs from.
-            status: Only get jobs with this status or one of the statuses.
-                For example, you can specify `status=JobStatus.RUNNING` or `status="RUNNING"`
-                or `status=["RUNNING", "ERROR"]`
+            status: Only get jobs with this status or one of the statuses. For example, you can specify
+                `status=JobStatus.RUNNING` or `status="RUNNING"` or `status=["RUNNING", "ERROR"]`
             job_name: Filter by job name. The `job_name` is matched partially
                 and `regular expressions
                 <https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions>`_
@@ -448,12 +447,13 @@ class IBMBackendService:
                         of the tags specified in ``job_tags`` to be included.
             descending: If ``True``, return the jobs in descending order of the job
                 creation date (i.e. newest first) until the limit is reached.
+
         Returns:
             A list of ``IBMJob`` instances.
+
         Raises:
             IBMBackendValueError: If a keyword value is not recognized.
-            TypeError: If the input `start_datetime` or `end_datetime` parameter value
-                is not valid.
+            TypeError: If the input `start_datetime` or `end_datetime` parameter value is not valid.
         """
         # Build the filter for the query.
         api_filter = {}  # type: Dict[str, Any]
