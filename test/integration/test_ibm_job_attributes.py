@@ -431,7 +431,7 @@ class TestIBMJobAttributes(IBMTestCase):
 
         no_rjobs_tags = [job_tags[0:1] + ["phantom_tags"], ["phantom_tag"]]
         for tags in no_rjobs_tags:
-            rjobs = self.provider.backend.jobs(
+            rjobs = self.dependencies.provider.backend.jobs(
                 job_tags=tags, job_tags_operator="AND", start_datetime=self.last_week
             )
             self.assertEqual(
@@ -441,7 +441,7 @@ class TestIBMJobAttributes(IBMTestCase):
         has_rjobs_tags = [job_tags, job_tags[1:3]]
         for tags in has_rjobs_tags:
             with self.subTest(tags=tags):
-                rjobs = self.dependecies.provider.backend.jobs(
+                rjobs = self.dependencies.provider.backend.jobs(
                     job_tags=tags,
                     job_tags_operator="AND",
                     start_datetime=self.last_week,
