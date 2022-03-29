@@ -33,7 +33,9 @@ class TestIBMQasmSimulator(IBMTestCase):
     """Test IBM Quantum QASM Simulator."""
 
     @integration_test_setup_with_backend(simulator=False)
-    def setUp(self, backend: IBMBackend, dependencies: IntegrationTestDependencies) -> None:
+    def setUp(
+        self, backend: IBMBackend, dependencies: IntegrationTestDependencies
+    ) -> None:
         """Initial test setup."""
         # pylint: disable=arguments-differ
         super().setUp()
