@@ -102,10 +102,10 @@ class TestIBMDashboard(IBMTestCase):
         """Test devices tab."""
         for backend in self.backends:
             with self.subTest(backend=backend):
-                b_w_p = BackendWithProviders(
+                backend_with_providers = BackendWithProviders(
                     backend=backend, providers=[self.dependencies.instance]
                 )
-                make_backend_widget(b_w_p)
+                make_backend_widget(backend_with_providers)
 
     def test_job_widget(self):
         """Test jobs tab."""
