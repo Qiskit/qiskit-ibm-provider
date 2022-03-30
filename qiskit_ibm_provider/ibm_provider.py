@@ -568,7 +568,12 @@ class IBMProvider(Provider):
                 `project` are specified.
         """
         # pylint: disable=arguments-differ
-        backends = self.backends(name, hub=hub, group=group, project=project, **kwargs)
+        instance = (
+            to_instance_format(hub, group, project)
+            if all([hub, group, project])
+            else None
+        )
+        backends = self.backends(name, instance=instance, **kwargs)
         if len(backends) > 1:
             raise QiskitBackendNotFoundError(
                 "More than one backend matches the criteria"
