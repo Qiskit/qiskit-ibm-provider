@@ -1,7 +1,3 @@
-# pylint: disable-all
-# type: ignore
-# TODO: Reenable and fix integration tests.
-
 # This code is part of Qiskit.
 #
 # (C) Copyright IBM 2021.
@@ -22,10 +18,14 @@ import urllib
 from requests.exceptions import ProxyError
 
 from qiskit_ibm_provider import IBMProvider
+from qiskit_ibm_provider.api.client_parameters import ClientParameters
 from qiskit_ibm_provider.api.clients import AuthClient, VersionClient
 from qiskit_ibm_provider.api.exceptions import RequestsApiError
-from qiskit_ibm_provider.credentials import Credentials
-from ..decorators import requires_qe_access
+from qiskit_ibm_provider.proxies.configuration import ProxyConfiguration
+from ..decorators import (
+    IntegrationTestDependencies,
+    integration_test_setup,
+)
 from ..ibm_test_case import IBMTestCase
 
 ADDRESS = "127.0.0.1"
@@ -37,6 +37,15 @@ INVALID_ADDRESS_PROXIES = {"https": "http://{}:{}".format("invalid", PORT)}
 
 class TestProxies(IBMTestCase):
     """Tests for proxy capabilities."""
+
+    @classmethod
+    @integration_test_setup()
+    def setUpClass(cls, dependencies: IntegrationTestDependencies) -> None:
+        """Initial class level setup."""
+        # pylint: disable=arguments-differ
+        super().setUpClass()
+
+        cls.dependencies = dependencies
 
     def setUp(self):
         """Initial test setup."""
@@ -57,16 +66,19 @@ class TestProxies(IBMTestCase):
             # wait for the process to terminate
             self.proxy_process.wait()
 
-    @requires_qe_access
-    def test_proxies_ibm_account(self, qe_token, qe_url):
+    def test_proxies_ibm_account(self):
         """Should reach the proxy using account.enable."""
-        provider = IBMProvider(qe_token, qe_url, proxies={"urls": VALID_PROXIES})
+        provider = IBMProvider(
+            self.dependencies.token,
+            self.dependencies.url,
+            proxies={"urls": VALID_PROXIES},
+        )
 
         self.proxy_process.terminate()  # kill to be able of reading the output
 
-        auth_line = pproxy_desired_access_log_line(qe_url)
+        auth_line = pproxy_desired_access_log_line(self.dependencies.url)
         api_line = pproxy_desired_access_log_line(
-            provider.backend._default_hgp.credentials.url
+            provider.backend._default_hgp._client_params.url
         )
         proxy_output = self.proxy_process.stdout.read().decode("utf-8")
 
@@ -75,12 +87,19 @@ class TestProxies(IBMTestCase):
         # Check if the API call (querying providers list) went through proxy.
         self.assertIn(api_line, proxy_output)
 
-    @requires_qe_access
-    def test_proxies_authclient(self, qe_token, qe_url):
+    def test_proxies_authclient(self):
         """Should reach the proxy using AuthClient."""
-        pproxy_desired_access_log_line_ = pproxy_desired_access_log_line(qe_url)
+        pproxy_desired_access_log_line_ = pproxy_desired_access_log_line(
+            self.dependencies.url
+        )
 
-        _ = AuthClient(qe_token, qe_url, proxies=VALID_PROXIES)
+        _ = AuthClient(
+            ClientParameters(
+                token=self.dependencies.token,
+                url=self.dependencies.url,
+                proxies=ProxyConfiguration(urls=VALID_PROXIES),
+            )
+        )
 
         self.proxy_process.terminate()  # kill to be able of reading the output
         self.assertIn(
@@ -88,13 +107,13 @@ class TestProxies(IBMTestCase):
             self.proxy_process.stdout.read().decode("utf-8"),
         )
 
-    # pylint: disable=unused-argument
-    @requires_qe_access
-    def test_proxies_versionclient(self, qe_token, qe_url):
+    def test_proxies_versionclient(self):
         """Should reach the proxy using IBMVersionFinder."""
-        pproxy_desired_access_log_line_ = pproxy_desired_access_log_line(qe_url)
+        pproxy_desired_access_log_line_ = pproxy_desired_access_log_line(
+            self.dependencies.url
+        )
 
-        version_finder = VersionClient(qe_url, proxies=VALID_PROXIES)
+        version_finder = VersionClient(self.dependencies.url, proxies=VALID_PROXIES)
         version_finder.version()
 
         self.proxy_process.terminate()  # kill to be able of reading the output
@@ -103,44 +122,54 @@ class TestProxies(IBMTestCase):
             self.proxy_process.stdout.read().decode("utf-8"),
         )
 
-    @requires_qe_access
-    def test_invalid_proxy_port_authclient(self, qe_token, qe_url):
+    def test_invalid_proxy_port_authclient(self):
         """Should raise RequestApiError with ProxyError using AuthClient."""
         with self.assertRaises(RequestsApiError) as context_manager:
-            _ = AuthClient(qe_token, qe_url, proxies=INVALID_PORT_PROXIES)
+            _ = AuthClient(
+                ClientParameters(
+                    token=self.dependencies.token,
+                    url=self.dependencies.url,
+                    proxies=ProxyConfiguration(urls=INVALID_PORT_PROXIES),
+                )
+            )
 
         self.assertIsInstance(context_manager.exception.__cause__, ProxyError)
 
-    # pylint: disable=unused-argument
-    @requires_qe_access
-    def test_invalid_proxy_port_versionclient(self, qe_token, qe_url):
+    def test_invalid_proxy_port_versionclient(self):
         """Should raise RequestApiError with ProxyError using VersionClient."""
         with self.assertRaises(RequestsApiError) as context_manager:
-            version_finder = VersionClient(qe_url, proxies=INVALID_PORT_PROXIES)
+            version_finder = VersionClient(
+                self.dependencies.url, proxies=INVALID_PORT_PROXIES
+            )
             version_finder.version()
 
         self.assertIsInstance(context_manager.exception.__cause__, ProxyError)
 
-    @requires_qe_access
-    def test_invalid_proxy_address_authclient(self, qe_token, qe_url):
+    def test_invalid_proxy_address_authclient(self):
         """Should raise RequestApiError with ProxyError using AuthClient."""
         with self.assertRaises(RequestsApiError) as context_manager:
-            _ = AuthClient(qe_token, qe_url, proxies=INVALID_ADDRESS_PROXIES)
+            _ = AuthClient(
+                ClientParameters(
+                    token=self.dependencies.token,
+                    url=self.dependencies.url,
+                    proxies=ProxyConfiguration(urls=INVALID_ADDRESS_PROXIES),
+                )
+            )
 
         self.assertIsInstance(context_manager.exception.__cause__, ProxyError)
 
-    @requires_qe_access
-    def test_invalid_proxy_address_versionclient(self, qe_token, qe_url):
+    def test_invalid_proxy_address_versionclient(self):
         """Should raise RequestApiError with ProxyError using VersionClient."""
         # pylint: disable=unused-argument
         with self.assertRaises(RequestsApiError) as context_manager:
-            version_finder = VersionClient(qe_url, proxies=INVALID_ADDRESS_PROXIES)
+            version_finder = VersionClient(
+                self.dependencies.url, proxies=INVALID_ADDRESS_PROXIES
+            )
             version_finder.version()
 
         self.assertIsInstance(context_manager.exception.__cause__, ProxyError)
 
-    @requires_qe_access
-    def test_proxy_urls(self, qe_token, qe_url):
+    def test_proxy_urls(self):
         """Test different forms of the proxy urls."""
         test_urls = [
             "http://{}:{}".format(ADDRESS, PORT),
@@ -149,11 +178,13 @@ class TestProxies(IBMTestCase):
         ]
         for proxy_url in test_urls:
             with self.subTest(proxy_url=proxy_url):
-                credentials = Credentials(
-                    qe_token, qe_url, proxies={"urls": {"https": proxy_url}}
+                client_params = ClientParameters(
+                    token=self.dependencies.token,
+                    url=self.dependencies.url,
+                    proxies=ProxyConfiguration(urls={"https": proxy_url}),
                 )
                 version_finder = VersionClient(
-                    credentials.base_url, **credentials.connection_parameters()
+                    client_params.url, **client_params.connection_parameters()
                 )
                 version_finder.version()
 
