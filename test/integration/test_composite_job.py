@@ -59,7 +59,7 @@ class TestIBMCompositeJob(IBMTestCase):
 
     @classmethod
     @integration_test_setup()
-    def setUpClass(cls, dependencies: IntegrationTestDependencies):
+    def setUpClass(cls, dependencies: IntegrationTestDependencies) -> None:
         """Initial class level setup."""
         # pylint: disable=arguments-differ
         super().setUpClass()
@@ -809,7 +809,7 @@ class TestIBMCompositeJobIntegration(IBMTestCase):
 
     @classmethod
     @integration_test_setup()
-    def setUpClass(cls, dependencies: IntegrationTestDependencies):
+    def setUpClass(cls, dependencies: IntegrationTestDependencies) -> None:
         """Initial class level setup."""
         # pylint: disable=arguments-differ
         super().setUpClass()
