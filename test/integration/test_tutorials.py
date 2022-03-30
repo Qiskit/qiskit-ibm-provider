@@ -1,7 +1,3 @@
-# pylint: disable-all
-# type: ignore
-# TODO: Reenable and fix integration tests.
-
 # This code is part of Qiskit.
 #
 # (C) Copyright IBM 2021.
