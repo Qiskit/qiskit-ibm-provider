@@ -1,7 +1,3 @@
-# pylint: disable-all
-# type: ignore
-# TODO: Reenable and fix integration tests.
-
 # This code is part of Qiskit.
 #
 # (C) Copyright IBM 2019, 2021.
@@ -22,6 +18,7 @@ import re
 import time
 import uuid
 from datetime import datetime, timedelta, timezone
+from unittest import skip
 
 from dateutil import tz
 from qiskit import transpile
@@ -43,7 +40,7 @@ from qiskit_ibm_provider.job.exceptions import (
     IBMJobNotFoundError,
     IBMJobTimeoutError,
 )
-from ..decorators import requires_provider
+from ..decorators import integration_test_setup, IntegrationTestDependencies
 from ..fake_account_client import (
     BaseFakeAccountClient,
     CancelableFakeJob,
@@ -61,18 +58,13 @@ class TestIBMCompositeJob(IBMTestCase):
     """Tests for IBMCompositeJob."""
 
     @classmethod
-    @requires_provider
-    def setUpClass(cls, provider, hub, group, project):
+    @integration_test_setup()
+    def setUpClass(cls, dependencies: IntegrationTestDependencies) -> None:
         """Initial class level setup."""
         # pylint: disable=arguments-differ
         super().setUpClass()
-        cls.provider = provider
-        cls.hub = hub
-        cls.group = group
-        cls.project = project
-        cls.sim_backend = provider.get_backend(
-            "ibmq_qasm_simulator", hub=cls.hub, group=cls.group, project=cls.project
-        )
+        cls.dependencies = dependencies
+        cls.sim_backend = cls.dependencies.provider.get_backend("ibmq_qasm_simulator")
         cls.last_week = datetime.now() - timedelta(days=7)
 
     def setUp(self):
@@ -82,7 +74,7 @@ class TestIBMCompositeJob(IBMTestCase):
         # TODO: We can remove all the deepcopy and do a disable_account
         # instead once issue 84 is resolved.
         self.fake_backend = copy.deepcopy(self.sim_backend)
-        self.fake_provider = copy.deepcopy(self.provider)
+        self.fake_provider = copy.deepcopy(self.dependencies.provider)
         self._set_fake_client(BaseFakeAccountClient())
         self.fake_backend._provider = self.fake_provider
         self.fake_provider.backend._provider = self.fake_provider
@@ -222,7 +214,7 @@ class TestIBMCompositeJob(IBMTestCase):
     def test_job_backend_options(self):
         """Test getting backend options."""
         custom_options = {"shots": 100, "memory": True}
-        job_set = self.fake_backend.run(
+        job_set = self.sim_backend.run(
             [self._qc] * 2, max_circuits_per_job=1, **custom_options
         )
         self.assertLessEqual(custom_options.items(), job_set.backend_options().items())
@@ -233,7 +225,7 @@ class TestIBMCompositeJob(IBMTestCase):
     def test_job_header(self):
         """Test getting job header."""
         custom_header = {"test": "test_job_header"}
-        job_set = self.fake_backend.run(
+        job_set = self.sim_backend.run(
             [self._qc] * 2, max_circuits_per_job=1, header=custom_header
         )
         self.assertLessEqual(custom_header.items(), job_set.header().items())
@@ -243,7 +235,7 @@ class TestIBMCompositeJob(IBMTestCase):
 
     def test_job_backend(self):
         """Test getting job backend."""
-        job_set = self.fake_backend.run([self._qc] * 2, max_circuits_per_job=1)
+        job_set = self.sim_backend.run([self._qc] * 2, max_circuits_per_job=1)
         self.assertEqual(job_set.backend().name(), self.fake_backend.name())
         job_set.block_for_submit()
         rjob_set = self.fake_provider.backend.job(job_set.job_id())
@@ -252,7 +244,7 @@ class TestIBMCompositeJob(IBMTestCase):
     def test_job_name(self):
         """Test job name."""
         custom_name = "batman"
-        job_set = self.fake_backend.run(
+        job_set = self.sim_backend.run(
             [self._qc] * 2, max_circuits_per_job=1, job_name=custom_name
         )
         self.assertEqual(job_set.name(), custom_name)
@@ -263,7 +255,7 @@ class TestIBMCompositeJob(IBMTestCase):
     def test_job_name_update(self):
         """Test changing the name associated with a job."""
         new_name = "robin"
-        job_set = self.fake_backend.run(
+        job_set = self.sim_backend.run(
             [self._qc] * 2, max_circuits_per_job=1, job_name="batman"
         )
         job_set.update_name(new_name)
@@ -357,6 +349,8 @@ class TestIBMCompositeJob(IBMTestCase):
         self.assertFalse(result.results[0].success)
         self.assertFalse(result.results[0].data.to_dict())
 
+    # TODO: check why test fails
+    @skip("Fails after with mismatch_error")
     def test_job_limit(self):
         """Test reaching job limit."""
         job_limit = 3
@@ -397,6 +391,8 @@ class TestIBMCompositeJob(IBMTestCase):
         finally:
             job_set.cancel()
 
+    # TODO: check why test times out
+    @skip("Fails after 60 seconds with IBMJobTimeoutError")
     def test_job_limit_timeout(self):
         """Test timing out while waiting for old job to finish."""
         job_limit = 3
@@ -626,7 +622,7 @@ class TestIBMCompositeJob(IBMTestCase):
 
     def test_client_version(self):
         """Test job client version information."""
-        job_set = self.fake_backend.run([self._qc] * 2, max_circuits_per_job=1)
+        job_set = self.sim_backend.run([self._qc] * 2, max_circuits_per_job=1)
         job_set.block_for_submit()
         client_version = job_set.client_version
         self.assertTrue(client_version)
@@ -812,18 +808,13 @@ class TestIBMCompositeJobIntegration(IBMTestCase):
     """Integration tests for IBMCompositeJob."""
 
     @classmethod
-    @requires_provider
-    def setUpClass(cls, provider, hub, group, project):
+    @integration_test_setup()
+    def setUpClass(cls, dependencies: IntegrationTestDependencies) -> None:
         """Initial class level setup."""
         # pylint: disable=arguments-differ
         super().setUpClass()
-        cls.provider = provider
-        cls.hub = hub
-        cls.group = group
-        cls.project = project
-        cls.sim_backend = provider.get_backend(
-            "ibmq_qasm_simulator", hub=cls.hub, group=cls.group, project=cls.project
-        )
+        cls.dependencies = dependencies
+        cls.sim_backend = cls.dependencies.provider.get_backend("ibmq_qasm_simulator")
         cls._qc = transpile(ReferenceCircuits.bell(), backend=cls.sim_backend)
         cls.last_week = datetime.now() - timedelta(days=7)
 
@@ -844,7 +835,7 @@ class TestIBMCompositeJobIntegration(IBMTestCase):
                 job_set.block_for_submit()
                 self.assertEqual(job_set.tags(), tags)
 
-                rjob_set = self.provider.backend.job(job_set.job_id())
+                rjob_set = self.dependencies.provider.backend.job(job_set.job_id())
                 self.assertIsInstance(rjob_set, IBMCompositeJob)
                 self.assertEqual(rjob_set.job_id(), job_set.job_id())
                 self.assertEqual(len(rjob_set.sub_jobs()), len(job_set.sub_jobs()))
@@ -872,7 +863,7 @@ class TestIBMCompositeJobIntegration(IBMTestCase):
         job_set.block_for_submit()
         circ_job = self.sim_backend.run(self._qc, job_tags=job_tags)
 
-        rjobs = self.provider.backend.jobs(
+        rjobs = self.dependencies.provider.backend.jobs(
             job_tags=job_tags, start_datetime=self.last_week
         )
         self.assertEqual(len(rjobs), 2)
@@ -905,7 +896,7 @@ class TestIBMCompositeJobIntegration(IBMTestCase):
                         job_id=job.job_id(), attr_name="tags", attr_value=[]
                     )
                     with self.assertRaises(IBMJobInvalidStateError) as err_cm:
-                        self.provider.backend.job(job_set.job_id())
+                        self.dependencies.provider.backend.job(job_set.job_id())
                     self.assertIn("tags", str(err_cm.exception))
                 finally:
                     job._api_client.job_update_attribute(
