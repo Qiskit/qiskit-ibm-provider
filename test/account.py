@@ -20,7 +20,7 @@ from tempfile import NamedTemporaryFile
 from unittest.mock import patch
 
 from qiskit_ibm_provider.accounts import management
-from qiskit_ibm_provider.accounts.account import LEGACY_API_URL
+from qiskit_ibm_provider.accounts.account import IBM_QUANTUM_API_URL
 
 
 class custom_envs(ContextDecorator):
@@ -127,7 +127,7 @@ class temporary_account_config_file(ContextDecorator):
 
 def get_account_config_contents(
     name=None,
-    auth="legacy",
+    channel="ibm_quantum",
     token=None,
     url=None,
     instance=None,
@@ -136,26 +136,26 @@ def get_account_config_contents(
 ):
     """Generate qiskitrc content"""
     if instance is None:
-        instance = "some_instance" if auth == "cloud" else "hub/group/project"
+        instance = "some_instance" if channel == "ibm_cloud" else "hub/group/project"
     token = token or uuid.uuid4().hex
     if name is None:
         name = (
-            management._DEFAULT_ACCOUNT_NAME_CLOUD
-            if auth == "cloud"
-            else management._DEFAULT_ACCOUNT_NAME_LEGACY
+            management._DEFAULT_ACCOUNT_NAME_IBM_CLOUD
+            if channel == "ibm_cloud"
+            else management._DEFAULT_ACCOUNT_NAME_IBM_QUANTUM
         )
     if url is None:
-        url = LEGACY_API_URL
+        url = IBM_QUANTUM_API_URL
     out = {
         name: {
-            "auth": auth,
+            "channel": channel,
             "url": url,
             "token": token,
             "instance": instance,
         }
     }
     if verify is not None:
-        out["verify"] = verify
+        out[name]["verify"] = verify
     if proxies is not None:
-        out["proxies"] = proxies
+        out[name]["proxies"] = proxies
     return out

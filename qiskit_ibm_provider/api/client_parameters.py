@@ -14,7 +14,7 @@
 
 from typing import Dict, Optional, Any
 
-from ..api.auth import LegacyAuth
+from ..api.auth import QuantumAuth
 from ..proxies import ProxyConfiguration
 
 TEMPLATE_IBM_HUBS = "{prefix}/Network/{hub}/Groups/{group}/Projects/{project}"
@@ -47,9 +47,9 @@ class ClientParameters:
         self.proxies = proxies
         self.verify = verify
 
-    def get_auth_handler(self) -> LegacyAuth:
+    def get_auth_handler(self) -> QuantumAuth:
         """Returns the respective authentication handler."""
-        return LegacyAuth(access_token=self.token)
+        return QuantumAuth(access_token=self.token)
 
     def connection_parameters(self) -> Dict[str, Any]:
         """Construct connection related parameters.

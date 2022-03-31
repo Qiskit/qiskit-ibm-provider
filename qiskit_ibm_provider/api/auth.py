@@ -18,14 +18,14 @@ from requests import PreparedRequest
 from requests.auth import AuthBase
 
 
-class LegacyAuth(AuthBase):
+class QuantumAuth(AuthBase):
     """Attaches Legacy Authentication to the given Request object."""
 
     def __init__(self, access_token: str):
         self.access_token = access_token
 
     def __eq__(self, other: object) -> bool:
-        if isinstance(other, LegacyAuth):
+        if isinstance(other, QuantumAuth):
             return self.access_token == other.access_token
 
         return False
