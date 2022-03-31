@@ -35,7 +35,7 @@ class FakeProvider(IBMProvider):
 
         super().__init__(*args, **kwargs)
 
-    def _authenticate_legacy_account(
+    def _authenticate_ibm_quantum_account(
         self, client_params: ClientParameters
     ) -> "FakeAuthClient":
         """Mock authentication."""
@@ -87,7 +87,10 @@ class FakeAuthClient(AuthClient):
 
     def current_service_urls(self):
         """Return service urls."""
-        return {"http": "legacy_api_url", "services": {"runtime": "legacy_runtime_url"}}
+        return {
+            "http": "ibm_quantum_api_url",
+            "services": {"runtime": "ibm_quantum_runtime_url"},
+        }
 
     def current_access_token(self):
         """Return access token."""
