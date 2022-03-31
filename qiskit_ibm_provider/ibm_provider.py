@@ -170,7 +170,7 @@ class IBMProvider(Provider):
             proxies=self._account.proxies,
             verify=self._account.verify,
         )
-        self._auth_client = self._authenticate_legacy_account(self._client_params)
+        self._auth_client = self._authenticate_ibm_quantum_account(self._client_params)
 
         self._hgps = self._initialize_hgps(self._auth_client)
         self._initialize_services()
@@ -196,7 +196,7 @@ class IBMProvider(Provider):
         else:
             if token:
                 account = Account(
-                    auth="legacy",
+                    channel="ibm_quantum",
                     token=token,
                     url=url,
                     instance=instance,
@@ -206,9 +206,9 @@ class IBMProvider(Provider):
             else:
                 if url:
                     logger.warning(
-                        "Loading default legacy account. Input 'url' is ignored.",
+                        "Loading default ibm_quantum account. Input 'url' is ignored."
                     )
-                account = AccountManager.get(auth="legacy")
+                account = AccountManager.get(channel="ibm_quantum")
 
         if account is None:
             account = AccountManager.get()
@@ -294,7 +294,7 @@ class IBMProvider(Provider):
                 )
         return hgps
 
-    def _authenticate_legacy_account(
+    def _authenticate_ibm_quantum_account(
         self, client_params: ClientParameters
     ) -> AuthClient:
         """Authenticate against IBM Quantum and populate the hub/group/projects.
@@ -432,7 +432,7 @@ class IBMProvider(Provider):
             True if the account was deleted.
             False if no account was found.
         """
-        return AccountManager.delete(name=name, auth="legacy")
+        return AccountManager.delete(name=name, channel="ibm_quantum")
 
     @staticmethod
     def save_account(
@@ -449,9 +449,8 @@ class IBMProvider(Provider):
         Args:
             token: IBM Cloud API key or IBM Quantum API token.
             url: The API URL.
-                Defaults to https://cloud.ibm.com (cloud) or
-                https://auth.quantum-computing.ibm.com/api (legacy).
-            instance: The CRN (cloud) or hub/group/project (legacy).
+                Defaults to https://auth.quantum-computing.ibm.com/api
+            instance: The hub/group/project.
             name: Name of the account to save.
             proxies: Proxy configuration. Supported optional keys are
                 ``urls`` (a dictionary mapping protocol or protocol and host to the URL of the proxy,
@@ -466,7 +465,7 @@ class IBMProvider(Provider):
             token=token,
             url=url,
             instance=instance,
-            auth="legacy",
+            channel="ibm_quantum",
             name=name,
             proxies=ProxyConfiguration(**proxies) if proxies else None,
             verify=verify,
@@ -494,7 +493,9 @@ class IBMProvider(Provider):
         return dict(
             map(
                 lambda kv: (kv[0], Account.to_saved_format(kv[1])),
-                AccountManager.list(default=default, auth="legacy", name=name).items(),
+                AccountManager.list(
+                    default=default, channel="ibm_quantum", name=name
+                ).items(),
             ),
         )
 
