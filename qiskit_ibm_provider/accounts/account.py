@@ -20,13 +20,14 @@ from requests.auth import AuthBase
 from typing_extensions import Literal
 
 from .exceptions import InvalidAccountError
-from ..api.auth import LegacyAuth
+from ..api.auth import QuantumAuth
 from ..proxies import ProxyConfiguration
 from ..utils.hgp import from_instance_format
 
 AccountType = Optional[Literal["cloud", "legacy"]]
+ChannelType = Optional[Literal["ibm_cloud", "ibm_quantum"]]
 
-LEGACY_API_URL = "https://auth.quantum-computing.ibm.com/api"
+IBM_QUANTUM_API_URL = "https://auth.quantum-computing.ibm.com/api"
 logger = logging.getLogger(__name__)
 
 
@@ -35,7 +36,7 @@ class Account:
 
     def __init__(
         self,
-        auth: AccountType,
+        channel: ChannelType,
         token: str,
         url: Optional[str] = None,
         instance: Optional[str] = None,
@@ -45,16 +46,16 @@ class Account:
         """Account constructor.
 
         Args:
-            auth: Authentication type, ``cloud`` or ``legacy``.
+            channel: Channel type, ``ibm_cloud`` or ``ibm_quantum``.
             token: Account token to use.
             url: Authentication URL.
             instance: Service instance to use.
             proxies: Proxy configuration.
             verify: Whether to verify server's TLS certificate.
         """
-        resolved_url = url or LEGACY_API_URL
+        resolved_url = url or IBM_QUANTUM_API_URL
 
-        self.auth = auth
+        self.channel = channel
         self.token = token
         self.url = resolved_url
         self.instance = instance
@@ -73,7 +74,7 @@ class Account:
         """Creates an account instance from data saved on disk."""
         proxies = data.get("proxies")
         return cls(
-            auth=data.get("auth"),
+            channel=data.get("channel"),
             url=data.get("url"),
             token=data.get("token"),
             instance=data.get("instance"),
@@ -83,14 +84,14 @@ class Account:
 
     def get_auth_handler(self) -> AuthBase:
         """Returns the respective authentication handler."""
-        return LegacyAuth(access_token=self.token)
+        return QuantumAuth(access_token=self.token)
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, Account):
             return False
         return all(
             [
-                self.auth == other.auth,
+                self.channel == other.channel,
                 self.token == other.token,
                 self.url == other.url,
                 self.instance == other.instance,
@@ -109,19 +110,20 @@ class Account:
             This Account instance.
         """
 
-        self._assert_valid_auth(self.auth)
+        self._assert_valid_channel(self.channel)
         self._assert_valid_token(self.token)
         self._assert_valid_url(self.url)
-        self._assert_valid_instance(self.auth, self.instance)
+        self._assert_valid_instance(self.channel, self.instance)
         self._assert_valid_proxies(self.proxies)
         return self
 
     @staticmethod
-    def _assert_valid_auth(auth: AccountType) -> None:
-        """Assert that the auth parameter is valid."""
-        if not (auth in ["cloud", "legacy"]):
+    def _assert_valid_channel(channel: ChannelType) -> None:
+        """Assert that the channel parameter is valid."""
+        if not (channel in ["ibm_cloud", "ibm_quantum"]):
             raise InvalidAccountError(
-                f"Invalid `auth` value. Expected one of ['cloud', 'legacy'], got '{auth}'."
+                f"Invalid `channel` value. Expected one of "
+                f"{['ibm_cloud', 'ibm_quantum']}, got '{channel}'."
             )
 
     @staticmethod
@@ -149,14 +151,14 @@ class Account:
             config.validate()
 
     @staticmethod
-    def _assert_valid_instance(auth: AccountType, instance: str) -> None:
+    def _assert_valid_instance(channel: ChannelType, instance: str) -> None:
         """Assert that the instance name is valid for the given account type."""
-        if auth == "cloud":
+        if channel == "ibm_cloud":
             if not (isinstance(instance, str) and len(instance) > 0):
                 raise InvalidAccountError(
                     f"Invalid `instance` value. Expected a non-empty string, got '{instance}'."
                 )
-        if auth == "legacy":
+        if channel == "ibm_quantum":
             if instance is not None:
                 try:
                     from_instance_format(instance)
