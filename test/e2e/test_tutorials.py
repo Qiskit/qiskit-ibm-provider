@@ -15,14 +15,14 @@
 import glob
 import os
 import warnings
-from unittest import skipIf
 
 import nbformat
-from nbconvert.preprocessors import ExecutePreprocessor
-from qiskit.test.decorators import TEST_OPTIONS
 
-from qiskit_ibm_provider.utils.utils import to_python_identifier
+from nbconvert.preprocessors import ExecutePreprocessor
+
+from qiskit_ibm_provider.utils import to_python_identifier
 from ..ibm_test_case import IBMTestCase
+
 
 TUTORIAL_PATH = "docs/tutorials/**/*.ipynb"
 
@@ -30,9 +30,7 @@ TUTORIAL_PATH = "docs/tutorials/**/*.ipynb"
 class TutorialsTestCaseMeta(type):
     """Metaclass that dynamically appends a "test_TUTORIAL_NAME" method to the class."""
 
-    def __new__(
-        mcs, name, bases, dict_
-    ):  # pylint: disable=bad-mcs-classmethod-argument
+    def __new__(cls, name, bases, dict_):
         def create_test(filename):
             """Return a new test function."""
 
@@ -48,17 +46,13 @@ class TutorialsTestCaseMeta(type):
             test_name = "test_%s" % to_python_identifier(filename)
             dict_[test_name] = create_test(filename)
             dict_[test_name].__doc__ = 'Test tutorial "%s"' % filename
-        return type.__new__(
-            mcs, name, bases, dict_
-        )  # pylint: disable=bad-mcs-classmethod-argument
+        return type.__new__(cls, name, bases, dict_)
 
 
-@skipIf(not TEST_OPTIONS["run_slow"], "Skipping slow tests.")
 class TestTutorials(IBMTestCase, metaclass=TutorialsTestCaseMeta):
     """Tests for tutorials."""
 
-    @staticmethod
-    def _run_notebook(filename):
+    def _run_notebook(self, filename):
         # Create the preprocessor.
         execute_preprocessor = ExecutePreprocessor(timeout=6000, kernel_name="python3")
 
