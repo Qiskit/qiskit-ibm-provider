@@ -38,8 +38,7 @@ integration-test:
   test/integration/test_proxies.py test/integration/test_composite_job.py
 
 e2e-test:
-	# TODO: enable test_tutorials 
-	# python -m unittest discover --verbose --top-level-directory . --start-directory test/e2e
+	python -m unittest discover --verbose --top-level-directory . --start-directory test/e2e
 
 black:
 	black qiskit_ibm_provider test setup.py docs/tutorials
