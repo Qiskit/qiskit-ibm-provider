@@ -17,14 +17,32 @@ import os
 import warnings
 
 import nbformat
-
 from nbconvert.preprocessors import ExecutePreprocessor
 
 from qiskit_ibm_provider.utils import to_python_identifier
+
 from ..ibm_test_case import IBMTestCase
 
-
 TUTORIAL_PATH = "docs/tutorials/**/*.ipynb"
+
+SUPPORTED_TUTORIALS = [
+    "2_jupyter_tools.ipynb",
+]
+
+SUPPORTED_TUTORIALS_IBM_QUANTUM = [
+    "1_the_ibm_quantum_account.ipynb",
+    *SUPPORTED_TUTORIALS,
+]
+
+
+def _is_supported(tutorial_filename: str) -> bool:
+    """Not all tutorials work for all channel types. Check if the given tutorial is supported by the
+    targeted environment."""
+
+    return any(
+        tutorial_filename.endswith(filename)
+        for filename in SUPPORTED_TUTORIALS_IBM_QUANTUM
+    )
 
 
 class TutorialsTestCaseMeta(type):
@@ -53,6 +71,9 @@ class TestTutorials(IBMTestCase, metaclass=TutorialsTestCaseMeta):
     """Tests for tutorials."""
 
     def _run_notebook(self, filename):
+        if not _is_supported(filename):
+            self.skipTest(f"Tutorial {filename} not supported")
+
         # Create the preprocessor.
         execute_preprocessor = ExecutePreprocessor(timeout=6000, kernel_name="python3")
 
