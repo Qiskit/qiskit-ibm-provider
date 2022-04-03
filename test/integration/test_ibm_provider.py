@@ -35,8 +35,6 @@ from ..decorators import (
 )
 from ..ibm_test_case import IBMTestCase
 
-# from ..utils import get_hgp
-
 API_URL = "https://api.quantum-computing.ibm.com/api"
 AUTH_URL = "https://auth.quantum-computing.ibm.com/api"
 
