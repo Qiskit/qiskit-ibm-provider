@@ -12,7 +12,6 @@
 
 """Tests for the IBMProvider class."""
 
-# import os
 from datetime import datetime
 from unittest import skip, mock
 
@@ -26,13 +25,6 @@ from qiskit_ibm_provider import hub_group_project
 from qiskit_ibm_provider.api.clients import AccountClient
 from qiskit_ibm_provider.api.exceptions import RequestsApiError
 
-# from qiskit_ibm_provider.apiconstants import QISKIT_IBM_API_URL
-
-# from qiskit_ibm_provider.credentials.hub_group_project_id import HubGroupProjectID
-# from ..contextmanagers import custom_qiskitrc, no_envs, CREDENTIAL_ENV_VARS
-# from qiskit_ibm_provider.exceptions import (
-#     IBMProviderError,
-# )
 from qiskit_ibm_provider.ibm_backend import IBMBackend
 from qiskit_ibm_provider.ibm_backend_service import IBMBackendService
 from qiskit_ibm_provider.ibm_provider import IBMProvider
@@ -95,112 +87,6 @@ class TestIBMProviderEnableAccount(IBMTestCase):
             ) as context_manager:
                 IBMProvider(self.dependencies.token, self.dependencies.url)
         self.assertIn("bad_backend", str(context_manager.output))
-
-
-# @skipIf(os.name == "nt", "Test not supported in Windows")
-# class TestIBMProviderAccounts(IBMTestCase):
-#     """Tests for account handling."""
-
-#     @classmethod
-#     def setUpClass(cls):
-#         """Initial class setup."""
-#         super().setUpClass()
-#         cls.token = "API_TOKEN"
-
-#     def test_provider_init_saved_account(self, qe_token, qe_url):
-#         """Test initializing IBMProvider with credentials from qiskitrc file."""
-#         if qe_url != QISKIT_IBM_API_URL:
-#             # save expects an auth production URL.
-#             self.skipTest("Test requires production auth URL")
-
-#         with custom_qiskitrc(), no_envs(CREDENTIAL_ENV_VARS):
-#             IBMProvider.save_account(qe_token, url=qe_url)
-#             provider = IBMProvider()
-
-#         self.assertIsInstance(provider, IBMProvider)
-#         self.assertEqual(provider.backend._default_hgp.credentials.token, qe_token)
-#         self.assertEqual(provider.backend._default_hgp.credentials.auth_url, qe_url)
-
-#     def test_load_account_saved_provider(self, qe_token, qe_url):
-#         """Test loading an account that contains a saved hub/group/project."""
-#         if qe_url != QISKIT_IBM_API_URL:
-#             # .save_account() expects an auth production URL.
-#             self.skipTest("Test requires production auth URL")
-
-#         # Get a non default hub/group/project.
-#         non_default_hgp = get_hgp(qe_token, qe_url, default=False)
-
-#         with custom_qiskitrc(), no_envs(CREDENTIAL_ENV_VARS):
-#             IBMProvider.save_account(
-#                 token=qe_token,
-#                 url=qe_url,
-#                 hub=non_default_hgp.credentials.hub,
-#                 group=non_default_hgp.credentials.group,
-#                 project=non_default_hgp.credentials.project,
-#             )
-#             saved_provider = IBMProvider()
-#             if saved_provider.backend._default_hgp != non_default_hgp:
-#                 # Prevent tokens from being logged.
-#                 saved_provider.backend._default_hgp.credentials.token = None
-#                 non_default_hgp.credentials.token = None
-#                 self.fail(
-#                     "loaded default hgp ({}) != expected ({})".format(
-#                         saved_provider.backend._default_hgp.credentials.__dict__,
-#                         non_default_hgp.credentials.__dict__,
-#                     )
-#                 )
-
-#         self.assertEqual(
-#             saved_provider.backend._default_hgp.credentials.token, qe_token
-#         )
-#         self.assertEqual(
-#             saved_provider.backend._default_hgp.credentials.auth_url, qe_url
-#         )
-#         self.assertEqual(
-#             saved_provider.backend._default_hgp.credentials.hub,
-#             non_default_hgp.credentials.hub,
-#         )
-#         self.assertEqual(
-#             saved_provider.backend._default_hgp.credentials.group,
-#             non_default_hgp.credentials.group,
-#         )
-#         self.assertEqual(
-#             saved_provider.backend._default_hgp.credentials.project,
-#             non_default_hgp.credentials.project,
-#         )
-
-#     def test_load_saved_account_invalid_hgp(self, qe_token, qe_url):
-#         """Test loading an account that contains a saved hub/group/project that does not exist."""
-#         if qe_url != QISKIT_IBM_API_URL:
-#             # .save_account() expects an auth production URL.
-#             self.skipTest("Test requires production auth URL")
-
-#         # Hub, group, project in correct format but does not exists.
-#         invalid_hgp_to_store = "invalid_hub/invalid_group/invalid_project"
-#         with custom_qiskitrc(), no_envs(CREDENTIAL_ENV_VARS):
-#             hgp_id = HubGroupProjectID.from_stored_format(invalid_hgp_to_store)
-#             with self.assertRaises(IBMProviderError) as context_manager:
-#                 IBMProvider.save_account(
-#                     token=qe_token,
-#                     url=qe_url,
-#                     hub=hgp_id.hub,
-#                     group=hgp_id.group,
-#                     project=hgp_id.project,
-#                 )
-#                 IBMProvider()
-
-#             self.assertIn(
-#                 "No hub/group/project matches the specified criteria",
-#                 str(context_manager.exception),
-#             )
-
-#     def test_active_account(self, qe_token, qe_url):
-#         """Test get active account"""
-#         provider = IBMProvider(qe_token, qe_url)
-#         active_account = provider.active_account()
-#         self.assertIsNotNone(active_account)
-#         self.assertEqual(active_account["token"], qe_token)
-#         self.assertEqual(active_account["url"], qe_url)
 
 
 class TestIBMProviderHubGroupProject(IBMTestCase):
