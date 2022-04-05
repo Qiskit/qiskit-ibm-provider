@@ -103,9 +103,9 @@ class IBMDashboard(Subscriber):
         ibm_backends = {}
         for hgp in self.provider._get_hgps():
             hgp_name = "{hub}/{group}/{project}".format(
-                hub=hgp.credentials.hub,
-                group=hgp.credentials.group,
-                project=hgp.credentials.project,
+                hub=hgp._hub,
+                group=hgp._group,
+                project=hgp._project,
             )
             for backend in hgp.backends.values():
                 if not backend.configuration().simulator:
