@@ -36,5 +36,9 @@ integration-test:
 	test/integration/test_serialization.py test/integration/test_ibm_job_attributes.py test/integration/test_basic_server_paths.py \
   test/integration/test_ibm_integration.py test/integration/test_ibm_job.py test/integration/test_ibm_qasm_simulator.py \
   test/integration/test_proxies.py test/integration/test_composite_job.py
+
+e2e-test:
+	python -m unittest discover --verbose --top-level-directory . --start-directory test/e2e
+
 black:
 	black qiskit_ibm_provider test setup.py docs/tutorials

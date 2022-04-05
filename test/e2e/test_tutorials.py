@@ -1,7 +1,3 @@
-# pylint: disable-all
-# type: ignore
-# TODO: Reenable and fix integration tests.
-
 # This code is part of Qiskit.
 #
 # (C) Copyright IBM 2021.
@@ -19,24 +15,40 @@
 import glob
 import os
 import warnings
-from unittest import skipIf
 
 import nbformat
 from nbconvert.preprocessors import ExecutePreprocessor
-from qiskit.test.decorators import TEST_OPTIONS
 
-from qiskit_ibm_provider.utils.utils import to_python_identifier
+from qiskit_ibm_provider.utils import to_python_identifier
+
 from ..ibm_test_case import IBMTestCase
 
 TUTORIAL_PATH = "docs/tutorials/**/*.ipynb"
+
+SUPPORTED_TUTORIALS = [
+    "2_jupyter_tools.ipynb",
+]
+
+SUPPORTED_TUTORIALS_IBM_QUANTUM = [
+    "1_the_ibm_quantum_account.ipynb",
+    *SUPPORTED_TUTORIALS,
+]
+
+
+def _is_supported(tutorial_filename: str) -> bool:
+    """Not all tutorials work for all channel types. Check if the given tutorial is supported by the
+    targeted environment."""
+
+    return any(
+        tutorial_filename.endswith(filename)
+        for filename in SUPPORTED_TUTORIALS_IBM_QUANTUM
+    )
 
 
 class TutorialsTestCaseMeta(type):
     """Metaclass that dynamically appends a "test_TUTORIAL_NAME" method to the class."""
 
-    def __new__(
-        mcs, name, bases, dict_
-    ):  # pylint: disable=bad-mcs-classmethod-argument
+    def __new__(cls, name, bases, dict_):
         def create_test(filename):
             """Return a new test function."""
 
@@ -52,17 +64,16 @@ class TutorialsTestCaseMeta(type):
             test_name = "test_%s" % to_python_identifier(filename)
             dict_[test_name] = create_test(filename)
             dict_[test_name].__doc__ = 'Test tutorial "%s"' % filename
-        return type.__new__(
-            mcs, name, bases, dict_
-        )  # pylint: disable=bad-mcs-classmethod-argument
+        return type.__new__(cls, name, bases, dict_)
 
 
-@skipIf(not TEST_OPTIONS["run_slow"], "Skipping slow tests.")
 class TestTutorials(IBMTestCase, metaclass=TutorialsTestCaseMeta):
     """Tests for tutorials."""
 
-    @staticmethod
-    def _run_notebook(filename):
+    def _run_notebook(self, filename):
+        if not _is_supported(filename):
+            self.skipTest(f"Tutorial {filename} not supported")
+
         # Create the preprocessor.
         execute_preprocessor = ExecutePreprocessor(timeout=6000, kernel_name="python3")
 
