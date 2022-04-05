@@ -37,5 +37,8 @@ integration-test:
 	test/integration/test_ibm_integration.py test/integration/test_ibm_job.py test/integration/test_ibm_qasm_simulator.py \
   test/integration/test_proxies.py test/integration/test_jupyter.py test/integration/test_composite_job.py
 
+e2e-test:
+	python -m unittest discover --verbose --top-level-directory . --start-directory test/e2e
+
 black:
 	black qiskit_ibm_provider test setup.py docs/tutorials
