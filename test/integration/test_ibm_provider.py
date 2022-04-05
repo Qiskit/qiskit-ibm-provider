@@ -90,23 +90,16 @@ class TestIBMProviderEnableAccount(IBMTestCase):
 class TestIBMProviderHubGroupProject(IBMTestCase):
     """Tests for IBMProvider HubGroupProject related methods."""
 
-    def _initialize_provider(self, qe_token=None, qe_url=None):
-        """Initialize and return provider."""
-        return IBMProvider(qe_token, qe_url)
-
     @integration_test_setup()
     def setUp(self, dependencies: IntegrationTestDependencies) -> None:
         """Initial test setup."""
         # pylint: disable=arguments-differ
         super().setUp()
-        self.provider = self._initialize_provider(dependencies.token, dependencies.url)
-        self.instance = dependencies.instance
+        self.provider = IBMProvider(token=dependencies.token, url=dependencies.url)
 
-    # TODO: check why test fails
-    @skip("default hgp is different from set given hgp")
     def test_get_hgp(self):
         """Test get single hgp."""
-        hgp = self.provider._get_hgp(instance=self.instance)
+        hgp = self.provider._get_hgp()
         self.assertEqual(self.provider.backend._default_hgp, hgp)
 
     def test_get_hgps_with_filter(self):
