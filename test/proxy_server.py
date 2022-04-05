@@ -54,8 +54,9 @@ class MockProxyServer:
 @contextmanager
 def use_proxies(hgp, proxies):
     """Context manager to set and restore proxies setting."""
+
     try:
-        hgp.credentials.proxies = {"urls": proxies}
+        hgp._api_client.proxies = {"urls": proxies}
         yield
     finally:
-        hgp.credentials.proxies = None
+        hgp._api_client.proxies = None
