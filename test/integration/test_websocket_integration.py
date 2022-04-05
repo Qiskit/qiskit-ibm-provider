@@ -1,7 +1,3 @@
-# pylint: disable-all
-# type: ignore
-# TODO: Reenable and fix integration tests.
-
 # This code is part of Qiskit.
 #
 # (C) Copyright IBM 2021.
@@ -25,9 +21,13 @@ from qiskit.providers import JobTimeoutError
 from qiskit.providers.jobstatus import JobStatus
 from qiskit.test import slow_test
 from qiskit.test.reference_circuits import ReferenceCircuits
-
+from qiskit_ibm_provider import IBMBackend
+from qiskit_ibm_provider.hub_group_project import from_instance_format
 from qiskit_ibm_provider.api.clients import AccountClient, websocket
-from ..decorators import requires_provider, requires_device
+from ..decorators import (
+    IntegrationTestDependencies,
+    integration_test_setup_with_backend,
+)
 from ..ibm_test_case import IBMTestCase
 from ..proxy_server import MockProxyServer, use_proxies
 from ..utils import most_busy_backend, cancel_job
@@ -37,19 +37,20 @@ class TestWebsocketIntegration(IBMTestCase):
     """Websocket integration tests."""
 
     @classmethod
-    @requires_provider
-    def setUpClass(cls, provider, hub, group, project):
+    @integration_test_setup_with_backend(simulator=False)
+    def setUpClass(
+        cls, backend: IBMBackend, dependencies: IntegrationTestDependencies
+    ) -> None:
         """Initial class level setup."""
         # pylint: disable=arguments-differ
         super().setUpClass()
-        cls.provider = provider
-        cls.hub = hub
-        cls.group = group
-        cls.project = project
-        cls.sim_backend = provider.get_backend(
-            "ibmq_qasm_simulator", hub=cls.hub, group=cls.group, project=cls.project
+        cls.dependencies = dependencies
+        hub, group, project = from_instance_format(dependencies.instance)
+        cls.sim_backend = dependencies.provider.get_backend(
+            "ibmq_qasm_simulator", hub=hub, group=group, project=project
         )
         cls.bell = transpile(ReferenceCircuits.bell(), cls.sim_backend)
+        cls.real_device_backend = backend
 
     def setUp(self):
         """Initial test setup."""
@@ -75,16 +76,19 @@ class TestWebsocketIntegration(IBMTestCase):
         job = self.sim_backend.run(self.bell, shots=1)
 
         # Manually disable the non-websocket polling.
-        job._api_client._job_final_status_polling = self._job_final_status_polling
+        job._api_client.account_api._job_final_status_polling = (
+            self._job_final_status_polling
+        )
         result = job.result()
 
         self.assertEqual(result.status, "COMPLETED")
 
     @slow_test
-    @requires_device
-    def test_websockets_device(self, backend):
+    def test_websockets_device(self):
         """Test checking status of a job via websockets for a device."""
-        job = backend.run(transpile(ReferenceCircuits.bell(), backend), shots=1)
+        job = self.real_device_backend.run(
+            transpile(ReferenceCircuits.bell(), self.real_device_backend), shots=1
+        )
 
         # Manually disable the non-websocket polling.
         job._api_client._job_final_status_polling = self._job_final_status_polling
@@ -100,7 +104,9 @@ class TestWebsocketIntegration(IBMTestCase):
         job._wait_for_completion()
 
         # Manually disable the non-websocket polling.
-        job._api_client._job_final_status_polling = self._job_final_status_polling
+        job._api_client.account_api._job_final_status_polling = (
+            self._job_final_status_polling
+        )
 
         # Pretend we haven't seen the final status
         job._status = JobStatus.RUNNING
@@ -112,17 +118,17 @@ class TestWebsocketIntegration(IBMTestCase):
         """Test http retry after websocket error due to an invalid URL."""
 
         job = self.sim_backend.run(self.bell)
-        saved_websocket_url = job._api_client._credentials.websockets_url
+        saved_websocket_url = job._api_client._params.url
 
         try:
             # Use fake websocket address.
-            job._api_client._credentials.websockets_url = "wss://wss.localhost"
+            job._api_client._params.url = "wss://wss.localhost"
 
             # _wait_for_completion() should retry with http successfully
             # after getting websockets error.
             job._wait_for_completion()
         finally:
-            job._api_client._credentials.websockets_url = saved_websocket_url
+            job._api_client._params.url = saved_websocket_url
 
         self.assertIs(job._status, JobStatus.DONE)
 
@@ -171,9 +177,7 @@ class TestWebsocketIntegration(IBMTestCase):
 
     def test_websockets_timeout(self):
         """Test timeout checking status of a job via websockets."""
-        backend = most_busy_backend(
-            self.provider, hub=self.hub, group=self.group, project=self.project
-        )
+        backend = most_busy_backend(self.dependencies.provider)
         job = backend.run(
             transpile(ReferenceCircuits.bell(), backend),
             shots=backend.configuration().max_shots,
@@ -228,9 +232,12 @@ class TestWebsocketIntegration(IBMTestCase):
         job = self.sim_backend.run(self.bell, shots=1)
 
         # Manually disable the non-websocket polling.
-        job._api_client._job_final_status_polling = self._job_final_status_polling
+        job._api_client.account_api._job_final_status_polling = (
+            self._job_final_status_polling
+        )
         with use_proxies(
-            self.provider.backend._default_hgp, MockProxyServer.VALID_PROXIES
+            self.dependencies.provider.backend._default_hgp,
+            MockProxyServer.VALID_PROXIES,
         ):
             result = job.result()
 
@@ -246,7 +253,9 @@ class TestWebsocketIntegration(IBMTestCase):
                 MockProxyServer.PROXY_IP_ADDRESS, MockProxyServer.INVALID_PROXY_PORT
             )
         }
-        with use_proxies(self.provider.backend._default_hgp, invalid_proxy):
+        with use_proxies(
+            self.dependencies.provider.backend._default_hgp, invalid_proxy
+        ):
             with self.assertLogs("qiskit_ibm_provider", "INFO") as log_cm:
                 job.wait_for_final_state()
 
