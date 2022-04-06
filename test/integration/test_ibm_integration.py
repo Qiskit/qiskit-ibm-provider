@@ -20,7 +20,6 @@ from qiskit.result import Result
 from qiskit.test.reference_circuits import ReferenceCircuits
 
 from qiskit_ibm_provider import IBMBackend
-from qiskit_ibm_provider.hub_group_project import from_instance_format
 from qiskit_ibm_provider.job.exceptions import IBMJobApiError
 from ..decorators import (
     IntegrationTestDependencies,
@@ -42,9 +41,8 @@ class TestIBMIntegration(IBMTestCase):
         """Initial class level setup."""
         # pylint: disable=arguments-differ
         super().setUpClass()
-        hub, group, project = from_instance_format(dependencies.instance)
         cls.sim_backend = dependencies.provider.get_backend(
-            "ibmq_qasm_simulator", hub=hub, group=group, project=project
+            "ibmq_qasm_simulator", instance=dependencies.instance
         )
         cls.real_device_backend = backend
         cls.dependencies = dependencies
@@ -129,9 +127,8 @@ class TestIBMIntegration(IBMTestCase):
         if not self.dependencies.instance_private:
             print(self.skipTest("Skip test because no private instance is configured"))
 
-        hub, group, project = from_instance_format(self.dependencies.instance_private)
         backend = self.dependencies.provider.get_backend(
-            "ibmq_qasm_simulator", hub, group, project
+            "ibmq_qasm_simulator", instance=self.dependencies.instance_private
         )
         quantum_circuit = ReferenceCircuits.bell()
         job = execute(quantum_circuit, backend=backend)

@@ -545,19 +545,15 @@ class IBMProvider(Provider):
     def get_backend(
         self,
         name: str = None,
-        hub: Optional[str] = None,
-        group: Optional[str] = None,
-        project: Optional[str] = None,
+        instance: Optional[str] = None,
         **kwargs: Any,
     ) -> Backend:
         """Return a single backend matching the specified filtering.
 
         Args:
-            name (str): name of the backend.
-            hub: Name of the hub.
-            group: Name of the group.
-            project: Name of the project.
-            **kwargs: dict used for filtering.
+            name (str): Name of the backend.
+            instance: The provider in the hub/group/project format.
+            **kwargs: Dict used for filtering.
 
         Returns:
             Backend: a backend matching the filtering.
@@ -569,11 +565,6 @@ class IBMProvider(Provider):
                 `project` are specified.
         """
         # pylint: disable=arguments-differ
-        instance = (
-            to_instance_format(hub, group, project)
-            if all([hub, group, project])
-            else None
-        )
         backends = self.backends(name, instance=instance, **kwargs)
         if len(backends) > 1:
             raise QiskitBackendNotFoundError(

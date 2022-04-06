@@ -22,7 +22,6 @@ from qiskit.providers.jobstatus import JobStatus
 from qiskit.test import slow_test
 from qiskit.test.reference_circuits import ReferenceCircuits
 from qiskit_ibm_provider import IBMBackend
-from qiskit_ibm_provider.hub_group_project import from_instance_format
 from qiskit_ibm_provider.api.clients import AccountClient, websocket
 from ..decorators import (
     IntegrationTestDependencies,
@@ -45,9 +44,8 @@ class TestWebsocketIntegration(IBMTestCase):
         # pylint: disable=arguments-differ
         super().setUpClass()
         cls.dependencies = dependencies
-        hub, group, project = from_instance_format(dependencies.instance)
         cls.sim_backend = dependencies.provider.get_backend(
-            "ibmq_qasm_simulator", hub=hub, group=group, project=project
+            "ibmq_qasm_simulator", instance=dependencies.instance
         )
         cls.bell = transpile(ReferenceCircuits.bell(), cls.sim_backend)
         cls.real_device_backend = backend
