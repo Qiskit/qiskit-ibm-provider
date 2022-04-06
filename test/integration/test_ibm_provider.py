@@ -257,7 +257,8 @@ class TestIBMProviderServices(IBMTestCase):
             if isinstance(getattr(self.dependencies.provider.backend, back), IBMBackend)
         }
         backends = {
-            back.name.lower() for back in self.dependencies.provider.backend._backends.values()
+            back.name.lower()
+            for back in self.dependencies.provider.backend._backends.values()
         }
         self.assertEqual(backend_attributes, backends)
 
