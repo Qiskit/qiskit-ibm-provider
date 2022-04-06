@@ -48,7 +48,6 @@ def backend_widget(backend: Union[IBMBackend, FakeBackend]) -> None:
         backend: Display information about this backend.
     """
     vue.theme.dark = False
-    cred = backend._credentials
     last_tab = vue.TabItem(children=[])
     livedata = LiveDataVisualization()
     card = vue.Card(
@@ -61,8 +60,8 @@ def backend_widget(backend: Union[IBMBackend, FakeBackend]) -> None:
                 children=[
                     vue.ToolbarTitle(
                         children=[
-                            "{} @ ({}/{}/{})".format(
-                                backend.name(), cred.hub, cred.group, cred.project
+                            "{} @ ({})".format(
+                                backend.name(), backend._api_client._params.instance
                             )
                         ],
                         style_="color:white",
