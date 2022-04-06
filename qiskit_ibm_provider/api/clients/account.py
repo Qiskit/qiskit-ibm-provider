@@ -56,10 +56,7 @@ class AccountClient(BaseClient):
         # account_api is for h/g/p.
         self.base_api = Api(self._session)
         self.account_api = Account(
-            session=self._session,
-            hub=hub,
-            group=group,
-            project=project,
+            session=self._session, hub=hub, group=group, project=project,
         )
 
     # Backend-related public functions.

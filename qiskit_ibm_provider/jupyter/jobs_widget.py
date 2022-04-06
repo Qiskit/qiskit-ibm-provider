@@ -125,12 +125,12 @@ def _job_summary(
     past_year_date = now - datetime.timedelta(days=365)
     limit = kwargs.pop("limit", None)
     start_datetime = kwargs.pop("start_datetime", past_year_date)
-    provider = backend.provider()
+    provider = backend.provider
     if not provider:
         jobs = []  # provider will be None when this is used in docs
     else:
         jobs = provider.backend.jobs(
-            backend_name=backend.name(), limit=limit, start_datetime=start_datetime
+            backend_name=backend.name, limit=limit, start_datetime=start_datetime
         )
 
     num_jobs = len(jobs)
@@ -299,10 +299,7 @@ def jobs_tab(backend: Union[IBMBackend, FakeBackend], **kwargs: Any) -> wid.HBox
     table = wid.HTML(
         "",
         layout=wid.Layout(
-            max_height="500px",
-            height="500px",
-            width="100%",
-            overflow="hidden scroll",
+            max_height="500px", height="500px", width="100%", overflow="hidden scroll",
         ),
     )
 

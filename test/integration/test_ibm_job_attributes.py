@@ -73,7 +73,7 @@ class TestIBMJobAttributes(IBMTestCase):
 
     def test_get_backend_name(self):
         """Test getting a backend name."""
-        self.assertTrue(self.sim_job.backend().name() == self.sim_backend.name())
+        self.assertTrue(self.sim_job.backend().name == self.sim_backend.name)
 
     @slow_test
     def test_running_job_properties(self, backend):
@@ -103,7 +103,7 @@ class TestIBMJobAttributes(IBMTestCase):
         # Check using partial matching.
         job_name_partial = job_name[8:]
         retrieved_jobs = self.dependencies.provider.backend.jobs(
-            backend_name=self.sim_backend.name(),
+            backend_name=self.sim_backend.name,
             job_name=job_name_partial,
             start_datetime=self.last_week,
         )
@@ -114,7 +114,7 @@ class TestIBMJobAttributes(IBMTestCase):
         # Check using regular expressions.
         job_name_regex = "^{}$".format(job_name)
         retrieved_jobs = self.dependencies.provider.backend.jobs(
-            backend_name=self.sim_backend.name(),
+            backend_name=self.sim_backend.name,
             job_name=job_name_regex,
             start_datetime=self.last_week,
         )
@@ -155,7 +155,7 @@ class TestIBMJobAttributes(IBMTestCase):
             job_ids.add(job.job_id())
 
         retrieved_jobs = self.dependencies.provider.backend.jobs(
-            backend_name=self.sim_backend.name(),
+            backend_name=self.sim_backend.name,
             job_name=job_name,
             start_datetime=self.last_week,
         )

@@ -147,12 +147,7 @@ def get_account_config_contents(
     if url is None:
         url = IBM_QUANTUM_API_URL
     out = {
-        name: {
-            "channel": channel,
-            "url": url,
-            "token": token,
-            "instance": instance,
-        }
+        name: {"channel": channel, "url": url, "token": token, "instance": instance,}
     }
     if verify is not None:
         out[name]["verify"] = verify

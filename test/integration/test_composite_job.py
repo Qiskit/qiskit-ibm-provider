@@ -236,10 +236,10 @@ class TestIBMCompositeJob(IBMTestCase):
     def test_job_backend(self):
         """Test getting job backend."""
         job_set = self.sim_backend.run([self._qc] * 2, max_circuits_per_job=1)
-        self.assertEqual(job_set.backend().name(), self.fake_backend.name())
+        self.assertEqual(job_set.backend().name, self.fake_backend.name)
         job_set.block_for_submit()
         rjob_set = self.fake_provider.backend.job(job_set.job_id())
-        self.assertEqual(rjob_set.backend().name(), self.fake_backend.name())
+        self.assertEqual(rjob_set.backend().name, self.fake_backend.name)
 
     def test_job_name(self):
         """Test job name."""

@@ -95,10 +95,7 @@ class AccountManager:
 
         # load all accounts
         all_accounts = map(
-            lambda kv: (
-                kv[0],
-                Account.from_saved_format(kv[1]),
-            ),
+            lambda kv: (kv[0], Account.from_saved_format(kv[1]),),
             read_config(filename=_DEFAULT_ACCOUNT_CONFIG_JSON_FILE).items(),
         )
 
@@ -167,9 +164,7 @@ class AccountManager:
 
     @classmethod
     def delete(
-        cls,
-        name: Optional[str] = None,
-        channel: Optional[ChannelType] = None,
+        cls, name: Optional[str] = None, channel: Optional[ChannelType] = None,
     ) -> bool:
         """Delete account from disk."""
         cls.migrate()

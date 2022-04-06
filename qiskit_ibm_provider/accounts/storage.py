@@ -40,10 +40,7 @@ def save_config(filename: str, name: str, config: dict, overwrite: bool) -> None
         json.dump(data, json_out, sort_keys=True, indent=4)
 
 
-def read_config(
-    filename: str,
-    name: Optional[str] = None,
-) -> Optional[Dict]:
+def read_config(filename: str, name: Optional[str] = None,) -> Optional[Dict]:
     """Read configuration data from a JSON file."""
     logger.debug("Read configuration data for '%s' from '%s'", name, filename)
     _ensure_file_exists(filename)
@@ -57,10 +54,7 @@ def read_config(
         return None
 
 
-def delete_config(
-    filename: str,
-    name: str,
-) -> bool:
+def delete_config(filename: str, name: str,) -> bool:
     """Delete configuration data from a JSON file."""
 
     logger.debug("Delete configuration data for '%s' from '%s'", name, filename)

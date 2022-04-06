@@ -19,7 +19,7 @@ from qiskit import ClassicalRegister, QuantumCircuit, QuantumRegister
 from qiskit.compiler import transpile
 from qiskit.providers.exceptions import QiskitBackendNotFoundError
 from qiskit.providers.models.backendproperties import BackendProperties
-from qiskit.test import providers, slow_test
+from qiskit.test import slow_test
 
 from qiskit_ibm_provider import hub_group_project
 from qiskit_ibm_provider.api.clients import AccountClient
@@ -113,7 +113,7 @@ class TestIBMProviderHubGroupProject(IBMTestCase):
         self.assertIn(self.provider.backend._default_hgp, hgps)
 
 
-class TestIBMProviderServices(IBMTestCase, providers.ProviderTestCase):
+class TestIBMProviderServices(IBMTestCase):
     """Tests for services provided by the IBMProvider class."""
 
     provider_cls = IBMProvider
@@ -139,6 +139,16 @@ class TestIBMProviderServices(IBMTestCase, providers.ProviderTestCase):
         self.qc1 = QuantumCircuit(quantum_register, classical_register, name="circuit0")
         self.qc1.h(quantum_register[0])
         self.qc1.measure(quantum_register, classical_register)
+
+    def test_backends(self):
+        """Test the provider has backends."""
+        backends = self.dependencies.provider.backends()
+        self.assertTrue(len(backends) > 0)
+
+    def test_get_backend(self):
+        """Test getting a backend from the provider."""
+        backend = self.dependencies.provider.get_backend(name=self.backend_name)
+        self.assertEqual(backend.name, self.backend_name)
 
     def test_remote_backends_exist_real_device(self):
         """Test if there are remote backends that are devices."""
@@ -223,7 +233,7 @@ class TestIBMProviderServices(IBMTestCase, providers.ProviderTestCase):
                 else:
                     backend_by_display_name = self.provider.get_backend(display_name)
                     self.assertEqual(backend_by_name, backend_by_display_name)
-                    self.assertEqual(backend_by_display_name.name(), backend_name)
+                    self.assertEqual(backend_by_display_name.name, backend_name)
 
     def test_remote_backend_properties_filter_date(self):
         """Test backend properties filtered by date."""
@@ -247,8 +257,7 @@ class TestIBMProviderServices(IBMTestCase, providers.ProviderTestCase):
             if isinstance(getattr(self.dependencies.provider.backend, back), IBMBackend)
         }
         backends = {
-            back.name().lower()
-            for back in self.dependencies.provider.backend._backends.values()
+            back.name.lower() for back in self.dependencies.provider.backend._backends.values()
         }
         self.assertEqual(backend_attributes, backends)
 

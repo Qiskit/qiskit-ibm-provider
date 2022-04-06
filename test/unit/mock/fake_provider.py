@@ -41,10 +41,7 @@ class FakeProvider(IBMProvider):
         """Mock authentication."""
         return FakeAuthClient()
 
-    def _initialize_hgps(
-        self,
-        auth_client: AuthClient,
-    ) -> Dict:
+    def _initialize_hgps(self, auth_client: AuthClient,) -> Dict:
         """Mock hgp initialization."""
 
         hgps = OrderedDict()
@@ -53,9 +50,7 @@ class FakeProvider(IBMProvider):
             hgp_name = self.DEFAULT_HGPS[idx]
 
             hgp_params = ClientParameters(
-                token="some_token",
-                url="some_url",
-                instance=hgp_name,
+                token="some_token", url="some_url", instance=hgp_name,
             )
             hgp = HubGroupProject(
                 client_params=hgp_params, instance=hgp_name, provider=self

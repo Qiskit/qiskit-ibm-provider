@@ -16,25 +16,33 @@ import copy
 import logging
 import warnings
 from datetime import datetime as python_datetime
-from typing import Dict, List, Union, Optional, Any
+from typing import Iterable, Dict, List, Union, Optional, Any
 
 from qiskit.circuit import QuantumCircuit, Parameter, Delay
 from qiskit.circuit.duration import duration_in_dt
 from qiskit.compiler import assemble
-from qiskit.providers.backend import BackendV1 as Backend
+from qiskit.providers.backend import BackendV2 as Backend, QubitProperties
 from qiskit.providers.models import (
     BackendStatus,
     BackendProperties,
     PulseDefaults,
     GateConfig,
+    QasmBackendConfiguration,
+    PulseBackendConfiguration,
 )
-from qiskit.providers.models import QasmBackendConfiguration, PulseBackendConfiguration
 from qiskit.providers.options import Options
 from qiskit.pulse import Schedule, LoConfig
-from qiskit.pulse.channels import PulseChannel
+from qiskit.pulse.channels import (
+    PulseChannel,
+    AcquireChannel,
+    ControlChannel,
+    DriveChannel,
+    MeasureChannel,
+)
 from qiskit.qobj import QasmQobj, PulseQobj
 from qiskit.qobj.utils import MeasLevel, MeasReturnType
 from qiskit.tools.events.pubsub import Publisher
+from qiskit.transpiler.target import Target
 
 from qiskit_ibm_provider import ibm_provider  # pylint: disable=unused-import
 from .api.clients import AccountClient
@@ -52,8 +60,12 @@ from .exceptions import (
 from .job import IBMJob, IBMCircuitJob, IBMCompositeJob
 from .utils import validate_job_tags
 from .utils.backend import convert_reservation_data
-from .utils.converters import utc_to_local_all, local_to_utc
-from .utils.json_decoder import decode_pulse_defaults, decode_backend_properties
+from .utils.backend_converter import (
+    convert_to_target,
+    qubit_props_dict_from_props,
+)
+from .utils.converters import local_to_utc
+from .utils.json_decoder import defaults_from_server_data, properties_from_server_data
 from .utils.utils import api_status_to_job_status
 
 logger = logging.getLogger(__name__)
@@ -104,6 +116,77 @@ class IBMBackend(Backend):
     :class:`BackendJobLimit<qiskit_ibm_provider.BackendJobLimit>` instance::
 
         job_limit = backend.job_limit()
+
+    Here is list of attributes available on the ``IBMBackend`` class:
+        * name: backend name.
+        * backend_version: backend version in the form X.Y.Z.
+        * num_qubits: number of qubits.
+        * target: A :class:`qiskit.transpiler.Target` object for the backend.
+        * basis_gates: list of basis gates names on the backend.
+        * gates: list of basis gates on the backend.
+        * local: backend is local or remote.
+        * simulator: backend is a simulator.
+        * conditional: backend supports conditional operations.
+        * open_pulse: backend supports open pulse.
+        * memory: backend supports memory.
+        * max_shots: maximum number of shots supported.
+        * coupling_map (list): The coupling map for the device
+        * supported_instructions (List[str]): Instructions supported by the backend.
+        * dynamic_reprate_enabled (bool): whether delay between programs can be set dynamically
+          (ie via ``rep_delay``). Defaults to False.
+        * rep_delay_range (List[float]): 2d list defining supported range of repetition
+          delays for backend in μs. First entry is lower end of the range, second entry is
+          higher end of the range. Optional, but will be specified when
+          ``dynamic_reprate_enabled=True``.
+        * default_rep_delay (float): Value of ``rep_delay`` if not specified by user and
+          ``dynamic_reprate_enabled=True``.
+        * n_uchannels: Number of u-channels.
+        * u_channel_lo: U-channel relationship on device los.
+        * meas_levels: Supported measurement levels.
+        * qubit_lo_range: Qubit lo ranges for each qubit with form (min, max) in GHz.
+        * meas_lo_range: Measurement lo ranges for each qubit with form (min, max) in GHz.
+        * dt: Qubit drive channel timestep in nanoseconds.
+        * dtm: Measurement drive channel timestep in nanoseconds.
+        * rep_times: Supported repetition times (program execution time) for backend in μs.
+        * meas_kernels: Supported measurement kernels.
+        * discriminators: Supported discriminators.
+        * hamiltonian: An optional dictionary with fields characterizing the system hamiltonian.
+        * channel_bandwidth (list): Bandwidth of all channels
+          (qubit, measurement, and U)
+        * acquisition_latency (list): Array of dimension
+          n_qubits x n_registers. Latency (in units of dt) to write a
+          measurement result from qubit n into register slot m.
+        * conditional_latency (list): Array of dimension n_channels
+          [d->u->m] x n_registers. Latency (in units of dt) to do a
+          conditional operation on channel n from register slot m
+        * meas_map (list): Grouping of measurement which are multiplexed
+        * max_circuits (int): The maximum number of experiments per job
+        * sample_name (str): Sample name for the backend
+        * n_registers (int): Number of register slots available for feedback
+          (if conditional is True)
+        * register_map (list): An array of dimension n_qubits X
+          n_registers that specifies whether a qubit can store a
+          measurement in a certain register slot.
+        * configurable (bool): True if the backend is configurable, if the
+          backend is a simulator
+        * credits_required (bool): True if backend requires credits to run a
+          job.
+        * online_date (datetime): The date that the device went online
+        * display_name (str): Alternate name field for the backend
+        * description (str): A description for the backend
+        * tags (list): A list of string tags to describe the backend
+        * version: version of ``Backend`` class (Ex: 1, 2)
+        * channels: An optional dictionary containing information of each channel -- their
+          purpose, type, and qubits operated on.
+        * parametric_pulses (list): A list of pulse shapes which are supported on the backend.
+          For example: ``['gaussian', 'constant']``
+        * processor_type (dict): Processor type for this backend. A dictionary of the
+          form ``{"family": <str>, "revision": <str>, segment: <str>}`` such as
+          ``{"family": "Canary", "revision": "1.0", segment: "A"}``.
+
+            * family: Processor family of this backend.
+            * revision: Revision version of this processor.
+            * segment: Segment this processor belongs to within a larger chip.
     """
 
     id_warning_issued = False
@@ -121,13 +204,82 @@ class IBMBackend(Backend):
             provider: IBM Quantum account provider.
             api_client: IBM Quantum client used to communicate with the server.
         """
-        super().__init__(provider=provider, configuration=configuration)
-
+        super().__init__(
+            provider=provider,
+            name=configuration.backend_name,
+            online_date=configuration.online_date,
+            backend_version=configuration.backend_version,
+        )
         self._api_client = api_client
-
-        # Attributes used by caching functions.
+        self._configuration = configuration
         self._properties = None
+        self._qubit_properties = None
         self._defaults = None
+        self._target = None
+        self._max_circuits = configuration.max_experiments
+        if hasattr(configuration, "max_shots"):
+            self.options.set_validator("shots", (1, configuration.max_shots))
+        if hasattr(configuration, "rep_delay_range"):
+            self.options.set_validator(
+                "rep_delay",
+                (configuration.rep_delay_range[0], configuration.rep_delay_range[1]),
+            )
+
+    def __getattr__(self, name: str) -> Any:
+        """Gets attribute from self or configuration
+        This magic method executes when user accesses an attribute that
+        does not yet exist on IBMBackend class.
+        """
+        # Prevent recursion since these properties are accessed within __getattr__
+        if name in ["_properties", "_defaults", "_target"]:
+            raise AttributeError(
+                "'{}' object has no attribute '{}'".format(
+                    self.__class__.__name__, name
+                )
+            )
+        # Lazy load properties and pulse defaults and construct the target object.
+        self._get_properties()
+        self._get_defaults()
+        self._convert_to_target()
+        # Check if the attribute now is available on IBMBackend class due to above steps
+        try:
+            return super().__getattribute__(name)
+        except AttributeError:
+            pass
+        # If attribute is still not available on IBMBackend class,
+        # fallback to check if the attribute is available in configuration
+        try:
+            return self._configuration.__getattribute__(name)
+        except AttributeError:
+            raise AttributeError(
+                "'{}' object has no attribute '{}'".format(
+                    self.__class__.__name__, name
+                )
+            )
+
+    def _get_properties(self) -> None:
+        """Gets backend properties and decodes it"""
+        if not self._properties:
+            api_properties = self._api_client.backend_properties(self.name)
+            if api_properties:
+                backend_properties = properties_from_server_data(api_properties)
+                self._properties = backend_properties
+
+    def _get_defaults(self) -> None:
+        """Gets defaults if pulse backend and decodes it"""
+        if not self._defaults:
+            api_defaults = self._api_client.backend_pulse_defaults(self.name)
+            if api_defaults:
+                self._defaults = defaults_from_server_data(api_defaults)
+
+    def _convert_to_target(self) -> None:
+        """Converts backend configuration, properties and defaults to Target object"""
+        if not self._target:
+            self._target = convert_to_target(
+                configuration=self._configuration,
+                properties=self._properties,
+                defaults=self._defaults,
+            )
 
     @classmethod
     def _default_options(cls) -> Options:
@@ -148,6 +300,65 @@ class IBMBackend(Backend):
             use_measure_esp=None,
             live_data_enabled=None,
         )
+
+    @property
+    def dtm(self) -> float:
+        """Return the system time resolution of output signals
+        Returns:
+            dtm: The output signal timestep in seconds.
+        """
+        return self._configuration.dtm
+
+    @property
+    def max_circuits(self) -> int:
+        """The maximum number of circuits
+        The maximum number of circuits (or Pulse schedules) that can be
+        run in a single job. If there is no limit this will return None.
+        """
+        return self._max_circuits
+
+    @property
+    def meas_map(self) -> List[List[int]]:
+        """Return the grouping of measurements which are multiplexed
+        This is required to be implemented if the backend supports Pulse
+        scheduling.
+        Returns:
+            meas_map: The grouping of measurements which are multiplexed
+        """
+        return self._configuration.meas_map
+
+    @property
+    def target(self) -> Target:
+        """A :class:`qiskit.transpiler.Target` object for the backend.
+        Returns:
+            Target
+        """
+        self._get_properties()
+        self._get_defaults()
+        self._convert_to_target()
+        return self._target
+
+    def qubit_properties(
+        self, qubit: Union[int, List[int]]
+    ) -> Union[QubitProperties, List[QubitProperties]]:
+        """Return QubitProperties for a given qubit.
+        Args:
+            qubit: The qubit to get the
+                :class:`~qiskit.provider.QubitProperties` object for. This can
+                be a single integer for 1 qubit or a list of qubits and a list
+                of :class:`~qiskit.provider.QubitProperties` objects will be
+                returned in the same order
+        Returns:
+            QubitProperties or a list of QubitProperties
+        """
+        self._get_properties()
+        if not self._qubit_properties:
+            self._qubit_properties = qubit_props_dict_from_props(self._properties)
+        if isinstance(qubit, int):  # type: ignore[unreachable]
+            return self._qubit_properties.get(qubit)
+        if isinstance(qubit, List):
+            return [self._qubit_properties.get(q) for q in qubit]
+        return None
 
     def run(
         self,
@@ -393,7 +604,7 @@ class IBMBackend(Backend):
         try:
             qobj_dict = qobj.to_dict()
             submit_info = self._api_client.job_submit(
-                backend_name=self.name(),
+                backend_name=self.name,
                 qobj_dict=qobj_dict,
                 job_name=job_name,
                 job_tags=job_tags,
@@ -470,13 +681,11 @@ class IBMBackend(Backend):
 
         if datetime or refresh or self._properties is None:
             api_properties = self._api_client.backend_properties(
-                self.name(), datetime=datetime
+                self.name, datetime=datetime
             )
             if not api_properties:
                 return None
-            decode_backend_properties(api_properties)
-            api_properties = utc_to_local_all(api_properties)
-            backend_properties = BackendProperties.from_dict(api_properties)
+            backend_properties = properties_from_server_data(api_properties)
             if datetime:  # Don't cache result.
                 return backend_properties
             self._properties = backend_properties
@@ -496,7 +705,7 @@ class IBMBackend(Backend):
         Raises:
             IBMBackendApiProtocolError: If the status for the backend cannot be formatted properly.
         """
-        api_status = self._api_client.backend_status(self.name())
+        api_status = self._api_client.backend_status(self.name)
 
         try:
             return BackendStatus.from_dict(api_status)
@@ -521,10 +730,9 @@ class IBMBackend(Backend):
             The backend pulse defaults or ``None`` if the backend does not support pulse.
         """
         if refresh or self._defaults is None:
-            api_defaults = self._api_client.backend_pulse_defaults(self.name())
+            api_defaults = self._api_client.backend_pulse_defaults(self.name)
             if api_defaults:
-                decode_pulse_defaults(api_defaults)
-                self._defaults = PulseDefaults.from_dict(api_defaults)
+                self._defaults = defaults_from_server_data(api_defaults)
             else:
                 self._defaults = None
 
@@ -561,7 +769,7 @@ class IBMBackend(Backend):
         Raises:
             IBMBackendApiProtocolError: If an unexpected value is received from the server.
         """
-        api_job_limit = self._api_client.backend_job_limit(self.name())
+        api_job_limit = self._api_client.backend_job_limit(self.name)
 
         try:
             job_limit = BackendJobLimit(**api_job_limit)
@@ -624,7 +832,7 @@ class IBMBackend(Backend):
                 if status not in API_JOB_FINAL_STATES
             }
         )
-        provider = self.provider()
+        provider = self.provider
         return provider.backend.jobs(status=active_job_states, limit=limit)
 
     def reservations(
@@ -650,9 +858,9 @@ class IBMBackend(Backend):
         start_datetime = local_to_utc(start_datetime) if start_datetime else None
         end_datetime = local_to_utc(end_datetime) if end_datetime else None
         raw_response = self._api_client.backend_reservations(
-            self.name(), start_datetime, end_datetime
+            self.name, start_datetime, end_datetime
         )
-        return convert_reservation_data(raw_response, self.name())
+        return convert_reservation_data(raw_response, self.name)
 
     def configuration(
         self,
@@ -671,8 +879,41 @@ class IBMBackend(Backend):
         """
         return self._configuration
 
+    def drive_channel(self, qubit: int) -> DriveChannel:
+        """Return the drive channel for the given qubit.
+        Returns:
+            DriveChannel: The Qubit drive channel
+        """
+        return self._configuration.drive(qubit=qubit)
+
+    def measure_channel(self, qubit: int) -> MeasureChannel:
+        """Return the measure stimulus channel for the given qubit.
+        Returns:
+            MeasureChannel: The Qubit measurement stimulus line
+        """
+        return self._configuration.measure(qubit=qubit)
+
+    def acquire_channel(self, qubit: int) -> AcquireChannel:
+        """Return the acquisition channel for the given qubit.
+        Returns:
+            AcquireChannel: The Qubit measurement acquisition line.
+        """
+        return self._configuration.acquire(qubit=qubit)
+
+    def control_channel(self, qubits: Iterable[int]) -> List[ControlChannel]:
+        """Return the secondary drive channel for the given qubit.
+        This is typically utilized for controlling multiqubit interactions.
+        This channel is derived from other channels.
+        Args:
+            qubits: Tuple or list of qubits of the form
+                ``(control_qubit, target_qubit)``.
+        Returns:
+            List[ControlChannel]: The Qubit measurement acquisition line.
+        """
+        return self._configuration.control(qubits=qubits)
+
     def __repr__(self) -> str:
-        return "<{}('{}')>".format(self.__class__.__name__, self.name())
+        return "<{}('{}')>".format(self.__class__.__name__, self.name)
 
     def _deprecate_id_instruction(
         self,
@@ -848,7 +1089,7 @@ class IBMRetiredBackend(IBMBackend):
         """
         super().__init__(configuration, provider, api_client)
         self._status = BackendStatus(
-            backend_name=self.name(),
+            backend_name=self.name,
             backend_version=self.configuration().backend_version,
             operational=False,
             pending_jobs=0,
@@ -858,7 +1099,7 @@ class IBMRetiredBackend(IBMBackend):
     @classmethod
     def _default_options(cls) -> Options:
         """Default runtime options."""
-        return Options()
+        return Options(shots=4000)
 
     def properties(
         self, refresh: bool = False, datetime: Optional[python_datetime] = None
@@ -897,7 +1138,7 @@ class IBMRetiredBackend(IBMBackend):
         """Run a Circuit."""
         # pylint: disable=arguments-differ
         raise IBMBackendError(
-            "This backend ({}) is no longer available.".format(self.name())
+            "This backend ({}) is no longer available.".format(self.name)
         )
 
     @classmethod
@@ -911,6 +1152,7 @@ class IBMRetiredBackend(IBMBackend):
         configuration = QasmBackendConfiguration(
             backend_name=backend_name,
             backend_version="0.0.0",
+            online_date="2019-10-16T04:00:00Z",
             n_qubits=1,
             basis_gates=[],
             simulator=False,
@@ -921,5 +1163,6 @@ class IBMRetiredBackend(IBMBackend):
             max_shots=1,
             gates=[GateConfig(name="TODO", parameters=[], qasm_def="TODO")],
             coupling_map=[[0, 1]],
+            max_experiments=300,
         )
         return cls(configuration, provider, api)

@@ -46,8 +46,7 @@ class TestBasicServerPaths(IBMTestCase):
         for desc in self.dependencies.provider._hgps.items():
             backend = least_busy(
                 self.dependencies.provider.backends(
-                    simulator=False,
-                    filters=lambda b: b.configuration().n_qubits >= 5,
+                    simulator=False, filters=lambda b: b.configuration().n_qubits >= 5,
                 )
             )
             with self.subTest(desc=desc, backend=backend):

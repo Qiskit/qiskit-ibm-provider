@@ -22,13 +22,17 @@ from qiskit.circuit.parameter import Parameter
 from qiskit.circuit.gate import Gate
 from qiskit.circuit.measure import Measure
 from qiskit.circuit.reset import Reset
-from qiskit.providers.models import BackendConfiguration, BackendProperties, PulseDefaults
+from qiskit.providers.models import (
+    BackendConfiguration,
+    BackendProperties,
+    PulseDefaults,
+)
 
 
 def convert_to_target(
-        configuration: BackendConfiguration,
-        properties: BackendProperties = None,
-        defaults: PulseDefaults = None
+    configuration: BackendConfiguration,
+    properties: BackendProperties = None,
+    defaults: PulseDefaults = None,
 ) -> Target:
     """Uses configuration, properties and pulse defaults
     to construct and return Target class.
@@ -76,7 +80,8 @@ def convert_to_target(
         for qubit, _ in enumerate(properties.qubits):
             measure_props[(qubit,)] = InstructionProperties(
                 duration=properties.readout_length(qubit),
-                error=properties.readout_error(qubit))
+                error=properties.readout_error(qubit),
+            )
         target.add_instruction(Measure(), measure_props)
     # Parse from configuration because properties doesn't exist
     else:
@@ -100,9 +105,7 @@ def convert_to_target(
     if hasattr(configuration, "timing_constraints"):
         target.granularity = configuration.timing_constraints.get("granularity")
         target.min_length = configuration.timing_constraints.get("min_length")
-        target.pulse_alignment = configuration.timing_constraints.get(
-            "pulse_alignment"
-        )
+        target.pulse_alignment = configuration.timing_constraints.get("pulse_alignment")
         target.aquire_alignment = configuration.timing_constraints.get(
             "acquire_alignment"
         )
@@ -134,5 +137,6 @@ def qubit_props_dict_from_props(properties: BackendProperties) -> QubitPropertie
         qubit_props[qubit] = QubitProperties(
             t1=properties.t1(qubit),
             t2=properties.t2(qubit),
-            frequency=properties.frequency(qubit))
+            frequency=properties.frequency(qubit),
+        )
     return qubit_props

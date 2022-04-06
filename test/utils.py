@@ -58,8 +58,7 @@ def setup_test_logging(logger: logging.Logger, filename: str) -> None:
 
 
 def most_busy_backend(
-    provider: IBMProvider,
-    instance: Optional[str] = None,
+    provider: IBMProvider, instance: Optional[str] = None,
 ) -> IBMBackend:
     """Return the most busy backend for the provider given.
 

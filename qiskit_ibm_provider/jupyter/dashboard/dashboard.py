@@ -103,18 +103,16 @@ class IBMDashboard(Subscriber):
         ibm_backends = {}
         for hgp in self.provider._get_hgps():
             hgp_name = "{hub}/{group}/{project}".format(
-                hub=hgp._hub,
-                group=hgp._group,
-                project=hgp._project,
+                hub=hgp._hub, group=hgp._group, project=hgp._project,
             )
             for backend in hgp.backends.values():
                 if not backend.configuration().simulator:
-                    if backend.name() not in ibm_backends:
-                        ibm_backends[backend.name()] = BackendWithProviders(
+                    if backend.name not in ibm_backends:
+                        ibm_backends[backend.name] = BackendWithProviders(
                             backend=backend, providers=[hgp_name]
                         )
                     else:
-                        ibm_backends[backend.name()].providers.append(hgp_name)
+                        ibm_backends[backend.name].providers.append(hgp_name)
 
         self.backend_dict = ibm_backends
 
@@ -256,7 +254,7 @@ class IBMDashboard(Subscriber):
             position = queue_info.position if queue_info else None
             est_time = queue_info.estimated_start_time if queue_info else None
             job_widget = create_job_widget(
-                self, job, job.backend().name(), status.name, position, est_time
+                self, job, job.backend().name, status.name, position, est_time
             )
             self.jobs.append(job_widget)
             _job_monitor(job, status, self)
@@ -293,11 +291,7 @@ def build_dashboard_widget() -> AccordionWithThread:
     tabs.set_title(1, "Jobs")
 
     acc = AccordionWithThread(
-        children=[tabs],
-        layout=wid.Layout(
-            width="auto",
-            max_height="700px",
-        ),
+        children=[tabs], layout=wid.Layout(width="auto", max_height="700px",),
     )
 
     acc._device_list = acc.children[0].children[0].children[0]
