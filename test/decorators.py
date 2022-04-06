@@ -46,7 +46,8 @@ def _get_integration_test_config():
 
 
 def integration_test_setup_with_backend(
-    backend_name: Optional[str] = None, simulator: Optional[bool] = True,
+    backend_name: Optional[str] = None,
+    simulator: Optional[bool] = True,
 ) -> Callable:
     """Returns a decorator that retrieves the appropriate backend to use for testing.
 
@@ -88,7 +89,9 @@ def integration_test_setup_with_backend(
     return _decorator
 
 
-def integration_test_setup(init_provider: Optional[bool] = True,) -> Callable:
+def integration_test_setup(
+    init_provider: Optional[bool] = True,
+) -> Callable:
     """Returns a decorator for integration test initialization.
 
     Args:

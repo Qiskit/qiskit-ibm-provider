@@ -148,7 +148,12 @@ class BaseWebsocketClient(BaseClient, ABC):
         """
         self._error = self._format_exception(error)
 
-    def stream(self, url: str, retries: int = 5, backoff_factor: float = 0.5,) -> Any:
+    def stream(
+        self,
+        url: str,
+        retries: int = 5,
+        backoff_factor: float = 0.5,
+    ) -> Any:
         """Stream from the websocket.
 
         Args:

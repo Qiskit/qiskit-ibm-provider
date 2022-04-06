@@ -30,7 +30,8 @@ logger = logging.getLogger(__name__)
 
 
 def configuration_from_server_data(
-    raw_config: Dict, instance: str = "",
+    raw_config: Dict,
+    instance: str = "",
 ) -> Optional[Union[QasmBackendConfiguration, PulseBackendConfiguration]]:
     """Create an IBMBackend instance from raw server data.
 

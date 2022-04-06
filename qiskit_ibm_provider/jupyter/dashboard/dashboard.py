@@ -103,7 +103,9 @@ class IBMDashboard(Subscriber):
         ibm_backends = {}
         for hgp in self.provider._get_hgps():
             hgp_name = "{hub}/{group}/{project}".format(
-                hub=hgp._hub, group=hgp._group, project=hgp._project,
+                hub=hgp._hub,
+                group=hgp._group,
+                project=hgp._project,
             )
             for backend in hgp.backends.values():
                 if not backend.configuration().simulator:
@@ -291,7 +293,11 @@ def build_dashboard_widget() -> AccordionWithThread:
     tabs.set_title(1, "Jobs")
 
     acc = AccordionWithThread(
-        children=[tabs], layout=wid.Layout(width="auto", max_height="700px",),
+        children=[tabs],
+        layout=wid.Layout(
+            width="auto",
+            max_height="700px",
+        ),
     )
 
     acc._device_list = acc.children[0].children[0].children[0]

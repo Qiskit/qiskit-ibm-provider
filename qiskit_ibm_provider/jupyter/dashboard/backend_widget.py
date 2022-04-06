@@ -154,7 +154,9 @@ def make_backend_widget(backend_item: BackendWithProviders) -> wid.HBox:
     gmap = wid.Box(
         children=[_gmap],
         layout=wid.Layout(
-            width="auto", justify_content="center", align_content="center",
+            width="auto",
+            justify_content="center",
+            align_content="center",
         ),
     )
 

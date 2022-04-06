@@ -299,7 +299,10 @@ def jobs_tab(backend: Union[IBMBackend, FakeBackend], **kwargs: Any) -> wid.HBox
     table = wid.HTML(
         "",
         layout=wid.Layout(
-            max_height="500px", height="500px", width="100%", overflow="hidden scroll",
+            max_height="500px",
+            height="500px",
+            width="100%",
+            overflow="hidden scroll",
         ),
     )
 

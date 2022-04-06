@@ -76,7 +76,9 @@ class TestIBMBackend(IBMTestCase):
         provider: IBMProvider = self.backend.provider
         backend = reservations = None
         for backend in provider.backends(
-            simulator=False, operational=True, instance=self.dependencies.instance,
+            simulator=False,
+            operational=True,
+            instance=self.dependencies.instance,
         ):
             reservations = backend.reservations()
             if reservations:
@@ -127,7 +129,9 @@ class TestIBMBackend(IBMTestCase):
         """Test backend options."""
         provider: IBMProvider = self.backend.provider
         backends = provider.backends(
-            open_pulse=True, operational=True, instance=self.dependencies.instance,
+            open_pulse=True,
+            operational=True,
+            instance=self.dependencies.instance,
         )
         if not backends:
             raise SkipTest("Skipping pulse test since no pulse backend found.")

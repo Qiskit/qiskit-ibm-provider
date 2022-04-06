@@ -106,7 +106,9 @@ class TestAccount(IBMTestCase):
             with self.subTest(token=token):
                 with self.assertRaises(InvalidAccountError) as err:
                     Account(
-                        channel="ibm_cloud", token=token, url=self.dummy_ibm_cloud_url,
+                        channel="ibm_cloud",
+                        token=token,
+                        url=self.dummy_ibm_cloud_url,
                     ).validate()
                 self.assertIn("Invalid `token` value.", str(err.exception))
 
@@ -142,9 +144,15 @@ class TestAccount(IBMTestCase):
         """Test invalid values for proxy configuration."""
 
         subtests = [
-            {"proxies": ProxyConfiguration(**{"username_ntlm": "user-only"}),},
-            {"proxies": ProxyConfiguration(**{"password_ntlm": "password-only"}),},
-            {"proxies": ProxyConfiguration(**{"urls": ""}),},
+            {
+                "proxies": ProxyConfiguration(**{"username_ntlm": "user-only"}),
+            },
+            {
+                "proxies": ProxyConfiguration(**{"password_ntlm": "password-only"}),
+            },
+            {
+                "proxies": ProxyConfiguration(**{"urls": ""}),
+            },
         ]
         for params in subtests:
             with self.subTest(params=params):
@@ -279,7 +287,11 @@ class TestAccountManager(IBMTestCase):
             (_TEST_IBM_CLOUD_ACCOUNT, None, _DEFAULT_ACCOUNT_NAME_IBM_CLOUD),
             (_TEST_IBM_CLOUD_ACCOUNT, None, None),
             # verify default account name handling for ibm_quantum accounts
-            (_TEST_IBM_QUANTUM_ACCOUNT, None, _DEFAULT_ACCOUNT_NAME_IBM_QUANTUM,),
+            (
+                _TEST_IBM_QUANTUM_ACCOUNT,
+                None,
+                _DEFAULT_ACCOUNT_NAME_IBM_QUANTUM,
+            ),
             # verify account override
             (_TEST_IBM_QUANTUM_ACCOUNT, "acct", "acct"),
             (_TEST_IBM_CLOUD_ACCOUNT, "acct", "acct"),

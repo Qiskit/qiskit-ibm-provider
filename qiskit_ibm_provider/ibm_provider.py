@@ -225,7 +225,10 @@ class IBMProvider(Provider):
 
         return account
 
-    def _initialize_hgps(self, auth_client: AuthClient,) -> Dict:
+    def _initialize_hgps(
+        self,
+        auth_client: AuthClient,
+    ) -> Dict:
         """Authenticate against IBM Quantum and populate the hub/group/projects.
 
         Args:
@@ -331,7 +334,9 @@ class IBMProvider(Provider):
         return version_finder.version()
 
     def _get_hgp(
-        self, instance: Optional[str] = None, backend_name: Optional[str] = None,
+        self,
+        instance: Optional[str] = None,
+        backend_name: Optional[str] = None,
     ) -> HubGroupProject:
         """Return an instance of `HubGroupProject`.
 
@@ -376,7 +381,9 @@ class IBMProvider(Provider):
             f"hub/group/project for this account."
         )
 
-    def _get_hgps(self,) -> List[HubGroupProject]:
+    def _get_hgps(
+        self,
+    ) -> List[HubGroupProject]:
         """Return a list of `HubGroupProject` instances.
 
         Returns:
@@ -467,7 +474,8 @@ class IBMProvider(Provider):
 
     @staticmethod
     def saved_accounts(
-        default: Optional[bool] = None, name: Optional[str] = None,
+        default: Optional[bool] = None,
+        name: Optional[str] = None,
     ) -> dict:
         """List the accounts saved on disk.
 

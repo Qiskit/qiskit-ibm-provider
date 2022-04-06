@@ -139,7 +139,8 @@ class TestWebsocketClientMock(IBMTestCase):
         """Test status queue used by websocket client."""
         status_queue = RefreshQueue(maxsize=10)
         cred = ClientParameters(
-            token=TOKEN_JOB_TRANSITION, url=MockWsServer.VALID_WS_URL,
+            token=TOKEN_JOB_TRANSITION,
+            url=MockWsServer.VALID_WS_URL,
         )
         client = WebsocketClient(
             MockWsServer.VALID_WS_URL, cred, "job_id", status_queue

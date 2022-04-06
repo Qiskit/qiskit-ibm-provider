@@ -39,7 +39,9 @@ class TestSerialization(IBMTestCase):
         # pylint: disable=arguments-differ
         super().setUpClass()
         cls.dependencies = dependencies
-        cls.sim_backend = cls.dependencies.provider.get_backend("ibmq_qasm_simulator",)
+        cls.sim_backend = cls.dependencies.provider.get_backend(
+            "ibmq_qasm_simulator",
+        )
         cls.bell = transpile(ReferenceCircuits.bell(), backend=cls.sim_backend)
 
     def test_qasm_qobj(self):
