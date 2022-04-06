@@ -342,12 +342,14 @@ class IBMBackend(Backend):
         self, qubit: Union[int, List[int]]
     ) -> Union[QubitProperties, List[QubitProperties]]:
         """Return QubitProperties for a given qubit.
+
         Args:
             qubit: The qubit to get the
                 :class:`~qiskit.provider.QubitProperties` object for. This can
                 be a single integer for 1 qubit or a list of qubits and a list
                 of :class:`~qiskit.provider.QubitProperties` objects will be
                 returned in the same order
+
         Returns:
             QubitProperties or a list of QubitProperties
         """
@@ -881,6 +883,7 @@ class IBMBackend(Backend):
 
     def drive_channel(self, qubit: int) -> DriveChannel:
         """Return the drive channel for the given qubit.
+
         Returns:
             DriveChannel: The Qubit drive channel
         """
@@ -888,6 +891,7 @@ class IBMBackend(Backend):
 
     def measure_channel(self, qubit: int) -> MeasureChannel:
         """Return the measure stimulus channel for the given qubit.
+
         Returns:
             MeasureChannel: The Qubit measurement stimulus line
         """
@@ -895,6 +899,7 @@ class IBMBackend(Backend):
 
     def acquire_channel(self, qubit: int) -> AcquireChannel:
         """Return the acquisition channel for the given qubit.
+
         Returns:
             AcquireChannel: The Qubit measurement acquisition line.
         """
@@ -902,11 +907,14 @@ class IBMBackend(Backend):
 
     def control_channel(self, qubits: Iterable[int]) -> List[ControlChannel]:
         """Return the secondary drive channel for the given qubit.
+
         This is typically utilized for controlling multiqubit interactions.
         This channel is derived from other channels.
+
         Args:
             qubits: Tuple or list of qubits of the form
                 ``(control_qubit, target_qubit)``.
+
         Returns:
             List[ControlChannel]: The Qubit measurement acquisition line.
         """
