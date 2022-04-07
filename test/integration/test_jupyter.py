@@ -1,7 +1,3 @@
-# pylint: disable-all
-# type: ignore
-# TODO: Reenable and fix integration tests.
-
 # This code is part of Qiskit.
 #
 # (C) Copyright IBM 2021.
@@ -31,7 +27,10 @@ from qiskit_ibm_provider.jupyter.gates_widget import gates_tab
 from qiskit_ibm_provider.jupyter.jobs_widget import jobs_tab
 from qiskit_ibm_provider.jupyter.qubits_widget import qubits_tab
 from qiskit_ibm_provider.visualization.interactive.error_map import iplot_error_map
-from ..decorators import requires_provider
+from ..decorators import (
+    IntegrationTestDependencies,
+    integration_test_setup,
+)
 from ..ibm_test_case import IBMTestCase
 
 
@@ -39,14 +38,12 @@ class TestBackendInfo(IBMTestCase):
     """Test backend information Jupyter widget."""
 
     @classmethod
-    @requires_provider
-    def setUpClass(cls, provider, hub, group, project):
+    @integration_test_setup()
+    def setUpClass(cls, dependencies: IntegrationTestDependencies) -> None:
         # pylint: disable=arguments-differ
         super().setUpClass()
-        cls.hub = hub
-        cls.group = group
-        cls.project = project
-        cls.backends = _get_backends(provider)
+        cls.dependencies = dependencies
+        cls.backends = _get_backends(cls.dependencies.provider)
 
     def test_config_tab(self):
         """Test config tab."""
@@ -94,29 +91,25 @@ class TestIBMDashboard(IBMTestCase):
     """Test backend information Jupyter widget."""
 
     @classmethod
-    @requires_provider
-    def setUpClass(cls, provider, hub, group, project):
+    @integration_test_setup()
+    def setUpClass(cls, dependencies: IntegrationTestDependencies):
         # pylint: disable=arguments-differ
         super().setUpClass()
-        cls.provider = provider
-        cls.hub = hub
-        cls.group = group
-        cls.project = project
-        cls.backends = _get_backends(provider)
+        cls.dependencies = dependencies
+        cls.backends = _get_backends(cls.dependencies.provider)
 
     def test_backend_widget(self):
         """Test devices tab."""
         for backend in self.backends:
             with self.subTest(backend=backend):
-                provider_str = "{}/{}/{}".format(
-                    backend.hub, backend.group, backend.project
+                backend_with_providers = BackendWithProviders(
+                    backend=backend, providers=[self.dependencies.instance]
                 )
-                b_w_p = BackendWithProviders(backend=backend, providers=[provider_str])
-                make_backend_widget(b_w_p)
+                make_backend_widget(backend_with_providers)
 
     def test_job_widget(self):
         """Test jobs tab."""
-        backend = self.provider.get_backend("ibmq_qasm_simulator")
+        backend = self.dependencies.provider.get_backend("ibmq_qasm_simulator")
         job = backend.run(transpile(ReferenceCircuits.bell(), backend))
         create_job_widget(
             mock.MagicMock(), job, backend=backend.name, status=job.status().value
@@ -124,7 +117,7 @@ class TestIBMDashboard(IBMTestCase):
 
     def test_watcher_monitor(self):
         """Test job watcher."""
-        backend = self.provider.get_backend("ibmq_qasm_simulator")
+        backend = self.dependencies.provider.get_backend("ibmq_qasm_simulator")
         job = backend.run(transpile(ReferenceCircuits.bell(), backend))
         _job_checker(job=job, status=job.status(), watcher=mock.MagicMock())
 

@@ -31,7 +31,6 @@ from qiskit_ibm_provider.api.exceptions import RequestsApiError
 from qiskit_ibm_provider.api.rest.job import Job as RestJob
 from qiskit_ibm_provider.apiconstants import ApiJobStatus, API_JOB_FINAL_STATES
 from qiskit_ibm_provider.exceptions import IBMBackendApiError
-from qiskit_ibm_provider.hub_group_project import from_instance_format
 from qiskit_ibm_provider.ibm_backend import IBMRetiredBackend
 from qiskit_ibm_provider.job.exceptions import IBMJobTimeoutError, IBMJobNotFoundError
 from qiskit_ibm_provider.utils.utils import api_status_to_job_status
@@ -63,9 +62,8 @@ class TestIBMJob(IBMTestCase):
         super().setUpClass()
 
         cls.provider = dependencies.provider
-        hub, group, project = from_instance_format(dependencies.instance)
         cls.sim_backend = dependencies.provider.get_backend(
-            "ibmq_qasm_simulator", hub=hub, group=group, project=project
+            "ibmq_qasm_simulator", intsnace=dependencies.instance
         )
         cls.real_device_backend = backend
         cls.dependencies = dependencies

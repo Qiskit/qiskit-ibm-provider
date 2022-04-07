@@ -21,7 +21,6 @@ from qiskit.providers.aer.noise import NoiseModel
 from qiskit.test.reference_circuits import ReferenceCircuits
 
 from qiskit_ibm_provider import IBMBackend
-from qiskit_ibm_provider.hub_group_project import from_instance_format
 from ..decorators import (
     integration_test_setup_with_backend,
     IntegrationTestDependencies,
@@ -40,10 +39,8 @@ class TestIBMQasmSimulator(IBMTestCase):
         # pylint: disable=arguments-differ
         super().setUp()
         self.provider = dependencies.provider
-        hub, group, project = from_instance_format(dependencies.instance)
-
         self.sim_backend = self.provider.get_backend(
-            "ibmq_qasm_simulator", hub=hub, group=group, project=project
+            "ibmq_qasm_simulator", instance=dependencies.instance
         )
         self.real_device_backend = backend
 
