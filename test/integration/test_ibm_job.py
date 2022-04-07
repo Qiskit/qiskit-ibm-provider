@@ -220,7 +220,7 @@ class TestIBMJob(IBMTestCase):
 
     def test_retrieve_job_uses_appropriate_backend(self):
         """Test that retrieved jobs come from their appropriate backend."""
-        backend_1 = self.dependencies.provider.get_backend('ibmq_lima')
+        backend_1 = self.dependencies.provider.get_backend("ibmq_lima")
         # Get a second backend.
         backend_2 = None
         provider = self.real_device_backend.provider()
