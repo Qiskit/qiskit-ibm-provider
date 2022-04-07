@@ -53,7 +53,7 @@ class TestIBMJob(IBMTestCase):
     """Test ibm_job module."""
 
     @classmethod
-    @integration_test_setup_with_backend(simulator=False)
+    @integration_test_setup_with_backend(simulator=False, min_num_qubits=2)
     def setUpClass(
         cls, backend: IBMBackend, dependencies: IntegrationTestDependencies
     ) -> None:
@@ -220,7 +220,7 @@ class TestIBMJob(IBMTestCase):
 
     def test_retrieve_job_uses_appropriate_backend(self):
         """Test that retrieved jobs come from their appropriate backend."""
-        backend_1 = self.dependencies.provider.get_backend("ibmq_lima")
+        backend_1 = self.real_device_backend
         # Get a second backend.
         backend_2 = None
         provider = self.real_device_backend.provider()

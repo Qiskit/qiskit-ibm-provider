@@ -48,6 +48,7 @@ def _get_integration_test_config():
 def integration_test_setup_with_backend(
     backend_name: Optional[str] = None,
     simulator: Optional[bool] = True,
+    min_num_qubits: Optional[int] = None,
 ) -> Callable:
     """Returns a decorator that retrieves the appropriate backend to use for testing.
 
@@ -57,6 +58,7 @@ def integration_test_setup_with_backend(
     Args:
         backend_name: The name of the backend.
         simulator: If set to True, the list of suitable backends is limited to simulators.
+        min_num_qubits: Minimum number of qubits the backend has to have.
     """
 
     def _decorator(func):
@@ -72,7 +74,9 @@ def integration_test_setup_with_backend(
             else:
                 _backend = least_busy(
                     provider.backends(
-                        simulator=simulator, instance=dependencies.instance
+                        simulator=simulator,
+                        instance=dependencies.instance,
+                        min_num_qubits=min_num_qubits,
                     )
                 )
             if not _backend:
