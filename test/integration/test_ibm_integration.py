@@ -76,8 +76,8 @@ class TestIBMIntegration(IBMTestCase):
         quantum_circuit.h(qubit_reg[0])
         quantum_circuit.cx(qubit_reg[0], qubit_reg[1])
         quantum_circuit.measure(qubit_reg, clbit_reg)
-
-        circuits = transpile(quantum_circuit, backend=self.real_device_backend)
+        backend = self.dependencies.provider.get_backend("ibmq_lima")
+        circuits = transpile(quantum_circuit, backend=backend)
         self.assertIsInstance(circuits, QuantumCircuit)
 
     def test_compile_two_remote(self):
@@ -90,7 +90,8 @@ class TestIBMIntegration(IBMTestCase):
         quantum_circuit.measure(qubit_reg, clbit_reg)
         qc_extra = QuantumCircuit(qubit_reg, clbit_reg, name="extra")
         qc_extra.measure(qubit_reg, clbit_reg)
-        circuits = transpile([quantum_circuit, qc_extra], self.real_device_backend)
+        backend = self.dependencies.provider.get_backend("ibmq_lima")
+        circuits = transpile([quantum_circuit, qc_extra], backend)
         self.assertIsInstance(circuits[0], QuantumCircuit)
         self.assertIsInstance(circuits[1], QuantumCircuit)
 
