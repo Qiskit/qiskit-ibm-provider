@@ -157,7 +157,7 @@ class TestAccountClientJobs(IBMTestCase):
     """
 
     @classmethod
-    @integration_test_setup_with_backend(backend_name="ibmq_qasm_simulator")
+    @integration_test_setup_with_backend()
     def setUpClass(
         cls, dependencies: IntegrationTestDependencies, backend: IBMBackend
     ) -> None:
