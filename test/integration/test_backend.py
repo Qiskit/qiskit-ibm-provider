@@ -154,9 +154,7 @@ class TestIBMBackend(IBMTestCase):
     def test_sim_backend_options(self):
         """Test simulator backend options."""
         provider: IBMProvider = self.backend.provider
-        backend = provider.get_backend(
-            "ibmq_qasm_simulator", instance=self.dependencies.instance
-        )
+        backend = provider.get_backend("ibmq_qasm_simulator")
         backend.options.shots = 2048
         backend.set_options(memory=True)
         job = backend.run(ReferenceCircuits.bell(), shots=1024, foo="foo")

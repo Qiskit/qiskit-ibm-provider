@@ -49,7 +49,7 @@ class TestIBMJobAttributes(IBMTestCase):
     """Test IBMJob instance attributes."""
 
     @classmethod
-    @integration_test_setup_with_backend(backend_name="ibmq_qasm_simulator")
+    @integration_test_setup_with_backend()
     def setUpClass(
         cls, backend: IBMBackend, dependencies: IntegrationTestDependencies
     ) -> None:
