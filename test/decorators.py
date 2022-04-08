@@ -111,6 +111,7 @@ def integration_test_setup(
                 raise Exception("Configuration Issue. Token and URL must be set.")
 
             provider = None
+            private_provider = None
             if init_provider:
                 if instance:
                     provider = IBMProvider(token=token, url=url, instance=instance)
