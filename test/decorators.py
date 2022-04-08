@@ -111,14 +111,21 @@ def integration_test_setup(
                 raise Exception("Configuration Issue. Token and URL must be set.")
 
             provider = None
+            private_provider = None
             if init_provider:
-                provider = IBMProvider(token=token, url=url, instance=instance)
+                if instance:
+                    provider = IBMProvider(token=token, url=url, instance=instance)
+                if instance_private:
+                    private_provider = IBMProvider(
+                        token=token, url=url, instance=instance_private
+                    )
             dependencies = IntegrationTestDependencies(
                 token=token,
                 url=url,
                 instance=instance,
                 instance_private=instance_private,
                 provider=provider,
+                private_provider=private_provider,
             )
             kwargs["dependencies"] = dependencies
             func(self, *args, **kwargs)
@@ -133,7 +140,11 @@ class IntegrationTestDependencies:
     """Integration test dependencies."""
 
     provider: IBMProvider
+    private_provider: IBMProvider
     instance: Optional[str]
     instance_private: Optional[str]
     token: str
     url: str
+
+    def __getitem__(self, item):
+        return getattr(self, item)
