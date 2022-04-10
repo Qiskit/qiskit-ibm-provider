@@ -525,7 +525,7 @@ class IBMBackendService:
         initial_filter = copy.deepcopy(api_filter)
 
         while True:
-            job_page = self._provider._api_client.list_jobs_ids(
+            job_page = self._default_hgp._api_client.list_jobs_ids(
                 limit=current_page_limit,
                 skip=skip,
                 descending=descending,
