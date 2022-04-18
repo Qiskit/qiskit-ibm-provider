@@ -1172,7 +1172,7 @@ class JobInformationView:
 
         # To get all the information needed, we request the job details to the API
         # The information returned is the type of QiskitJob
-        qiskit_job = self._backend.retrieve_job(job_id=job["id"])
+        qiskit_job = self._backend.provider().backend.job(job_id=job["id"])
         status = qiskit_job.status()
         if status in [JobStatus.RUNNING, JobStatus.DONE]:
             self.show_progress_bar()
@@ -1320,8 +1320,7 @@ class JobInformationView:
         Return:
             bi (str): Backend information
         """
-
-        return f"{self._backend.hub}/{self._backend.group}/{self._backend.project}"
+        return self._backend._api_client._params.instance
 
     def time_to_completion(self, completion_time: datetime) -> str:
         """Get the estimate remaining time to complete

@@ -27,6 +27,7 @@ from .jobs_widget import jobs_tab
 from .qubits_widget import qubits_tab
 from .live_data_widget import LiveDataVisualization
 from ..visualization.interactive import iplot_error_map
+from ..utils.hgp import to_instance_format
 
 
 def _async_job_loader(
@@ -48,7 +49,11 @@ def backend_widget(backend: Union[IBMBackend, FakeBackend]) -> None:
         backend: Display information about this backend.
     """
     vue.theme.dark = False
-    cred = backend._credentials
+    if isinstance(backend, FakeBackend):
+        cred = backend._credentials
+        instance = to_instance_format(cred.hub, cred.group, cred.project)
+    else:
+        instance = backend._api_client._params.instance
     last_tab = vue.TabItem(children=[])
     livedata = LiveDataVisualization()
     card = vue.Card(
@@ -60,11 +65,7 @@ def backend_widget(backend: Union[IBMBackend, FakeBackend]) -> None:
                 color="#002d9c",
                 children=[
                     vue.ToolbarTitle(
-                        children=[
-                            "{} @ ({}/{}/{})".format(
-                                backend.name, cred.hub, cred.group, cred.project
-                            )
-                        ],
+                        children=["{} @ ({})".format(backend.name(), instance)],
                         style_="color:white",
                     )
                 ],

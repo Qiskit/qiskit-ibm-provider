@@ -63,7 +63,7 @@ class TestIBMJob(IBMTestCase):
 
         cls.provider = dependencies.provider
         cls.sim_backend = dependencies.provider.get_backend(
-            "ibmq_qasm_simulator", intsnace=dependencies.instance
+            "ibmq_qasm_simulator", instance=dependencies.instance
         )
         cls.real_device_backend = backend
         cls.dependencies = dependencies
