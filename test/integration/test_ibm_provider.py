@@ -52,12 +52,15 @@ class TestIBMProviderEnableAccount(IBMTestCase):
         super().setUpClass()
         cls.dependencies = dependencies
 
-    # TODO enable test
-    @skip("Fails on staging because token is invalid for URL")
     def test_provider_init_token(self):
         """Test initializing IBMProvider with only API token."""
         # pylint: disable=unused-argument
-        provider = IBMProvider(token=self.dependencies.token)
+        if self.dependencies.url == AUTH_URL:
+            provider = IBMProvider(token=self.dependencies.token)
+        else:
+            provider = IBMProvider(
+                token=self.dependencies.token, url=self.dependencies.url
+            )
         self.assertIsInstance(provider, IBMProvider)
         self.assertEqual(provider._client_params.token, self.dependencies.token)
 
