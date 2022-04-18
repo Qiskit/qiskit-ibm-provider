@@ -44,7 +44,7 @@ class TestBasicServerPaths(IBMTestCase):
         """Test running a job against a device."""
         for provider in ["provider", "private_provider"]:
             if not self.dependencies.instance_private:
-                raise (self.skipTest("Skip test because there is no private provider"))
+                raise self.skipTest("Skip test because there is no private provider")
             backend = self.dependencies[provider].backends(
                 simulator=False,
                 operational=True,
@@ -68,7 +68,7 @@ class TestBasicServerPaths(IBMTestCase):
         """Test the backend properties and status of a job."""
         for provider in ["provider", "private_provider"]:
             if not self.dependencies.instance_private:
-                raise (self.skipTest("Skip test because there is no private provider"))
+                raise self.skipTest("Skip test because there is no private provider")
             backend = self.dependencies[provider].backends(
                 simulator=False,
                 operational=True,
@@ -86,7 +86,7 @@ class TestBasicServerPaths(IBMTestCase):
         backend_name = "ibmq_qasm_simulator"
         for provider in ["provider", "private_provider"]:
             if not self.dependencies.instance_private:
-                raise (self.skipTest("Skip test because there is no private provider"))
+                raise self.skipTest("Skip test because there is no private provider")
             backend = self.dependencies[provider].get_backend(backend_name)
             with self.subTest(provider=provider, backend=backend):
                 job = self._submit_job_with_retry(ReferenceCircuits.bell(), backend)
@@ -105,7 +105,7 @@ class TestBasicServerPaths(IBMTestCase):
         """Test the properties and defaults for an open pulse device."""
         for provider in ["provider", "private_provider"]:
             if not self.dependencies.instance_private:
-                raise (self.skipTest("Skip test because there is no private provider"))
+                raise self.skipTest("Skip test because there is no private provider")
             pulse_backends = self.dependencies[provider].backends(
                 open_pulse=True, operational=True
             )
@@ -121,7 +121,7 @@ class TestBasicServerPaths(IBMTestCase):
         """Test the status and job limit for a device."""
         for provider in ["provider", "private_provider"]:
             if not self.dependencies.instance_private:
-                raise (self.skipTest("Skip test because there is no private provider"))
+                raise self.skipTest("Skip test because there is no private provider")
             backend = self.dependencies[provider].backends(
                 simulator=False, operational=True
             )[0]
