@@ -30,8 +30,17 @@ unit-test-coverage:
 	coverage run -m unittest discover --verbose --top-level-directory . --start-directory test/unit
 	coverage lcov
 
-integration-test:
-	python -m unittest discover --verbose --top-level-directory . --start-directory test/integration
+integration-test-1:
+	python -m unittest -v test/integration/test_account_client.py test/integration/test_backend.py test/integration/test_basic_server_paths.py \
+		test/integration/test_filter_backends.py test/integration/test_ibm_integration.py test/integration/test_ibm_provider.py \
+  		test/integration/test_ibm_qasm_simulator.py test/integration/test_jupyter.py test/integration/test_proxies.py \
+  		test/integration/test_serialization.py
+
+integration-test-2:
+	python -m unittest -v test/integration/test_composite_job.py test/integration/test_ibm_job.py test/integration/test_ibm_job_attributes.py
+
+integration-test-3:
+	python -m unittest -v test/integration/test_websocket_integration.py
 
 e2e-test:
 	python -m unittest discover --verbose --top-level-directory . --start-directory test/e2e
