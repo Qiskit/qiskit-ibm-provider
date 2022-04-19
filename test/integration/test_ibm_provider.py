@@ -183,7 +183,7 @@ class TestIBMProviderServices(IBMTestCase):
 
     def test_remote_backend_properties(self):
         """Test backend properties."""
-        remotes = self.provider.backends(simulator=False, instance=self.instance)
+        remotes = self.dependencies.provider.backends(simulator=False, instance=self.instance)
         for backend in remotes:
             properties = backend.properties()
             if backend.configuration().simulator:
