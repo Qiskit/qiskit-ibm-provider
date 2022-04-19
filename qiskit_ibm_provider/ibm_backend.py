@@ -217,6 +217,9 @@ class IBMBackend(Backend):
         self._defaults = None
         self._target = None
         self._max_circuits = configuration.max_experiments
+        if not self._configuration.simulator:
+            self.options.set_validator("noise_model", type(None))
+            self.options.set_validator("seed_simulator", type(None))
         if hasattr(configuration, "max_shots"):
             self.options.set_validator("shots", (1, configuration.max_shots))
         if hasattr(configuration, "rep_delay_range"):
@@ -299,6 +302,9 @@ class IBMBackend(Backend):
             init_qubits=True,
             use_measure_esp=None,
             live_data_enabled=None,
+            # Simulator only
+            noise_model=None,
+            seed_simulator=None,
         )
 
     @property
@@ -391,6 +397,7 @@ class IBMBackend(Backend):
         parameter_binds: Optional[List[Dict[Parameter, float]]] = None,
         use_measure_esp: Optional[bool] = None,
         live_data_enabled: Optional[bool] = None,
+        noise_model: Optional[Any] = None,
         **run_config: Dict,
     ) -> IBMJob:
         """Run on the backend.
@@ -462,6 +469,7 @@ class IBMBackend(Backend):
                 ``backend.configuration()``.
             live_data_enabled (bool): Activate the live data in the backend, to receive data
                 from the instruments.
+            noise_model: Noise model. (Simulators only)
             **run_config: Extra arguments used to configure the run.
 
         Returns:
@@ -482,7 +490,11 @@ class IBMBackend(Backend):
         sim_method = None
         if self.configuration().simulator:
             sim_method = getattr(self.configuration(), "simulation_method", None)
-
+        if noise_model:
+            try:
+                noise_model = noise_model.to_dict()
+            except AttributeError:
+                pass
         measure_esp_enabled = getattr(
             self.configuration(), "measure_esp_enabled", False
         )
@@ -515,6 +527,7 @@ class IBMBackend(Backend):
             rep_delay=rep_delay,
             init_qubits=init_qubits,
             use_measure_esp=use_measure_esp,
+            noise_model=noise_model,
             **run_config,
         )
         if parameter_binds:
@@ -558,8 +571,9 @@ class IBMBackend(Backend):
         for key, val in kwargs.items():
             if val is not None:
                 run_config_dict[key] = val
-                if key not in self.options.__dict__ and not isinstance(
-                    self, IBMSimulator
+                if (
+                    key not in self.options.__dict__
+                    and not self.configuration().simulator
                 ):
                     warnings.warn(  # type: ignore[unreachable]
                         f"{key} is not a recognized runtime option and may be ignored by the backend.",
@@ -670,6 +684,9 @@ class IBMBackend(Backend):
             TypeError: If an input argument is not of the correct type.
         """
         # pylint: disable=arguments-differ
+        if self._configuration.simulator:
+            # Simulators do not have backend properties.
+            return None
         if not isinstance(refresh, bool):
             raise TypeError(
                 "The 'refresh' argument needs to be a boolean. "
@@ -1001,81 +1018,6 @@ class IBMBackend(Backend):
                     delay_instr = Delay(sx_duration_in_dt)
 
                     circuit.data[idx] = (delay_instr, qargs, cargs)
-
-
-class IBMSimulator(IBMBackend):
-    """Backend class interfacing with an IBM Quantum simulator."""
-
-    @classmethod
-    def _default_options(cls) -> Options:
-        """Default runtime options."""
-        options = super()._default_options()
-        options.update_options(noise_model=None, seed_simulator=None)
-        return options
-
-    def properties(
-        self, refresh: bool = False, datetime: Optional[python_datetime] = None
-    ) -> None:
-        """Return ``None``, simulators do not have backend properties."""
-        return None
-
-    def run(  # type: ignore[override]
-        self,
-        circuits: Union[
-            QuantumCircuit, Schedule, List[Union[QuantumCircuit, Schedule]]
-        ],
-        job_name: Optional[str] = None,
-        job_tags: Optional[List[str]] = None,
-        backend_options: Optional[Dict] = None,
-        noise_model: Any = None,
-        **kwargs: Dict,
-    ) -> IBMJob:
-        """Run a Circuit asynchronously.
-
-        Args:
-            circuits: An individual or a
-                list of :class:`~qiskit.circuits.QuantumCircuit` or
-                :class:`~qiskit.pulse.Schedule` objects to run on the backend.
-            job_name: Custom name to be assigned to the job. This job
-                name can subsequently be used as a filter in the
-                :meth:`jobs` method. Job names do not need to be unique.
-            job_tags: Tags to be assigned to the jobs. The tags can subsequently be used
-                as a filter in the
-                :meth:`IBMBackendService.jobs()
-                <qiskit_ibm_provider.ibm_backend_service.IBMBackendService.jobs>` method.
-            backend_options: DEPRECATED dictionary of backend options for the execution.
-            noise_model: Noise model.
-            **kwargs: Additional runtime configuration options. They take
-                precedence over options of the same names specified in `backend_options`.
-
-        Returns:
-            The job to be executed.
-        """
-        # pylint: disable=arguments-differ
-        if backend_options is not None:
-            warnings.warn(
-                "Use of `backend_options` is deprecated and will "
-                "be removed in a future release."
-                "You can now pass backend options as key-value pairs to the "
-                "run() method. For example: backend.run(circs, shots=2048).",
-                DeprecationWarning,
-                stacklevel=2,
-            )
-        backend_options = backend_options or {}
-        run_config = copy.deepcopy(backend_options)
-        if noise_model:
-            try:
-                noise_model = noise_model.to_dict()
-            except AttributeError:
-                pass
-        run_config.update(kwargs)
-        return super().run(
-            circuits,
-            job_name=job_name,
-            job_tags=job_tags,
-            noise_model=noise_model,
-            **run_config,
-        )
 
 
 class IBMRetiredBackend(IBMBackend):
