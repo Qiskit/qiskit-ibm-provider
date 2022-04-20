@@ -77,7 +77,7 @@ import logging
 from typing import List, Optional, Union
 from datetime import datetime, timedelta
 
-from qiskit.providers import BaseBackend, Backend  # type: ignore[attr-defined]
+from qiskit.providers import Backend  # type: ignore[attr-defined]
 
 from .ibm_provider import IBMProvider
 from .ibm_backend import IBMBackend
@@ -102,9 +102,9 @@ QISKIT_IBM_PROVIDER_LOG_FILE = "QISKIT_IBM_PROVIDER_LOG_FILE"
 
 
 def least_busy(
-    backends: List[Union[Backend, BaseBackend]],
+    backends: List[Backend],
     reservation_lookahead: Optional[int] = 60,
-) -> Union[Backend, BaseBackend]:
+) -> Backend:
     """Return the least busy backend from a list.
 
     Return the least busy available backend for those that
