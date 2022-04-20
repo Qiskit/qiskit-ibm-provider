@@ -71,10 +71,8 @@ class TestIBMCompositeJob(IBMTestCase):
         """Initial test setup."""
         super().setUp()
         self._qc = ReferenceCircuits.bell()
-        # TODO: We can remove all the deepcopy and do a disable_account
-        # instead once issue 84 is resolved.
-        self.fake_backend = copy.deepcopy(self.sim_backend)
-        self.fake_provider = copy.deepcopy(self.dependencies.provider)
+        self.fake_backend = self.sim_backend
+        self.fake_provider = self.dependencies.provider
         self._set_fake_client(BaseFakeAccountClient())
         self.fake_backend._provider = self.fake_provider
         self.fake_provider.backend._provider = self.fake_provider
@@ -88,6 +86,7 @@ class TestIBMCompositeJob(IBMTestCase):
     def _set_fake_client(self, fake_client):
         self.fake_backend._api_client = fake_client
         self.fake_provider._api_client = fake_client
+        self.fake_provider.backend._default_hgp._api_client = fake_client
 
     def test_split_circuits(self):
         """Test having circuits split into multiple jobs."""
@@ -214,7 +213,7 @@ class TestIBMCompositeJob(IBMTestCase):
     def test_job_backend_options(self):
         """Test getting backend options."""
         custom_options = {"shots": 100, "memory": True}
-        job_set = self.sim_backend.run(
+        job_set = self.fake_backend.run(
             [self._qc] * 2, max_circuits_per_job=1, **custom_options
         )
         self.assertLessEqual(custom_options.items(), job_set.backend_options().items())
@@ -225,7 +224,7 @@ class TestIBMCompositeJob(IBMTestCase):
     def test_job_header(self):
         """Test getting job header."""
         custom_header = {"test": "test_job_header"}
-        job_set = self.sim_backend.run(
+        job_set = self.fake_backend.run(
             [self._qc] * 2, max_circuits_per_job=1, header=custom_header
         )
         self.assertLessEqual(custom_header.items(), job_set.header().items())
@@ -235,7 +234,7 @@ class TestIBMCompositeJob(IBMTestCase):
 
     def test_job_backend(self):
         """Test getting job backend."""
-        job_set = self.sim_backend.run([self._qc] * 2, max_circuits_per_job=1)
+        job_set = self.fake_backend.run([self._qc] * 2, max_circuits_per_job=1)
         self.assertEqual(job_set.backend().name, self.fake_backend.name)
         job_set.block_for_submit()
         rjob_set = self.fake_provider.backend.job(job_set.job_id())
@@ -244,7 +243,7 @@ class TestIBMCompositeJob(IBMTestCase):
     def test_job_name(self):
         """Test job name."""
         custom_name = "batman"
-        job_set = self.sim_backend.run(
+        job_set = self.fake_backend.run(
             [self._qc] * 2, max_circuits_per_job=1, job_name=custom_name
         )
         self.assertEqual(job_set.name(), custom_name)
@@ -255,7 +254,7 @@ class TestIBMCompositeJob(IBMTestCase):
     def test_job_name_update(self):
         """Test changing the name associated with a job."""
         new_name = "robin"
-        job_set = self.sim_backend.run(
+        job_set = self.fake_backend.run(
             [self._qc] * 2, max_circuits_per_job=1, job_name="batman"
         )
         job_set.update_name(new_name)
@@ -622,7 +621,7 @@ class TestIBMCompositeJob(IBMTestCase):
 
     def test_client_version(self):
         """Test job client version information."""
-        job_set = self.sim_backend.run([self._qc] * 2, max_circuits_per_job=1)
+        job_set = self.fake_backend.run([self._qc] * 2, max_circuits_per_job=1)
         job_set.block_for_submit()
         client_version = job_set.client_version
         self.assertTrue(client_version)
