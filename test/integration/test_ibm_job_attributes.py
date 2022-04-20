@@ -49,7 +49,7 @@ class TestIBMJobAttributes(IBMTestCase):
     """Test IBMJob instance attributes."""
 
     @classmethod
-    @integration_test_setup_with_backend()
+    @integration_test_setup_with_backend(simulator=False)
     def setUpClass(
         cls, backend: IBMBackend, dependencies: IntegrationTestDependencies
     ) -> None:
@@ -57,7 +57,10 @@ class TestIBMJobAttributes(IBMTestCase):
         # pylint: disable=arguments-differ
         super().setUpClass()
         cls.dependencies = dependencies
-        cls.sim_backend = backend
+        cls.sim_backend = dependencies.provider.get_backend(
+            "ibmq_qasm_simulator", instance=dependencies.instance
+        )
+        cls.real_device_backend = backend
         cls.bell = transpile(ReferenceCircuits.bell(), cls.sim_backend)
         cls.sim_job = cls.sim_backend.run(cls.bell)
         cls.last_week = datetime.now() - timedelta(days=7)
@@ -76,7 +79,7 @@ class TestIBMJobAttributes(IBMTestCase):
         self.assertTrue(self.sim_job.backend().name() == self.sim_backend.name())
 
     @slow_test
-    def test_running_job_properties(self, backend):
+    def test_running_job_properties(self):
         """Test fetching properties of a running job."""
 
         def _job_callback(job_id, job_status, cjob, **kwargs):
@@ -85,6 +88,7 @@ class TestIBMJobAttributes(IBMTestCase):
                 job_properties[0] = cjob.properties()
                 cancel_job(cjob)
 
+        backend = self.real_device_backend
         job_properties = [None]
         large_qx = get_large_circuit(backend=backend)
         job = backend.run(transpile(large_qx, backend=backend))
@@ -171,8 +175,9 @@ class TestIBMJobAttributes(IBMTestCase):
             self.assertEqual(job.name(), job_name)
 
     @slow_test
-    def test_error_message_device(self, backend):
+    def test_error_message_device(self):
         """Test retrieving job error messages from a device backend."""
+        backend = self.real_device_backend
         job = submit_job_one_bad_instr(backend)
         job.wait_for_final_state(wait=300, callback=self.simple_job_callback)
 

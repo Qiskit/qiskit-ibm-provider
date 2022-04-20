@@ -147,7 +147,7 @@ class TestIBMJob(IBMTestCase):
         self.assertEqual(sorted(job_ids), sorted(list(set(job_ids))))
 
     @slow_test
-    def test_run_multiple_device(self, backend):
+    def test_run_multiple_device(self):
         """Test running multiple jobs in a real device."""
         num_qubits = 5
         quantum_register = QuantumRegister(num_qubits, "qr")
@@ -157,6 +157,7 @@ class TestIBMJob(IBMTestCase):
             quantum_circuit.cx(quantum_register[i], quantum_register[i + 1])
         quantum_circuit.measure(quantum_register, classical_register)
         num_jobs = 3
+        backend = self.real_device_backend
         job_array = [
             backend.run(transpile(quantum_circuit, backend=backend))
             for _ in range(num_jobs)
