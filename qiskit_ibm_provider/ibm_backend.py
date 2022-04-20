@@ -1049,7 +1049,7 @@ class IBMRetiredBackend(IBMBackend):
     @classmethod
     def _default_options(cls) -> Options:
         """Default runtime options."""
-        return Options(shots=4000)
+        return super()._default_options()
 
     def properties(
         self, refresh: bool = False, datetime: Optional[python_datetime] = None
