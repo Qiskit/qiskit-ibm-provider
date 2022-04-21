@@ -2,6 +2,6 @@
 upgrade:
   - |
     Passing a :class:`~qiskit.qobj.QasmQobj` and :class:`~qiskit.qobj.PulseQobj` in
-    the `qiskit.providers.ibmq.IBMQBackend.run` method has been removed.
+    the `~qiskit_ibm_provider.IBMBackend.run` method has been removed.
     :class:`~qiskit.circuit.QuantumCircuit` and :class:`~qiskit.pulse.Schedule`
     should now be used instead.
