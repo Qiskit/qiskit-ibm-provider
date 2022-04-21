@@ -27,7 +27,7 @@ import ipywidgets as widgets
 import numpy as np
 from sklearn.decomposition import PCA
 from qiskit.providers.jobstatus import JobStatus
-from qiskit.test.mock.fake_backend import FakeBackend
+from qiskit.test.mock import FakeBackendV2 as FakeBackend
 
 # PLOTS
 ENABLE_LEVEL_0 = False
@@ -144,7 +144,7 @@ class LiveDataVisualization:
         The list received includes objects with the jobs' info is a dict composed
         by the fields: 'id', 'liveDataEnabled', 'creationDate'.
         The objects included in the list are not same as a Qiskit Job"""
-        provider = self.backend.provider()
+        provider = self.backend.provider
         livedata_jobs = []
 
         if provider is not None and not isinstance(provider.backend, FakeBackend):
@@ -306,7 +306,7 @@ class LiveDataVisualization:
             json.dumps(
                 {
                     "type": "authentication",
-                    "data": self.backend.provider().credentials.access_token,
+                    "data": self.backend.provider.credentials.access_token,
                 }
             )
         )
@@ -351,7 +351,7 @@ class LiveDataVisualization:
     async def init_websockets(self) -> None:
         """Init Websockets using Websockets library"""
         uri: str = (
-            f"{self.backend.provider().credentials.websockets_url}"
+            f"{self.backend.provider.credentials.websockets_url}"
             f"jobs/{self.selected_job['id']}/live_data"
         )
         logger.debug("🔌 ws@job_id #%s connecting to %s", self.selected_job["id"], uri)
@@ -1229,7 +1229,7 @@ class JobInformationView:
         content += f"<td class='livedata-table'>{self.get_job_status(job)}</td>"
         content += "<td class='livedata-table'></td>"
         content += "<td class='livedata-table'>System</td>"
-        content += f"<td class='livedata-table'>{self._backend.name()}</td></tr>"
+        content += f"<td class='livedata-table'>{self._backend.name}</td></tr>"
 
         content += "<tr class='livedata-table'><td class='livedata-table'>Estimated completion</td>"
         content += (
