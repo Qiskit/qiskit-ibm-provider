@@ -112,7 +112,7 @@ class TestIBMDashboard(IBMTestCase):
         backend = self.dependencies.provider.get_backend("ibmq_qasm_simulator")
         job = backend.run(transpile(ReferenceCircuits.bell(), backend))
         create_job_widget(
-            mock.MagicMock(), job, backend=backend.name(), status=job.status().value
+            mock.MagicMock(), job, backend=backend.name, status=job.status().value
         )
 
     def test_watcher_monitor(self):

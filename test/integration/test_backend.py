@@ -64,16 +64,16 @@ class TestIBMBackend(IBMTestCase):
 
     def test_backend_pulse_defaults(self):
         """Check the backend pulse defaults of each backend."""
-        provider = self.backend.provider()
+        provider = self.backend.provider
         for backend in provider.backends():
-            with self.subTest(backend_name=backend.name()):
+            with self.subTest(backend_name=backend.name):
                 defaults = backend.defaults()
                 if backend.configuration().open_pulse:
                     self.assertIsNotNone(defaults)
 
     def test_backend_reservations(self):
         """Test backend reservations."""
-        provider: IBMProvider = self.backend.provider()
+        provider: IBMProvider = self.backend.provider
         backend = reservations = None
         for backend in provider.backends(
             simulator=False,
@@ -127,7 +127,7 @@ class TestIBMBackend(IBMTestCase):
 
     def test_backend_options(self):
         """Test backend options."""
-        provider: IBMProvider = self.backend.provider()
+        provider: IBMProvider = self.backend.provider
         backends = provider.backends(
             open_pulse=True,
             operational=True,
@@ -153,7 +153,7 @@ class TestIBMBackend(IBMTestCase):
 
     def test_sim_backend_options(self):
         """Test simulator backend options."""
-        provider: IBMProvider = self.backend.provider()
+        provider: IBMProvider = self.backend.provider
         backend = provider.get_backend("ibmq_qasm_simulator")
         backend.options.shots = 2048
         backend.set_options(memory=True)

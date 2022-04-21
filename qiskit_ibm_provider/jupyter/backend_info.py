@@ -18,7 +18,7 @@ from typing import Union
 
 import ipyvuetify as vue
 from IPython.display import display  # pylint: disable=import-error
-from qiskit.test.mock.fake_backend import FakeBackend
+from qiskit.test.mock import FakeBackendV2 as FakeBackend
 
 from qiskit_ibm_provider.ibm_backend import IBMBackend
 from .config_widget import config_tab
