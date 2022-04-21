@@ -21,7 +21,7 @@ from typing import Iterable, Dict, List, Union, Optional, Any
 from qiskit.circuit import QuantumCircuit, Parameter, Delay
 from qiskit.circuit.duration import duration_in_dt
 from qiskit.compiler import assemble
-from qiskit.providers.backend import BackendV2 as Backend, QubitProperties
+from qiskit.providers.backend import BackendV2 as Backend
 from qiskit.providers.models import (
     BackendStatus,
     BackendProperties,
@@ -57,6 +57,7 @@ from .exceptions import (
     IBMBackendApiError,
     IBMBackendApiProtocolError,
 )
+from .ibm_qubit_properties import IBMQubitProperties
 from .job import IBMJob, IBMCircuitJob, IBMCompositeJob
 from .utils import validate_job_tags
 from .utils.backend import convert_reservation_data
@@ -213,7 +214,7 @@ class IBMBackend(Backend):
         self._api_client = api_client
         self._configuration = configuration
         self._properties = None
-        self._qubit_properties = None
+        self._qubit_properties: Dict[int, IBMQubitProperties] = None
         self._defaults = None
         self._target = None
         self._max_circuits = configuration.max_experiments
@@ -346,18 +347,18 @@ class IBMBackend(Backend):
 
     def qubit_properties(
         self, qubit: Union[int, List[int]]
-    ) -> Union[QubitProperties, List[QubitProperties]]:
-        """Return QubitProperties for a given qubit.
+    ) -> Union[IBMQubitProperties, List[IBMQubitProperties]]:
+        """Return IBMQubitProperties for a given qubit.
 
         Args:
             qubit: The qubit to get the
-                :class:`~qiskit.provider.QubitProperties` object for. This can
+                :class:`~qiskit_ibm_provider.IBMQubitProperties` object for. This can
                 be a single integer for 1 qubit or a list of qubits and a list
-                of :class:`~qiskit.provider.QubitProperties` objects will be
+                of :class:`~qiskit_ibm_provider.IBMQubitProperties` objects will be
                 returned in the same order
 
         Returns:
-            QubitProperties or a list of QubitProperties
+            IBMQubitProperties or a list of IBMQubitProperties
         """
         self._get_properties()
         if not self._qubit_properties:

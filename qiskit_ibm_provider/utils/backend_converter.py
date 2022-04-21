@@ -15,7 +15,6 @@
 from typing import Any, Dict
 
 from qiskit.transpiler.target import Target, InstructionProperties
-from qiskit.providers.backend import QubitProperties
 from qiskit.utils.units import apply_prefix
 from qiskit.circuit.library.standard_gates import IGate, SXGate, XGate, CXGate, RZGate
 from qiskit.circuit.parameter import Parameter
@@ -27,6 +26,8 @@ from qiskit.providers.models import (
     BackendProperties,
     PulseDefaults,
 )
+
+from ..ibm_qubit_properties import IBMQubitProperties
 
 
 def convert_to_target(
@@ -128,15 +129,22 @@ def convert_to_target(
     return target
 
 
-def qubit_props_dict_from_props(properties: BackendProperties) -> QubitProperties:
+def qubit_props_dict_from_props(
+    properties: BackendProperties,
+) -> Dict[int, IBMQubitProperties]:
     """Uses BackendProperties to construct
-    and return QubitProperties class.
+    and return IBMQubitProperties class.
     """
     qubit_props = {}
     for qubit, _ in enumerate(properties.qubits):
-        qubit_props[qubit] = QubitProperties(
+        qubit_props[qubit] = IBMQubitProperties(  # type: ignore[no-untyped-call]
             t1=properties.t1(qubit),
             t2=properties.t2(qubit),
             frequency=properties.frequency(qubit),
+            anharmonicity=properties.qubit_property(qubit, "anharmonicity"),
+            readout_error=properties.readout_error(qubit),
+            readout_length=properties.readout_length(qubit),
+            prob_meas0_prep1=properties.qubit_property(qubit, "prob_meas0_prep1"),
+            prob_meas1_prep0=properties.qubit_property(qubit, "prob_meas1_prep0"),
         )
     return qubit_props
