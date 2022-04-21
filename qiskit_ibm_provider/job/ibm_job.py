@@ -25,6 +25,10 @@ from qiskit.qobj import QasmQobj, PulseQobj
 from qiskit.result import Result
 
 from qiskit_ibm_provider import ibm_backend  # pylint: disable=unused-import
+from qiskit_ibm_provider.api.exceptions import ApiError
+from qiskit_ibm_provider.job.exceptions import IBMJobApiError
+from qiskit_ibm_provider.job.utils import get_delete_status
+
 from .queueinfo import QueueInfo
 from ..api.clients import AccountClient
 
@@ -257,3 +261,30 @@ class IBMJob(Job, ABC):
             The Qobj for this job, or ``None`` if the job does not have a Qobj.
         """
         pass
+
+    def delete(self) -> bool:
+        """Attempt to delete the job.
+
+        Returns:
+            ``True`` if the job is deleted, else ``False``.
+
+        Raises:
+            IBMJobApiError: If an unexpected error occurred when communicating
+                with the server.
+        """
+        try:
+            response = self._api_client.job_delete(self.job_id())
+            deleted = get_delete_status(response)
+            logger.debug(
+                'Job %s delete status is "%s". Response data: %s.',
+                self.job_id(),
+                deleted,
+                response,
+            )
+            return deleted
+        except ApiError as error:
+            raise IBMJobApiError(
+                "Unexpected error when deleting job {}: {}".format(
+                    self.job_id(), str(error)
+                )
+            ) from error
