@@ -137,14 +137,19 @@ def qubit_props_dict_from_props(
     """
     qubit_props = {}
     for qubit, _ in enumerate(properties.qubits):
+        t_1 = properties.t1(qubit) * 1e-6  # microseconds to seconds
+        t_2 = properties.t2(qubit) * 1e-6  # microseconds to seconds
+        frequency = properties.frequency(qubit) * 1e9  # GHz to Hz
+        try:
+            anharmonicity = (
+                properties.qubit_property(qubit, "anharmonicity")[0] * 1e9
+            )  # GHz to Hz
+        except Exception:  # pylint: disable=broad-except
+            anharmonicity = None
         qubit_props[qubit] = IBMQubitProperties(  # type: ignore[no-untyped-call]
-            t1=properties.t1(qubit),
-            t2=properties.t2(qubit),
-            frequency=properties.frequency(qubit),
-            anharmonicity=properties.qubit_property(qubit, "anharmonicity"),
-            readout_error=properties.readout_error(qubit),
-            readout_length=properties.readout_length(qubit),
-            prob_meas0_prep1=properties.qubit_property(qubit, "prob_meas0_prep1"),
-            prob_meas1_prep0=properties.qubit_property(qubit, "prob_meas1_prep0"),
+            t1=t_1,
+            t2=t_2,
+            frequency=frequency,
+            anharmonicity=anharmonicity,
         )
     return qubit_props
