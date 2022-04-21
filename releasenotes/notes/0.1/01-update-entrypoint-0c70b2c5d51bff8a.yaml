@@ -1,0 +1,20 @@
+---
+upgrade:
+  - |
+    The ``IBMQ`` global variable which was an instance of the ``IBMQFactory`` has been removed.
+    ``IBMQFactory`` and ``AccountProvider`` classes have been removed and the functionality provided by these
+    two classes have been combined and refactored in the new ``IBMProvider`` class. This class will provide
+    a simplified interface as shown below and serve as the entrypoint going forward.
+
+    ``IBMProvider.save_account(TOKEN, INSTANCE)`` - Save your account to disk for future use and optionally set
+    a default instance (hub/group/project) to be used when loading your account.
+
+    ``IBMProvider()`` - Load account using saved credentials.
+
+    ``IBMProvider.saved_accounts()`` - View the accounts saved to disk.
+
+    ``IBMProvider.delete_account()`` - Delete the saved account from disk.
+
+    ``IBMProvider(TOKEN)`` - Enable your account in the current session.
+
+    ``IBMProvider.active_account()`` - List the account currently active in the session.
