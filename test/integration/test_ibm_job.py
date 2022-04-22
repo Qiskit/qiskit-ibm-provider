@@ -32,7 +32,11 @@ from qiskit_ibm_provider.api.rest.job import Job as RestJob
 from qiskit_ibm_provider.apiconstants import ApiJobStatus, API_JOB_FINAL_STATES
 from qiskit_ibm_provider.exceptions import IBMBackendApiError
 from qiskit_ibm_provider.ibm_backend import IBMRetiredBackend
-from qiskit_ibm_provider.job.exceptions import IBMJobTimeoutError, IBMJobNotFoundError
+from qiskit_ibm_provider.job.exceptions import (
+    IBMJobApiError,
+    IBMJobTimeoutError,
+    IBMJobNotFoundError,
+)
 from qiskit_ibm_provider.utils.utils import api_status_to_job_status
 from ..decorators import (
     IntegrationTestDependencies,
@@ -195,6 +199,13 @@ class TestIBMJob(IBMTestCase):
         # Find the most busy backend
         backend = most_busy_backend(self.provider, instance=self.dependencies.instance)
         submit_and_cancel(backend)
+
+    def test_delete(self):
+        """Test job deletion."""
+        job = self.sim_job
+        self.assertTrue(job.delete())
+        with self.assertRaises(IBMJobApiError):
+            job.status()
 
     def test_retrieve_jobs(self):
         """Test retrieving jobs."""
