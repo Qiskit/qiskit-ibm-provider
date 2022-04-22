@@ -6,15 +6,97 @@ upgrade:
     two classes have been combined and refactored in the new ``IBMProvider`` class. This class will provide
     a simplified interface as shown below and serve as the entrypoint going forward.
 
-    ``IBMProvider.save_account(TOKEN, INSTANCE)`` - Save your account to disk for future use and optionally set
+    :meth:`~qiskit_ibm_provider.IBMProvider.save_account` - Save your account to disk for future use and optionally set
     a default instance (hub/group/project) to be used when loading your account.
 
     ``IBMProvider()`` - Load account using saved credentials.
 
-    ``IBMProvider.saved_accounts()`` - View the accounts saved to disk.
+    :meth:`~qiskit_ibm_provider.IBMProvider.saved_accounts` - View the accounts saved to disk.
 
-    ``IBMProvider.delete_account()`` - Delete the saved account from disk.
+    :meth:`~qiskit_ibm_provider.IBMProvider.delete_account` - Delete the saved account from disk.
 
-    ``IBMProvider(TOKEN)`` - Enable your account in the current session.
+    ``IBMProvider(token="<insert_api_token>")`` - Enable your account in the current session.
 
-    ``IBMProvider.active_account()`` - List the account currently active in the session.
+    :meth:`~qiskit_ibm_provider.IBMProvider.active_account` - List the account currently active in the session.
+
+    Use the examples below to migrate your existing code:
+
+    * Load Account using Saved Credentials
+
+      Before::
+
+        from qiskit import IBMQ
+        IBMQ.save_account(token='MY_API_TOKEN')
+        provider = IBMQ.load_account() # loads saved account from disk
+
+      After::
+
+        from qiskit_ibm_provider import IBMProvider
+        IBMProvider.save_account(token='MY_API_TOKEN')
+        provider = IBMProvider() # loads saved account from disk
+
+    * Load Account using Environment Variables
+
+      Before::
+
+        # export QE_TOKEN='MY_API_TOKEN' (bash command)
+
+        from qiskit import IBMQ
+        provider = IBMQ.load_account() # loads account from env variables
+
+      After::
+
+        # export QISKIT_IBM_TOKEN='MY_API_TOKEN' (bash command)
+
+        from qiskit_ibm_provider import IBMProvider
+        provider = IBMProvider() # loads account from env variables
+
+    * Saved Account
+
+      Before::
+
+        from qiskit import IBMQ
+        IBMQ.stored_account() # get saved account from qiskitrc file
+
+      After::
+
+        from qiskit_ibm_provider import IBMProvider
+        IBMProvider.saved_accounts() # get saved accounts from qiskit-ibm.json file
+
+    * Delete Account
+
+      Before::
+
+        from qiskit import IBMQ
+        IBMQ.delete_account() # delete saved account from qiskitrc file
+
+      After::
+
+        from qiskit_ibm_provider import IBMProvider
+        IBMProvider.delete_account() # delete saved account from saved credentials
+
+    * Enable Account
+
+      Before::
+
+        from qiskit import IBMQ
+        provider = IBMQ.enable_account(token='MY_API_TOKEN') # enable account for current session
+
+      After::
+
+        from qiskit_ibm_provider import IBMProvider
+        provider = IBMProvider(token='MY_API_TOKEN') # enable account for current session
+
+    * Active Account
+
+      Before::
+
+        from qiskit import IBMQ
+        provider = IBMQ.load_account() # load saved account
+        IBMQ.active_account() # check active account
+
+      After::
+
+        from qiskit_ibm_provider import IBMProvider
+        provider = IBMProvider() # load saved account
+        IBMProvider.active_account() # check active account

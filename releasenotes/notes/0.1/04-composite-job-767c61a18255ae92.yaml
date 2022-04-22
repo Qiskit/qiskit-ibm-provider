@@ -23,3 +23,16 @@ upgrade:
 
     This feature replaces the ``IBMQJobManager`` class in ``qiskit-ibmq-provider``,
     which is the predecessor of ``qiskit-ibm-provider``.
+
+      Before::
+
+        from qiskit.providers.ibmq.managed import IBMQJobManager
+
+        job_manager = IBMQJobManager()
+        job_set = job_manager.run(long_list_of_circuits, backend=backend)
+        results = job_set.results()
+
+      After::
+
+        job = backend.run(long_list_of_circuits)
+        result = job.result()
