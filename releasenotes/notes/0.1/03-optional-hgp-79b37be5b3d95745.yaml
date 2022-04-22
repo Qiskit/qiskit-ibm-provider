@@ -5,9 +5,9 @@ upgrade:
     Quantum account. The hub/group/project is selected in the following order.
 
       - hub/group/project if passed via ``instance`` parameter when
-        calling :meth:`qiskit_ibm_provider.IBMProvider.get_backend`
+        calling :meth:`~qiskit_ibm_provider.IBMProvider.get_backend`
       - hub/group/project if passed via ``instance`` parameter when initializing
-        :class:`qiskit_ibm_provider.IBMProvider`
-      - the default set previously via :meth:`qiskit_ibm_provider.IBMProvider.save_account`
+        :class:`~qiskit_ibm_provider.IBMProvider`
+      - the default set previously via :meth:`~qiskit_ibm_provider.IBMProvider.save_account`
       - a premium hub/group/project in your account
       - open access hub/group/project

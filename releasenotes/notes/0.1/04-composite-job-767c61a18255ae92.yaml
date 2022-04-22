@@ -1,21 +1,21 @@
 ---
 upgrade:
   - |
-    You can now use :meth:`qiskit_ibm_provider.IBMBackend.run` to submit a long list of
+    You can now use :meth:`~qiskit_ibm_provider.IBMBackend.run` to submit a long list of
     circuits/schedules like you would for a single circuit/schedule.
     If the number of circuits/schedules exceeds the backend limit,
-    :meth:`qiskit_ibm_provider.IBMBackend.run` will automatically divide the list into
-    multiple sub-jobs and return a single :class:`qiskit_ibm_provider.job.IBMCompositeJob`
+    :meth:`~qiskit_ibm_provider.IBMBackend.run` will automatically divide the list into
+    multiple sub-jobs and return a single :class:`~qiskit_ibm_provider.job.IBMCompositeJob`
     instance. You can use this ``IBMCompositeJob`` instance the same way you used
     ``IBMJob`` before. For example, you can use
     :meth:`~qiskit_ibm_provider.job.IBMCompositeJob.status` to get job status,
     :meth:`~qiskit_ibm_provider.job.IBMCompositeJob.result` to get job result, and
     :meth:`~qiskit_ibm_provider.job.IBMCompositeJob.cancel` to cancel the job. You can also
-    use the :meth:`qiskit_ibm_provider.IBMBackendService.job` and
-    :meth:`qiskit_ibm_provider.IBMBackendService.jobs` methods to retrieve a single
+    use the :meth:`~qiskit_ibm_provider.IBMBackendService.job` and
+    :meth:`~qiskit_ibm_provider.IBMBackendService.jobs` methods to retrieve a single
     ``IBMCompositeJob`` (by passing its job ID) or multiple jobs.
 
-    :class:`qiskit_ibm_provider.job.IBMCompositeJob` also has a
+    :class:`~qiskit_ibm_provider.job.IBMCompositeJob` also has a
     :meth:`~qiskit_ibm_provider.job.IBMCompositeJob.rerun_failed` method that will
     re-run any failed or cancelled sub jobs and a
     :meth:`~qiskit_ibm_provider.job.IBMCompositeJob.report` method that returns a
