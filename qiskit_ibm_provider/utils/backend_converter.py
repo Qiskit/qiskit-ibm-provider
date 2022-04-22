@@ -151,10 +151,12 @@ def qubit_props_list_from_props(
             )  # GHz to Hz
         except Exception:  # pylint: disable=broad-except
             anharmonicity = None
-        qubit_props[qubit] = IBMQubitProperties(  # type: ignore[no-untyped-call]
-            t1=t_1,
-            t2=t_2,
-            frequency=frequency,
-            anharmonicity=anharmonicity,
+        qubit_props.append(
+            IBMQubitProperties(  # type: ignore[no-untyped-call]
+                t1=t_1,
+                t2=t_2,
+                frequency=frequency,
+                anharmonicity=anharmonicity,
+            )
         )
     return qubit_props
