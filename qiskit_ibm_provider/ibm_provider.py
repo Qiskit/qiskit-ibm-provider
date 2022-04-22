@@ -58,8 +58,8 @@ class IBMProvider(Provider):
         provider = IBMProvider()
 
     Instead of saving credentials to disk, you can also set the environment
-    variables QISKIT_IBM_API_TOKEN, QISKIT_IBM_API_URL, QISKIT_IBM_HUB, QISKIT_IBM_GROUP
-    and QISKIT_IBM_PROJECT and then instantiate the provider like below::
+    variables QISKIT_IBM_TOKEN, QISKIT_IBM_URL and QISKIT_IBM_INSTANCE
+    and then instantiate the provider like below::
 
         from qiskit_ibm_provider import IBMProvider
         provider = IBMProvider()
