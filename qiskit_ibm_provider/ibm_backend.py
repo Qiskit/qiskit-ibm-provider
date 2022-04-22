@@ -57,13 +57,11 @@ from .exceptions import (
     IBMBackendApiError,
     IBMBackendApiProtocolError,
 )
-from .ibm_qubit_properties import IBMQubitProperties
 from .job import IBMJob, IBMCircuitJob, IBMCompositeJob
 from .utils import validate_job_tags
 from .utils.backend import convert_reservation_data
 from .utils.backend_converter import (
     convert_to_target,
-    qubit_props_dict_from_props,
 )
 from .utils.converters import local_to_utc
 from .utils.json_decoder import defaults_from_server_data, properties_from_server_data
@@ -214,7 +212,6 @@ class IBMBackend(Backend):
         self._api_client = api_client
         self._configuration = configuration
         self._properties = None
-        self._qubit_properties: Dict[int, IBMQubitProperties] = None
         self._defaults = None
         self._target = None
         self._max_circuits = configuration.max_experiments
@@ -344,30 +341,6 @@ class IBMBackend(Backend):
         self._get_defaults()
         self._convert_to_target()
         return self._target
-
-    def qubit_properties(
-        self, qubit: Union[int, List[int]]
-    ) -> Union[IBMQubitProperties, List[IBMQubitProperties]]:
-        """Return IBMQubitProperties for a given qubit.
-
-        Args:
-            qubit: The qubit to get the
-                :class:`~qiskit_ibm_provider.IBMQubitProperties` object for. This can
-                be a single integer for 1 qubit or a list of qubits and a list
-                of :class:`~qiskit_ibm_provider.IBMQubitProperties` objects will be
-                returned in the same order
-
-        Returns:
-            IBMQubitProperties or a list of IBMQubitProperties
-        """
-        self._get_properties()
-        if not self._qubit_properties:
-            self._qubit_properties = qubit_props_dict_from_props(self._properties)
-        if isinstance(qubit, int):  # type: ignore[unreachable]
-            return self._qubit_properties.get(qubit)
-        if isinstance(qubit, List):
-            return [self._qubit_properties.get(q) for q in qubit]
-        return None
 
     def run(
         self,
