@@ -1,5 +1,5 @@
 ---
 upgrade:
   - |
-    The deprecated timeout keyword in :meth:`qiskit_ibm_provider.IBMBackendService.backends`
-    has now been removed.
+    The deprecated ``timeout`` keyword in :meth:`~qiskit_ibm_provider.IBMBackendService.backends`
+    method has now been removed.

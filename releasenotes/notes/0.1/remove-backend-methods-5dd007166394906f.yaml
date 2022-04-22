@@ -2,5 +2,5 @@
 upgrade:
   - |
     `qiskit.providers.ibmq.IBMQBackend.retrieve_job()` and `qiskit.providers.ibmq.IBMQBackend.jobs()` have
-    been removed. The `IBMBackendService` methods :meth:`~qiskit_ibm_provider.IBMBackendService.retrieve_job()`
-    and :meth`~qiskit_ibm_provider.IBMBackendService.jobs()` can be used instead.
+    been removed. The `IBMBackendService` methods :meth:`~qiskit_ibm_provider.IBMBackendService.job`
+    and :meth`~qiskit_ibm_provider.IBMBackendService.jobs` can be used instead.
