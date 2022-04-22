@@ -22,6 +22,7 @@ from qiskit.providers.models import QasmBackendConfiguration
 from qiskit.test.reference_circuits import ReferenceCircuits
 
 from qiskit_ibm_provider import IBMBackend, IBMProvider
+from qiskit_ibm_provider.ibm_qubit_properties import IBMQubitProperties
 from ..decorators import (
     IntegrationTestDependencies,
     integration_test_setup,
@@ -35,7 +36,7 @@ class TestIBMBackend(IBMTestCase):
     """Test ibm_backend module."""
 
     @classmethod
-    @integration_test_setup_with_backend(simulator=False)
+    @integration_test_setup_with_backend(simulator=False, min_num_qubits=2)
     def setUpClass(
         cls, backend: IBMBackend, dependencies: IntegrationTestDependencies
     ) -> None:
@@ -53,6 +54,20 @@ class TestIBMBackend(IBMTestCase):
     def test_backend_properties(self):
         """Check the properties of calibration of a real chip."""
         self.assertIsNotNone(self.backend.properties())
+
+    def test_backend_fetch_one_qubit_property(self):
+        """Check retrieving properties of qubit 0"""
+        qubit_properties = self.backend.qubit_properties(0)
+        self.assertIsInstance(qubit_properties, IBMQubitProperties)
+
+    def test_backend_fetch_all_qubit_properties(self):
+        """Check retrieving properties of all qubits"""
+        num_qubits = self.backend.num_qubits
+        qubits = list(range(num_qubits))
+        qubit_properties = self.backend.qubit_properties(qubits)
+        self.assertEqual(len(qubit_properties), num_qubits)
+        for i in qubits:
+            self.assertIsInstance(qubit_properties[i], IBMQubitProperties)
 
     def test_backend_job_limit(self):
         """Check the backend job limits of a real backend."""
