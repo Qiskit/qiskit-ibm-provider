@@ -12,9 +12,6 @@
 This project contains a provider that allows accessing the **[IBM Quantum]**
 systems and simulators.
 
-## Migrating
-If you are migrating from `qiskit-ibmq-provider` please follow the instructions in the [migration guide].
-
 ## Installation
 
 You can install the provider using pip:
@@ -37,7 +34,7 @@ pip install qiskit-ibm-provider
    IBMProvider.save_account(token='MY_API_TOKEN')
    ```
 
-   The command above stores your credentials locally in a configuration file called `qiskitrc`. By default, this file is located in `$HOME/.qiskit`, where `$HOME` is your home directory.
+   The command above stores your credentials locally in a configuration file called `qiskit-ibm.json`. By default, this file is located in `$HOME/.qiskit`, where `$HOME` is your home directory.
    Once saved you can then instantiate the provider like below and access the backends:
 
    ```python
@@ -54,7 +51,7 @@ pip install qiskit-ibm-provider
 ### Load Account from Environment Variables
 Alternatively, the IBM Provider can discover credentials from environment variables:
 ```bash
-export QISKIT_IBM_API_TOKEN='MY_API_TOKEN'
+export QISKIT_IBM_TOKEN='MY_API_TOKEN'
 ```
 
 Then instantiate the provider without any arguments and access the backends:
@@ -114,4 +111,3 @@ project at different levels. If you use Qiskit, please cite as per the included
 [Qiskit]: https://github.com/Qiskit/qiskit-tutorial
 [BibTeX file]: https://github.com/Qiskit/qiskit/blob/master/Qiskit.bib
 [Apache License 2.0]: https://github.com/Qiskit/qiskit-ibm-provider/blob/main/LICENSE.txt
-[migration guide]: https://github.com/Qiskit/qiskit-ibm-provider/blob/main/MIGRATING.md
