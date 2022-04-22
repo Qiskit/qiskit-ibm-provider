@@ -12,7 +12,7 @@
 
 """Converters for migration from IBM Quantum BackendV1 to BackendV2."""
 
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 from qiskit.transpiler.target import Target, InstructionProperties
 from qiskit.utils.units import apply_prefix
@@ -47,9 +47,13 @@ def convert_to_target(
         "reset": Reset(),
     }
     custom_gates = {}
-    target = Target(num_qubits=configuration.n_qubits)
+    target = None
     # Parse from properties if it exsits
     if properties is not None:
+        qubit_properties = qubit_props_list_from_props(properties=properties)
+        target = Target(
+            num_qubits=configuration.n_qubits, qubit_properties=qubit_properties
+        )
         # Parse instructions
         gates: Dict[str, Any] = {}
         for gate in properties.gates:
@@ -86,6 +90,7 @@ def convert_to_target(
         target.add_instruction(Measure(), measure_props)
     # Parse from configuration because properties doesn't exist
     else:
+        target = Target(num_qubits=configuration.n_qubits)
         for gate in configuration.gates:
             name = gate.name
             gate_props = (
@@ -129,13 +134,13 @@ def convert_to_target(
     return target
 
 
-def qubit_props_dict_from_props(
+def qubit_props_list_from_props(
     properties: BackendProperties,
-) -> Dict[int, IBMQubitProperties]:
+) -> List[IBMQubitProperties]:
     """Uses BackendProperties to construct
-    and return IBMQubitProperties class.
+    and return a list of IBMQubitProperties.
     """
-    qubit_props = {}
+    qubit_props: List[IBMQubitProperties] = []
     for qubit, _ in enumerate(properties.qubits):
         t_1 = properties.t1(qubit) * 1e-6  # microseconds to seconds
         t_2 = properties.t2(qubit) * 1e-6  # microseconds to seconds
@@ -146,10 +151,12 @@ def qubit_props_dict_from_props(
             )  # GHz to Hz
         except Exception:  # pylint: disable=broad-except
             anharmonicity = None
-        qubit_props[qubit] = IBMQubitProperties(  # type: ignore[no-untyped-call]
-            t1=t_1,
-            t2=t_2,
-            frequency=frequency,
-            anharmonicity=anharmonicity,
+        qubit_props.append(
+            IBMQubitProperties(  # type: ignore[no-untyped-call]
+                t1=t_1,
+                t2=t_2,
+                frequency=frequency,
+                anharmonicity=anharmonicity,
+            )
         )
     return qubit_props
