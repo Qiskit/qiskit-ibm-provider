@@ -90,6 +90,7 @@ class TestIBMJob(IBMTestCase):
         # guaranteed to have them.
         self.assertIsNotNone(job.properties())
 
+    @skip("Test is intermittently timeing out ")
     def test_run_multiple_simulator(self):
         """Test running multiple jobs in a simulator."""
         num_qubits = 16

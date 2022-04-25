@@ -32,7 +32,7 @@ from qiskit_ibm_provider.exceptions import (
 from qiskit_ibm_provider.job.exceptions import IBMJobFailureError
 from ..decorators import (
     IntegrationTestDependencies,
-    integration_test_setup_with_backend,
+    integration_test_setup,
 )
 from ..fake_account_client import BaseFakeAccountClient, MissingFieldFakeJob
 from ..ibm_test_case import IBMTestCase
@@ -49,10 +49,8 @@ class TestIBMJobAttributes(IBMTestCase):
     """Test IBMJob instance attributes."""
 
     @classmethod
-    @integration_test_setup_with_backend(simulator=False)
-    def setUpClass(
-        cls, backend: IBMBackend, dependencies: IntegrationTestDependencies
-    ) -> None:
+    @integration_test_setup()
+    def setUpClass(cls, dependencies: IntegrationTestDependencies) -> None:
         """Initial class level setup."""
         # pylint: disable=arguments-differ
         super().setUpClass()
@@ -60,7 +58,7 @@ class TestIBMJobAttributes(IBMTestCase):
         cls.sim_backend = dependencies.provider.get_backend(
             "ibmq_qasm_simulator", instance=dependencies.instance
         )
-        cls.real_device_backend = backend
+        # cls.real_device_backend = backend
         cls.bell = transpile(ReferenceCircuits.bell(), cls.sim_backend)
         cls.sim_job = cls.sim_backend.run(cls.bell)
         cls.last_week = datetime.now() - timedelta(days=7)
@@ -88,7 +86,7 @@ class TestIBMJobAttributes(IBMTestCase):
                 job_properties[0] = cjob.properties()
                 cancel_job(cjob)
 
-        backend = self.real_device_backend
+        backend = self.sim_backend
         job_properties = [None]
         large_qx = get_large_circuit(backend=backend)
         job = backend.run(transpile(large_qx, backend=backend))
@@ -177,7 +175,7 @@ class TestIBMJobAttributes(IBMTestCase):
     @slow_test
     def test_error_message_device(self):
         """Test retrieving job error messages from a device backend."""
-        backend = self.real_device_backend
+        backend = self.sim_backend
         job = submit_job_one_bad_instr(backend)
         job.wait_for_final_state(wait=300, callback=self.simple_job_callback)
 
