@@ -269,12 +269,6 @@ class TestIBMProviderServices(IBMTestCase):
         }
         self.assertEqual(backend_attributes, backends)
 
-    def test_provider_services(self):
-        """Test provider services."""
-        services = self.dependencies.provider.services()
-        self.assertIn("backend", services)
-        self.assertIsInstance(services["backend"], IBMBackendService)
-        self.assertIsInstance(
-            self.dependencies.provider.service("backend"), IBMBackendService
-        )
+    def test_provider_has_backend_service(self):
+        """Test provider has backend service."""
         self.assertIsInstance(self.dependencies.provider.backend, IBMBackendService)
