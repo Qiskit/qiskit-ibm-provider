@@ -22,6 +22,7 @@ from qiskit.providers.models import QasmBackendConfiguration
 from qiskit.test.reference_circuits import ReferenceCircuits
 
 from qiskit_ibm_provider import IBMBackend, IBMProvider
+from qiskit_ibm_provider.ibm_qubit_properties import IBMQubitProperties
 from ..decorators import (
     IntegrationTestDependencies,
     integration_test_setup,
@@ -35,7 +36,7 @@ class TestIBMBackend(IBMTestCase):
     """Test ibm_backend module."""
 
     @classmethod
-    @integration_test_setup_with_backend(simulator=False)
+    @integration_test_setup_with_backend(simulator=False, min_num_qubits=2)
     def setUpClass(
         cls, backend: IBMBackend, dependencies: IntegrationTestDependencies
     ) -> None:
@@ -54,6 +55,20 @@ class TestIBMBackend(IBMTestCase):
         """Check the properties of calibration of a real chip."""
         self.assertIsNotNone(self.backend.properties())
 
+    def test_backend_fetch_one_qubit_property(self):
+        """Check retrieving properties of qubit 0"""
+        qubit_properties = self.backend.qubit_properties(0)
+        self.assertIsInstance(qubit_properties, IBMQubitProperties)
+
+    def test_backend_fetch_all_qubit_properties(self):
+        """Check retrieving properties of all qubits"""
+        num_qubits = self.backend.num_qubits
+        qubits = list(range(num_qubits))
+        qubit_properties = self.backend.qubit_properties(qubits)
+        self.assertEqual(len(qubit_properties), num_qubits)
+        for i in qubits:
+            self.assertIsInstance(qubit_properties[i], IBMQubitProperties)
+
     def test_backend_job_limit(self):
         """Check the backend job limits of a real backend."""
         job_limit = self.backend.job_limit()
@@ -64,16 +79,16 @@ class TestIBMBackend(IBMTestCase):
 
     def test_backend_pulse_defaults(self):
         """Check the backend pulse defaults of each backend."""
-        provider = self.backend.provider()
+        provider = self.backend.provider
         for backend in provider.backends():
-            with self.subTest(backend_name=backend.name()):
+            with self.subTest(backend_name=backend.name):
                 defaults = backend.defaults()
                 if backend.configuration().open_pulse:
                     self.assertIsNotNone(defaults)
 
     def test_backend_reservations(self):
         """Test backend reservations."""
-        provider: IBMProvider = self.backend.provider()
+        provider: IBMProvider = self.backend.provider
         backend = reservations = None
         for backend in provider.backends(
             simulator=False,
@@ -127,7 +142,7 @@ class TestIBMBackend(IBMTestCase):
 
     def test_backend_options(self):
         """Test backend options."""
-        provider: IBMProvider = self.backend.provider()
+        provider: IBMProvider = self.backend.provider
         backends = provider.backends(
             open_pulse=True,
             operational=True,
@@ -153,7 +168,7 @@ class TestIBMBackend(IBMTestCase):
 
     def test_sim_backend_options(self):
         """Test simulator backend options."""
-        provider: IBMProvider = self.backend.provider()
+        provider: IBMProvider = self.backend.provider
         backend = provider.get_backend("ibmq_qasm_simulator")
         backend.options.shots = 2048
         backend.set_options(memory=True)

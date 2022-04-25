@@ -180,8 +180,10 @@ class TestIBMQasmSimulator(IBMTestCase):
             backend._configuration._data["simulation_method"] = sim_method
             backend._submit_job = submit_fn
 
-    # TODO: check why test fails
-    @skip("Fails with TypeError: Object of type NoiseModel is not JSON serializable. ")
+    @skip(
+        "NoiseModel.from_backend does not currently support V2 Backends. \
+        Skip test until it's fixed in aer."
+    )
     def test_simulator_with_noise_model(self):
         """Test using simulator with a noise model."""
         noise_model = NoiseModel.from_backend(self.real_device_backend)

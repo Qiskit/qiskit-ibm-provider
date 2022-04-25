@@ -35,7 +35,7 @@ from ..ibm_test_case import IBMTestCase
 from ..ws_server import MockWsServer
 
 
-class TestWebsocketClient(IBMTestCase):
+class TestWebsocketClientThreading(IBMTestCase):
     """Tests for the websocket client."""
 
     def test_invalid_url(self):
