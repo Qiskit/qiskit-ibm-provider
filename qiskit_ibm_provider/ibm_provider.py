@@ -28,7 +28,6 @@ from .api.clients import AuthClient, VersionClient
 from .apiconstants import QISKIT_IBM_API_URL
 from .exceptions import IBMAccountError
 from .exceptions import (
-    IBMNotAuthorizedError,
     IBMInputValueError,
 )
 from .hub_group_project import HubGroupProject  # pylint: disable=cyclic-import
@@ -84,14 +83,12 @@ class IBMProvider(Provider):
         * A premium hub/group/project in your account.
         * An open access hub/group/project.
 
-    The IBMProvider offers different services. The main service,
-    :class:`~qiskit_ibm_provider.ibm_backend_service.IBMBackendService` gives access to IBM Quantum
-    devices and simulators.
+    The IBMProvider offers the :class:`~qiskit_ibm_provider.ibm_backend_service.IBMBackendService`
+    which gives access to the IBM Quantum devices and simulators.
 
-    You can obtain an instance of a service using the :meth:`service()` method
-    or as an attribute of this ``IBMProvider`` instance. For example::
+    You can obtain an instance of the service as an attribute of the ``IBMProvider`` instance.
+    For example::
 
-        backend_service = provider.service('backend')
         backend_service = provider.backend
 
     Since :class:`~qiskit_ibm_provider.ibm_backend_service.IBMBackendService`
@@ -573,52 +570,6 @@ class IBMProvider(Provider):
         if not backends:
             raise QiskitBackendNotFoundError("No backend matches the criteria")
         return backends[0]
-
-    def has_service(self, name: str) -> bool:
-        """Check if this account has access to the service.
-
-        Args:
-            name: Name of the service.
-
-        Returns:
-            Whether the account has access to the service.
-
-        Raises:
-            IBMInputValueError: If an unknown service name is specified.
-        """
-        if name not in self._services:
-            raise IBMInputValueError(f"Unknown service {name} specified.")
-        if self._services[name] is None:
-            return False
-        return True
-
-    def service(self, name: str) -> Any:
-        """Return the specified service.
-
-        Args:
-            name: Name of the service.
-
-        Returns:
-            The specified service.
-
-        Raises:
-            IBMInputValueError: If an unknown service name is specified.
-            IBMNotAuthorizedError: If the account is not authorized to use
-                the service.
-        """
-        if name not in self._services:
-            raise IBMInputValueError(f"Unknown service {name} specified.")
-        if self._services[name] is None:
-            raise IBMNotAuthorizedError("You are not authorized to use this service.")
-        return self._services[name]
-
-    def services(self) -> Dict:
-        """Return all available services.
-
-        Returns:
-            All services available to this account.
-        """
-        return {key: val for key, val in self._services.items() if val is not None}
 
     def __repr__(self) -> str:
         return "<{}>".format(self.__class__.__name__)
