@@ -1,9 +1,0 @@
----
-features:
-  - |
-    The qiskit-ibm-provider package now supports IBM Quantum LiveData features.
-    These features allow users to observe the real-time behavior of IBM Quantum
-    backends while executing jobs. Specifically, the provider now includes a
-    new tab in the backend Jupyter-related widget and supports the execution of
-    jobs (via :meth:`qiskit_ibm_provider.IBMBackend.run` method) with the
-    `live_data_enabled=True` parameter in allowed IBM Quantum backends.

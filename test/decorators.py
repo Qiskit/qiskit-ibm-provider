@@ -59,6 +59,9 @@ def integration_test_setup_with_backend(
         backend_name: The name of the backend.
         simulator: If set to True, the list of suitable backends is limited to simulators.
         min_num_qubits: Minimum number of qubits the backend has to have.
+
+    Returns:
+        Decorator that retrieves the appropriate backend to use for testing.
     """
 
     def _decorator(func):

@@ -42,8 +42,8 @@ from .utils import build_error_report, api_to_job_error, get_cancel_status
 from ..api.clients import AccountClient
 from ..api.exceptions import ApiError, UserTimeoutExceededError
 from ..apiconstants import ApiJobStatus, ApiJobKind
-from ..utils.converters import utc_to_local, utc_to_local_all
-from ..utils.json_decoder import decode_backend_properties, decode_result
+from ..utils.converters import utc_to_local
+from ..utils.json_decoder import properties_from_server_data, decode_result
 from ..utils.qobj_utils import dict_to_qobj
 from ..utils.utils import RefreshQueue, validate_job_tags, api_status_to_job_status
 
@@ -190,9 +190,7 @@ class IBMCircuitJob(IBMJob):
         if not properties:
             return None
 
-        decode_backend_properties(properties)
-        properties = utc_to_local_all(properties)
-        return BackendProperties.from_dict(properties)
+        return properties_from_server_data(properties)
 
     def result(
         self,

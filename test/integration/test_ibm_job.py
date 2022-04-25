@@ -200,7 +200,7 @@ class TestIBMJob(IBMTestCase):
     def test_retrieve_jobs(self):
         """Test retrieving jobs."""
         job_list = self.provider.backend.jobs(
-            backend_name=self.sim_backend.name(),
+            backend_name=self.sim_backend.name,
             limit=5,
             skip=0,
             start_datetime=self.last_month,
@@ -224,12 +224,9 @@ class TestIBMJob(IBMTestCase):
         backend_1 = self.real_device_backend
         # Get a second backend.
         backend_2 = None
-        provider = self.real_device_backend.provider()
+        provider = self.real_device_backend.provider
         for my_backend in provider.backends():
-            if (
-                my_backend.status().operational
-                and my_backend.name() != backend_1.name()
-            ):
+            if my_backend.status().operational and my_backend.name != backend_1.name:
                 backend_2 = my_backend
                 break
         if not backend_2:
@@ -240,10 +237,10 @@ class TestIBMJob(IBMTestCase):
 
         # test a retrieved job's backend is the same as the queried backend
         self.assertEqual(
-            provider.backend.job(job_1.job_id()).backend().name(), backend_1.name()
+            provider.backend.job(job_1.job_id()).backend().name, backend_1.name
         )
         self.assertEqual(
-            provider.backend.job(job_2.job_id()).backend().name(), backend_2.name()
+            provider.backend.job(job_2.job_id()).backend().name, backend_2.name
         )
 
         # Cleanup
@@ -260,7 +257,7 @@ class TestIBMJob(IBMTestCase):
         for arg in status_args:
             with self.subTest(arg=arg):
                 backend_jobs = self.provider.backend.jobs(
-                    backend_name=self.sim_backend.name(),
+                    backend_name=self.sim_backend.name,
                     limit=5,
                     skip=5,
                     status=arg,
@@ -345,7 +342,7 @@ class TestIBMJob(IBMTestCase):
         backend = most_busy_backend(self.provider, instance=self.dependencies.instance)
 
         job = backend.run(transpile(ReferenceCircuits.bell(), backend))
-        provider = backend.provider()
+        provider = backend.provider
 
         # Wait for the job to queue, run, or reach a final state.
         leave_states = list(JOB_FINAL_STATES) + [JobStatus.QUEUED, JobStatus.RUNNING]
@@ -413,7 +410,7 @@ class TestIBMJob(IBMTestCase):
         past_month_tz_aware = past_month.replace(tzinfo=tz.tzlocal())
 
         job_list = self.provider.backend.jobs(
-            backend_name=self.sim_backend.name(),
+            backend_name=self.sim_backend.name,
             limit=2,
             start_datetime=past_month,
             ignore_composite_jobs=True,
@@ -435,7 +432,7 @@ class TestIBMJob(IBMTestCase):
         past_month_tz_aware = past_month.replace(tzinfo=tz.tzlocal())
 
         job_list = self.provider.backend.jobs(
-            backend_name=self.sim_backend.name(),
+            backend_name=self.sim_backend.name,
             limit=2,
             end_datetime=past_month,
             ignore_composite_jobs=True,
@@ -462,7 +459,7 @@ class TestIBMJob(IBMTestCase):
 
         with self.subTest():
             job_list = self.provider.backend.jobs(
-                backend_name=self.sim_backend.name(),
+                backend_name=self.sim_backend.name,
                 limit=2,
                 start_datetime=past_two_month,
                 end_datetime=past_month,
@@ -546,16 +543,16 @@ class TestIBMJob(IBMTestCase):
         """Test retrieving a job from a retired backend."""
         saved_backends = copy.copy(self.provider.backend._backends)
         try:
-            del self.provider.backend._backends[self.sim_backend.name()]
+            del self.provider.backend._backends[self.sim_backend.name]
             new_job = self.provider.backend.job(self.sim_job.job_id())
             self.assertTrue(isinstance(new_job.backend(), IBMRetiredBackend))
-            self.assertNotEqual(new_job.backend().name(), "unknown")
+            self.assertNotEqual(new_job.backend().name, "unknown")
             fifteen_minutes_ago = datetime.now() - timedelta(minutes=15)
             recent_jobs = self.provider.backend.jobs(
                 limit=None,
                 start_datetime=fifteen_minutes_ago,
                 ignore_composite_jobs=True,
-                backend_name=new_job.backend().name(),
+                backend_name=new_job.backend().name,
             )
             recent_job_ids = [job.job_id() for job in recent_jobs]
             self.assertIn(new_job.job_id(), recent_job_ids)
