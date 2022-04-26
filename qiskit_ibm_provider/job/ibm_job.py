@@ -257,3 +257,6 @@ class IBMJob(Job, ABC):
             The Qobj for this job, or ``None`` if the job does not have a Qobj.
         """
         pass
+
+    def __repr__(self) -> str:
+        return "<{}('{}')>".format(self.__class__.__name__, self.job_id())

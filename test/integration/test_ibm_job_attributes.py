@@ -397,34 +397,8 @@ class TestIBMJobAttributes(IBMTestCase):
             delattr(self.sim_backend._configuration, "measure_esp_enabled")
             self.sim_backend._api_client = saved_api
 
-    def test_job_tags_or(self):
-        """Test using job tags with an or operator."""
-        # Use a unique tag.
-        job_tags = [uuid.uuid4().hex, uuid.uuid4().hex, uuid.uuid4().hex]
-        job = self.sim_backend.run(self.bell, job_tags=job_tags)
-
-        rjobs = self.dependencies.provider.backend.jobs(
-            job_tags=["phantom_tag"], start_datetime=self.last_week
-        )
-        self.assertEqual(
-            len(rjobs), 0, "Expected job {}, got {}".format(job.job_id(), rjobs)
-        )
-
-        # Check all tags, some of the tags, and a mixture of good and bad tags.
-        tags_to_check = [job_tags, job_tags[1:2], job_tags[0:1] + ["phantom_tag"]]
-        for tags in tags_to_check:
-            with self.subTest(tags=tags):
-                rjobs = self.dependencies.provider.backend.jobs(
-                    job_tags=tags, start_datetime=self.last_week
-                )
-                self.assertEqual(
-                    len(rjobs), 1, "Expected job {}, got {}".format(job.job_id(), rjobs)
-                )
-                self.assertEqual(rjobs[0].job_id(), job.job_id())
-                self.assertEqual(set(rjobs[0].tags()), set(job_tags))
-
-    def test_job_tags_and(self):
-        """Test using job tags with an and operator."""
+    def test_job_tags(self):
+        """Test using job tags."""
         # Use a unique tag.
         job_tags = [uuid.uuid4().hex, uuid.uuid4().hex, uuid.uuid4().hex]
         job = self.sim_backend.run(self.bell, job_tags=job_tags)
@@ -432,7 +406,7 @@ class TestIBMJobAttributes(IBMTestCase):
         no_rjobs_tags = [job_tags[0:1] + ["phantom_tags"], ["phantom_tag"]]
         for tags in no_rjobs_tags:
             rjobs = self.dependencies.provider.backend.jobs(
-                job_tags=tags, job_tags_operator="AND", start_datetime=self.last_week
+                job_tags=tags, start_datetime=self.last_week
             )
             self.assertEqual(
                 len(rjobs), 0, "Expected job {}, got {}".format(job.job_id(), rjobs)
@@ -443,7 +417,6 @@ class TestIBMJobAttributes(IBMTestCase):
             with self.subTest(tags=tags):
                 rjobs = self.dependencies.provider.backend.jobs(
                     job_tags=tags,
-                    job_tags_operator="AND",
                     start_datetime=self.last_week,
                 )
                 self.assertEqual(
