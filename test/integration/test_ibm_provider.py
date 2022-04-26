@@ -191,6 +191,7 @@ class TestIBMProviderServices(IBMTestCase):
             if backend.configuration().simulator:
                 self.assertEqual(properties, None)
 
+    @skip("Test is intermittently timeing out")
     def test_headers_in_result_sims(self):
         """Test that the qobj headers are passed onto the results for sims."""
         backend = self.dependencies.provider.get_backend("ibmq_qasm_simulator")
