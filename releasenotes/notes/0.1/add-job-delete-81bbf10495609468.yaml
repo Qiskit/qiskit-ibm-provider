@@ -3,9 +3,3 @@ features:
   - |
     A new method :meth:`qiskit_ibm_provider.job.IBMJob.delete` has been added so 
     jobs can be deleted directly from :class:`qiskit_ibm_provider.job.IBMJob`.
-
-
-
-
-
-
