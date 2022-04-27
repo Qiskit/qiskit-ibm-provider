@@ -16,6 +16,7 @@ import copy
 import logging
 from datetime import datetime
 from typing import Dict, List, Callable, Optional, Any, Union
+from typing_extensions import Literal
 
 from qiskit.providers.exceptions import QiskitBackendNotFoundError
 from qiskit.providers.jobstatus import JobStatus
@@ -170,14 +171,14 @@ class IBMBackendService:
         limit: Optional[int] = 10,
         skip: int = 0,
         backend_name: Optional[str] = None,
-        status: Optional[Union[JobStatus, str, List[Union[JobStatus, str]]]] = None,
+        status: Optional[Literal["pending", "completed"]] = None,
         job_name: Optional[str] = None,
         start_datetime: Optional[datetime] = None,
         end_datetime: Optional[datetime] = None,
         job_tags: Optional[List[str]] = None,
-        job_tags_operator: Optional[str] = "OR",
         descending: bool = True,
         ignore_composite_jobs: bool = False,
+        instance: Optional[str] = None,
     ) -> List[IBMJob]:
         """Return a list of jobs, subject to optional filtering.
 
@@ -190,9 +191,7 @@ class IBMBackendService:
             limit: Number of jobs to retrieve. ``None`` means no limit.
             skip: Starting index for the job retrieval.
             backend_name: Name of the backend to retrieve jobs from.
-            status: Only get jobs with this status or one of the statuses.
-                For example, you can specify `status=JobStatus.RUNNING` or `status="RUNNING"`
-                or `status=["RUNNING", "ERROR"]`
+            status: Filter jobs with either "pending" or "completed" status.
             job_name: Filter by job name. The `job_name` is matched partially
                 and `regular expressions
                 <https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions>`_
@@ -203,19 +202,13 @@ class IBMBackendService:
             end_datetime: Filter by the given end date, in local time. This is used to
                 find jobs whose creation dates are before (less than or equal to) this
                 local date/time.
-            job_tags: Filter by tags assigned to jobs.
-            job_tags_operator: Logical operator to use when filtering by job tags. Valid
-                values are "AND" and "OR":
-
-                    * If "AND" is specified, then a job must have all of the tags
-                      specified in ``job_tags`` to be included.
-                    * If "OR" is specified, then a job only needs to have any
-                      of the tags specified in ``job_tags`` to be included.
+            job_tags: Filter by tags assigned to jobs. Matched jobs are associated with all tags.
             descending: If ``True``, return the jobs in descending order of the job
                 creation date (i.e. newest first) until the limit is reached.
             ignore_composite_jobs: If ``True``, sub-jobs of a single
                 :class:`~qiskit_ibm_provider.job.IBMCompositeJob` will be
                 returned as individual jobs instead of merged together.
+            instance: The provider in the hub/group/project format.
 
         Returns:
             A list of ``IBMJob`` instances.
@@ -228,35 +221,20 @@ class IBMBackendService:
         # Build the filter for the query.
         api_filter = {}  # type: Dict[str, Any]
         if backend_name:
-            api_filter["backend.name"] = backend_name
+            api_filter["backend"] = backend_name
         if status:
-            status_filter = self._get_status_db_filter(status)
-            api_filter.update(status_filter)
+            api_filter["status"] = status
         if job_name:
-            api_filter["name"] = {"regexp": job_name}
-        if start_datetime or end_datetime:
-            api_filter["creationDate"] = self._update_creation_date_filter(
-                cur_dt_filter={},
-                gte_dt=local_to_utc(start_datetime).isoformat()
-                if start_datetime
-                else None,
-                lte_dt=local_to_utc(end_datetime).isoformat() if end_datetime else None,
-            )
+            api_filter["search"] = job_name
+        if start_datetime:
+            api_filter["createdAfter"] = local_to_utc(start_datetime).isoformat()
+        if end_datetime:
+            api_filter["createdBefore"] = local_to_utc(end_datetime).isoformat()
         if job_tags:
             validate_job_tags(job_tags, IBMBackendValueError)
-            job_tags_operator = job_tags_operator.upper()
-            if job_tags_operator == "OR":
-                api_filter["tags"] = {"inq": job_tags}
-            elif job_tags_operator == "AND":
-                and_tags = []
-                for tag in job_tags:
-                    and_tags.append({"tags": tag})
-                api_filter["and"] = and_tags
-            else:
-                raise IBMBackendValueError(
-                    '"{}" is not a valid job_tags_operator value. '
-                    'Valid values are "AND" and "OR"'.format(job_tags_operator)
-                )
+            api_filter["tags"] = job_tags
+        if instance:
+            api_filter["provider"] = instance
         # Retrieve all requested jobs.
         job_responses = self._get_jobs(
             api_filter=api_filter, limit=limit, skip=skip, descending=descending
@@ -307,10 +285,9 @@ class IBMBackendService:
         # Retrieve the requested number of jobs, using pagination. The server
         # might limit the number of jobs per request.
         job_responses: List[Dict[str, Any]] = []
-        current_page_limit = limit or 20
-        initial_filter = copy.deepcopy(api_filter)
+        current_page_limit = limit if (limit is not None and limit <= 50) else 50
         while True:
-            job_page = self._default_hgp._api_client.list_jobs_statuses(
+            job_page = self._default_hgp._api_client.list_jobs(
                 limit=current_page_limit,
                 skip=skip,
                 descending=descending,
@@ -329,37 +306,8 @@ class IBMBackendService:
                     break
                 current_page_limit = limit - len(job_responses)
             else:
-                current_page_limit = 20
-            # Use the last received job for pagination.
-            skip = 0
-            last_job = job_page[-1]
-            api_filter = copy.deepcopy(initial_filter)
-            cur_dt_filter = api_filter.pop("creationDate", {})
-            if descending:
-                new_dt_filter = self._update_creation_date_filter(
-                    cur_dt_filter=cur_dt_filter, lte_dt=last_job["creation_date"]
-                )
-            else:
-                new_dt_filter = self._update_creation_date_filter(
-                    cur_dt_filter=cur_dt_filter, gte_dt=last_job["creation_date"]
-                )
-            if not cur_dt_filter:
-                api_filter["creationDate"] = new_dt_filter
-            else:
-                self._merge_logical_filters(
-                    api_filter,
-                    {"and": [{"creationDate": new_dt_filter}, cur_dt_filter]},
-                )
-            if "id" not in api_filter:
-                api_filter["id"] = {"nin": [last_job["job_id"]]}
-            else:
-                new_id_filter = {
-                    "and": [
-                        {"id": {"nin": [last_job["job_id"]]}},
-                        {"id": api_filter.pop("id")},
-                    ]
-                }
-                self._merge_logical_filters(api_filter, new_id_filter)
+                current_page_limit = 50
+            skip = len(job_responses)
         return job_responses
 
     def _restore_circuit_job(

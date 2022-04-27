@@ -43,7 +43,6 @@ from ..ibm_test_case import IBMTestCase
 from ..utils import (
     most_busy_backend,
     cancel_job,
-    submit_job_bad_shots,
     submit_and_cancel,
     submit_job_one_bad_instr,
 )
@@ -252,61 +251,23 @@ class TestIBMJob(IBMTestCase):
 
     def test_retrieve_jobs_status(self):
         """Test retrieving jobs filtered by status."""
-        status_args = [JobStatus.DONE, "DONE", [JobStatus.DONE], ["DONE"]]
-        for arg in status_args:
-            with self.subTest(arg=arg):
-                backend_jobs = self.provider.backend.jobs(
-                    backend_name=self.sim_backend.name,
-                    limit=5,
-                    skip=5,
-                    status=arg,
-                    start_datetime=self.last_month,
-                    ignore_composite_jobs=True,
-                )
-                self.assertTrue(backend_jobs)
+        backend_jobs = self.provider.backend.jobs(
+            backend_name=self.sim_backend.name,
+            limit=5,
+            skip=5,
+            status="completed",
+            start_datetime=self.last_month,
+            ignore_composite_jobs=True,
+        )
+        self.assertTrue(backend_jobs)
 
-                for job in backend_jobs:
-                    self.assertTrue(
-                        job.status() is JobStatus.DONE,
-                        "Job {} has status {} when it should be DONE".format(
-                            job.job_id(), job.status()
-                        ),
-                    )
-
-    def test_retrieve_multiple_job_statuses(self):
-        """Test retrieving jobs filtered by multiple job statuses."""
-        statuses_to_filter = [JobStatus.ERROR, JobStatus.CANCELLED]
-        status_filters = [
-            [JobStatus.ERROR, JobStatus.CANCELLED],
-            ["ERROR", "CANCELLED"],
-            [JobStatus.ERROR, "CANCELLED"],
-        ]
-        job_to_cancel = submit_and_cancel(backend=self.sim_backend)
-        job_to_fail = submit_job_bad_shots(backend=self.sim_backend)
-        job_to_fail.wait_for_final_state()
-
-        for status_filter in status_filters:
-            with self.subTest(status_filter=status_filter):
-                job_list = self.provider.backend.jobs(
-                    status=status_filter,
-                    start_datetime=self.last_month,
-                    ignore_composite_jobs=True,
-                )
-                job_list_ids = [_job.job_id() for _job in job_list]
-                if job_to_cancel.status() is JobStatus.CANCELLED:
-                    self.assertIn(job_to_cancel.job_id(), job_list_ids)
-                self.assertIn(job_to_fail.job_id(), job_list_ids)
-
-                for filtered_job in job_list:
-                    self.assertIn(
-                        filtered_job._status,
-                        statuses_to_filter,
-                        "job {} has status {} but should be one of {}".format(
-                            filtered_job.job_id(),
-                            filtered_job._status,
-                            statuses_to_filter,
-                        ),
-                    )
+        for job in backend_jobs:
+            self.assertTrue(
+                job.status() is JobStatus.DONE,
+                "Job {} has status {} when it should be DONE".format(
+                    job.job_id(), job.status()
+                ),
+            )
 
     def test_retrieve_active_jobs(self):
         """Test retrieving jobs that are currently unfinished."""
@@ -335,72 +296,6 @@ class TestIBMJob(IBMTestCase):
 
         # Cancel job so it doesn't consume more resources.
         cancel_job(job)
-
-    def test_retrieve_jobs_queued(self):
-        """Test retrieving jobs that are queued."""
-        backend = most_busy_backend(self.provider, instance=self.dependencies.instance)
-
-        job = backend.run(transpile(ReferenceCircuits.bell(), backend))
-        provider = backend.provider
-
-        # Wait for the job to queue, run, or reach a final state.
-        leave_states = list(JOB_FINAL_STATES) + [JobStatus.QUEUED, JobStatus.RUNNING]
-        while job.status() not in leave_states:
-            time.sleep(0.5)
-
-        before_status = job._status
-        job_list_queued = provider.backend.jobs(
-            status=JobStatus.QUEUED,
-            limit=5,
-            start_datetime=self.last_month,
-            ignore_composite_jobs=True,
-        )
-        if before_status is JobStatus.QUEUED and job.status() is JobStatus.QUEUED:
-            self.assertIn(
-                job.job_id(),
-                [queued_job.job_id() for queued_job in job_list_queued],
-                "job {} is queued but not retrieved when filtering for queued jobs.".format(
-                    job.job_id()
-                ),
-            )
-
-        for queued_job in job_list_queued:
-            self.assertTrue(
-                queued_job._status == JobStatus.QUEUED,
-                "status for job {} is '{}' but it should be {}".format(
-                    queued_job.job_id(), queued_job._status, JobStatus.QUEUED
-                ),
-            )
-
-        # Cancel job so it doesn't consume more resources.
-        cancel_job(job)
-
-    def test_retrieve_jobs_running(self):
-        """Test retrieving jobs that are running."""
-        job = self.sim_backend.run(self.bell)
-
-        # Wait for the job to run, or reach a final state.
-        leave_states = list(JOB_FINAL_STATES) + [JobStatus.RUNNING]
-        while job.status() not in leave_states:
-            time.sleep(0.5)
-
-        before_status = job._status
-        job_list_running = self.provider.backend.jobs(
-            status=JobStatus.RUNNING,
-            limit=5,
-            start_datetime=self.last_month,
-            ignore_composite_jobs=True,
-        )
-        if before_status is JobStatus.RUNNING and job.status() is JobStatus.RUNNING:
-            self.assertIn(job.job_id(), [rjob.job_id() for rjob in job_list_running])
-
-        for rjob in job_list_running:
-            self.assertTrue(
-                rjob._status == JobStatus.RUNNING,
-                "Status for job {} is '{}' but should be RUNNING".format(
-                    rjob.job_id(), rjob._status
-                ),
-            )
 
     def test_retrieve_jobs_start_datetime(self):
         """Test retrieving jobs created after a specified datetime."""
@@ -482,7 +377,7 @@ class TestIBMJob(IBMTestCase):
         job.wait_for_final_state()
         newest_jobs = self.provider.backend.jobs(
             limit=10,
-            status=JobStatus.DONE,
+            status="completed",
             descending=True,
             start_datetime=self.last_month,
             ignore_composite_jobs=True,
@@ -491,7 +386,7 @@ class TestIBMJob(IBMTestCase):
 
         oldest_jobs = self.provider.backend.jobs(
             limit=10,
-            status=JobStatus.DONE,
+            status="completed",
             descending=False,
             start_datetime=self.last_month,
             ignore_composite_jobs=True,
