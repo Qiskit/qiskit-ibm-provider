@@ -47,7 +47,6 @@ from qiskit.transpiler.target import Target
 from qiskit_ibm_provider import ibm_provider  # pylint: disable=unused-import
 from .api.clients import AccountClient
 from .api.exceptions import ApiError
-from .apiconstants import ApiJobStatus, API_JOB_FINAL_STATES
 from .backendjoblimit import BackendJobLimit
 from .backendreservation import BackendReservation
 from .exceptions import (
@@ -65,7 +64,6 @@ from .utils.backend_converter import (
 )
 from .utils.converters import local_to_utc
 from .utils.json_decoder import defaults_from_server_data, properties_from_server_data
-from .utils.utils import api_status_to_job_status
 
 logger = logging.getLogger(__name__)
 
@@ -819,16 +817,7 @@ class IBMBackend(Backend):
         Returns:
             A list of the unfinished jobs for this backend on this provider.
         """
-        # Get the list of api job statuses which are not a final api job status.
-        active_job_states = list(
-            {
-                api_status_to_job_status(status)
-                for status in ApiJobStatus
-                if status not in API_JOB_FINAL_STATES
-            }
-        )
-        provider = self.provider
-        return provider.backend.jobs(status=active_job_states, limit=limit)
+        return self.provider.backend.jobs(status="pending", limit=limit)
 
     def reservations(
         self,

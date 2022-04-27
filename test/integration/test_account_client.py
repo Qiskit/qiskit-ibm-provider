@@ -204,12 +204,12 @@ class TestAccountClientJobs(IBMTestCase):
         self.assertEqual(response.pop("status", None), ApiJobStatus.COMPLETED.value)
         self.assertNotEqual(status_queue.qsize(), 0)
 
-    def test_list_jobs_statuses_skip(self):
-        """Test listing job statuses with an offset."""
-        jobs_raw = self.client.list_jobs_statuses(
+    def test_list_jobs_skip(self):
+        """Test listing jobs with an offset."""
+        jobs_raw = self.client.list_jobs(
             limit=1,
             skip=1,
-            extra_filter={"creationDate": {"lte": self.job["creation_date"]}},
+            extra_filter={"createdBefore": self.job["creation_date"]},
         )
 
         # Ensure our job is skipped
