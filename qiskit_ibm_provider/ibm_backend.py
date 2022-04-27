@@ -480,8 +480,6 @@ class IBMBackend(Backend):
                 "ESP readout not supported on this device. Please make sure the flag "
                 "'use_measure_esp' is unset or set to 'False'."
             )
-        if not self.configuration().simulator:
-            self._deprecate_id_instruction(circuits)
 
         if isinstance(shots, float):
             shots = int(shots)
@@ -508,6 +506,37 @@ class IBMBackend(Backend):
             run_config_dict["parameter_binds"] = parameter_binds
         if sim_method and "method" not in run_config_dict:
             run_config_dict["method"] = sim_method
+
+        if not self.configuration().simulator:
+            mutated_circuits = self._deprecate_id_instruction(circuits)
+            if isinstance(mutated_circuits, list):
+                chunk_size = None
+            if hasattr(self.configuration(), "max_experiments"):
+                backend_max = self.configuration().max_experiments
+                chunk_size = (
+                    backend_max
+                    if max_circuits_per_job is None
+                    else min(backend_max, max_circuits_per_job)
+                )
+            elif max_circuits_per_job:
+                chunk_size = max_circuits_per_job
+
+            if chunk_size and len(mutated_circuits) > chunk_size:
+                circuits_list = [
+                    circuits[x : x + chunk_size]
+                    for x in range(0, len(mutated_circuits), chunk_size)
+                ]
+                return IBMCompositeJob(
+                    backend=self,
+                    api_client=self._api_client,
+                    circuits_list=circuits_list,
+                    run_config=run_config_dict,
+                    name=job_name,
+                    tags=job_tags,
+                )
+
+            qobj = assemble(mutated_circuits, self, **run_config_dict)
+            return self._submit_job(qobj, job_name, job_tags, live_data_enabled)
 
         if isinstance(circuits, list):
             chunk_size = None
@@ -919,7 +948,7 @@ class IBMBackend(Backend):
         circuits: Union[
             QuantumCircuit, Schedule, List[Union[QuantumCircuit, Schedule]]
         ],
-    ) -> None:
+    ) -> Any:
         """Raise a DeprecationWarning if any circuit contains an 'id' instruction.
 
         Additionally, if 'delay' is a 'supported_instruction', replace each 'id'
@@ -931,7 +960,7 @@ class IBMBackend(Backend):
                 :meth:`IBMBackend.run()<IBMBackend.run>`. Modified in-place.
 
         Returns:
-            None
+            Mutuated circuit where the 'id' instruction has been replaced or None
         """
 
         id_support = "id" in getattr(self.configuration(), "basis_gates", [])
@@ -979,7 +1008,8 @@ class IBMBackend(Backend):
 
         dt_in_s = self.configuration().dt
 
-        for circuit in circuits:
+        circuits_copy = copy.deepcopy(circuits)
+        for circuit in circuits_copy:
             if isinstance(circuit, Schedule):
                 continue
 
@@ -992,6 +1022,7 @@ class IBMBackend(Backend):
                     delay_instr = Delay(sx_duration_in_dt)
 
                     circuit.data[idx] = (delay_instr, qargs, cargs)
+        return circuits_copy
 
 
 class IBMRetiredBackend(IBMBackend):
