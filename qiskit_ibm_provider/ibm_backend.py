@@ -484,6 +484,10 @@ class IBMBackend(Backend):
         if isinstance(shots, float):
             shots = int(shots)
 
+        circuits_to_run = circuits
+        if not self.configuration().simulator:
+            circuits_to_run = self._deprecate_id_instruction(circuits)
+
         run_config_dict = self._get_run_config(
             qobj_header=header,
             shots=shots,
@@ -507,38 +511,7 @@ class IBMBackend(Backend):
         if sim_method and "method" not in run_config_dict:
             run_config_dict["method"] = sim_method
 
-        if not self.configuration().simulator:
-            mutated_circuits = self._deprecate_id_instruction(circuits)
-            if isinstance(mutated_circuits, list):
-                chunk_size = None
-            if hasattr(self.configuration(), "max_experiments"):
-                backend_max = self.configuration().max_experiments
-                chunk_size = (
-                    backend_max
-                    if max_circuits_per_job is None
-                    else min(backend_max, max_circuits_per_job)
-                )
-            elif max_circuits_per_job:
-                chunk_size = max_circuits_per_job
-
-            if chunk_size and len(mutated_circuits) > chunk_size:
-                circuits_list = [
-                    circuits[x : x + chunk_size]
-                    for x in range(0, len(mutated_circuits), chunk_size)
-                ]
-                return IBMCompositeJob(
-                    backend=self,
-                    api_client=self._api_client,
-                    circuits_list=circuits_list,
-                    run_config=run_config_dict,
-                    name=job_name,
-                    tags=job_tags,
-                )
-
-            qobj = assemble(mutated_circuits, self, **run_config_dict)
-            return self._submit_job(qobj, job_name, job_tags, live_data_enabled)
-
-        if isinstance(circuits, list):
+        if isinstance(circuits_to_run, list):
             chunk_size = None
             if hasattr(self.configuration(), "max_experiments"):
                 backend_max = self.configuration().max_experiments
@@ -550,10 +523,10 @@ class IBMBackend(Backend):
             elif max_circuits_per_job:
                 chunk_size = max_circuits_per_job
 
-            if chunk_size and len(circuits) > chunk_size:
+            if chunk_size and len(circuits_to_run) > chunk_size:
                 circuits_list = [
-                    circuits[x : x + chunk_size]
-                    for x in range(0, len(circuits), chunk_size)
+                    circuits_to_run[x : x + chunk_size]
+                    for x in range(0, len(circuits_to_run), chunk_size)
                 ]
                 return IBMCompositeJob(
                     backend=self,
@@ -564,7 +537,7 @@ class IBMBackend(Backend):
                     tags=job_tags,
                 )
 
-        qobj = assemble(circuits, self, **run_config_dict)
+        qobj = assemble(circuits_to_run, self, **run_config_dict)
 
         return self._submit_job(qobj, job_name, job_tags, live_data_enabled)
 
@@ -948,7 +921,7 @@ class IBMBackend(Backend):
         circuits: Union[
             QuantumCircuit, Schedule, List[Union[QuantumCircuit, Schedule]]
         ],
-    ) -> Any:
+    ) -> Union[QuantumCircuit, Schedule, List[Union[QuantumCircuit, Schedule]]]:
         """Raise a DeprecationWarning if any circuit contains an 'id' instruction.
 
         Additionally, if 'delay' is a 'supported_instruction', replace each 'id'
@@ -960,7 +933,9 @@ class IBMBackend(Backend):
                 :meth:`IBMBackend.run()<IBMBackend.run>`. Modified in-place.
 
         Returns:
-            Mutuated circuit where the 'id' instruction has been replaced or None
+            A mutated copy of the original circuit where 'id' instructions are replaced with
+            'delay' instructions. A copy is used so the original circuit is not modified.
+            If there are no 'id' instructions or 'delay' is not supported, return the original circuit.
         """
 
         id_support = "id" in getattr(self.configuration(), "basis_gates", [])
@@ -969,7 +944,7 @@ class IBMBackend(Backend):
         )
 
         if not delay_support:
-            return
+            return circuits
 
         if not isinstance(circuits, List):
             circuits = [circuits]
@@ -982,7 +957,7 @@ class IBMBackend(Backend):
         )
 
         if not circuit_has_id:
-            return
+            return circuits
 
         if not self.id_warning_issued:
             if id_support and delay_support:
