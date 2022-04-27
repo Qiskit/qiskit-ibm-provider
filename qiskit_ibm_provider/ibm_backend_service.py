@@ -191,7 +191,7 @@ class IBMBackendService:
             limit: Number of jobs to retrieve. ``None`` means no limit.
             skip: Starting index for the job retrieval.
             backend_name: Name of the backend to retrieve jobs from.
-            status: Filter jobs with with either "pending" or "completed" status.
+            status: Filter jobs with either "pending" or "completed" status.
             job_name: Filter by job name. The `job_name` is matched partially
                 and `regular expressions
                 <https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions>`_
