@@ -349,8 +349,8 @@ class BaseFakeAccountClient:
         self._run_mode = run_mode
         self._default_job_class = BaseFakeJob
 
-    def list_jobs_statuses(self, limit, skip, descending=True, extra_filter=None):
-        """Return a list of statuses of jobs."""
+    def list_jobs(self, limit, skip, descending=True, extra_filter=None):
+        """Return a list of jobs."""
         # pylint: disable=unused-argument
         extra_filter = extra_filter or {}
         if all(fil in extra_filter for fil in ["creationDate", "id"]):

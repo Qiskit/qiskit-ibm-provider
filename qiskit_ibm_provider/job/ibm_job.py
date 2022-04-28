@@ -288,3 +288,6 @@ class IBMJob(Job, ABC):
                     self.job_id(), str(error)
                 )
             ) from error
+
+    def __repr__(self) -> str:
+        return "<{}('{}')>".format(self.__class__.__name__, self.job_id())

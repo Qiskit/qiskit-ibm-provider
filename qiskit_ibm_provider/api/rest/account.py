@@ -22,7 +22,6 @@ from .base import RestAdapterBase
 from .backend import Backend
 from .job import Job
 from ..session import RetrySession
-from .utils.data_mapper import map_job_response
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +32,6 @@ class Account(RestAdapterBase):
     URL_MAP = {
         "backends": "/devices/v/1",
         "jobs": "/Jobs",
-        "jobs_status": "/Jobs/status/v/1",
         "jobs_id": "/Jobs/v/1",
     }
 
@@ -94,47 +92,6 @@ class Account(RestAdapterBase):
         """
         url = self.get_url("backends")
         return self.session.get(url, timeout=timeout).json()
-
-    def jobs(
-        self,
-        limit: int = 10,
-        skip: int = 0,
-        descending: bool = True,
-        extra_filter: Dict[str, Any] = None,
-    ) -> List[Dict[str, Any]]:
-        """Return a list of job information.
-
-        Args:
-            limit: Maximum number of items to return.
-            skip: Offset for the items to return.
-            descending: Whether the jobs should be in descending order.
-            extra_filter: Additional filtering passed to the query.
-
-        Returns:
-            JSON response.
-        """
-        url = self.get_url("jobs_status")
-        order = "DESC" if descending else "ASC"
-
-        query = {
-            "order": "creationDate " + order,
-            "limit": limit,
-            "skip": skip,
-        }
-        if extra_filter:
-            query["where"] = extra_filter
-
-        if logger.getEffectiveLevel() is logging.DEBUG:
-            logger.debug(
-                "Endpoint: %s. Method: GET. Request Data: {'filter': %s}",
-                url,
-                filter_data(query),
-            )
-
-        data = self.session.get(url, params={"filter": json.dumps(query)}).json()
-        for job_data in data:
-            map_job_response(job_data)
-        return data
 
     def jobs_ids(
         self,

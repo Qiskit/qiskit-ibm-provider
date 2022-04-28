@@ -152,7 +152,7 @@ class AccountClient(BaseClient):
 
     # Jobs-related public functions.
 
-    def list_jobs_statuses(
+    def list_jobs(
         self,
         limit: int = 10,
         skip: int = 0,
@@ -173,7 +173,7 @@ class AccountClient(BaseClient):
         Returns:
             A list of job data.
         """
-        return self.account_api.jobs(
+        return self.base_api.jobs(
             limit=limit, skip=skip, descending=descending, extra_filter=extra_filter
         )
 
