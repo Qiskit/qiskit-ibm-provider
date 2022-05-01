@@ -458,8 +458,12 @@ class IBMBackend(Backend):
         """
         # pylint: disable=arguments-differ
         validate_job_tags(job_tags, IBMBackendValueError)
-        if self.status().operational is True and self.status().status_msg != "active":
-            warnings.warn(f"The queue for backend {self.name} is currently paused.")
+        if hasattr(self, "backend_status"):
+            if (
+                self.status().operational is True
+                and self.status().status_msg != "active"
+            ):
+                warnings.warn(f"The queue for backend {self.name} is currently paused.")
 
         sim_method = None
         if self.configuration().simulator:
