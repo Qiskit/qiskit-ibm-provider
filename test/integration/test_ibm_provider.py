@@ -19,7 +19,6 @@ from qiskit import ClassicalRegister, QuantumCircuit, QuantumRegister
 from qiskit.compiler import transpile
 from qiskit.providers.exceptions import QiskitBackendNotFoundError
 from qiskit.providers.models.backendproperties import BackendProperties
-from qiskit.test import slow_test
 
 from qiskit_ibm_provider import hub_group_project
 from qiskit_ibm_provider.api.clients import AccountClient
@@ -202,23 +201,6 @@ class TestIBMProviderServices(IBMTestCase):
         # qobj.experiments[0].header.some_field = 'extra info'
 
         job = backend.run(circuits, header=custom_header)
-        result = job.result()
-        self.assertTrue(custom_header.items() <= job.header().items())
-        self.assertTrue(custom_header.items() <= result.header.to_dict().items())
-        # self.assertEqual(result.results[0].header.some_field, 'extra info')
-
-    @slow_test
-    def test_headers_in_result_devices(self):
-        """Test that the qobj headers are passed onto the results for devices."""
-        custom_header = {"x": 1, "y": [1, 2, 3], "z": {"a": 4}}
-
-        # TODO Use circuit metadata for individual header when terra PR-5270 is released.
-        # qobj.experiments[0].header.some_field = 'extra info'
-
-        job = self.real_device_backend.run(
-            transpile(self.qc1, backend=self.real_device_backend), header=custom_header
-        )
-        job.wait_for_final_state(wait=300, callback=self.simple_job_callback)
         result = job.result()
         self.assertTrue(custom_header.items() <= job.header().items())
         self.assertTrue(custom_header.items() <= result.header.to_dict().items())

@@ -13,16 +13,14 @@
 """Test serializing and deserializing data sent to the server."""
 
 from typing import Set, Any, Dict, Optional
-from unittest import SkipTest, skipIf
+from unittest import skipIf
 
 import dateutil.parser
-from qiskit import transpile, schedule, QuantumCircuit
+from qiskit import transpile
 from qiskit.circuit import Parameter
-from qiskit.test import slow_test
 from qiskit.test.reference_circuits import ReferenceCircuits
 from qiskit.version import VERSION as terra_version
 
-from qiskit_ibm_provider import least_busy
 from qiskit_ibm_provider.utils.json_encoder import IBMJsonEncoder
 from ..decorators import IntegrationTestDependencies, integration_test_setup
 from ..ibm_test_case import IBMTestCase
@@ -142,27 +140,6 @@ class TestSerialization(IBMTestCase):
         )
 
         self._verify_data(result.to_dict(), good_keys=good_keys)
-
-    @slow_test
-    def test_pulse_job_result(self):
-        """Test deserializing a pulse job result."""
-        backends = self.dependencies.provider.backends(
-            open_pulse=True, operational=True, instance=self.dependencies.instance
-        )
-        if not backends:
-            raise SkipTest("Skipping pulse test since no pulse backend found.")
-
-        backend = least_busy(backends)
-        quantum_circuit = QuantumCircuit(1, 1)
-        quantum_circuit.x(0)
-        quantum_circuit.measure([0], [0])
-        sched = schedule(transpile(quantum_circuit, backend=backend), backend=backend)
-        job = backend.run(sched)
-        result = job.result()
-
-        # Known keys that look like a serialized object.
-        good_keys = ("header.backend_version", "backend_version")
-        self._verify_data(result.to_dict(), good_keys)
 
     def _verify_data(
         self, data: Dict, good_keys: tuple, good_key_prefixes: Optional[tuple] = None
