@@ -482,9 +482,8 @@ class IBMBackend(Backend):
         if isinstance(shots, float):
             shots = int(shots)
 
-        circuits_to_run = circuits
         if not self.configuration().simulator:
-            circuits_to_run = self._deprecate_id_instruction(circuits)
+            circuits = self._deprecate_id_instruction(circuits)
 
         run_config_dict = self._get_run_config(
             qobj_header=header,
@@ -509,7 +508,7 @@ class IBMBackend(Backend):
         if sim_method and "method" not in run_config_dict:
             run_config_dict["method"] = sim_method
 
-        if isinstance(circuits_to_run, list):
+        if isinstance(circuits, list):
             chunk_size = None
             if hasattr(self.configuration(), "max_experiments"):
                 backend_max = self.configuration().max_experiments
@@ -521,10 +520,10 @@ class IBMBackend(Backend):
             elif max_circuits_per_job:
                 chunk_size = max_circuits_per_job
 
-            if chunk_size and len(circuits_to_run) > chunk_size:
+            if chunk_size and len(circuits) > chunk_size:
                 circuits_list = [
-                    circuits_to_run[x : x + chunk_size]
-                    for x in range(0, len(circuits_to_run), chunk_size)
+                    circuits[x : x + chunk_size]
+                    for x in range(0, len(circuits), chunk_size)
                 ]
                 return IBMCompositeJob(
                     backend=self,
@@ -535,7 +534,7 @@ class IBMBackend(Backend):
                     tags=job_tags,
                 )
 
-        qobj = assemble(circuits_to_run, self, **run_config_dict)
+        qobj = assemble(circuits, self, **run_config_dict)
 
         return self._submit_job(qobj, job_name, job_tags, live_data_enabled)
 
@@ -922,7 +921,7 @@ class IBMBackend(Backend):
                 :meth:`IBMBackend.run()<IBMBackend.run>`. Modified in-place.
 
         Returns:
-            A mutated copy of the original circuit where 'id' instructions are replaced with
+            A modified copy of the original circuit where 'id' instructions are replaced with
             'delay' instructions. A copy is used so the original circuit is not modified.
             If there are no 'id' instructions or 'delay' is not supported, return the original circuit.
         """
