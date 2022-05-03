@@ -18,7 +18,6 @@ from unittest import SkipTest
 
 from qiskit import (
     transpile,
-    schedule,
     ClassicalRegister,
     QuantumCircuit,
     QuantumRegister,
@@ -94,26 +93,6 @@ class TestGeneralSlowTest(IBMTestCase):
                 self.assertTrue(job.status())
                 # Cancel job so it doesn't consume more resources.
                 cancel_job(job, verify=True)
-
-    def test_pulse_job_result(self):
-        """Test deserializing a pulse job result."""
-        backends = self.dependencies.provider.backends(
-            open_pulse=True, operational=True, instance=self.dependencies.instance
-        )
-        if not backends:
-            raise SkipTest("Skipping pulse test since no pulse backend found.")
-
-        backend = least_busy(backends)
-        quantum_circuit = QuantumCircuit(1, 1)
-        quantum_circuit.x(0)
-        quantum_circuit.measure([0], [0])
-        sched = schedule(transpile(quantum_circuit, backend=backend), backend=backend)
-        job = backend.run(sched)
-        result = job.result()
-
-        # Known keys that look like a serialized object.
-        good_keys = ("header.backend_version", "backend_version")
-        self._verify_data(result.to_dict(), good_keys)
 
     def test_run_device(self):
         """Test running in a real device."""
@@ -338,7 +317,7 @@ class TestWebsocketSlowTest(IBMTestCase):
         )
 
         # Manually disable the non-websocket polling.
-        job._api_client._job_final_status_polling = self._job_final_status_polling
+        # job._api_client._job_final_status_polling = self._job_final_status_polling
         job.wait_for_final_state(wait=300, callback=self.simple_job_callback)
         result = job.result()
 
