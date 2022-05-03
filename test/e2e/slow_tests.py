@@ -15,7 +15,6 @@
 import time
 import re
 from unittest import SkipTest
-from datetime import datetime, timedelta
 
 from qiskit import (
     transpile,
@@ -54,8 +53,7 @@ class TestGeneralSlowTest(IBMTestCase):
         # pylint: disable=arguments-differ
         super().setUpClass()
         cls.dependencies = dependencies
-        cls.real_backend = backend
-        cls.last_week = datetime.now() - timedelta(days=7)
+        cls.real_device_backend = backend
 
     def test_job_submission(self):
         """Test running a job against a device."""
@@ -138,7 +136,7 @@ class TestGeneralSlowTest(IBMTestCase):
     def test_run_multiple_device(self):
         """Test running multiple jobs in a real device."""
 
-        backend = self.real_backend
+        backend = self.real_device_backend
         num_qubits = 5
         quantum_register = QuantumRegister(num_qubits, "qr")
         classical_register = ClassicalRegister(num_qubits, "cr")
@@ -212,7 +210,7 @@ class TestIBMJobAttributesSlowTest(IBMTestCase):
     """Slow test IBMJob instance attributes."""
 
     @classmethod
-    @integration_test_setup_with_backend(simulator=False)
+    @integration_test_setup_with_backend(simulator=False, min_num_qubits=2)
     def setUpClass(
         cls, backend: IBMBackend, dependencies: IntegrationTestDependencies
     ) -> None:
@@ -307,7 +305,7 @@ class TestWebsocketSlowTest(IBMTestCase):
     """Websocket slow test."""
 
     @classmethod
-    @integration_test_setup_with_backend(simulator=False)
+    @integration_test_setup_with_backend(simulator=False, min_num_qubits=2)
     def setUpClass(
         cls, backend: IBMBackend, dependencies: IntegrationTestDependencies
     ) -> None:
