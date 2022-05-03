@@ -1,0 +1,6 @@
+---
+upgrade:
+  - |
+    :meth:`~qiskit_ibm_provider.IBMBackend.run` has been updated so circuits with 
+    ``id`` instructions that are replaced with ``delay`` instructions do not mutate
+    the original circuit. 
