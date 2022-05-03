@@ -309,7 +309,7 @@ class IBMBackend(Backend):
         Returns:
             dtm: The output signal timestep in seconds.
         """
-        return self._configuration.dtm
+        return self._configuration.dtm * 1e-9
 
     @property
     def max_circuits(self) -> int:
