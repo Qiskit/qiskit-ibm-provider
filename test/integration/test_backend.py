@@ -14,7 +14,6 @@
 
 from datetime import timedelta, datetime
 from unittest import SkipTest
-from unittest import skip
 from unittest.mock import patch
 
 from qiskit import QuantumCircuit
@@ -178,11 +177,6 @@ class TestIBMBackend(IBMTestCase):
         self.assertTrue(backend_options["memory"])
         self.assertEqual(backend_options["foo"], "foo")
 
-    # TODO: Investigate why test fails
-    @skip(
-        "Known issue: currently fails with qiskit.providers.exceptions.BackendPropertyError: "
-        "'Could not find the desired property for sx)"
-    )
     def test_deprecate_id_instruction(self):
         """Test replacement of 'id' Instructions with 'Delay' instructions."""
 
@@ -210,9 +204,12 @@ class TestIBMBackend(IBMTestCase):
 
         with patch.object(self.backend, "configuration", return_value=config):
             with self.assertWarnsRegex(DeprecationWarning, r"'id' instruction"):
-                self.backend._deprecate_id_instruction(circuit_with_id)
+                mutated_circuit = self.backend._deprecate_id_instruction(
+                    circuit_with_id
+                )
 
-            self.assertEqual(circuit_with_id.count_ops(), {"delay": 3})
+            self.assertEqual(mutated_circuit[0].count_ops(), {"delay": 3})
+            self.assertEqual(circuit_with_id.count_ops(), {"id": 3})
 
 
 class TestIBMBackendService(IBMTestCase):
