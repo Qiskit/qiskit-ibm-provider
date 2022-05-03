@@ -263,8 +263,8 @@ class TestIBMJob(IBMTestCase):
 
         for job in backend_jobs:
             self.assertTrue(
-                job.status() is JobStatus.DONE,
-                "Job {} has status {} when it should be DONE".format(
+                job.status() in JOB_FINAL_STATES,
+                "Job {} has status {} when it should be DONE, CANCELLED, or ERROR".format(
                     job.job_id(), job.status()
                 ),
             )
