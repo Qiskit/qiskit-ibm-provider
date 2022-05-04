@@ -41,11 +41,11 @@ from ..decorators import (
 )
 
 
-class TestGeneralSlowTest(IBMTestCase):
-    """Slow tests without a setUp method."""
+class TestSlowTests(IBMTestCase):
+    """Compilation of slow tests from all test suites."""
 
     @classmethod
-    @integration_test_setup_with_backend(simulator=False)
+    @integration_test_setup_with_backend(simulator=False, min_num_qubits=2)
     def setUpClass(
         cls, backend: IBMBackend, dependencies: IntegrationTestDependencies
     ) -> None:
@@ -184,30 +184,10 @@ class TestGeneralSlowTest(IBMTestCase):
         )
         self.assertIsNotNone(job.result(), "Job {} has no result.".format(job.job_id()))
 
-
-class TestIBMJobAttributesSlowTest(IBMTestCase):
-    """Slow test IBMJob instance attributes."""
-
-    @classmethod
-    @integration_test_setup_with_backend(simulator=False, min_num_qubits=2)
-    def setUpClass(
-        cls, backend: IBMBackend, dependencies: IntegrationTestDependencies
-    ) -> None:
-        """Initial class level setup."""
-        # pylint: disable=arguments-differ
-        super().setUpClass()
-        cls.dependencies = dependencies
-        cls.real_backend = backend
-
-    def setUp(self):
-        """Initial test setup."""
-        super().setUp()
-        self._qc = ReferenceCircuits.bell()
-
     def test_running_job_properties(self):
         """Test fetching properties of a running job."""
 
-        backend = self.real_backend
+        backend = self.real_device_backend
 
         def _job_callback(job_id, job_status, cjob, **kwargs):
             self.simple_job_callback(job_id, job_status, cjob, **kwargs)
@@ -223,7 +203,7 @@ class TestIBMJobAttributesSlowTest(IBMTestCase):
 
     def test_error_message_device(self):
         """Test retrieving job error messages from a device backend."""
-        backend = self.real_backend
+        backend = self.real_device_backend
         job = submit_job_one_bad_instr(backend)
         job.wait_for_final_state(wait=300, callback=self.simple_job_callback)
 
@@ -239,30 +219,6 @@ class TestIBMJobAttributesSlowTest(IBMTestCase):
                         re.search(r"Error code: [0-9]{4}\.$", msg), msg
                     )
 
-
-class TestIBMProviderServicesSlowTest(IBMTestCase):
-    """Slow tests for services provided by the IBMProvider class."""
-
-    @classmethod
-    @integration_test_setup_with_backend(simulator=False)
-    def setUpClass(
-        cls, backend: IBMBackend, dependencies: IntegrationTestDependencies
-    ) -> None:
-        """Initial class setup."""
-        # pylint: disable=arguments-differ
-        super().setUpClass()
-        cls.real_device_backend = backend
-        cls.dependencies = dependencies
-
-    def setUp(self):
-        """Initial test setup."""
-        super().setUp()
-        quantum_register = QuantumRegister(1)
-        classical_register = ClassicalRegister(1)
-        self.qc1 = QuantumCircuit(quantum_register, classical_register, name="circuit0")
-        self.qc1.h(quantum_register[0])
-        self.qc1.measure(quantum_register, classical_register)
-
     def test_headers_in_result_devices(self):
         """Test that the qobj headers are passed onto the results for devices."""
         custom_header = {"x": 1, "y": [1, 2, 3], "z": {"a": 4}}
@@ -270,45 +226,20 @@ class TestIBMProviderServicesSlowTest(IBMTestCase):
         # TODO Use circuit metadata for individual header when terra PR-5270 is released.
         # qobj.experiments[0].header.some_field = 'extra info'
 
+        quantum_register = QuantumRegister(1)
+        classical_register = ClassicalRegister(1)
+
+        qc1 = QuantumCircuit(quantum_register, classical_register, name="circuit0")
+        qc1.h(quantum_register[0])
+        qc1.measure(quantum_register, classical_register)
         job = self.real_device_backend.run(
-            transpile(self.qc1, backend=self.real_device_backend), header=custom_header
+            transpile(qc1, backend=self.real_device_backend), header=custom_header
         )
         job.wait_for_final_state(wait=300, callback=self.simple_job_callback)
         result = job.result()
         self.assertTrue(custom_header.items() <= job.header().items())
         self.assertTrue(custom_header.items() <= result.header.to_dict().items())
         # self.assertEqual(result.results[0].header.some_field, 'extra info')
-
-
-class TestWebsocketSlowTest(IBMTestCase):
-    """Websocket slow test."""
-
-    @classmethod
-    @integration_test_setup_with_backend(simulator=False, min_num_qubits=2)
-    def setUpClass(
-        cls, backend: IBMBackend, dependencies: IntegrationTestDependencies
-    ) -> None:
-        """Initial class level setup."""
-        # pylint: disable=arguments-differ
-        super().setUpClass()
-        cls.sim_backend = dependencies.provider.get_backend(
-            "ibmq_qasm_simulator", instance=dependencies.instance
-        )
-        cls.real_device_backend = backend
-
-    def setUp(self):
-        """Initial test setup."""
-        super().setUp()
-        self.saved_status_polling = (
-            self.sim_backend._api_client._job_final_status_polling
-        )
-
-    def tearDown(self):
-        """Test tear down."""
-        super().tearDown()
-        self.sim_backend._api_client._job_final_status_polling = (
-            self.saved_status_polling
-        )
 
     def test_websockets_device(self):
         """Test checking status of a job via websockets for a device."""
