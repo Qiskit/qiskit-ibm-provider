@@ -21,7 +21,7 @@ from unittest import mock, skip
 from dateutil import tz
 from qiskit.compiler import transpile
 from qiskit.providers.jobstatus import JobStatus, JOB_FINAL_STATES
-from qiskit.test import slow_test
+
 from qiskit.test.reference_circuits import ReferenceCircuits
 from qiskit_ibm_provider.api.clients.account import AccountClient
 from qiskit_ibm_provider.exceptions import (
@@ -38,7 +38,6 @@ from ..ibm_test_case import IBMTestCase
 from ..utils import (
     most_busy_backend,
     cancel_job,
-    get_large_circuit,
     submit_job_bad_shots,
     submit_job_one_bad_instr,
 )
@@ -57,7 +56,6 @@ class TestIBMJobAttributes(IBMTestCase):
         cls.sim_backend = dependencies.provider.get_backend(
             "ibmq_qasm_simulator", instance=dependencies.instance
         )
-        # cls.real_device_backend = backend
         cls.bell = transpile(ReferenceCircuits.bell(), cls.sim_backend)
         cls.sim_job = cls.sim_backend.run(cls.bell)
         cls.last_week = datetime.now() - timedelta(days=7)
@@ -74,23 +72,6 @@ class TestIBMJobAttributes(IBMTestCase):
     def test_get_backend_name(self):
         """Test getting a backend name."""
         self.assertTrue(self.sim_job.backend().name == self.sim_backend.name)
-
-    @slow_test
-    def test_running_job_properties(self):
-        """Test fetching properties of a running job."""
-
-        def _job_callback(job_id, job_status, cjob, **kwargs):
-            self.simple_job_callback(job_id, job_status, cjob, **kwargs)
-            if job_status is JobStatus.RUNNING:
-                job_properties[0] = cjob.properties()
-                cancel_job(cjob)
-
-        backend = self.sim_backend
-        job_properties = [None]
-        large_qx = get_large_circuit(backend=backend)
-        job = backend.run(transpile(large_qx, backend=backend))
-        job.wait_for_final_state(wait=None, callback=_job_callback)
-        self.assertIsNotNone(job_properties[0])
 
     def test_job_name(self):
         """Test using job names on a simulator."""
@@ -170,25 +151,6 @@ class TestIBMJobAttributes(IBMTestCase):
         self.assertEqual(job_ids, retrieved_job_ids)
         for job in retrieved_jobs:
             self.assertEqual(job.name(), job_name)
-
-    @slow_test
-    def test_error_message_device(self):
-        """Test retrieving job error messages from a device backend."""
-        backend = self.sim_backend
-        job = submit_job_one_bad_instr(backend)
-        job.wait_for_final_state(wait=300, callback=self.simple_job_callback)
-
-        rjob = self.dependencies.provider.backend.job(job.job_id())
-
-        for q_job, partial in [(job, False), (rjob, True)]:
-            with self.subTest(partial=partial):
-                with self.assertRaises(IBMJobFailureError) as err_cm:
-                    q_job.result(partial=partial)
-                for msg in (err_cm.exception.message, q_job.error_message()):
-                    self.assertIn("bad_instruction", msg)
-                    self.assertIsNotNone(
-                        re.search(r"Error code: [0-9]{4}\.$", msg), msg
-                    )
 
     @skip("Skip until aer issue 1214 is fixed")
     def test_error_message_simulator(self):
