@@ -10,7 +10,7 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-"""Tests for the all of the slow tests"""
+"""Tests for all of the slow tests"""
 
 import time
 import re
