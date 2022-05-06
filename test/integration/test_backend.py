@@ -13,7 +13,7 @@
 """IBMBackend Test."""
 
 from datetime import timedelta, datetime
-from unittest import SkipTest
+from unittest import SkipTest, mock
 from unittest.mock import patch
 
 from qiskit import QuantumCircuit
@@ -176,6 +176,15 @@ class TestIBMBackend(IBMTestCase):
         self.assertEqual(backend_options["shots"], 1024)
         self.assertTrue(backend_options["memory"])
         self.assertEqual(backend_options["foo"], "foo")
+
+    def test_paused_backend_warning(self):
+        """Test that a warning is given when running jobs on a paused backend."""
+        backend = self.dependencies.provider.get_backend("ibmq_qasm_simulator")
+        paused_status = backend.status()
+        paused_status.status_msg = "internal"
+        backend.status = mock.MagicMock(return_value=paused_status)
+        with self.assertWarns(Warning):
+            backend.run(ReferenceCircuits.bell())
 
     def test_deprecate_id_instruction(self):
         """Test replacement of 'id' Instructions with 'Delay' instructions."""

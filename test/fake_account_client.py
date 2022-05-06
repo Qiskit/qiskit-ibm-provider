@@ -21,6 +21,7 @@ import warnings
 from concurrent.futures import ThreadPoolExecutor, wait
 from datetime import timedelta, datetime
 from random import randrange
+from typing import Dict, Any
 
 from qiskit.test.mock.backends.poughkeepsie.fake_poughkeepsie import FakePoughkeepsie
 
@@ -475,6 +476,16 @@ class BaseFakeAccountClient:
         if attr_name == "tags":
             job._job_tags = attr_value.copy()
         return {attr_name: attr_value}
+
+    def backend_status(self, backend_name: str) -> Dict[str, Any]:
+        """Return the status of the backend."""
+        return {
+            "backend_name": backend_name,
+            "backend_version": "0.0.0",
+            "operational": True,
+            "pending_jobs": 0,
+            "status_msg": "active",
+        }
 
     def tear_down(self):
         """Clean up job threads."""
