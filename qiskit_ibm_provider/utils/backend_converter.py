@@ -108,7 +108,7 @@ def convert_to_target(
         target.add_instruction(Measure())
     # parse global configuration properties
     if hasattr(configuration, "dt"):
-        target.dt = configuration.dt * 1e-9
+        target.dt = configuration.dt
     if hasattr(configuration, "timing_constraints"):
         target.granularity = configuration.timing_constraints.get("granularity")
         target.min_length = configuration.timing_constraints.get("min_length")
