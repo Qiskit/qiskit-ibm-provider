@@ -480,16 +480,6 @@ class BaseFakeAPI:
             raise self.NoMoreStatesError()
         self._state += 1
 
-    def backend_status(self, backend_name: str) -> Dict[str, Any]:
-        """Return the status of the backend."""
-        return {
-            "backend_name": backend_name,
-            "backend_version": "0.0.0",
-            "operational": True,
-            "pending_jobs": 0,
-            "status_msg": "active",
-        }
-
 
 class UnknownStatusAPI(BaseFakeAPI):
     """Class for emulating an API with unknown status codes."""
