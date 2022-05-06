@@ -10,7 +10,7 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-"""Tests for all of the slow tests"""
+"""E2E tests against real devices."""
 
 import time
 import re
@@ -41,7 +41,7 @@ from ..decorators import (
 )
 
 
-class TestSlowTests(IBMTestCase):
+class TestRealDevices(IBMTestCase):
     """Compilation of slow tests from all test suites."""
 
     @classmethod
