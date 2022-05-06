@@ -99,4 +99,4 @@ upgrade:
 
         from qiskit_ibm_provider import IBMProvider
         provider = IBMProvider() # load saved account
-        IBMProvider.active_account() # check active account
+        provider.active_account() # check active account
