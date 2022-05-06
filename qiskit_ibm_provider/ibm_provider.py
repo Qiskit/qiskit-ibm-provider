@@ -416,10 +416,10 @@ class IBMProvider(Provider):
         Returns:
             A dictionary with information about the account currently in the session.
         """
-        if not self._account.instance:
-            hgp = self._get_hgp()
-            self._account.instance = f"{hgp._hub}/{hgp._group}/{hgp._project}"
-        return self._account.to_saved_format()
+        hgps = self._get_hgps()
+        active_account_dict = self._account.to_saved_format()
+        active_account_dict.update({"instance": hgps[0].name})
+        return active_account_dict
 
     @staticmethod
     def delete_account(name: Optional[str] = None) -> bool:
