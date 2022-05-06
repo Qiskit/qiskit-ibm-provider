@@ -461,7 +461,7 @@ class IBMBackend(Backend):
 
         status = self.status()
         if status.operational is True and status.status_msg != "active":
-            warnings.warn(f"The queue for backend {self.name} is currently paused.")
+            warnings.warn(f"The backend {self.name} is currently paused.")
 
         sim_method = None
         if self.configuration().simulator:
