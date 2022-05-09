@@ -100,6 +100,7 @@ class TestIBMProviderHubGroupProject(IBMTestCase):
         """Initial test setup."""
         # pylint: disable=arguments-differ
         super().setUp()
+        self.dependencies = dependencies
         self.provider = IBMProvider(token=dependencies.token, url=dependencies.url)
 
     def test_get_hgp(self):
@@ -116,6 +117,25 @@ class TestIBMProviderHubGroupProject(IBMTestCase):
         """Test get hgps without a filter."""
         hgps = self.provider._get_hgps()
         self.assertIn(self.provider.backend._default_hgp, hgps)
+
+    def test_active_account_instance(self):
+        """Test active_account returns correct instance."""
+        hgp = self.provider._get_hgp()
+        provider = IBMProvider(
+            token=self.dependencies.token,
+            url=self.dependencies.url,
+            instance=hgp.name,
+        )
+        self.assertEqual(hgp.name, provider.active_account()["instance"])
+
+    def test_active_account_instance_with_save_account(self):
+        """Test active_account returns correct instance with save_account."""
+        hgp = self.provider._get_hgp()
+        IBMProvider.save_account(
+            token=self.dependencies.token, instance=hgp.name, overwrite=True
+        )
+        provider = IBMProvider()
+        self.assertEqual(hgp.name, provider.active_account()["instance"])
 
 
 class TestIBMProviderServices(IBMTestCase):
