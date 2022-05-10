@@ -128,15 +128,6 @@ class TestIBMProviderHubGroupProject(IBMTestCase):
         )
         self.assertEqual(hgp.name, provider.active_account()["instance"])
 
-    def test_active_account_instance_with_save_account(self):
-        """Test active_account returns correct instance with save_account."""
-        hgp = self.provider._get_hgp()
-        IBMProvider.save_account(
-            token=self.dependencies.token, instance=hgp.name, overwrite=True
-        )
-        provider = IBMProvider()
-        self.assertEqual(hgp.name, provider.active_account()["instance"])
-
 
 class TestIBMProviderServices(IBMTestCase):
     """Tests for services provided by the IBMProvider class."""

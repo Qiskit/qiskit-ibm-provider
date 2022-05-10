@@ -50,6 +50,8 @@ class FakeProvider(IBMProvider):
         hgps = OrderedDict()
 
         for idx in range(self._test_num_hgps):
+            if self._account.instance:
+                self.DEFAULT_HGPS.insert(0, self._account.instance)
             hgp_name = self.DEFAULT_HGPS[idx]
 
             hgp_params = ClientParameters(
