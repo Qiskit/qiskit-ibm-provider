@@ -18,6 +18,8 @@ from unittest import mock
 from qiskit import transpile
 from qiskit.test.reference_circuits import ReferenceCircuits
 
+from qiskit.test.mock import FakeBackendV2 as FakeBackend
+
 from qiskit_ibm_provider.jupyter.config_widget import config_tab
 from qiskit_ibm_provider.jupyter.dashboard.backend_widget import make_backend_widget
 from qiskit_ibm_provider.jupyter.dashboard.job_widgets import create_job_widget
@@ -26,12 +28,40 @@ from qiskit_ibm_provider.jupyter.dashboard.watcher_monitor import _job_checker
 from qiskit_ibm_provider.jupyter.gates_widget import gates_tab
 from qiskit_ibm_provider.jupyter.jobs_widget import jobs_tab
 from qiskit_ibm_provider.jupyter.qubits_widget import qubits_tab
+from qiskit_ibm_provider.jupyter.live_data_widget import LiveDataVisualization
 from qiskit_ibm_provider.visualization.interactive.error_map import iplot_error_map
 from ..decorators import (
     IntegrationTestDependencies,
     integration_test_setup,
 )
 from ..ibm_test_case import IBMTestCase
+
+
+class TestLiveDataVisualization(IBMTestCase):
+    """Test Live Data Jupyter widget."""
+
+    @classmethod
+    @integration_test_setup()
+    def setUpClass(cls, dependencies: IntegrationTestDependencies) -> None:
+        # pylint: disable=arguments-differ
+        super().setUpClass()
+        cls.dependencies = dependencies
+        cls.sim_backend = dependencies.provider.get_backend(
+            "ibmq_qasm_simulator", instance=dependencies.instance
+        )
+        cls.backends = _get_backends(cls.dependencies.provider)
+
+    def test_live_data(self):
+        """Test LiveDataVisualization class."""
+        livedata = LiveDataVisualization()
+        title = "example title"
+        html_title = livedata.create_title("example title")
+        backend = FakeBackend()
+        visualization = livedata.create_visualization(
+            backend, figsize=(11, 9), show_title=False
+        )
+        self.assertIn(title, str(html_title))
+        self.assertTrue(visualization)
 
 
 class TestBackendInfo(IBMTestCase):
