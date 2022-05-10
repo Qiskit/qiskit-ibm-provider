@@ -18,7 +18,6 @@ from unittest import SkipTest, skipIf
 import dateutil.parser
 from qiskit import transpile, schedule, QuantumCircuit
 from qiskit.circuit import Parameter
-from qiskit.test import slow_test
 from qiskit.test.reference_circuits import ReferenceCircuits
 from qiskit.version import VERSION as terra_version
 
@@ -143,7 +142,6 @@ class TestSerialization(IBMTestCase):
 
         self._verify_data(result.to_dict(), good_keys=good_keys)
 
-    @slow_test
     def test_pulse_job_result(self):
         """Test deserializing a pulse job result."""
         backends = self.dependencies.provider.backends(

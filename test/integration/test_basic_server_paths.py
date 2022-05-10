@@ -16,7 +16,6 @@ import time
 from datetime import datetime, timedelta
 
 from qiskit import transpile
-from qiskit.test import slow_test
 from qiskit.test.reference_circuits import ReferenceCircuits
 
 from qiskit_ibm_provider.exceptions import IBMBackendJobLimitError
@@ -25,7 +24,6 @@ from ..decorators import (
     integration_test_setup,
 )
 from ..ibm_test_case import IBMTestCase
-from ..utils import cancel_job
 
 
 class TestBasicServerPaths(IBMTestCase):
@@ -38,48 +36,6 @@ class TestBasicServerPaths(IBMTestCase):
         super().setUpClass()
         cls.dependencies = dependencies
         cls.last_week = datetime.now() - timedelta(days=7)
-
-    @slow_test
-    def test_job_submission(self):
-        """Test running a job against a device."""
-        for provider in ["provider", "private_provider"]:
-            if not self.dependencies.instance_private:
-                raise self.skipTest("Skip test because there is no private provider")
-            backend = self.dependencies[provider].backends(
-                simulator=False,
-                operational=True,
-                filters=lambda b: b.configuration().n_qubits >= 5,
-            )[0]
-            with self.subTest(provider=provider, backend=backend):
-                job = self._submit_job_with_retry(ReferenceCircuits.bell(), backend)
-
-                # Fetch the results.
-                result = job.result()
-                self.assertTrue(result.success)
-
-                # Fetch the circuits.
-                circuit = (
-                    self.dependencies[provider].backend.job(job.job_id()).circuits()
-                )
-                self.assertEqual(circuit, job.circuits())
-
-    @slow_test
-    def test_job_backend_properties_and_status(self):
-        """Test the backend properties and status of a job."""
-        for provider in ["provider", "private_provider"]:
-            if not self.dependencies.instance_private:
-                raise self.skipTest("Skip test because there is no private provider")
-            backend = self.dependencies[provider].backends(
-                simulator=False,
-                operational=True,
-                filters=lambda b: b.configuration().n_qubits >= 5,
-            )[0]
-            with self.subTest(backend=backend):
-                job = self._submit_job_with_retry(ReferenceCircuits.bell(), backend)
-                self.assertIsNotNone(job.properties())
-                self.assertTrue(job.status())
-                # Cancel job so it doesn't consume more resources.
-                cancel_job(job, verify=True)
 
     def test_retrieve_jobs(self):
         """Test retrieving jobs."""

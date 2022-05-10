@@ -19,7 +19,6 @@ from unittest import mock
 from qiskit import transpile
 from qiskit.providers import JobTimeoutError
 from qiskit.providers.jobstatus import JobStatus
-from qiskit.test import slow_test
 from qiskit.test.reference_circuits import ReferenceCircuits
 from qiskit_ibm_provider import IBMBackend
 from qiskit_ibm_provider.api.clients import AccountClient, websocket
@@ -80,20 +79,6 @@ class TestWebsocketIntegration(IBMTestCase):
         result = job.result()
 
         self.assertEqual(result.status, "COMPLETED")
-
-    @slow_test
-    def test_websockets_device(self):
-        """Test checking status of a job via websockets for a device."""
-        job = self.real_device_backend.run(
-            transpile(ReferenceCircuits.bell(), self.real_device_backend), shots=1
-        )
-
-        # Manually disable the non-websocket polling.
-        job._api_client._job_final_status_polling = self._job_final_status_polling
-        job.wait_for_final_state(wait=300, callback=self.simple_job_callback)
-        result = job.result()
-
-        self.assertTrue(result.success)
 
     def test_websockets_job_final_state(self):
         """Test checking status of a job in a final state via websockets."""
