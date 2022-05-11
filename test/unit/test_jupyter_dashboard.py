@@ -13,7 +13,7 @@
 """Test jupyter dashboard widgets."""
 
 from qiskit.test.mock import FakeBackendV2 as FakeBackend
-from qiskit_ibm_provider.jupyter.live_data_widget import LiveDataVisualization
+from qiskit_ibm_provider.jupyter.live_data_widget import LiveDataVisualization, LivePlot
 
 from ..ibm_test_case import IBMTestCase
 
@@ -21,14 +21,28 @@ from ..ibm_test_case import IBMTestCase
 class TestLiveDataVisualization(IBMTestCase):
     """Test Live Data Jupyter widget."""
 
-    def test_live_data(self):
-        """Test LiveDataVisualization class."""
-        livedata = LiveDataVisualization()
+    def setUp(self):
+        """Initial test setup."""
+        super().setUp()
+        self.backend = FakeBackend()
+        self.livedata = LiveDataVisualization()
+
+    def test_creating_visualization(self):
+        """Test create_visualization method."""
         title = "example title"
-        html_title = livedata.create_title("example title")
-        backend = FakeBackend()
-        visualization = livedata.create_visualization(
-            backend, figsize=(11, 9), show_title=False
+        html_title = self.livedata.create_title("example title")
+        visualization = self.livedata.create_visualization(
+            self.backend, figsize=(11, 9), show_title=False
         )
         self.assertIn(title, str(html_title))
         self.assertTrue(visualization)
+
+
+class TestLivePlot(IBMTestCase):
+    """Test Live Plot"""
+
+    def test_live_plot(self):
+        """Test initializing live plot."""
+        plot = LivePlot((1, 1))
+        self.assertTrue(plot)
+        self.assertEqual(plot.get_plotview_height(), 360)
