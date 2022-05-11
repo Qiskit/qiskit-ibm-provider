@@ -459,6 +459,10 @@ class IBMBackend(Backend):
         # pylint: disable=arguments-differ
         validate_job_tags(job_tags, IBMBackendValueError)
 
+        status = self.status()
+        if status.operational is True and status.status_msg != "active":
+            warnings.warn(f"The backend {self.name} is currently paused.")
+
         sim_method = None
         if self.configuration().simulator:
             sim_method = getattr(self.configuration(), "simulation_method", None)
@@ -478,11 +482,12 @@ class IBMBackend(Backend):
                 "ESP readout not supported on this device. Please make sure the flag "
                 "'use_measure_esp' is unset or set to 'False'."
             )
-        if not self.configuration().simulator:
-            self._deprecate_id_instruction(circuits)
 
         if isinstance(shots, float):
             shots = int(shots)
+
+        if not self.configuration().simulator:
+            circuits = self._deprecate_id_instruction(circuits)
 
         run_config_dict = self._get_run_config(
             qobj_header=header,
@@ -908,7 +913,7 @@ class IBMBackend(Backend):
         circuits: Union[
             QuantumCircuit, Schedule, List[Union[QuantumCircuit, Schedule]]
         ],
-    ) -> None:
+    ) -> Union[QuantumCircuit, Schedule, List[Union[QuantumCircuit, Schedule]]]:
         """Raise a DeprecationWarning if any circuit contains an 'id' instruction.
 
         Additionally, if 'delay' is a 'supported_instruction', replace each 'id'
@@ -920,7 +925,9 @@ class IBMBackend(Backend):
                 :meth:`IBMBackend.run()<IBMBackend.run>`. Modified in-place.
 
         Returns:
-            None
+            A modified copy of the original circuit where 'id' instructions are replaced with
+            'delay' instructions. A copy is used so the original circuit is not modified.
+            If there are no 'id' instructions or 'delay' is not supported, return the original circuit.
         """
 
         id_support = "id" in getattr(self.configuration(), "basis_gates", [])
@@ -929,7 +936,7 @@ class IBMBackend(Backend):
         )
 
         if not delay_support:
-            return
+            return circuits
 
         if not isinstance(circuits, List):
             circuits = [circuits]
@@ -942,7 +949,7 @@ class IBMBackend(Backend):
         )
 
         if not circuit_has_id:
-            return
+            return circuits
 
         if not self.id_warning_issued:
             if id_support and delay_support:
@@ -968,7 +975,8 @@ class IBMBackend(Backend):
 
         dt_in_s = self.configuration().dt
 
-        for circuit in circuits:
+        circuits_copy = copy.deepcopy(circuits)
+        for circuit in circuits_copy:
             if isinstance(circuit, Schedule):
                 continue
 
@@ -981,6 +989,7 @@ class IBMBackend(Backend):
                     delay_instr = Delay(sx_duration_in_dt)
 
                     circuit.data[idx] = (delay_instr, qargs, cargs)
+        return circuits_copy
 
 
 class IBMRetiredBackend(IBMBackend):

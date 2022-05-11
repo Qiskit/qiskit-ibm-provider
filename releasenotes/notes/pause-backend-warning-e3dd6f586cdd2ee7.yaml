@@ -1,0 +1,5 @@
+---
+upgrade:
+  - |
+    :meth:`~qiskit_ibm_provider.IBMBackend.run` has been updated to give a warning if the
+    backend selected is paused. 

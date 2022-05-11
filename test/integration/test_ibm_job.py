@@ -23,10 +23,9 @@ from qiskit import ClassicalRegister, QuantumCircuit, QuantumRegister
 from qiskit.compiler import transpile
 from qiskit.providers.jobstatus import JobStatus, JOB_FINAL_STATES
 from qiskit.result import Result
-from qiskit.test import slow_test
 from qiskit.test.reference_circuits import ReferenceCircuits
 
-from qiskit_ibm_provider import IBMBackend, least_busy
+from qiskit_ibm_provider import IBMBackend
 from qiskit_ibm_provider.api.exceptions import RequestsApiError
 from qiskit_ibm_provider.api.rest.job import Job as RestJob
 from qiskit_ibm_provider.apiconstants import ApiJobStatus, API_JOB_FINAL_STATES
@@ -73,25 +72,6 @@ class TestIBMJob(IBMTestCase):
         cls.bell = transpile(ReferenceCircuits.bell(), cls.sim_backend)
         cls.sim_job = cls.sim_backend.run(cls.bell)
         cls.last_month = datetime.now() - timedelta(days=30)
-
-    @slow_test
-    def test_run_device(self):
-        """Test running in a real device."""
-        shots = 8192
-        job = self.real_device_backend.run(
-            transpile(ReferenceCircuits.bell(), backend=self.real_device_backend),
-            shots=shots,
-        )
-
-        job.wait_for_final_state(wait=300, callback=self.simple_job_callback)
-        result = job.result()
-        counts_qx = result.get_counts(0)
-        counts_ex = {"00": shots / 2, "11": shots / 2}
-        self.assertDictAlmostEqual(counts_qx, counts_ex, shots * 0.2)
-
-        # Test fetching the job properties, as this is a real backend and is
-        # guaranteed to have them.
-        self.assertIsNotNone(job.properties())
 
     def test_run_multiple_simulator(self):
         """Test running multiple jobs in a simulator."""
@@ -141,50 +121,6 @@ class TestIBMJob(IBMTestCase):
 
         result_array = [job.result() for job in job_array]
         self.log.info("got back all job results")
-        # Ensure all jobs have finished.
-        self.assertTrue(all((job.status() is JobStatus.DONE for job in job_array)))
-        self.assertTrue(all((result.success for result in result_array)))
-
-        # Ensure job ids are unique.
-        job_ids = [job.job_id() for job in job_array]
-        self.assertEqual(sorted(job_ids), sorted(list(set(job_ids))))
-
-    @slow_test
-    def test_run_multiple_device(self, backend):
-        """Test running multiple jobs in a real device."""
-        num_qubits = 5
-        quantum_register = QuantumRegister(num_qubits, "qr")
-        classical_register = ClassicalRegister(num_qubits, "cr")
-        quantum_circuit = QuantumCircuit(quantum_register, classical_register)
-        for i in range(num_qubits - 1):
-            quantum_circuit.cx(quantum_register[i], quantum_register[i + 1])
-        quantum_circuit.measure(quantum_register, classical_register)
-        num_jobs = 3
-        job_array = [
-            backend.run(transpile(quantum_circuit, backend=backend))
-            for _ in range(num_jobs)
-        ]
-        time.sleep(3)  # give time for jobs to start (better way?)
-        job_status = [job.status() for job in job_array]
-        num_init = sum([status is JobStatus.INITIALIZING for status in job_status])
-        num_queued = sum([status is JobStatus.QUEUED for status in job_status])
-        num_running = sum([status is JobStatus.RUNNING for status in job_status])
-        num_done = sum([status is JobStatus.DONE for status in job_status])
-        num_error = sum([status is JobStatus.ERROR for status in job_status])
-        self.log.info(
-            "number of currently initializing jobs: %d/%d", num_init, num_jobs
-        )
-        self.log.info("number of currently queued jobs: %d/%d", num_queued, num_jobs)
-        self.log.info("number of currently running jobs: %d/%d", num_running, num_jobs)
-        self.log.info("number of currently done jobs: %d/%d", num_done, num_jobs)
-        self.log.info("number of errored jobs: %d/%d", num_error, num_jobs)
-        self.assertTrue(num_jobs - num_error - num_done > 0)
-
-        # Wait for all the results.
-        for job in job_array:
-            job.wait_for_final_state(wait=300, callback=self.simple_job_callback)
-        result_array = [job.result() for job in job_array]
-
         # Ensure all jobs have finished.
         self.assertTrue(all((job.status() is JobStatus.DONE for job in job_array)))
         self.assertTrue(all((result.success for result in result_array)))
@@ -274,8 +210,8 @@ class TestIBMJob(IBMTestCase):
 
         for job in backend_jobs:
             self.assertTrue(
-                job.status() is JobStatus.DONE,
-                "Job {} has status {} when it should be DONE".format(
+                job.status() in JOB_FINAL_STATES,
+                "Job {} has status {} when it should be DONE, CANCELLED, or ERROR".format(
                     job.job_id(), job.status()
                 ),
             )
@@ -417,32 +353,6 @@ class TestIBMJob(IBMTestCase):
         self.assertIsInstance(result, Result)
         self.assertTrue(result.results[0].success)
         self.assertFalse(result.results[1].success)
-
-    @slow_test
-    def test_pulse_job(self):
-        """Test running a pulse job."""
-        backends = self.provider.backends(open_pulse=True, operational=True)
-        if not backends:
-            raise SkipTest("Skipping pulse test since no pulse backend found.")
-
-        backend = least_busy(backends)
-        config = backend.configuration()
-        defaults = backend.defaults()
-        inst_map = defaults.instruction_schedule_map
-
-        # Run 2 experiments - 1 with x pulse and 1 without
-        x_pulse = inst_map.get("x", 0)
-        measure = inst_map.get("measure", range(config.n_qubits)) << x_pulse.duration
-        ground_sched = measure
-        excited_sched = x_pulse | measure
-        schedules = [ground_sched, excited_sched]
-
-        job = backend.run(schedules, meas_level=1, shots=256)
-        job.wait_for_final_state(wait=300, callback=self.simple_job_callback)
-        self.assertTrue(
-            job.done(), "Job {} didn't complete successfully.".format(job.job_id())
-        )
-        self.assertIsNotNone(job.result(), "Job {} has no result.".format(job.job_id()))
 
     def test_retrieve_from_retired_backend(self):
         """Test retrieving a job from a retired backend."""
