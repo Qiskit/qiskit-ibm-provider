@@ -21,19 +21,13 @@ from ..ibm_test_case import IBMTestCase
 class TestLiveDataVisualization(IBMTestCase):
     """Test Live Data Jupyter widget."""
 
-    def setUp(self):
-        """Initial test setup."""
-        super().setUp()
-        self.backend = FakeBackend()
-        self.livedata = LiveDataVisualization()
-
     def test_creating_visualization(self):
         """Test create_visualization method."""
         title = "example title"
+        backend = FakeBackend()
+        visualization = LiveDataVisualization()
         html_title = self.livedata.create_title("example title")
-        visualization = self.livedata.create_visualization(
-            self.backend, figsize=(11, 9), show_title=False
-        )
+        visualization.create_visualization(backend, figsize=(11, 9), show_title=False)
         self.assertIn(title, str(html_title))
         self.assertTrue(visualization)
 
