@@ -14,6 +14,7 @@
 
 from qiskit.test.mock import FakeBackendV2 as FakeBackend
 from qiskit_ibm_provider.jupyter.live_data_widget import LiveDataVisualization, LivePlot
+from qiskit_ibm_provider.jupyter.dashboard import dashboard
 
 from ..ibm_test_case import IBMTestCase
 
@@ -26,17 +27,26 @@ class TestLiveDataVisualization(IBMTestCase):
         title = "example title"
         backend = FakeBackend()
         visualization = LiveDataVisualization()
-        html_title = self.livedata.create_title("example title")
+        html_title = visualization.create_title("example title")
         visualization.create_visualization(backend, figsize=(11, 9), show_title=False)
         self.assertIn(title, str(html_title))
         self.assertTrue(visualization)
 
 
 class TestLivePlot(IBMTestCase):
-    """Test Live Plot"""
+    """Test Live Plot."""
 
     def test_live_plot(self):
         """Test initializing live plot."""
         plot = LivePlot((1, 1))
         self.assertTrue(plot)
         self.assertEqual(plot.get_plotview_height(), 360)
+
+
+class TestJupyterDashboard(IBMTestCase):
+    """Test Jupyter Dashboard."""
+
+    def test_creating_accordion(self):
+        """Test creating a dashboard accordion."""
+        widget = dashboard.build_dashboard_widget()
+        self.assertIsInstance(widget, dashboard.AccordionWithThread)
