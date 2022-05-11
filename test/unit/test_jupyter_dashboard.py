@@ -12,10 +12,27 @@
 
 """Test jupyter dashboard widgets."""
 
-from qiskit.test.mock import FakeBackendV2 as FakeBackend
-from qiskit_ibm_provider.jupyter.live_data_widget import LiveDataVisualization, LivePlot
-from qiskit_ibm_provider.jupyter.dashboard import dashboard
+from unittest import mock
 
+# import ipywidgets as wid
+from qiskit.test.mock import FakeBackendV2 as FakeBackend
+from qiskit.test.mock.backends.bogota.fake_bogota import FakeBogota
+
+# from qiskit_ibm_provider.jupyter.dashboard.utils import BackendWithProviders
+from qiskit_ibm_provider.ibm_backend import IBMBackend
+from qiskit_ibm_provider.jupyter.dashboard import dashboard
+from qiskit_ibm_provider.jupyter.live_data_widget import LiveDataVisualization, LivePlot
+from qiskit_ibm_provider.visualization.interactive.gate_map import iplot_gate_map
+from qiskit_ibm_provider.visualization.interactive.plotly_wrapper import (
+    PlotlyFigure,
+    PlotlyWidget,
+)
+
+# from qiskit_ibm_provider.jupyter.gates_widget import gates_tab
+from .test_ibm_job_states import BaseFakeAPI
+
+# from ..unit.mock.fake_provider import FakeProvider
+# from ..fake_account_client import BaseFakeAccountClient
 from ..ibm_test_case import IBMTestCase
 
 
@@ -50,3 +67,14 @@ class TestJupyterDashboard(IBMTestCase):
         """Test creating a dashboard accordion."""
         widget = dashboard.build_dashboard_widget()
         self.assertIsInstance(widget, dashboard.AccordionWithThread)
+
+    def test_gate_map(self):
+        """Test creating a gate map."""
+        backend = IBMBackend(
+            FakeBogota().configuration(), mock.Mock(), api_client=BaseFakeAPI()
+        )
+        gate_map = iplot_gate_map(backend)
+        gate_map_widget = iplot_gate_map(backend, as_widget=True)
+        self.assertTrue(gate_map)
+        self.assertIsInstance(gate_map, PlotlyFigure)
+        self.assertIsInstance(gate_map_widget, PlotlyWidget)
