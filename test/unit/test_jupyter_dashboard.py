@@ -52,6 +52,26 @@ class TestLivePlot(IBMTestCase):
         self.assertTrue(plot)
         self.assertEqual(plot.get_plotview_height(), 360)
 
+    def test_live_plot_widget(self):
+        """Test creating an area widget."""
+        plot = LivePlot((1, 1))
+        widget = plot.widget()
+        self.assertIs(plot.view, widget)
+
+    def test_show_widget(self):
+        """Test showing widget."""
+        plot = LivePlot((1, 1))
+        plot.widget()
+        plot.show()
+        self.assertIs(plot.view.layout.visibility, "visible")
+
+    def test_hide_widget(self):
+        """Test hiding widget."""
+        plot = LivePlot((1, 1))
+        plot.widget()
+        plot.hide()
+        self.assertIs(plot.view.layout.visibility, "hidden")
+
 
 class TestJupyterDashboard(IBMTestCase):
     """Test Jupyter Dashboard."""
