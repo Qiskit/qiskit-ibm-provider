@@ -24,6 +24,7 @@ from qiskit_ibm_provider import hub_group_project
 from qiskit_ibm_provider.api.clients import AccountClient
 from qiskit_ibm_provider.api.exceptions import RequestsApiError
 
+from qiskit_ibm_provider.job.ibm_job import IBMJob
 from qiskit_ibm_provider.ibm_backend import IBMBackend
 from qiskit_ibm_provider.ibm_backend_service import IBMBackendService
 from qiskit_ibm_provider.ibm_provider import IBMProvider
@@ -148,6 +149,23 @@ class TestIBMProviderServices(IBMTestCase):
         """Test the provider has backends."""
         backends = self.dependencies.provider.backends()
         self.assertTrue(len(backends) > 0)
+
+    def test_jobs(self):
+        """Test accessing jobs directly from the provider."""
+        jobs = self.dependencies.provider.jobs()
+        job = self.dependencies.provider.job(jobs[0].job_id())
+        self.assertIsInstance(job, IBMJob)
+        self.assertTrue(len(jobs) > 0)
+
+    def test_job_ids(self):
+        """Test job_ids from the provider."""
+        job_ids = self.dependencies.provider.job_ids()
+        self.assertTrue(len(job_ids) > 0)
+
+    def test_reservations(self):
+        """Test my_reservations from the provider."""
+        reservations = self.dependencies.provider.my_reservations()
+        self.assertTrue(len(reservations) > 0)
 
     def test_get_backend(self):
         """Test getting a backend from the provider."""
