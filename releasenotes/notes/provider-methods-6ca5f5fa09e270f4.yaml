@@ -1,0 +1,7 @@
+---
+upgrade:
+  - |
+    Methods ``jobs()``, ``job``(), ``job_ids()``, and ``my_reservations()`` have been added to
+    :class:`~qiskit_ibm_provider.IBMProvider` so they can all be directly accessible
+    from the provider. 
+    
