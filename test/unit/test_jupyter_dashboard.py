@@ -18,7 +18,11 @@ from qiskit.test.mock import FakeBackendV2 as FakeBackend
 from qiskit.test.mock.backends.bogota.fake_bogota import FakeBogota
 
 from qiskit_ibm_provider.ibm_backend import IBMBackend
-from qiskit_ibm_provider.jupyter.live_data_widget import LiveDataVisualization, LivePlot
+from qiskit_ibm_provider.jupyter.live_data_widget import (
+    LiveDataVisualization,
+    LivePlot,
+    ProgressBar,
+)
 from qiskit_ibm_provider.visualization.interactive.gate_map import iplot_gate_map
 from qiskit_ibm_provider.visualization.interactive.plotly_wrapper import (
     PlotlyFigure,
@@ -41,6 +45,32 @@ class TestLiveDataVisualization(IBMTestCase):
         visualization.create_visualization(backend, figsize=(11, 9), show_title=False)
         self.assertIn(title, str(html_title))
         self.assertTrue(visualization)
+
+    def test_update_progress_bar(self):
+        """Test updating a progress bar."""
+        progress_bar = ProgressBar()
+        progress_bar.get_widget()
+        progress_bar.update_progress_bar(_max=20, _value=5, _min=1)
+        self.assertIs(progress_bar._progress_bar.max, 20)
+        self.assertIs(progress_bar._progress_bar.value, 5)
+        self.assertIs(progress_bar._progress_bar.min, 1)
+
+    def test_reset_progress_bar(self):
+        """Test reseting a progress bar."""
+        progress_bar = ProgressBar()
+        progress_bar.get_widget()
+        progress_bar.update_progress_bar(_max=30, _value=20)
+        self.assertIs(progress_bar._progress_bar.value, 20)
+        progress_bar.reset_progress_bar()
+        self.assertIs(progress_bar._progress_bar.value, 0)
+
+    def test_complete_progress_bar(self):
+        """Test completing a progress bar."""
+        progress_bar = ProgressBar()
+        progress_bar.get_widget()
+        self.assertIs(progress_bar._progress_bar.value, 0)
+        progress_bar.complete_progress_bar()
+        self.assertIs(progress_bar._progress_bar.value, 10)
 
 
 class TestLivePlot(IBMTestCase):
