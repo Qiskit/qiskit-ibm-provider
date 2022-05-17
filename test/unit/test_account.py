@@ -607,15 +607,6 @@ class TestEnableAccount(IBMTestCase):
         self.assertTrue(service._account)
         self.assertEqual(service._account.instance, instance)
 
-    def test_active_account_with_saved_instance(self):
-        """Test active_account with a saved instance."""
-        name = "foo"
-        token = uuid.uuid4().hex
-        instance = "test-hub/test-group/test-project"
-        with temporary_account_config_file(name=name, token=token, instance=instance):
-            service = FakeProvider(name=name)
-        self.assertEqual(instance, service.active_account()["instance"])
-
     def _verify_prefs(self, prefs, account):
         if "proxies" in prefs:
             self.assertEqual(account.proxies, ProxyConfiguration(**prefs["proxies"]))

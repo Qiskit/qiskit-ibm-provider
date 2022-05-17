@@ -27,6 +27,7 @@ from qiskit_ibm_provider.api.exceptions import RequestsApiError
 from qiskit_ibm_provider.ibm_backend import IBMBackend
 from qiskit_ibm_provider.ibm_backend_service import IBMBackendService
 from qiskit_ibm_provider.ibm_provider import IBMProvider
+from ..account import temporary_account_config_file
 from ..decorators import (
     IntegrationTestDependencies,
     integration_test_setup,
@@ -125,6 +126,16 @@ class TestIBMProviderHubGroupProject(IBMTestCase):
             url=self.dependencies.url,
             instance=hgp.name,
         )
+        self.assertEqual(hgp.name, provider.active_account()["instance"])
+
+    def test_active_account_with_saved_instance(self):
+        """Test active_account with a saved instance."""
+        hgp = self.provider._get_hgp()
+        name = "foo"
+        with temporary_account_config_file(
+            name=name, token=self.dependencies.token, instance=hgp.name
+        ):
+            provider = IBMProvider(name=name)
         self.assertEqual(hgp.name, provider.active_account()["instance"])
 
 
