@@ -65,3 +65,8 @@ class TestSerialization(IBMTestCase):
             '{"t1": 1, "null": null, "a": 0.2, "list": [1, 2, {"ld": 1, "2": 3, "alfa": 0.1}]}',
             IBMJsonEncoder().encode(test_dir),
         )
+
+    def test_default(self):
+        """Test default method."""
+        complex_value = IBMJsonEncoder().default(1 + 2j)
+        self.assertEqual(complex_value, (1.0, 2.0))

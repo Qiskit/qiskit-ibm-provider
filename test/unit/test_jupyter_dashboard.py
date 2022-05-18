@@ -46,9 +46,18 @@ class TestLiveDataVisualization(IBMTestCase):
         self.assertIn(title, str(html_title))
         self.assertTrue(visualization)
 
+
+class TestProgressBar(IBMTestCase):
+    """Test Progress Bar."""
+
+    def setUp(self):
+        """Initial test setup."""
+        super().setUp()
+        self.progress_bar = ProgressBar()
+
     def test_update_progress_bar(self):
         """Test updating a progress bar."""
-        progress_bar = ProgressBar()
+        progress_bar = self.progress_bar
         progress_bar.get_widget()
         progress_bar.update_progress_bar(_max=20, _value=5, _min=1)
         self.assertIs(progress_bar._progress_bar.max, 20)
@@ -57,7 +66,7 @@ class TestLiveDataVisualization(IBMTestCase):
 
     def test_reset_progress_bar(self):
         """Test reseting a progress bar."""
-        progress_bar = ProgressBar()
+        progress_bar = self.progress_bar
         progress_bar.get_widget()
         progress_bar.update_progress_bar(_max=30, _value=20)
         self.assertIs(progress_bar._progress_bar.value, 20)
@@ -66,7 +75,7 @@ class TestLiveDataVisualization(IBMTestCase):
 
     def test_complete_progress_bar(self):
         """Test completing a progress bar."""
-        progress_bar = ProgressBar()
+        progress_bar = self.progress_bar
         progress_bar.get_widget()
         self.assertIs(progress_bar._progress_bar.value, 0)
         progress_bar.complete_progress_bar()
@@ -76,31 +85,38 @@ class TestLiveDataVisualization(IBMTestCase):
 class TestLivePlot(IBMTestCase):
     """Test Live Plot."""
 
+    def setUp(self):
+        """Initial test setup."""
+        super().setUp()
+        self.plot = LivePlot((1, 1))
+
     def test_live_plot(self):
         """Test initializing live plot."""
-        plot = LivePlot((1, 1))
-        self.assertTrue(plot)
-        self.assertEqual(plot.get_plotview_height(), 360)
+        self.assertTrue(self.plot)
+        self.assertEqual(self.plot.get_plotview_height(), 360)
 
     def test_live_plot_widget(self):
         """Test creating an area widget."""
-        plot = LivePlot((1, 1))
-        widget = plot.widget()
-        self.assertIs(plot.view, widget)
+        widget = self.plot.widget()
+        self.assertIs(self.plot.view, widget)
 
     def test_show_widget(self):
         """Test showing widget."""
-        plot = LivePlot((1, 1))
-        plot.widget()
-        plot.show()
-        self.assertIs(plot.view.layout.visibility, "visible")
+        self.plot.widget()
+        self.plot.show()
+        self.assertIs(self.plot.view.layout.visibility, "visible")
 
     def test_hide_widget(self):
         """Test hiding widget."""
-        plot = LivePlot((1, 1))
-        plot.widget()
-        plot.hide()
-        self.assertIs(plot.view.layout.visibility, "hidden")
+        self.plot.widget()
+        self.plot.hide()
+        self.assertIs(self.plot.view.layout.visibility, "hidden")
+
+    def test_clear_plot(self):
+        """Test hiding widget."""
+        self.plot.fig = 1
+        self.plot.clear()
+        self.assertIs(self.plot.fig, None)
 
 
 class TestJupyterDashboard(IBMTestCase):
