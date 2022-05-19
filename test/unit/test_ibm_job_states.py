@@ -495,6 +495,20 @@ class BaseFakeAPI:
         """Return backend properties"""
         return {}
 
+    def backend_pulse_defaults(self) -> Dict:
+        """Return pulse defaults"""
+        return {}
+
+    def backend_job_limit(self) -> Dict[str, Any]:
+        """Return job limit"""
+        return {"maximum_jobs": -1, "running_jobs": 0}
+
+    def backend_reservations(
+        self, *_args: str, **_kwargs: Optional[datetime]
+    ) -> List[Any]:
+        """Return backend reservations"""
+        return []
+
 
 class UnknownStatusAPI(BaseFakeAPI):
     """Class for emulating an API with unknown status codes."""
