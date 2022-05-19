@@ -366,6 +366,10 @@ class BaseFakeAccountClient:
             all_job_data.reverse()
         return all_job_data
 
+    def list_jobs_ids(self, *_args, **_kwargs):
+        """Return a list of job ids."""
+        return []
+
     def job_submit(
         self,
         backend_name,

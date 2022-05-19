@@ -91,3 +91,13 @@ class TestIBMBackendServce(IBMTestCase):
             service.backend._default_hgp._api_client = BaseFakeAccountClient()
             with self.assertRaises(IBMJobNotFoundError):
                 service.backend.job("test")
+
+    def test_getting_job_ids(self):
+        """Test getting job ids from backend service."""
+        name = "foo"
+        token = uuid.uuid4().hex
+        with temporary_account_config_file(name=name, token=token):
+            service = FakeProvider(name=name)
+            service.backend._default_hgp._api_client = BaseFakeAccountClient()
+            job_ids = service.backend.job_ids()
+        self.assertEqual(job_ids, [])
