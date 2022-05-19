@@ -11,9 +11,9 @@
 # that they have been altered from the originals.
 
 """Test Backend Methods."""
-
+import os
 import uuid
-from unittest import mock
+from unittest import mock, skipIf
 from test.fake_account_client import BaseFakeAccountClient
 from qiskit.test.mock.backends.bogota.fake_bogota import FakeBogota
 from qiskit.transpiler.target import Target
@@ -57,6 +57,7 @@ class TestIBMBackend(IBMTestCase):
         self.assertEqual(self.backend.reservations(), [])
 
 
+@skipIf(os.name == "nt", "Test not supported in Windows")
 class TestIBMBackendServce(IBMTestCase):
     """Test backend service methods."""
 
