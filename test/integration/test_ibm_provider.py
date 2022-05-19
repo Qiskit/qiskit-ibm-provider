@@ -28,6 +28,7 @@ from qiskit_ibm_provider.job.ibm_job import IBMJob
 from qiskit_ibm_provider.ibm_backend import IBMBackend
 from qiskit_ibm_provider.ibm_backend_service import IBMBackendService
 from qiskit_ibm_provider.ibm_provider import IBMProvider
+from ..account import temporary_account_config_file
 from ..decorators import (
     IntegrationTestDependencies,
     integration_test_setup,
@@ -100,6 +101,7 @@ class TestIBMProviderHubGroupProject(IBMTestCase):
         """Initial test setup."""
         # pylint: disable=arguments-differ
         super().setUp()
+        self.dependencies = dependencies
         self.provider = IBMProvider(token=dependencies.token, url=dependencies.url)
 
     def test_get_hgp(self):
@@ -116,6 +118,26 @@ class TestIBMProviderHubGroupProject(IBMTestCase):
         """Test get hgps without a filter."""
         hgps = self.provider._get_hgps()
         self.assertIn(self.provider.backend._default_hgp, hgps)
+
+    def test_active_account_instance(self):
+        """Test active_account returns correct instance."""
+        hgp = self.provider._get_hgp()
+        provider = IBMProvider(
+            token=self.dependencies.token,
+            url=self.dependencies.url,
+            instance=hgp.name,
+        )
+        self.assertEqual(hgp.name, provider.active_account()["instance"])
+
+    def test_active_account_with_saved_instance(self):
+        """Test active_account with a saved instance."""
+        hgp = self.provider._get_hgp()
+        name = "foo"
+        with temporary_account_config_file(
+            name=name, token=self.dependencies.token, instance=hgp.name
+        ):
+            provider = IBMProvider(name=name)
+        self.assertEqual(hgp.name, provider.active_account()["instance"])
 
 
 class TestIBMProviderServices(IBMTestCase):
