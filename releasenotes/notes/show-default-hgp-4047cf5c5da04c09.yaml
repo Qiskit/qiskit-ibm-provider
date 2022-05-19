@@ -1,0 +1,7 @@
+---
+upgrade:
+  - |
+    When instantiating :class:`~qiskit_ibm_provider.IBMProvider` and the h/g/p 
+    is not specified, users can see the auto-selected h/g/p 
+    with :meth:`~qiskit_ibm_provider.IBMProvider.active_account` 
+    
