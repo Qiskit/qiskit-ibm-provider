@@ -442,17 +442,6 @@ class TestEnableAccount(IBMTestCase):
         self.assertTrue(service._account)
         self.assertEqual(service._account.token, token)
 
-    def test_getting_backends(self):
-        """Test getting backends from backend service."""
-        name = "foo"
-        token = uuid.uuid4().hex
-        with temporary_account_config_file(name=name, token=token):
-            service = FakeProvider(name=name)
-            backends = service.backend.backends()
-            common_backend = service.backend.backends(name="common_backend")
-        self.assertTrue(len(backends) > 0)
-        self.assertEqual(common_backend[0].name, "common_backend")
-
     def test_enable_account_by_token_url(self):
         """Test initializing account by token or url."""
         token = uuid.uuid4().hex

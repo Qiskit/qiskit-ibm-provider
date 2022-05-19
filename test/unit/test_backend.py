@@ -12,12 +12,17 @@
 
 """Test Backend Methods."""
 
+import uuid
 from unittest import mock
+from test.fake_account_client import BaseFakeAccountClient
 from qiskit.test.mock.backends.bogota.fake_bogota import FakeBogota
 from qiskit.transpiler.target import Target
 from qiskit_ibm_provider.ibm_backend import IBMBackend
+from qiskit_ibm_provider.job.exceptions import IBMJobNotFoundError
+from .mock.fake_provider import FakeProvider
 from .test_ibm_job_states import BaseFakeAPI
 from ..ibm_test_case import IBMTestCase
+from ..account import temporary_account_config_file
 
 
 class TestIBMBackend(IBMTestCase):
@@ -50,3 +55,38 @@ class TestIBMBackend(IBMTestCase):
     def test_reservations(self):
         """Test resvervations."""
         self.assertEqual(self.backend.reservations(), [])
+
+
+class TestIBMBackendServce(IBMTestCase):
+    """Test backend service methods."""
+
+    def test_getting_backends(self):
+        """Test getting backends from backend service."""
+        name = "foo"
+        token = uuid.uuid4().hex
+        with temporary_account_config_file(name=name, token=token):
+            service = FakeProvider(name=name)
+            backends = service.backend.backends()
+            common_backend = service.backend.backends(name="common_backend")
+        self.assertTrue(len(backends) > 0)
+        self.assertEqual(common_backend[0].name, "common_backend")
+
+    def test_getting_jobs(self):
+        """Test getting jobs from backend service."""
+        name = "foo"
+        token = uuid.uuid4().hex
+        with temporary_account_config_file(name=name, token=token):
+            service = FakeProvider(name=name)
+            service.backend._default_hgp._api_client = BaseFakeAccountClient()
+            jobs = service.backend.jobs()
+        self.assertEqual(jobs, [])
+
+    def test_getting_single_job(self):
+        """Test getting job from backend service."""
+        name = "foo"
+        token = uuid.uuid4().hex
+        with temporary_account_config_file(name=name, token=token):
+            service = FakeProvider(name=name)
+            service.backend._default_hgp._api_client = BaseFakeAccountClient()
+            with self.assertRaises(IBMJobNotFoundError):
+                service.backend.job("test")
