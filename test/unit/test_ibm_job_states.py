@@ -20,7 +20,8 @@ from concurrent import futures
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import suppress
 from unittest import mock
-from typing import List, Any, Dict
+from datetime import datetime
+from typing import List, Any, Dict, Optional
 
 from qiskit import transpile
 from qiskit.providers import JobTimeoutError
@@ -489,6 +490,10 @@ class BaseFakeAPI:
             "pending_jobs": 0,
             "status_msg": "active",
         }
+
+    def backend_properties(self, **_kwargs: Optional[datetime]) -> Dict[str, Any]:
+        """Return backend properties"""
+        return {}
 
 
 class UnknownStatusAPI(BaseFakeAPI):
