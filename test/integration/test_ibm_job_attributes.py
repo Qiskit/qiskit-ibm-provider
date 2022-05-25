@@ -53,7 +53,7 @@ class TestIBMJobAttributes(IBMTestCase):
         # pylint: disable=arguments-differ
         super().setUpClass()
         cls.dependencies = dependencies
-        cls.sim_backend = cls.sim_backend = dependencies.provider.get_backend(
+        cls.sim_backend = dependencies.provider.get_backend(
             "ibmq_qasm_simulator", instance=dependencies.instance
         )
         cls.bell = transpile(ReferenceCircuits.bell(), cls.sim_backend)
