@@ -78,7 +78,7 @@ class TestIBMJob(IBMTestCase):
         for i in range(num_qubits - 1):
             quantum_circuit.cx(quantum_register[i], quantum_register[i + 1])
         quantum_circuit.measure(quantum_register, classical_register)
-        num_jobs = 5
+        num_jobs = 4
         job_array = [
             self.sim_backend.run(transpile([quantum_circuit] * 20), shots=2048)
             for _ in range(num_jobs)
@@ -107,7 +107,7 @@ class TestIBMJob(IBMTestCase):
             self.log.info("-  %s", str(time.time() - start_time))
             if (
                 time.time() - start_time > timeout
-                and self.sim_backend.status().pending_jobs <= 5
+                and self.sim_backend.status().pending_jobs <= 4
             ):
                 raise TimeoutError(
                     "Failed to see multiple running jobs after "
