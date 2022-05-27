@@ -12,7 +12,7 @@
 
 """Test Provider Version."""
 
-from qiskit_ibm_provider.version import get_version_info, git_version
+from qiskit_ibm_provider.version import get_version_info, git_version, __version__
 from ..ibm_test_case import IBMTestCase
 
 
@@ -27,4 +27,4 @@ class TestProviderVersion(IBMTestCase):
     def test_full_version(self):
         """Test getting full version."""
         version = get_version_info()
-        self.assertTrue(version)
+        self.assertEqual(version, __version__)

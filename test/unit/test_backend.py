@@ -56,6 +56,12 @@ class TestIBMBackend(IBMTestCase):
         """Test resvervations."""
         self.assertEqual(self.backend.reservations(), [])
 
+    def test_backend_attributes(self):
+        """Test backend attributes."""
+        self.assertEqual(self.backend.max_circuits, 900)
+        self.assertEqual(self.backend.num_qubits, 5)
+        self.assertEqual(self.backend.name, "fake_bogota")
+
 
 @skipIf(os.name == "nt", "Test not supported in Windows")
 class TestIBMBackendServce(IBMTestCase):
@@ -68,9 +74,9 @@ class TestIBMBackendServce(IBMTestCase):
         with temporary_account_config_file(name=name, token=token):
             service = FakeProvider(name=name)
             backends = service.backend.backends()
-            common_backend = service.backend.backends(name="common_backend")
+            common_backends = service.backend.backends(name="common_backend")
         self.assertTrue(len(backends) > 0)
-        self.assertEqual(common_backend[0].name, "common_backend")
+        self.assertEqual(common_backends[0].name, "common_backend")
 
     def test_getting_jobs(self):
         """Test getting jobs from backend service."""

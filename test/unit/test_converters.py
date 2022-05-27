@@ -33,17 +33,6 @@ class TestConverters(IBMTestCase):
         local_time = converters.utc_to_local(datetime_object)
         self.assertEqual(datetime_object, converters.local_to_utc(local_time))
 
-    def test_local_to_utc_str(self):
-        """Test local to utc string method."""
-        datetime_object = datetime.now(pytz.utc)
-        self.assertIsInstance(converters.local_to_utc_str(datetime_object), str)
-
-    def test_str_to_utc(self):
-        """Test str to utc method."""
-        utc_string = "2022-05-19T02:13:46.168259Z"
-        utc_datetime = converters.str_to_utc(utc_string)
-        self.assertIsInstance(utc_datetime, datetime)
-
     def test_seconds_to_duration(self):
         """Test seconds to duration method."""
         self.assertEqual(converters.seconds_to_duration(1000), (0, 0, 16, 40, 0))
@@ -54,12 +43,6 @@ class TestConverters(IBMTestCase):
         non_utc_date = datetime.now()
         self.assertIsInstance(converters.duration_difference(utc_date), str)
         self.assertIsInstance(converters.duration_difference(non_utc_date), str)
-
-    def test_convert_tz(self):
-        """Test convert tz method."""
-        datetime_object = datetime.now(pytz.utc)
-        utc_time = converters.local_to_utc(datetime_object)
-        self.assertEqual(datetime_object, converters.convert_tz(utc_time, True))
 
     def test_utc_to_local_all(self):
         """Test utc to local all method."""
