@@ -502,3 +502,7 @@ class TestIBMJob(IBMTestCase):
 
     def test_job_header(self):
         """Test job header."""
+        custom_header = {"test": "test_job_header"}
+        job = self.sim_backend.run(self.bell, header=custom_header)
+        self.assertEqual(custom_header["test"], job.header()["test"])
+        self.assertLessEqual(custom_header.items(), job.header().items())
