@@ -12,17 +12,17 @@
 
 """Test Backend Methods."""
 import os
-import uuid
 from unittest import mock, skipIf
 from test.fake_account_client import BaseFakeAccountClient
 from qiskit.test.mock.backends.bogota.fake_bogota import FakeBogota
 from qiskit.transpiler.target import Target
+from qiskit import transpile
+from qiskit.test.reference_circuits import ReferenceCircuits
 from qiskit_ibm_provider.ibm_backend import IBMBackend
 from qiskit_ibm_provider.job.exceptions import IBMJobNotFoundError
 from .mock.fake_provider import FakeProvider
 from .test_ibm_job_states import BaseFakeAPI
 from ..ibm_test_case import IBMTestCase
-from ..account import temporary_account_config_file
 
 
 class TestIBMBackend(IBMTestCase):
@@ -69,41 +69,51 @@ class TestIBMBackendServce(IBMTestCase):
 
     def test_getting_backends(self):
         """Test getting backends from backend service."""
-        name = "foo"
-        token = uuid.uuid4().hex
-        with temporary_account_config_file(name=name, token=token):
-            service = FakeProvider(name=name)
-            backends = service.backend.backends()
-            common_backends = service.backend.backends(name="common_backend")
+        service = FakeProvider()
+        backends = service.backend.backends()
+        common_backends = service.backend.backends(name="common_backend")
         self.assertTrue(len(backends) > 0)
         self.assertEqual(common_backends[0].name, "common_backend")
 
     def test_getting_jobs(self):
         """Test getting jobs from backend service."""
-        name = "foo"
-        token = uuid.uuid4().hex
-        with temporary_account_config_file(name=name, token=token):
-            service = FakeProvider(name=name)
-            service.backend._default_hgp._api_client = BaseFakeAccountClient()
-            jobs = service.backend.jobs()
-        self.assertEqual(jobs, [])
+        service = FakeProvider()
+        fake_client = BaseFakeAccountClient()
+        backend = service.backend._default_hgp.backend("common_backend")
+        backend._api_client = fake_client
+        service.backend._default_hgp._api_client = fake_client
+        circuit = transpile(ReferenceCircuits.bell())
+        num_jobs = 3
+        job_array = [backend.run(circuit) for _ in range(num_jobs)]
+        job_ids = [job.job_id() for job in job_array]
+        backend_service_job_ids = [job.job_id() for job in service.backend.jobs()]
+        self.assertEqual(job_ids, backend_service_job_ids)
 
     def test_getting_single_job(self):
         """Test getting job from backend service."""
-        name = "foo"
-        token = uuid.uuid4().hex
-        with temporary_account_config_file(name=name, token=token):
-            service = FakeProvider(name=name)
-            service.backend._default_hgp._api_client = BaseFakeAccountClient()
-            with self.assertRaises(IBMJobNotFoundError):
-                service.backend.job("test")
+        service = FakeProvider()
+        fake_client = BaseFakeAccountClient()
+        backend = service.backend._default_hgp.backend("common_backend")
+        backend._api_client = fake_client
+        service.backend._default_hgp._api_client = fake_client
+        circuit = transpile(ReferenceCircuits.bell())
+        with self.assertRaises(IBMJobNotFoundError):
+            service.backend.job("test")
+        job = backend.run(circuit)
+        self.assertEqual(service.backend.job(job.job_id()).job_id(), job.job_id())
 
     def test_getting_job_ids(self):
         """Test getting job ids from backend service."""
-        name = "foo"
-        token = uuid.uuid4().hex
-        with temporary_account_config_file(name=name, token=token):
-            service = FakeProvider(name=name)
-            service.backend._default_hgp._api_client = BaseFakeAccountClient()
-            job_ids = service.backend.job_ids()
-        self.assertEqual(job_ids, [])
+        service = FakeProvider()
+        fake_client = BaseFakeAccountClient()
+        backend = service.backend._default_hgp.backend("common_backend")
+        backend._api_client = fake_client
+        service.backend._default_hgp._api_client = fake_client
+        circuit = transpile(ReferenceCircuits.bell())
+        num_jobs = 3
+        job_array = [backend.run(circuit) for _ in range(num_jobs)]
+        for job in job_array:
+            job.wait_for_final_state(wait=300)
+        job_ids = [job.job_id() for job in job_array]
+        backend_service_job_ids = [job["id"] for job in service.backend.job_ids(limit=3)]
+        self.assertEqual(job_ids, backend_service_job_ids)

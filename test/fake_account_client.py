@@ -366,9 +366,18 @@ class BaseFakeAccountClient:
             all_job_data.reverse()
         return all_job_data
 
-    def list_jobs_ids(self, *_args, **_kwargs):
+    def list_jobs_ids(self, limit, skip, descending=True, extra_filter=None):
         """Return a list of job ids."""
-        return []
+        # pylint: disable=unused-argument
+        job_ids = []
+        for job in list(self._jobs.values())[skip : skip + limit]:
+            job_data = job.data()
+            job_ids.append(
+                {"id": job_data["job_id"], "creationDate": job_data["creation_date"]}
+            )
+        if not descending:
+            job_ids.reverse()
+        return job_ids
 
     def job_submit(
         self,
