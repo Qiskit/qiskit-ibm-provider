@@ -112,8 +112,8 @@ class TestIBMBackendServce(IBMTestCase):
         circuit = transpile(ReferenceCircuits.bell())
         num_jobs = 3
         job_array = [backend.run(circuit) for _ in range(num_jobs)]
-        for job in job_array:
-            job.wait_for_final_state(wait=300)
         job_ids = [job.job_id() for job in job_array]
-        backend_service_job_ids = [job["id"] for job in service.backend.job_ids(limit=3)]
+        backend_service_job_ids = [
+            job["id"] for job in service.backend.job_ids(limit=3)
+        ]
         self.assertEqual(job_ids, backend_service_job_ids)
