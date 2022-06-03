@@ -15,9 +15,11 @@
 import time
 import re
 from unittest import SkipTest
+from typing import Set, Any, Dict, Optional
 
 from qiskit import (
     transpile,
+    schedule,
     ClassicalRegister,
     QuantumCircuit,
     QuantumRegister,
@@ -39,6 +41,8 @@ from ..decorators import (
     IntegrationTestDependencies,
     integration_test_setup_with_backend,
 )
+
+from ..integration.test_serialization import _find_potential_encoded
 
 
 class TestRealDevices(IBMTestCase):
@@ -253,3 +257,49 @@ class TestRealDevices(IBMTestCase):
         result = job.result()
 
         self.assertTrue(result.success)
+
+    def test_pulse_job_result(self):
+        """Test deserializing a pulse job result."""
+        backends = self.dependencies.provider.backends(
+            open_pulse=True, operational=True, instance=self.dependencies.instance
+        )
+        if not backends:
+            raise SkipTest("Skipping pulse test since no pulse backend found.")
+
+        backend = least_busy(backends)
+        quantum_circuit = QuantumCircuit(1, 1)
+        quantum_circuit.x(0)
+        quantum_circuit.measure([0], [0])
+        sched = schedule(transpile(quantum_circuit, backend=backend), backend=backend)
+        job = backend.run(sched)
+        result = job.result()
+
+        # Known keys that look like a serialized object.
+        good_keys = ("header.backend_version", "backend_version")
+        self._verify_data(result.to_dict(), good_keys)
+
+    def _verify_data(
+        self, data: Dict, good_keys: tuple, good_key_prefixes: Optional[tuple] = None
+    ) -> None:
+        """Verify that the input data does not contain serialized objects.
+
+        Args:
+            data: Data to validate.
+            good_keys: A list of known keys that look serialized objects.
+            good_key_prefixes: A list of known prefixes for keys that look like
+                serialized objects.
+        """
+        suspect_keys: Set[Any] = set()
+        _find_potential_encoded(data, "", suspect_keys)
+        # Remove known good keys from suspect keys.
+        for gkey in good_keys:
+            try:
+                suspect_keys.remove(gkey)
+            except KeyError:
+                pass
+        if good_key_prefixes:
+            for gkey in good_key_prefixes:
+                suspect_keys = {
+                    ckey for ckey in suspect_keys if not ckey.startswith(gkey)
+                }
+        self.assertFalse(suspect_keys)
