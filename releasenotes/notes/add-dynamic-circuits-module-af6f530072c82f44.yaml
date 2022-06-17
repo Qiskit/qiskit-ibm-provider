@@ -1,0 +1,7 @@
+---
+features:
+  - |
+    A new dynamic circuits module has been added to :mod:`qiskit_ibm_provider.dynamic_circuits`.
+    It will contain all specialized Qiskit routines for running applications on IBM's next-generation
+    quantum devices that support dynamic capabilities such as control-flow(feedforward) and classical
+    compute.
