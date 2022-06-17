@@ -49,5 +49,3 @@ Scheduling & Dynamical Decoupling
 
 
 """
-
-foo = 1
