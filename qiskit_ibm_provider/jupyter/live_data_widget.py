@@ -27,7 +27,7 @@ import ipywidgets as widgets
 import numpy as np
 from sklearn.decomposition import PCA
 from qiskit.providers.jobstatus import JobStatus
-from qiskit.test.mock import FakeBackendV2 as FakeBackend
+from qiskit.providers.fake_provider import FakeBackendV2 as FakeBackend
 
 # PLOTS
 ENABLE_LEVEL_0 = False

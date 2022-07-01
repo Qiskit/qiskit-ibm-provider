@@ -17,7 +17,7 @@ import math
 from typing import Union
 
 import ipywidgets as wid
-from qiskit.test.mock import FakeBackendV2 as FakeBackend
+from qiskit.providers.fake_provider import FakeBackendV2 as FakeBackend
 
 from qiskit_ibm_provider.ibm_backend import IBMBackend
 

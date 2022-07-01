@@ -23,7 +23,7 @@ from datetime import timedelta, datetime
 from random import randrange
 from typing import Dict, Any
 
-from qiskit.test.mock.backends.poughkeepsie.fake_poughkeepsie import FakePoughkeepsie
+from qiskit.providers.fake_provider import FakePoughkeepsie
 
 from qiskit_ibm_provider.api.exceptions import (
     RequestsApiError,
