@@ -73,8 +73,6 @@ class DynamicCircuitScheduleAnalysis(BaseScheduler):
         for node in dag.topological_op_nodes():
             self._visit_node(node)
 
-        for node, start_time in self._node_start_time.items():
-            print(repr(node), start_time)
         self.property_set["node_start_time"] = self._node_start_time
 
     def _init_run(self, dag):
@@ -123,8 +121,11 @@ class DynamicCircuitScheduleAnalysis(BaseScheduler):
 
         TODO: Update for support of general control-flow, not just single conditional operations.
         """
+        # Special processing required to resolve conditional scheduling dependencies
         if node.op.condition_bits:
-            # Special processing required to resolve conditional scheduling dependencies
+            # Trigger the start of a conditional block
+            self._begin_new_circuit_block()
+
             op_duration = self._get_node_duration(node)
 
             t0q = max(self._idle_after[q][1] for q in node.qargs)
@@ -150,11 +151,16 @@ class DynamicCircuitScheduleAnalysis(BaseScheduler):
             for bit in node.op.condition_bits:
                 # Lock clbit until state is read
                 self._idle_after[bit] = (self._current_block_idx, t1c)
+
             # It starts after register read access
             t0 = max(t0q, t1c)
 
             t1 = t0 + op_duration
             self._update_idles(node, t0, t1)
+
+            # Terminate the conditional block
+            self._begin_new_circuit_block()
+
         else:
             # Fall through to generic case if not conditional
             self._visit_generic(node)

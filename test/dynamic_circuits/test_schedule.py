@@ -47,10 +47,11 @@ class TestSchedulingAndPaddingPass(QiskitTestCase):
         scheduled = pm.run(qc)
 
         expected = QuantumCircuit(2, 1)
+        expected.delay(1000, 1)
         expected.measure(0, 0)
-        expected.delay(1000, 1)  # x.c_if starts after measure
+        expected.barrier()
         expected.x(1).c_if(0, True)
-        expected.delay(200, 0)
+        expected.barrier()
 
         self.assertEqual(expected, scheduled)
 
@@ -116,12 +117,14 @@ class TestSchedulingAndPaddingPass(QiskitTestCase):
         scheduled = pm.run(qc)
 
         expected = QuantumCircuit(3, 1)
-        expected.measure(0, 0)
         expected.delay(1000, 1)
         expected.delay(1000, 2)
+        expected.measure(0, 0)
+        expected.barrier()
         expected.x(1).c_if(0, True)
+        expected.barrier()
         expected.x(2).c_if(0, True)
-        expected.delay(200, 0)
+        expected.barrier()
 
         self.assertEqual(expected, scheduled)
 
@@ -176,6 +179,7 @@ class TestSchedulingAndPaddingPass(QiskitTestCase):
         expected.delay(1000, 0)
         expected.measure(2, 0)
         expected.delay(1000, 1)
+        expected.barrier()
 
         self.assertEqual(expected, scheduled)
 
@@ -244,7 +248,7 @@ class TestSchedulingAndPaddingPass(QiskitTestCase):
         durations = InstructionDurations([("x", None, 200), ("measure", None, 1000)])
 
         # lock at the end edge
-        actual_sched = PassManager(
+        scheduled = PassManager(
             [
                 SetIOLatency(clbit_write_latency=1000),
                 DynamicCircuitScheduleAnalysis(durations),
@@ -252,14 +256,19 @@ class TestSchedulingAndPaddingPass(QiskitTestCase):
             ]
         ).run(qc)
 
-        expected_sched = QuantumCircuit(3, 1)
-        expected_sched.measure(0, 0)
-        expected_sched.delay(1000, 1)
-        expected_sched.x(1).c_if(0, 1)
-        expected_sched.measure(2, 0)
-        expected_sched.delay(200, 0)
-        expected_sched.delay(200, 2)
-        self.assertEqual(expected_sched, actual_sched)
+        expected = QuantumCircuit(3, 1)
+        expected.delay(1000, 1)
+        expected.delay(1000, 2)
+        expected.measure(0, 0)
+        expected.barrier()
+        expected.x(1).c_if(0, 1)
+        expected.barrier()
+        expected.delay(1000, 0)
+        expected.delay(1000, 1)
+        expected.measure(2, 0)
+        expected.barrier()
+
+        self.assertEqual(expected, scheduled)
 
     @data([100, 200], [500, 0], [1000, 200])
     @unpack
@@ -278,7 +287,7 @@ class TestSchedulingAndPaddingPass(QiskitTestCase):
 
         durations = InstructionDurations([("x", None, 100), ("measure", None, 1000)])
 
-        actual_sched = PassManager(
+        scheduled = PassManager(
             [
                 SetIOLatency(
                     clbit_write_latency=write_lat, conditional_latency=cond_lat
@@ -302,7 +311,7 @@ class TestSchedulingAndPaddingPass(QiskitTestCase):
             expected.delay(cond_lat, 0)
         expected.x(0).c_if(0, 1)
 
-        self.assertEqual(expected, actual_sched)
+        self.assertEqual(expected, scheduled)
 
     def test_dag_introduces_extra_dependency_between_conditionals(self):
         """Test dependency between conditional operations in the scheduling.
@@ -321,10 +330,11 @@ class TestSchedulingAndPaddingPass(QiskitTestCase):
         scheduled = pm.run(qc)
 
         expected = QuantumCircuit(2, 1)
-        expected.delay(100, 0)
-        expected.delay(100, 1)  # due to extra dependency on clbits
+        expected.barrier()
         expected.x(0).c_if(0, True)
+        expected.barrier()
         expected.x(1).c_if(0, True)
+        expected.barrier()
 
         self.assertEqual(expected, scheduled)
 
