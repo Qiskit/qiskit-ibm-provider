@@ -56,6 +56,7 @@ class BasePadding(TransformationPass):
         self._dag = None
         self._block_duration = 0
         self._current_block_idx = 0
+        self._conditional_block = False
 
         super().__init__()
 
@@ -105,6 +106,7 @@ class BasePadding(TransformationPass):
         self._node_start_time = self.property_set["node_start_time"].copy()
         self._idle_after = {bit: 0 for bit in dag.qubits}
         self._current_block_idx = 0
+        self._conditional_block = False
         self._block_duration = 0
 
         # Prepare DAG to pad
@@ -188,9 +190,15 @@ class BasePadding(TransformationPass):
         """Visit a generic node to pad."""
         block_idx, t0 = self._node_start_time[node]
 
+
         # Trigger the end of a block
         if block_idx > self._current_block_idx:
+
             self._terminate_block(self._block_duration, self._current_block_idx)
+
+        # This block will not be padded as it is conditional.
+        # See TODO below.
+        self._conditional_block = True if node.op.condition_bits else False
 
         # Now set the current block index.
         self._current_block_idx = block_idx
@@ -219,7 +227,15 @@ class BasePadding(TransformationPass):
 
     def _terminate_block(self, block_duration, block_idx):
         """Terminate the end of a block scheduling region."""
-        self._pad_until_block_end(block_duration, block_idx)
+        # Update all other qubits as not idle so that delays are *not*
+        # inserted. This is because we need the delays to be inserted in
+        # the conditional circuit block. However, c_if currently only
+        # allows writing a single conditional gate.
+        # TODO: This should be reworked to instead apply a transformation
+        # pass to rewrite all ``c_if`` operations as ``if_else``
+        # blocks that are in turn scheduled.
+        if not self._conditional_block:
+            self._pad_until_block_end(block_duration, block_idx)
 
         # Terminate with a barrier to be clear timing is non-deterministic
         # across the barrier.
@@ -228,6 +244,7 @@ class BasePadding(TransformationPass):
         # Reset idles for the new block.
         self._idle_after = {bit: 0 for bit in self._dag.qubits}
         self._block_duration = 0
+        self._conditional_block = False
 
 
     def _pad_until_block_end(self, block_duration, block_idx):
