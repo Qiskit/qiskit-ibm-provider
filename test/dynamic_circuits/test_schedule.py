@@ -299,17 +299,17 @@ class TestSchedulingAndPaddingPass(QiskitTestCase):
 
         expected = QuantumCircuit(1, 1)
         expected.measure(0, 0)
-        if cond_lat > 0:
-            expected.delay(cond_lat, 0)
+        expected.barrier()
         expected.x(0).c_if(0, 1)
+        expected.barrier()
         expected.measure(0, 0)
-        if cond_lat > 0:
-            expected.delay(cond_lat, 0)
+        expected.barrier()
         expected.x(0).c_if(0, 1)
+        expected.barrier()
         expected.measure(0, 0)
-        if cond_lat > 0:
-            expected.delay(cond_lat, 0)
+        expected.barrier()
         expected.x(0).c_if(0, 1)
+        expected.barrier()
 
         self.assertEqual(expected, scheduled)
 
