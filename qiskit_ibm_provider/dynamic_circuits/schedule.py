@@ -220,6 +220,7 @@ class DynamicCircuitScheduleAnalysis(BaseScheduler):
         """
         self._current_block_idx += 1
         self._current_block_measures = set()
+        self._idle_after = {q: (0, 0) for q in self._dag.qubits + self._dag.clbits}
 
     def _current_block_measure_qargs(self):
         return set(qarg for measure in self._current_block_measures for qarg in measure.qargs)
