@@ -158,9 +158,6 @@ class TestSchedulingAndPaddingPass(QiskitTestCase):
         expected.measure(2, 0)
         expected.barrier()
 
-
-
-        import pdb;pdb.set_trace()
         self.assertEqual(expected, scheduled)
 
     def test_c_if_on_different_qubits(self):
@@ -250,9 +247,6 @@ class TestSchedulingAndPaddingPass(QiskitTestCase):
         expected.delay(300, 1)
         expected.delay(1000, 2)
         expected.barrier()
-
-        import pdb
-        pdb.set_trace()
 
         self.assertEqual(expected, scheduled)
 
