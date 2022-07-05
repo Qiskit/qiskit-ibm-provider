@@ -12,6 +12,7 @@
 
 """Test the dynamic circuits scheduling analysis"""
 
+import sched
 import unittest
 
 from ddt import ddt, data, unpack
@@ -36,26 +37,7 @@ class TestSchedulingAndPaddingPass(QiskitTestCase):
 
     def test_classically_controlled_gate_after_measure(self):
         """Test if schedules circuits with c_if after measure with a common clbit.
-        See: https://github.com/Qiskit/qiskit-terra/issues/7654
-        (input)
-             ┌─┐
-        q_0: ┤M├───────────
-             └╥┘   ┌───┐
-        q_1: ─╫────┤ X ├───
-              ║    └─╥─┘
-              ║ ┌────╨────┐
-        c: 1/═╩═╡ c_0 = T ╞
-              0 └─────────┘
-        (scheduled)
-                                ┌─┐┌────────────────┐
-        q_0: ───────────────────┤M├┤ Delay(200[dt]) ├
-             ┌─────────────────┐└╥┘└─────┬───┬──────┘
-        q_1: ┤ Delay(1000[dt]) ├─╫───────┤ X ├───────
-             └─────────────────┘ ║       └─╥─┘
-                                 ║    ┌────╨────┐
-        c: 1/════════════════════╩════╡ c_0=0x1 ╞════
-                                 0    └─────────┘
-        """
+        See: https://github.com/Qiskit/qiskit-terra/issues/7654"""
         qc = QuantumCircuit(2, 1)
         qc.measure(0, 0)
         qc.x(1).c_if(0, True)
@@ -75,26 +57,7 @@ class TestSchedulingAndPaddingPass(QiskitTestCase):
     def test_measure_after_measure(self):
         """Test if schedules circuits with measure after measure with a common clbit.
 
-        Note: There is no delay to write into the same clbit with IBM backends.
-
-        (input)
-               ┌───┐┌─┐
-          q_0: ┤ X ├┤M├───
-               └───┘└╥┘┌─┐
-          q_1: ──────╫─┤M├
-                     ║ └╥┘
-          c: 1/══════╩══╩═
-                    0  0
-        (scheduled)
-                     ┌───┐       ┌─┐    ░
-          q_0: ──────┤ X ├───────┤M├────░─
-               ┌─────┴───┴──────┐└╥┘┌─┐ ░
-          q_1: ┤ Delay(200[dt]) ├─╫─┤M├─░─
-               └────────────────┘ ║ └╥┘ ░
-          c: 1/═══════════════════╩══╩════
-                              0  0
-
-        """
+        Note: There is no delay to write into the same clbit with IBM backends."""
         qc = QuantumCircuit(2, 1)
         qc.x(0)
         qc.measure(0, 0)
@@ -113,26 +76,7 @@ class TestSchedulingAndPaddingPass(QiskitTestCase):
         self.assertEqual(expected, scheduled)
 
     def test_measure_block_end(self):
-        """Tests that measures trigger the end of a scheduling block and that measurements are grouped by block.
-
-        (input)
-               ┌───┐┌─┐
-          q_0: ┤ X ├┤M├───
-               └───┘└╥┘┌─┐
-          q_1: ──────╫─┤M├
-                     ║ └╥┘
-          c: 1/══════╩══╩═
-                    0  0
-        (scheduled)
-                     ┌───┐       ┌─┐    ░
-          q_0: ──────┤ X ├───────┤M├────░─
-               ┌─────┴───┴──────┐└╥┘┌─┐ ░
-          q_1: ┤ Delay(200[dt]) ├─╫─┤M├─░─
-               └────────────────┘ ║ └╥┘ ░
-          c: 1/═══════════════════╩══╩════
-                              0  0
-
-        """
+        """Tests that measures trigger the end of a scheduling block and that measurements are grouped by block."""
         qc = QuantumCircuit(3, 1)
         qc.x(0)
         qc.measure(0, 0)
@@ -161,30 +105,7 @@ class TestSchedulingAndPaddingPass(QiskitTestCase):
         self.assertEqual(expected, scheduled)
 
     def test_c_if_on_different_qubits(self):
-        """Test if schedules circuits with `c_if`s on different qubits.
-        (input)
-             ┌─┐
-        q_0: ┤M├──────────────────────
-             └╥┘   ┌───┐
-        q_1: ─╫────┤ X ├──────────────
-              ║    └─╥─┘      ┌───┐
-        q_2: ─╫──────╫────────┤ X ├───
-              ║      ║        └─╥─┘
-              ║ ┌────╨────┐┌────╨────┐
-        c: 1/═╩═╡ c_0 = T ╞╡ c_0 = T ╞
-              0 └─────────┘└─────────┘
-        (scheduled)
-                                ┌─┐┌────────────────┐
-        q_0: ───────────────────┤M├┤ Delay(200[dt]) ├───────────
-             ┌─────────────────┐└╥┘└─────┬───┬──────┘
-        q_1: ┤ Delay(1000[dt]) ├─╫───────┤ X ├──────────────────
-             ├─────────────────┤ ║       └─╥─┘          ┌───┐
-        q_2: ┤ Delay(1000[dt]) ├─╫─────────╫────────────┤ X ├───
-             └─────────────────┘ ║         ║            └─╥─┘
-                                 ║    ┌────╨────┐    ┌────╨────┐
-        c: 1/════════════════════╩════╡ c_0=0x1 ╞════╡ c_0=0x1 ╞
-                                 0    └─────────┘    └─────────┘
-        """
+        """Test if schedules circuits with `c_if`s on different qubits."""
         qc = QuantumCircuit(3, 1)
         qc.measure(0, 0)
         qc.x(1).c_if(0, True)
@@ -208,29 +129,7 @@ class TestSchedulingAndPaddingPass(QiskitTestCase):
         """Test if schedules circuits with shorter measure after measure with a common clbit.
 
         Note: For dynamic circuits support we currently group measurements to start at the same time which in turn trigger
-        the end of a block.
-
-        (input)
-               ┌─┐
-          q_0: ┤M├───
-               └╥┘┌─┐
-          q_1: ─╫─┤M├
-                ║ └╥┘
-          q_2: ─╫──╫─
-                ║  ║
-          c: 1/═╩══╩═
-               0  0
-        (scheduled)
-               ┌─┐                                         ░
-          q_0: ┤M├─────────────────────────────────────────░─
-               └╥┘                   ┌─┐┌────────────────┐ ░
-          q_1: ─╫────────────────────┤M├┤ Delay(300[dt]) ├─░─
-                ║ ┌─────────────────┐└╥┘└────────────────┘ ░
-          q_2: ─╫─┤ Delay(1000[dt]) ├─╫────────────────────░─
-                ║ └─────────────────┘ ║                    ░
-          c: 1/═╩═════════════════════╩══════════════════════
-               0                     0
-        """
+        the end of a block."""
         qc = QuantumCircuit(3, 1)
         qc.measure(0, 0)
         qc.measure(1, 0)
@@ -255,27 +154,6 @@ class TestSchedulingAndPaddingPass(QiskitTestCase):
 
         Note: This test is not yet correct as we should schedule the conditional block
         qubits with delays as well.
-
-        (input)
-               ┌─┐
-          q_0: ┤M├──────────────
-               └╥┘   ┌───┐
-          q_1: ─╫────┤ X ├──────
-                ║    └─╥─┘   ┌─┐
-          q_2: ─╫──────╫─────┤M├
-                ║ ┌────╨────┐└╥┘
-          c: 1/═╩═╡ c_0 = T ╞═╩═
-                0 └─────────┘ 0
-        (scheduled)
-                                  ┌─┐ ░             ░ ┌─────────────────┐
-          q_0: ───────────────────┤M├─░─────────────░─┤ Delay(1000[dt]) ├
-               ┌─────────────────┐└╥┘ ░    ┌───┐    ░ ├─────────────────┤
-          q_1: ┤ Delay(1000[dt]) ├─╫──░────┤ X ├────░─┤ Delay(1000[dt]) ├
-               ├─────────────────┤ ║  ░    └─╥─┘    ░ └───────┬─┬───────┘
-          q_2: ┤ Delay(1000[dt]) ├─╫──░──────╫──────░─────────┤M├────────
-               └─────────────────┘ ║  ░ ┌────╨────┐ ░         └╥┘
-          c: 1/════════════════════╩════╡ c_0=0x1 ╞════════════╩═════════
-                                   0    └─────────┘            0
         """
         qc = QuantumCircuit(3, 1)
         qc.measure(0, 0)
@@ -302,24 +180,7 @@ class TestSchedulingAndPaddingPass(QiskitTestCase):
         self.assertEqual(expected, scheduled)
 
     def test_parallel_gate_different_length(self):
-        """Test circuit having two parallel instruction with different length.
-        (input)
-             ┌───┐┌─┐
-        q_0: ┤ X ├┤M├───
-             ├───┤└╥┘┌─┐
-        q_1: ┤ X ├─╫─┤M├
-             └───┘ ║ └╥┘
-        c: 2/══════╩══╩═
-                   0  1
-        (expected)
-             ┌───┐┌─┐┌────────────────┐
-        q_0: ┤ X ├┤M├┤ Delay(200[dt]) ├
-             ├───┤└╥┘└──────┬─┬───────┘
-        q_1: ┤ X ├─╫────────┤M├────────
-             └───┘ ║        └╥┘
-        c: 2/══════╩═════════╩═════════
-                   0         1
-        """
+        """Test circuit having two parallel instruction with different length."""
         qc = QuantumCircuit(2, 2)
         qc.x(0)
         qc.x(1)
@@ -331,36 +192,20 @@ class TestSchedulingAndPaddingPass(QiskitTestCase):
         )
 
         pm = PassManager([DynamicCircuitScheduleAnalysis(durations), PadDelay()])
-        qc_sched = pm.run(qc)
+        scheduled = pm.run(qc)
 
-        sched_expected = QuantumCircuit(2, 2)
-        sched_expected.x(0)
-        sched_expected.x(1)
-        sched_expected.measure(0, 0)  # immediately start after X gate
-        sched_expected.measure(1, 1)
-        sched_expected.delay(200, 0)
+        expected = QuantumCircuit(2, 2)
+        expected.x(0)
+        expected.x(1)
+        expected.delay(200, 0)
+        expected.measure(0, 0)  # immediately start after X gate
+        expected.measure(1, 1)
+        expected.barrier()
 
-        self.assertEqual(qc_sched, sched_expected)
+        self.assertEqual(scheduled, expected)
 
     def test_parallel_gate_different_length_with_barrier(self):
-        """Test circuit having two parallel instruction with different length with barrier.
-        (input)
-             ┌───┐┌─┐
-        q_0: ┤ X ├┤M├───
-             ├───┤└╥┘┌─┐
-        q_1: ┤ X ├─╫─┤M├
-             └───┘ ║ └╥┘
-        c: 2/══════╩══╩═
-                   0  1
-        (expected)
-             ┌───┐┌────────────────┐ ░ ┌─┐
-        q_0: ┤ X ├┤ Delay(200[dt]) ├─░─┤M├───
-             ├───┤└────────────────┘ ░ └╥┘┌─┐
-        q_1: ┤ X ├───────────────────░──╫─┤M├
-             └───┘                   ░  ║ └╥┘
-        c: 2/═══════════════════════════╩══╩═
-                                        0  1
-        """
+        """Test circuit having two parallel instruction with different length with barrier."""
         qc = QuantumCircuit(2, 2)
         qc.x(0)
         qc.x(1)
@@ -373,44 +218,24 @@ class TestSchedulingAndPaddingPass(QiskitTestCase):
         )
 
         pm = PassManager([DynamicCircuitScheduleAnalysis(durations), PadDelay()])
-        qc_sched = pm.run(qc)
+        scheduled = pm.run(qc)
 
-        sched_expected = QuantumCircuit(2, 2)
-        sched_expected.x(0)
-        sched_expected.delay(200, 0)
-        sched_expected.x(1)
-        sched_expected.barrier()
-        sched_expected.measure(0, 0)
-        sched_expected.measure(1, 1)
+        expected = QuantumCircuit(2, 2)
+        expected.x(0)
+        expected.delay(200, 0)
+        expected.x(1)
+        expected.barrier()
+        expected.measure(0, 0)
+        expected.measure(1, 1)
+        expected.barrier()
 
-        self.assertEqual(qc_sched, sched_expected)
+        self.assertEqual(scheduled, expected)
 
     def test_measure_after_c_if_on_edge_locking(self):
         """Test if schedules circuits with c_if after measure with a common clbit.
         The scheduler is configured to reproduce behavior of the 0.20.0,
         in which clbit lock is applied to the end-edge of measure instruction.
-        See https://github.com/Qiskit/qiskit-terra/pull/7655
-        (input)
-             ┌─┐
-        q_0: ┤M├──────────────
-             └╥┘   ┌───┐
-        q_1: ─╫────┤ X ├──────
-              ║    └─╥─┘   ┌─┐
-        q_2: ─╫──────╫─────┤M├
-              ║ ┌────╨────┐└╥┘
-        c: 1/═╩═╡ c_0 = T ╞═╩═
-              0 └─────────┘ 0
-        (scheduled)
-                                ┌─┐┌────────────────┐
-        q_0: ───────────────────┤M├┤ Delay(200[dt]) ├─────────────────────
-             ┌─────────────────┐└╥┘└─────┬───┬──────┘
-        q_1: ┤ Delay(1000[dt]) ├─╫───────┤ X ├────────────────────────────
-             └─────────────────┘ ║       └─╥─┘       ┌─┐┌────────────────┐
-        q_2: ────────────────────╫─────────╫─────────┤M├┤ Delay(200[dt]) ├
-                                 ║    ┌────╨────┐    └╥┘└────────────────┘
-        c: 1/════════════════════╩════╡ c_0=0x1 ╞═════╩═══════════════════
-                                 0    └─────────┘     0
-        """
+        See https://github.com/Qiskit/qiskit-terra/pull/7655"""
         qc = QuantumCircuit(3, 1)
         qc.measure(0, 0)
         qc.x(1).c_if(0, 1)
@@ -442,15 +267,7 @@ class TestSchedulingAndPaddingPass(QiskitTestCase):
         """Test practical example of reset circuit.
         Because of the stimulus pulse overlap with the previous XGate on the q register,
         measure instruction is always triggered after XGate regardless of write latency.
-        Thus only conditional latency matters in the scheduling.
-        (input)
-             ┌─┐   ┌───┐   ┌─┐   ┌───┐   ┌─┐   ┌───┐
-          q: ┤M├───┤ X ├───┤M├───┤ X ├───┤M├───┤ X ├───
-             └╥┘   └─╥─┘   └╥┘   └─╥─┘   └╥┘   └─╥─┘
-              ║ ┌────╨────┐ ║ ┌────╨────┐ ║ ┌────╨────┐
-        c: 1/═╩═╡ c_0=0x1 ╞═╩═╡ c_0=0x1 ╞═╩═╡ c_0=0x1 ╞
-              0 └─────────┘ 0 └─────────┘ 0 └─────────┘
-        """
+        Thus only conditional latency matters in the scheduling."""
         qc = QuantumCircuit(1, 1)
         qc.measure(0, 0)
         qc.x(0).c_if(0, 1)
@@ -493,26 +310,7 @@ class TestSchedulingAndPaddingPass(QiskitTestCase):
         however it must be scheduled after the conditional x on q0 in scheduling.
         That is because circuit model used in the transpiler passes (DAGCircuit)
         interprets instructions acting on common clbits must be run in the order
-        given by the original circuit (QuantumCircuit).
-        (input)
-             ┌────────────────┐   ┌───┐
-        q_0: ┤ Delay(100[dt]) ├───┤ X ├───
-             └─────┬───┬──────┘   └─╥─┘
-        q_1: ──────┤ X ├────────────╫─────
-                   └─╥─┘            ║
-                ┌────╨────┐    ┌────╨────┐
-        c: 1/═══╡ c_0=0x1 ╞════╡ c_0=0x1 ╞
-                └─────────┘    └─────────┘
-        (scheduled)
-             ┌────────────────┐   ┌───┐
-        q_0: ┤ Delay(100[dt]) ├───┤ X ├──────────────
-             ├────────────────┤   └─╥─┘      ┌───┐
-        q_1: ┤ Delay(100[dt]) ├─────╫────────┤ X ├───
-             └────────────────┘     ║        └─╥─┘
-                               ┌────╨────┐┌────╨────┐
-        c: 1/══════════════════╡ c_0=0x1 ╞╡ c_0=0x1 ╞
-                               └─────────┘└─────────┘
-        """
+        given by the original circuit (QuantumCircuit)."""
         qc = QuantumCircuit(2, 1)
         qc.delay(100, 0)
         qc.x(0).c_if(0, True)
@@ -553,6 +351,7 @@ class TestSchedulingAndPaddingPass(QiskitTestCase):
         expected.delay(160, 0)
         expected.cx(0, 1)
         expected.add_calibration("x", (0,), xsched)
+        expected.barrier()
 
         self.assertEqual(expected, scheduled)
 
@@ -568,15 +367,7 @@ class TestSchedulingAndPaddingPass(QiskitTestCase):
 
     def test_no_pad_very_end_of_circuit(self):
         """Test padding option that inserts no delay at the very end of circuit.
-        This circuit will be unchanged after scheduling/padding.
-             ┌────────────────┐┌─┐
-        q_0: ┤ Delay(100[dt]) ├┤M├
-             └─────┬───┬──────┘└╥┘
-        q_1: ──────┤ X ├────────╫─
-                   └───┘        ║
-        c: 1/═══════════════════╩═
-                                0
-        """
+        This circuit will be unchanged after scheduling/padding."""
         qc = QuantumCircuit(2, 1)
         qc.delay(100, 0)
         qc.x(1)
@@ -591,7 +382,10 @@ class TestSchedulingAndPaddingPass(QiskitTestCase):
             ]
         ).run(qc)
 
-        self.assertEqual(scheduled, qc)
+        expected = qc.copy()
+        expected.barrier()
+
+        self.assertEqual(expected, scheduled)
 
 
 if __name__ == "__main__":
