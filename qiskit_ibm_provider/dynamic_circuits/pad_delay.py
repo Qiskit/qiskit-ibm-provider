@@ -62,7 +62,6 @@ class PadDelay(BasePadding):
     def _pad(
         self,
         block_idx: int,
-        dag: DAGCircuit,
         qubit: Qubit,
         t_start: int,
         t_end: int,
@@ -73,4 +72,4 @@ class PadDelay(BasePadding):
             return
 
         time_interval = t_end - t_start
-        self._apply_scheduled_op(dag, block_idx, t_start, Delay(time_interval, dag.unit), qubit)
+        self._apply_scheduled_op(block_idx, t_start, Delay(time_interval, self._dag.unit), qubit)
