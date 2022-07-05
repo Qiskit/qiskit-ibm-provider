@@ -49,6 +49,16 @@ class BasePadding(TransformationPass):
     which may result in violation of hardware alignment constraints.
     """
 
+    def __init__(self):
+        self._node_start_time = None
+        self._idle_after = None
+        self._dag = None
+        self._circuit_duration = 0
+        self._current_block_idx = 0
+
+        super().__init__()
+
+
     def run(self, dag: DAGCircuit):
         """Run the padding pass on ``dag``.
 
@@ -64,88 +74,50 @@ class BasePadding(TransformationPass):
         """
         self._pre_runhook(dag)
 
-        node_start_time = self.property_set["node_start_time"].copy()
+        self._node_start_time = self.property_set["node_start_time"].copy()
+        self._idle_after = {bit: 0 for bit in dag.qubits}
+        self._current_block_idx = 0
 
-        new_dag = DAGCircuit()
+        # Prepare DAG to pad
+        self._dag = DAGCircuit()
         for qreg in dag.qregs.values():
-            new_dag.add_qreg(qreg)
+            self._dag.add_qreg(qreg)
         for creg in dag.cregs.values():
-            new_dag.add_creg(creg)
+            self._dag.add_creg(creg)
 
         # Update start time dictionary for the new_dag.
         # This information may be used for further scheduling tasks,
         # but this is immediately invalidated becasue node id is updated in the new_dag.
         self.property_set["node_start_time"].clear()
 
-        new_dag.name = dag.name
-        new_dag.metadata = dag.metadata
-        new_dag.unit = self.property_set["time_unit"]
-        new_dag.calibrations = dag.calibrations
-        new_dag.global_phase = dag.global_phase
+        self._dag.name = dag.name
+        self._dag.metadata = dag.metadata
+        self._dag.unit = self.property_set["time_unit"]
+        self._dag.calibrations = dag.calibrations
+        self._dag.global_phase = dag.global_phase
 
-        idle_after = {bit: 0 for bit in dag.qubits}
 
         # Compute fresh circuit duration from the node start time dictionary and op duration.
         # Note that pre-scheduled duration may change within the alignment passes, i.e.
         # if some instruction time t0 violating the hardware alignment constraint,
         # the alignment pass may delay t0 and accordingly the circuit duration changes.
-        circuit_duration = 0
+        self._circuit_duration = 0
         for node in dag.topological_op_nodes():
-            if node in node_start_time:
-                block_idx, t0 = node_start_time[node]
-                t1 = t0 + node.op.duration
-                circuit_duration = max(circuit_duration, t1)
-
+            if node in self._node_start_time:
                 if isinstance(node.op, Delay):
-                    # The padding class considers a delay instruction as idle time
-                    # rather than instruction. Delay node is removed so that
-                    # we can extract non-delay predecessors.
-                    dag.remove_op_node(node)
-                    continue
+                    self._visit_delay(node)
+                else:
+                    self._visit_generic(node)
 
-                for bit in node.qargs:
-
-                    # Fill idle time with some sequence
-                    if t0 - idle_after[bit] > 0:
-                        # Find previous node on the wire, i.e. always the latest node on the wire
-                        prev_node = next(new_dag.predecessors(new_dag.output_map[bit]))
-                        self._pad(
-                            dag=new_dag,
-                            block_idx=block_idx,
-                            qubit=bit,
-                            t_start=idle_after[bit],
-                            t_end=t0,
-                            next_node=node,
-                            prev_node=prev_node,
-                        )
-
-                    idle_after[bit] = t1
-
-                self._apply_scheduled_op(new_dag, block_idx, t0, node.op, node.qargs, node.cargs)
             else:
                 raise TranspilerError(
                     f"Operation {repr(node)} is likely added after the circuit is scheduled. "
                     "Schedule the circuit again if you transformed it."
                 )
 
-        # Add delays until the end of circuit.
-        for bit in new_dag.qubits:
-            if circuit_duration - idle_after[bit] > 0:
-                node = new_dag.output_map[bit]
-                prev_node = next(new_dag.predecessors(node))
-                self._pad(
-                    dag=new_dag,
-                    block_idx=block_idx,
-                    qubit=bit,
-                    t_start=idle_after[bit],
-                    t_end=circuit_duration,
-                    next_node=node,
-                    prev_node=prev_node,
-                )
+        self._dag.duration = self._circuit_duration
 
-        new_dag.duration = circuit_duration
-
-        return new_dag
+        return self._dag
 
     def _pre_runhook(self, dag: DAGCircuit):
         """Extra routine inserted before running the padding pass.
@@ -162,38 +134,8 @@ class BasePadding(TransformationPass):
                 f"before running the {self.__class__.__name__} pass."
             )
 
-    def _apply_scheduled_op(
-        self,
-        dag: DAGCircuit,
-        block_idx: int,
-        t_start: int,
-        oper: Instruction,
-        qubits: Union[Qubit, List[Qubit]],
-        clbits: Optional[Union[Clbit, List[Clbit]]] = None,
-    ):
-        """Add new operation to DAG with scheduled information.
-
-        This is identical to apply_operation_back + updating the node_start_time propety.
-
-        Args:
-            dag: DAG circuit on which the sequence is applied.
-            block_idx: Execution block index for this node.
-            t_start: Start time of new node.
-            oper: New operation that is added to the DAG circuit.
-            qubits: The list of qubits that the operation acts on.
-            clbits: The list of clbits that the operation acts on.
-        """
-        if isinstance(qubits, Qubit):
-            qubits = [qubits]
-        if isinstance(clbits, Clbit):
-            clbits = [clbits]
-
-        new_node = dag.apply_operation_back(oper, qargs=qubits, cargs=clbits)
-        self.property_set["node_start_time"][new_node] = (block_idx, t_start)
-
     def _pad(
         self,
-        dag: DAGCircuit,
         block_idx: int,
         qubit: Qubit,
         t_start: int,
@@ -219,7 +161,6 @@ class BasePadding(TransformationPass):
             might be unexpected due to erroneous scheduling.
 
         Args:
-            dag: DAG circuit that sequence is applied.
             block_idx: Execution block index for this node.
             qubit: The wire that the sequence is applied on.
             t_start: Absolute start time of this interval.
@@ -228,3 +169,85 @@ class BasePadding(TransformationPass):
             prev_node: Node ahead of the sequence.
         """
         raise NotImplementedError
+
+    def _visit_delay(self, node):
+        """The padding class considers a delay instruction as idle time
+        rather than instruction. Delay node is not added so that
+        we can extract non-delay predecessors.
+        """
+        pass
+
+    def _visit_generic(self, node):
+        """Visit a generic node to pad."""
+        block_idx, t0 = self._node_start_time[node]
+
+        # Trigger the end of a block
+        if block_idx > self._current_block_idx:
+            self._pad_until_block_end(self._circuit_duration, self._current_block_idx)
+
+        # Now set the current block index.
+        self._current_block_idx = block_idx
+
+
+        t1 = t0 + node.op.duration
+        self._circuit_duration = max(self._circuit_duration, t1)
+        for bit in node.qargs:
+
+            # Fill idle time with some sequence
+            if t0 - self._idle_after[bit] > 0:
+                # Find previous node on the wire, i.e. always the latest node on the wire
+                prev_node = next(self._dag.predecessors(self._dag.output_map[bit]))
+                self._pad(
+                    block_idx=block_idx,
+                    qubit=bit,
+                    t_start=self._idle_after[bit],
+                    t_end=t0,
+                    next_node=node,
+                    prev_node=prev_node,
+                )
+
+            self._idle_after[bit] = t1
+
+        self._apply_scheduled_op(block_idx, t0, node.op, node.qargs, node.cargs)
+
+    def _pad_until_block_end(self, block_duration, block_idx):
+                # Add delays until the end of circuit.
+        for bit in self._dag.qubits:
+            if block_duration - self._idle_after[bit] > 0:
+                node = self._dag.output_map[bit]
+                prev_node = next(self._dag.predecessors(node))
+                self._pad(
+                    block_idx=block_idx,
+                    qubit=bit,
+                    t_start=self._idle_after[bit],
+                    t_end=block_duration,
+                    next_node=node,
+                    prev_node=prev_node,
+                )
+
+    def _apply_scheduled_op(
+        self,
+        block_idx: int,
+        t_start: int,
+        oper: Instruction,
+        qubits: Union[Qubit, List[Qubit]],
+        clbits: Optional[Union[Clbit, List[Clbit]]] = None,
+    ):
+        """Add new operation to DAG with scheduled information.
+
+        This is identical to apply_operation_back + updating the node_start_time propety.
+
+        Args:
+            block_idx: Execution block index for this node.
+            t_start: Start time of new node.
+            oper: New operation that is added to the DAG circuit.
+            qubits: The list of qubits that the operation acts on.
+            clbits: The list of clbits that the operation acts on.
+        """
+        if isinstance(qubits, Qubit):
+            qubits = [qubits]
+        if isinstance(clbits, Clbit):
+            clbits = [clbits]
+
+        new_node = self._dag.apply_operation_back(oper, qargs=qubits, cargs=clbits)
+        self.property_set["node_start_time"][new_node] = (block_idx, t_start)

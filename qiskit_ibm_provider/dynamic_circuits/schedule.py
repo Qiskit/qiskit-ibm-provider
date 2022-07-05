@@ -12,6 +12,8 @@
 
 """Scheduler for dynamic circuit backends."""
 
+import itertools
+
 import qiskit
 from qiskit.circuit import Measure
 from qiskit.transpiler.exceptions import TranspilerError
@@ -51,6 +53,7 @@ class DynamicCircuitScheduleAnalysis(BaseScheduler):
 
         self._node_start_time = None
         self._idle_after = None
+        self._current_block_measures = None
         self._bit_indices = None
 
         super().__init__(durations)
@@ -70,6 +73,8 @@ class DynamicCircuitScheduleAnalysis(BaseScheduler):
         for node in dag.topological_op_nodes():
             self._visit_node(node)
 
+        for node, start_time in self._node_start_time.items():
+            print(repr(node), start_time)
         self.property_set["node_start_time"] = self._node_start_time
 
     def _init_run(self, dag):
@@ -85,6 +90,7 @@ class DynamicCircuitScheduleAnalysis(BaseScheduler):
 
         self._node_start_time = dict()
         self._idle_after = {q: (0, 0) for q in dag.qubits + dag.clbits}
+        self._current_block_measures = set()
         self._bit_indices = {q: index for index, q in enumerate(dag.qubits)}
 
     def _get_node_duration(self, node):
@@ -143,7 +149,7 @@ class DynamicCircuitScheduleAnalysis(BaseScheduler):
             t1c = t0c + self._conditional_latency
             for bit in node.op.condition_bits:
                 # Lock clbit until state is read
-                self._idle_after[bit] = (0, t1c)
+                self._idle_after[bit] = (self._current_block_idx, t1c)
             # It starts after register read access
             t0 = max(t0q, t1c)
 
@@ -164,15 +170,31 @@ class DynamicCircuitScheduleAnalysis(BaseScheduler):
         """
         op_duration = self._get_node_duration(node)
 
-        # measure instruction handling is bit tricky due to clbit_write_latency
-        t0q = max(self._idle_after[q][1] for q in node.qargs)
-        t0 = t0q
-        t1 = t0 + op_duration
-        for clbit in node.cargs:
-            self._idle_after[clbit] = (0, t1)
+        current_block_measure_qargs = self._current_block_measure_qargs()
+        measure_qargs = set(node.qargs)
 
-        self._update_idles(node, t0, t1)
-        #self._begin_new_circuit_block()
+        t0q = max(self._idle_after[q][1] for q in measure_qargs)
+
+        # If the measurement qubits overlap, we need to start a new scheduling block.
+        if current_block_measure_qargs & measure_qargs:
+            self._begin_new_circuit_block()
+            t0q = 0
+        # Otherwise we need to increment all measurements to start at the same time within the block.
+        else:
+            t0q = max(itertools.chain([t0q], (self._node_start_time[measure][1] for measure in self._current_block_measures)))
+
+        # Insert this measure into the block
+        self._current_block_measures.add(node)
+
+        # now update all measure qarg times.
+
+        self._current_block_measures.add(node)
+
+        for measure in self._current_block_measures:
+            t0 = t0q
+            t1 = t0 + self._get_node_duration(measure)
+            self._update_idles(measure, t0, t1)
+
 
     def _visit_generic(self, node):
         """Visit a generic node such as a gate or barrier."""
@@ -187,6 +209,9 @@ class DynamicCircuitScheduleAnalysis(BaseScheduler):
         for bit in node.qargs:
             self._idle_after[bit] = (self._current_block_idx, t1)
 
+        for bit in node.cargs:
+            self._idle_after[bit] = (self._current_block_idx, t1)
+
         self._node_start_time[node] = (self._current_block_idx, t0)
 
     def _begin_new_circuit_block(self):
@@ -194,3 +219,7 @@ class DynamicCircuitScheduleAnalysis(BaseScheduler):
 
         """
         self._current_block_idx += 1
+        self._current_block_measures = set()
+
+    def _current_block_measure_qargs(self):
+        return set(qarg for measure in self._current_block_measures for qarg in measure.qargs)

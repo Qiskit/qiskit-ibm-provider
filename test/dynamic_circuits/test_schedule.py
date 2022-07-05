@@ -29,6 +29,7 @@ from qiskit.transpiler.exceptions import TranspilerError
 from qiskit_ibm_provider.dynamic_circuits.pad_delay import PadDelay
 from qiskit_ibm_provider.dynamic_circuits.schedule import DynamicCircuitScheduleAnalysis
 
+
 @ddt
 class TestSchedulingAndPaddingPass(QiskitTestCase):
     """Tests the Scheduling passes"""
@@ -111,6 +112,57 @@ class TestSchedulingAndPaddingPass(QiskitTestCase):
         expected.barrier()
         self.assertEqual(expected, scheduled)
 
+    def test_measure_block_end(self):
+        """Tests that measures trigger the end of a scheduling block and that measurements are grouped by block.
+
+        (input)
+               ┌───┐┌─┐
+          q_0: ┤ X ├┤M├───
+               └───┘└╥┘┌─┐
+          q_1: ──────╫─┤M├
+                     ║ └╥┘
+          c: 1/══════╩══╩═
+                    0  0
+        (scheduled)
+                     ┌───┐       ┌─┐    ░
+          q_0: ──────┤ X ├───────┤M├────░─
+               ┌─────┴───┴──────┐└╥┘┌─┐ ░
+          q_1: ┤ Delay(200[dt]) ├─╫─┤M├─░─
+               └────────────────┘ ║ └╥┘ ░
+          c: 1/═══════════════════╩══╩════
+                              0  0
+
+        """
+        qc = QuantumCircuit(3, 1)
+        qc.x(0)
+        qc.measure(0, 0)
+        qc.measure(1, 0)
+        qc.x(2)
+        qc.measure(1, 0)
+        qc.measure(2, 0)
+
+        durations = InstructionDurations([("x", None, 200), ("measure", None, 1000)])
+        pm = PassManager([DynamicCircuitScheduleAnalysis(durations), PadDelay()])
+        scheduled = pm.run(qc)
+
+        expected = QuantumCircuit(3, 1)
+        expected.x(0)
+        expected.delay(200, 1)
+        expected.x(2)
+        expected.delay(1000, 2)
+        expected.measure(0, 0)
+        expected.measure(1, 0)
+        expected.barrier()
+        expected.delay(1000, 0)
+        expected.measure(1, 0)
+        expected.measure(2, 0)
+        expected.barrier()
+
+
+
+        import pdb;pdb.set_trace()
+        self.assertEqual(expected, scheduled)
+
     def test_c_if_on_different_qubits(self):
         """Test if schedules circuits with `c_if`s on different qubits.
         (input)
@@ -186,7 +238,9 @@ class TestSchedulingAndPaddingPass(QiskitTestCase):
         qc.measure(0, 0)
         qc.measure(1, 0)
 
-        durations = InstructionDurations([("measure", [0], 1000), ("measure", [1], 700)])
+        durations = InstructionDurations(
+            [("measure", [0], 1000), ("measure", [1], 700)]
+        )
         pm = PassManager([DynamicCircuitScheduleAnalysis(durations), PadDelay()])
         scheduled = pm.run(qc)
 
@@ -196,6 +250,9 @@ class TestSchedulingAndPaddingPass(QiskitTestCase):
         expected.delay(300, 1)
         expected.delay(1000, 2)
         expected.barrier()
+
+        import pdb
+        pdb.set_trace()
 
         self.assertEqual(expected, scheduled)
 
@@ -240,7 +297,9 @@ class TestSchedulingAndPaddingPass(QiskitTestCase):
         expected.delay(1000, 2)
         expected.measure(0, 0)
         expected.barrier()
-        expected.x(1).c_if(0, 1) # Not yet correct as we should insert delays for idle qubits in conditional.
+        expected.x(1).c_if(
+            0, 1
+        )  # Not yet correct as we should insert delays for idle qubits in conditional.
         expected.barrier()
         expected.delay(1000, 0)
         expected.measure(2, 0)
@@ -410,7 +469,9 @@ class TestSchedulingAndPaddingPass(QiskitTestCase):
 
         actual_sched = PassManager(
             [
-                SetIOLatency(clbit_write_latency=write_lat, conditional_latency=cond_lat),
+                SetIOLatency(
+                    clbit_write_latency=write_lat, conditional_latency=cond_lat
+                ),
                 DynamicCircuitScheduleAnalysis(durations),
                 PadDelay(),
             ]
