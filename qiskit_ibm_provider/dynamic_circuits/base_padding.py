@@ -15,6 +15,7 @@
 from typing import List, Optional, Union
 
 from qiskit.circuit import Qubit, Clbit, Instruction
+from qiskit.circuit.library import Barrier
 from qiskit.circuit.delay import Delay
 from qiskit.dagcircuit import DAGCircuit, DAGNode
 from qiskit.transpiler.basepasses import TransformationPass
@@ -53,7 +54,7 @@ class BasePadding(TransformationPass):
         self._node_start_time = None
         self._idle_after = None
         self._dag = None
-        self._circuit_duration = 0
+        self._block_duration = 0
         self._current_block_idx = 0
 
         super().__init__()
@@ -74,9 +75,37 @@ class BasePadding(TransformationPass):
         """
         self._pre_runhook(dag)
 
+
+        self._init_run(dag)
+
+        # Compute fresh circuit duration from the node start time dictionary and op duration.
+        # Note that pre-scheduled duration may change within the alignment passes, i.e.
+        # if some instruction time t0 violating the hardware alignment constraint,
+        # the alignment pass may delay t0 and accordingly the circuit duration changes.
+        for node in dag.topological_op_nodes():
+            if node in self._node_start_time:
+                if isinstance(node.op, Delay):
+                    self._visit_delay(node)
+                else:
+                    self._visit_generic(node)
+
+            else:
+                raise TranspilerError(
+                    f"Operation {repr(node)} is likely added after the circuit is scheduled. "
+                    "Schedule the circuit again if you transformed it."
+                )
+
+        # terminate final block
+        self._terminate_block(self._block_duration, self._current_block_idx)
+
+        return self._dag
+
+    def _init_run(self, dag):
+        """Setup for initial run."""
         self._node_start_time = self.property_set["node_start_time"].copy()
         self._idle_after = {bit: 0 for bit in dag.qubits}
         self._current_block_idx = 0
+        self._block_duration = 0
 
         # Prepare DAG to pad
         self._dag = DAGCircuit()
@@ -96,28 +125,6 @@ class BasePadding(TransformationPass):
         self._dag.calibrations = dag.calibrations
         self._dag.global_phase = dag.global_phase
 
-
-        # Compute fresh circuit duration from the node start time dictionary and op duration.
-        # Note that pre-scheduled duration may change within the alignment passes, i.e.
-        # if some instruction time t0 violating the hardware alignment constraint,
-        # the alignment pass may delay t0 and accordingly the circuit duration changes.
-        self._circuit_duration = 0
-        for node in dag.topological_op_nodes():
-            if node in self._node_start_time:
-                if isinstance(node.op, Delay):
-                    self._visit_delay(node)
-                else:
-                    self._visit_generic(node)
-
-            else:
-                raise TranspilerError(
-                    f"Operation {repr(node)} is likely added after the circuit is scheduled. "
-                    "Schedule the circuit again if you transformed it."
-                )
-
-        self._dag.duration = self._circuit_duration
-
-        return self._dag
 
     def _pre_runhook(self, dag: DAGCircuit):
         """Extra routine inserted before running the padding pass.
@@ -183,16 +190,16 @@ class BasePadding(TransformationPass):
 
         # Trigger the end of a block
         if block_idx > self._current_block_idx:
-            self._pad_until_block_end(self._circuit_duration, self._current_block_idx)
+            self._terminate_block(self._block_duration, self._current_block_idx)
 
         # Now set the current block index.
         self._current_block_idx = block_idx
 
 
         t1 = t0 + node.op.duration
-        self._circuit_duration = max(self._circuit_duration, t1)
-        for bit in node.qargs:
+        self._block_duration = max(self._block_duration, t1)
 
+        for bit in node.qargs:
             # Fill idle time with some sequence
             if t0 - self._idle_after[bit] > 0:
                 # Find previous node on the wire, i.e. always the latest node on the wire
@@ -209,6 +216,19 @@ class BasePadding(TransformationPass):
             self._idle_after[bit] = t1
 
         self._apply_scheduled_op(block_idx, t0, node.op, node.qargs, node.cargs)
+
+    def _terminate_block(self, block_duration, block_idx):
+        """Terminate the end of a block scheduling region."""
+        self._pad_until_block_end(block_duration, block_idx)
+
+        # Terminate with a barrier to be clear timing is non-deterministic
+        # across the barrier.
+        self._dag.apply_operation_back(Barrier(self._dag.num_qubits()), self._dag.qubits, [])
+
+        # Reset idles for the new block.
+        self._idle_after = {bit: 0 for bit in self._dag.qubits}
+        self._block_duration = 0
+
 
     def _pad_until_block_end(self, block_duration, block_idx):
                 # Add delays until the end of circuit.
