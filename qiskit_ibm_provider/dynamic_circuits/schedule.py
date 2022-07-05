@@ -144,10 +144,10 @@ class DynamicCircuitScheduleAnalysis(BaseScheduler):
                 #           |t0q
                 # Q ▒▒▒▒▒▒▒▒▒▒▒
                 # C ▒▒▒░░░▒▒░░░
-                #         |t0q - conditional_latency
+                #         |t0q
                 #
-                t0c = max(t0q - self._conditional_latency, t0c)
-            t1c = t0c + self._conditional_latency
+                t0c = max(t0q, t0c)
+            t1c = t0c
             for bit in node.op.condition_bits:
                 # Lock clbit until state is read
                 self._idle_after[bit] = (self._current_block_idx, t1c)
