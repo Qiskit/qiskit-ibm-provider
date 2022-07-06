@@ -22,7 +22,7 @@ from qiskit.transpiler.basepasses import TransformationPass
 from qiskit.transpiler.exceptions import TranspilerError
 
 
-class BasePadding(TransformationPass):
+class BlockBasePadder(TransformationPass):
     """The base class of padding pass.
 
     This pass requires one of scheduling passes to be executed before itself.

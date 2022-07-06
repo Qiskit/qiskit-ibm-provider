@@ -16,10 +16,10 @@ from qiskit.circuit import Qubit
 from qiskit.circuit.delay import Delay
 from qiskit.dagcircuit import DAGNode, DAGOutNode
 
-from .base_padding import BasePadding
+from .block_base_padder import BlockBasePadder
 
 
-class PadDelay(BasePadding):
+class PadDelay(BlockBasePadder):
     """Padding idle time with Delay instructions.
 
     Consecutive delays will be merged in the output of this pass.
@@ -47,7 +47,7 @@ class PadDelay(BasePadding):
     between ``Delay`` of 100dt (``q_0``) and ``XGate`` of 160 dt (``q_1``) is absorbed in
     the delay instruction on the ``q_0`` wire, i.e. in total 160 dt.
 
-    See :class:`BasePadding` pass for details.
+    See :class:`BlockBasePadder` pass for details.
     """
 
     def __init__(self, fill_very_end: bool = True):

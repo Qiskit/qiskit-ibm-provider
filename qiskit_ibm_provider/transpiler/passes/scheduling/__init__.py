@@ -67,7 +67,7 @@ Scheduling & Dynamical Decoupling
 .. autosummary::
    :toctree: ../stubs/
 
-    BasePadding
+    BlockBasePadder
     DynamicCircuitScheduleAnalysis
     PadDelay
 
