@@ -24,6 +24,7 @@ from qiskit_ibm_provider.transpiler.passes.scheduling.scheduler import (
     DynamicCircuitScheduleAnalysis,
 )
 
+# pylint: disable=invalid-name
 
 class TestSchedulingAndPaddingPass(QiskitTestCase):
     """Tests the Scheduling passes"""
@@ -70,7 +71,8 @@ class TestSchedulingAndPaddingPass(QiskitTestCase):
         self.assertEqual(expected, scheduled)
 
     def test_measure_block_end(self):
-        """Tests that measures trigger the end of a scheduling block and that measurements are grouped by block."""
+        """Tests that measures trigger the end of a scheduling block and
+        that measurements are grouped by block."""
         qc = QuantumCircuit(3, 1)
         qc.x(0)
         qc.measure(0, 0)
@@ -122,10 +124,11 @@ class TestSchedulingAndPaddingPass(QiskitTestCase):
         self.assertEqual(expected, scheduled)
 
     def test_shorter_measure_after_measure(self):
-        """Test if schedules circuits with shorter measure after measure with a common clbit.
+        """Test if schedules circuits with shorter measure after measure
+        with a common clbit.
 
-        Note: For dynamic circuits support we currently group measurements to start at the same time which in turn trigger
-        the end of a block."""
+        Note: For dynamic circuits support we currently group measurements
+        to start at the same time which in turn trigger the end of a block."""
         qc = QuantumCircuit(3, 1)
         qc.measure(0, 0)
         qc.measure(1, 0)
@@ -388,10 +391,10 @@ class TestSchedulingAndPaddingPass(QiskitTestCase):
         self.assertEqual(expected, scheduled)
 
     def test_reset_terminates_block(self):
-        """Test if reset operations terminate the block scheduled
+        """Test if reset operations terminate the block scheduled.
 
-        Note: For dynamic circuits support we currently group resets to start at the same time which in turn trigger
-        the end of a block."""
+        Note: For dynamic circuits support we currently group resets
+        to start at the same time which in turn trigger the end of a block."""
         qc = QuantumCircuit(3, 1)
         qc.x(0)
         qc.reset(0)
@@ -429,10 +432,10 @@ class TestSchedulingAndPaddingPass(QiskitTestCase):
         self.assertEqual(expected, scheduled)
 
     def test_reset_merged_with_measure(self):
-        """Test if reset operations terminate the block scheduled
+        """Test if reset operations terminate the block scheduled.
 
-        Note: For dynamic circuits support we currently group resets to start at the same time which in turn trigger
-        the end of a block."""
+        Note: For dynamic circuits support we currently group resets to start
+        at the same time which in turn trigger the end of a block."""
         qc = QuantumCircuit(3, 1)
         qc.x(0)
         qc.reset(0)

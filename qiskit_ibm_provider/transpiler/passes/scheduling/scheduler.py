@@ -24,19 +24,23 @@ class DynamicCircuitScheduleAnalysis(BaseScheduler):
     """Dynamic circuits scheduling analysis pass.
 
     This is a scheduler designed to work for the unique scheduling constraints of the dynamic circuits
-    backends due to the limitations imposed by hardware. This is expected to evolve overtime as the
+    backends due to the limitations imposed by hardware. This is expected to evolve over time as the
     dynamic circuit backends also change.
 
-    In its current form this is slow to Qiskit's ASAP scheduler in which instructions start asas early as possible.
+    In its current form this is slow to Qiskit's ASAP scheduler in which instructions
+    start as early as possible.
 
     The primary differences are that:
 
-    * Measurements currently trigger the end of a "quantum block". The period between the end of the block and the next is *indeterministic*
-        ie., we do not know when the next block will begin (as we could be evaluating a classical function of indeterministic length) and
-        therefore the next block starts at a *relative* t=0.
+    * Measurements currently trigger the end of a "quantum block". The period between the end
+        of the block and the next is *nondeterministic*
+        ie., we do not know when the next block will begin (as we could be evaluating a classical
+        function of nondeterministic length) and therefore the
+        next block starts at a *relative* t=0.
     * It is possible to apply gates during a measurement.
-    * Measurements on disjoint qubits happen simulataneously and are part of the same block. Measurements that are not lexigraphically
-        neighbors in the generated QASM3 will happen in separate blocks.
+    * Measurements on disjoint qubits happen simultaneously and are part of the same block.
+        Measurements that are not lexicographically neighbors in the generated QASM3 will
+        happen in separate blocks.
 
     """
 
@@ -64,8 +68,6 @@ class DynamicCircuitScheduleAnalysis(BaseScheduler):
         """Run the ASAPSchedule pass on `dag`.
         Args:
             dag (DAGCircuit): DAG to schedule.
-        Returns:
-            DAGCircuit: A scheduled DAG.
         Raises:
             TranspilerError: if the circuit is not mapped on physical qubits.
             TranspilerError: if conditional bit is added to non-supported instruction.
@@ -85,15 +87,12 @@ class DynamicCircuitScheduleAnalysis(BaseScheduler):
         if len(dag.qregs) != 1 or dag.qregs.get("q", None) is None:
             raise TranspilerError("ASAP schedule runs on physical circuits only")
 
-        self._conditional_latency = self.property_set.get("conditional_latency", 0)
-        self._clbit_write_latency = self.property_set.get("clbit_write_latency", 0)
-
-        self._node_start_time = dict()
+        self._node_start_time = {}
         self._idle_after = {q: (0, 0) for q in dag.qubits + dag.clbits}
         self._current_block_measures = set()
         self._bit_indices = {q: index for index, q in enumerate(dag.qubits)}
 
-    def _get_node_duration(self, node):
+    def _get_duration(self, node):
         return super()._get_node_duration(node, self._bit_indices, self._dag)
 
     def _visit_node(self, node):
@@ -130,7 +129,7 @@ class DynamicCircuitScheduleAnalysis(BaseScheduler):
             # Trigger the start of a conditional block
             self._begin_new_circuit_block()
 
-            op_duration = self._get_node_duration(node)
+            op_duration = self._get_duration(node)
 
             t0q = max(self._idle_after[q][1] for q in node.qargs)
             # conditional is bit tricky due to conditional_latency
@@ -157,9 +156,9 @@ class DynamicCircuitScheduleAnalysis(BaseScheduler):
                 self._idle_after[bit] = (self._current_block_idx, t1c)
 
             # It starts after register read access
-            t0 = max(t0q, t1c)
+            t0 = max(t0q, t1c) # pylint: disable=invalid-name
 
-            t1 = t0 + op_duration
+            t1 = t0 + op_duration # pylint: disable=invalid-name
             self._update_idles(node, t0, t1)
 
             # Terminate the conditional block
@@ -175,13 +174,12 @@ class DynamicCircuitScheduleAnalysis(BaseScheduler):
         Measurement currently triggers the end of a pulse block in IBM dynamic circuits hardware.
         This means that it is possible to schedule *up to* a measurement (and during its pulses)
         but the measurement will be followed by a period of indeterminism.
-        All measurements on disjoint qubits will be collected on the same qubits to be run simultaneously.
-
-        """
+        All measurements on disjoint qubits will be collected on the same qubits
+        to be run simultaneously."""
         current_block_measure_qargs = self._current_block_measure_qargs()
         measure_qargs = set(node.qargs)
 
-        t0q = max(self._idle_after[q][1] for q in measure_qargs)
+        t0q = max(self._idle_after[q][1] for q in measure_qargs) # pylint: disable=invalid-name
 
         # If the measurement qubits overlap, we need to start a new scheduling block.
         if current_block_measure_qargs & measure_qargs:
@@ -189,7 +187,7 @@ class DynamicCircuitScheduleAnalysis(BaseScheduler):
             t0q = 0
         # Otherwise we need to increment all measurements to start at the same time within the block.
         else:
-            t0q = max(
+            t0q = max( # pylint: disable=invalid-name
                 itertools.chain(
                     [t0q],
                     (
@@ -207,12 +205,12 @@ class DynamicCircuitScheduleAnalysis(BaseScheduler):
         self._current_block_measures.add(node)
 
         for measure in self._current_block_measures:
-            t0 = t0q
+            t0 = t0q # pylint: disable=invalid-name
             bit_indices = {bit: index for index, bit in enumerate(self._dag.qubits)}
             measure_duration = self.durations.get(
                 Measure(), [bit_indices[qarg] for qarg in node.qargs], unit="dt"
             )
-            t1 = t0 + measure_duration
+            t1 = t0 + measure_duration # pylint: disable=invalid-name
             self._update_idles(measure, t0, t1)
 
     def _visit_reset(self, node):
@@ -230,14 +228,14 @@ class DynamicCircuitScheduleAnalysis(BaseScheduler):
 
     def _visit_generic(self, node):
         """Visit a generic node such as a gate or barrier."""
-        op_duration = self._get_node_duration(node)
+        op_duration = self._get_duration(node)
 
         # It happens to be directives such as barrier
-        t0 = max(self._idle_after[bit][1] for bit in node.qargs + node.cargs)
-        t1 = t0 + op_duration
+        t0 = max(self._idle_after[bit][1] for bit in node.qargs + node.cargs) # pylint: disable=invalid-name
+        t1 = t0 + op_duration # pylint: disable=invalid-name
         self._update_idles(node, t0, t1)
 
-    def _update_idles(self, node, t0, t1):
+    def _update_idles(self, node, t0, t1): # pylint: disable=invalid-name
         for bit in node.qargs:
             self._idle_after[bit] = (self._current_block_idx, t1)
 
