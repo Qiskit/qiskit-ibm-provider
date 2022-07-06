@@ -40,7 +40,9 @@ class DynamicCircuitScheduleAnalysis(BaseScheduler):
 
     """
 
-    def __init__(self, durations: qiskit.transpiler.instruction_durations.InstructionDurations):
+    def __init__(
+        self, durations: qiskit.transpiler.instruction_durations.InstructionDurations
+    ):
         """Scheduler for dynamic circuit backends.
 
         Args:
@@ -187,7 +189,15 @@ class DynamicCircuitScheduleAnalysis(BaseScheduler):
             t0q = 0
         # Otherwise we need to increment all measurements to start at the same time within the block.
         else:
-            t0q = max(itertools.chain([t0q], (self._node_start_time[measure][1] for measure in self._current_block_measures)))
+            t0q = max(
+                itertools.chain(
+                    [t0q],
+                    (
+                        self._node_start_time[measure][1]
+                        for measure in self._current_block_measures
+                    ),
+                )
+            )
 
         # Insert this measure into the block
         self._current_block_measures.add(node)
@@ -200,8 +210,8 @@ class DynamicCircuitScheduleAnalysis(BaseScheduler):
             t0 = t0q
             bit_indices = {bit: index for index, bit in enumerate(self._dag.qubits)}
             measure_duration = self.durations.get(
-                    Measure(), [bit_indices[qarg] for qarg in node.qargs], unit="dt"
-                )
+                Measure(), [bit_indices[qarg] for qarg in node.qargs], unit="dt"
+            )
             t1 = t0 + measure_duration
             self._update_idles(measure, t0, t1)
 
@@ -237,12 +247,12 @@ class DynamicCircuitScheduleAnalysis(BaseScheduler):
         self._node_start_time[node] = (self._current_block_idx, t0)
 
     def _begin_new_circuit_block(self):
-        """Create a new timed circuit block completing the previous block.
-
-        """
+        """Create a new timed circuit block completing the previous block."""
         self._current_block_idx += 1
         self._current_block_measures = set()
         self._idle_after = {q: (0, 0) for q in self._dag.qubits + self._dag.clbits}
 
     def _current_block_measure_qargs(self):
-        return set(qarg for measure in self._current_block_measures for qarg in measure.qargs)
+        return set(
+            qarg for measure in self._current_block_measures for qarg in measure.qargs
+        )
