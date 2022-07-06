@@ -177,8 +177,12 @@ class DynamicCircuitScheduleAnalysis(BaseScheduler):
         of instructions in IBM dynamic circuits hardware.
         This means that it is possible to schedule *up to* a measurement (and during its pulses)
         but the measurement will be followed by a period of indeterminism.
-        All measurements on disjoint qubits will be collected on the same qubits
-        to be run simultaneously."""
+        All measurements on disjoint qubits that lexicographically follow another
+        measurement will be collected and performed in parallel. A measurement on a qubit
+        intersecting with the set of qubits to be measured in parallel will trigger the
+        end of a scheduling block with said measurement occurring in a following block
+        which begins another grouping sequence. This behavior will change in future
+        backend software updates."""
         current_block_measure_qargs = self._current_block_measure_qargs()
         measure_qargs = set(node.qargs)
 
