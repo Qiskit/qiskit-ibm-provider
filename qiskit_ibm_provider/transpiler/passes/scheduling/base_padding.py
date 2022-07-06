@@ -10,7 +10,7 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-"""Padding pass to fill timeslots for the dynamic circuits backends."""
+"""Padding pass to fill timeslots for IBM (dynamic circuit) backends."""
 
 from typing import List, Optional, Union
 

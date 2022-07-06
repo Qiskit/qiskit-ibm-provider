@@ -12,26 +12,17 @@
 
 """Test the dynamic circuits scheduling analysis"""
 
-import sched
-import unittest
-
-from ddt import ddt, data, unpack
 from qiskit import QuantumCircuit
 from qiskit.pulse import Schedule, Play, Constant, DriveChannel
 from qiskit.test import QiskitTestCase
 from qiskit.transpiler.instruction_durations import InstructionDurations
-from qiskit.transpiler.passes import (
-    PadDelay,
-    SetIOLatency,
-)
 from qiskit.transpiler.passmanager import PassManager
 from qiskit.transpiler.exceptions import TranspilerError
 
-from qiskit_ibm_provider.dynamic_circuits.pad_delay import PadDelay
-from qiskit_ibm_provider.dynamic_circuits.schedule import DynamicCircuitScheduleAnalysis
+from qiskit_ibm_provider.transpiler.passes.scheduling.pad_delay import PadDelay
+from qiskit_ibm_provider.transpiler.passes.scheduling.scheduler import DynamicCircuitScheduleAnalysis
 
 
-@ddt
 class TestSchedulingAndPaddingPass(QiskitTestCase):
     """Tests the Scheduling passes"""
 
@@ -250,7 +241,6 @@ class TestSchedulingAndPaddingPass(QiskitTestCase):
         # lock at the end edge
         scheduled = PassManager(
             [
-                SetIOLatency(clbit_write_latency=1000),
                 DynamicCircuitScheduleAnalysis(durations),
                 PadDelay(),
             ]
@@ -270,10 +260,9 @@ class TestSchedulingAndPaddingPass(QiskitTestCase):
 
         self.assertEqual(expected, scheduled)
 
-    @data([100, 200], [500, 0], [1000, 200])
-    @unpack
-    def test_active_reset_circuit(self, write_lat, cond_lat):
+    def test_active_reset_circuit(self):
         """Test practical example of reset circuit.
+
         Because of the stimulus pulse overlap with the previous XGate on the q register,
         measure instruction is always triggered after XGate regardless of write latency.
         Thus only conditional latency matters in the scheduling."""
@@ -289,9 +278,6 @@ class TestSchedulingAndPaddingPass(QiskitTestCase):
 
         scheduled = PassManager(
             [
-                SetIOLatency(
-                    clbit_write_latency=write_lat, conditional_latency=cond_lat
-                ),
                 DynamicCircuitScheduleAnalysis(durations),
                 PadDelay(),
             ]
@@ -315,6 +301,7 @@ class TestSchedulingAndPaddingPass(QiskitTestCase):
 
     def test_dag_introduces_extra_dependency_between_conditionals(self):
         """Test dependency between conditional operations in the scheduling.
+
         In the below example circuit, the conditional x on q1 could start at time 0,
         however it must be scheduled after the conditional x on q0 in scheduling.
         That is because circuit model used in the transpiler passes (DAGCircuit)
@@ -377,6 +364,7 @@ class TestSchedulingAndPaddingPass(QiskitTestCase):
 
     def test_no_pad_very_end_of_circuit(self):
         """Test padding option that inserts no delay at the very end of circuit.
+
         This circuit will be unchanged after scheduling/padding."""
         qc = QuantumCircuit(2, 1)
         qc.delay(100, 0)
@@ -478,7 +466,3 @@ class TestSchedulingAndPaddingPass(QiskitTestCase):
         expected.barrier()
 
         self.assertEqual(expected, scheduled)
-
-
-if __name__ == "__main__":
-    unittest.main()

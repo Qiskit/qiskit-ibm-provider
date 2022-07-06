@@ -14,9 +14,9 @@
 
 from qiskit.circuit import Qubit
 from qiskit.circuit.delay import Delay
-from qiskit.dagcircuit import DAGCircuit, DAGNode, DAGOutNode
+from qiskit.dagcircuit import DAGNode, DAGOutNode
 
-from qiskit_ibm_provider.dynamic_circuits.base_padding import BasePadding
+from .base_padding import BasePadding
 
 
 class PadDelay(BasePadding):
