@@ -156,9 +156,9 @@ class DynamicCircuitScheduleAnalysis(BaseScheduler):
                 self._idle_after[bit] = (self._current_block_idx, t1c)
 
             # It starts after register read access
-            t0 = max(t0q, t1c) # pylint: disable=invalid-name
+            t0 = max(t0q, t1c)  # pylint: disable=invalid-name
 
-            t1 = t0 + op_duration # pylint: disable=invalid-name
+            t1 = t0 + op_duration  # pylint: disable=invalid-name
             self._update_idles(node, t0, t1)
 
             # Terminate the conditional block
@@ -179,7 +179,9 @@ class DynamicCircuitScheduleAnalysis(BaseScheduler):
         current_block_measure_qargs = self._current_block_measure_qargs()
         measure_qargs = set(node.qargs)
 
-        t0q = max(self._idle_after[q][1] for q in measure_qargs) # pylint: disable=invalid-name
+        t0q = max(
+            self._idle_after[q][1] for q in measure_qargs
+        )  # pylint: disable=invalid-name
 
         # If the measurement qubits overlap, we need to start a new scheduling block.
         if current_block_measure_qargs & measure_qargs:
@@ -187,7 +189,7 @@ class DynamicCircuitScheduleAnalysis(BaseScheduler):
             t0q = 0
         # Otherwise we need to increment all measurements to start at the same time within the block.
         else:
-            t0q = max( # pylint: disable=invalid-name
+            t0q = max(  # pylint: disable=invalid-name
                 itertools.chain(
                     [t0q],
                     (
@@ -205,12 +207,12 @@ class DynamicCircuitScheduleAnalysis(BaseScheduler):
         self._current_block_measures.add(node)
 
         for measure in self._current_block_measures:
-            t0 = t0q # pylint: disable=invalid-name
+            t0 = t0q  # pylint: disable=invalid-name
             bit_indices = {bit: index for index, bit in enumerate(self._dag.qubits)}
             measure_duration = self.durations.get(
                 Measure(), [bit_indices[qarg] for qarg in node.qargs], unit="dt"
             )
-            t1 = t0 + measure_duration # pylint: disable=invalid-name
+            t1 = t0 + measure_duration  # pylint: disable=invalid-name
             self._update_idles(measure, t0, t1)
 
     def _visit_reset(self, node):
@@ -231,11 +233,13 @@ class DynamicCircuitScheduleAnalysis(BaseScheduler):
         op_duration = self._get_duration(node)
 
         # It happens to be directives such as barrier
-        t0 = max(self._idle_after[bit][1] for bit in node.qargs + node.cargs) # pylint: disable=invalid-name
-        t1 = t0 + op_duration # pylint: disable=invalid-name
+        t0 = max(
+            self._idle_after[bit][1] for bit in node.qargs + node.cargs
+        )  # pylint: disable=invalid-name
+        t1 = t0 + op_duration  # pylint: disable=invalid-name
         self._update_idles(node, t0, t1)
 
-    def _update_idles(self, node, t0, t1): # pylint: disable=invalid-name
+    def _update_idles(self, node, t0, t1):  # pylint: disable=invalid-name
         for bit in node.qargs:
             self._idle_after[bit] = (self._current_block_idx, t1)
 

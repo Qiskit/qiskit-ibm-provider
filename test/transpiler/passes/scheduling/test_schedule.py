@@ -26,6 +26,7 @@ from qiskit_ibm_provider.transpiler.passes.scheduling.scheduler import (
 
 # pylint: disable=invalid-name
 
+
 class TestSchedulingAndPaddingPass(QiskitTestCase):
     """Tests the Scheduling passes"""
 

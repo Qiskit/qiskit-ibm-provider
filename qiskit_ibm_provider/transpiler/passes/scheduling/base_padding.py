@@ -185,7 +185,7 @@ class BasePadding(TransformationPass):
 
     def _visit_generic(self, node):
         """Visit a generic node to pad."""
-        block_idx, t0 = self._node_start_time[node] # pylint: disable=invalid-name
+        block_idx, t0 = self._node_start_time[node]  # pylint: disable=invalid-name
 
         # Trigger the end of a block
         if block_idx > self._current_block_idx:
@@ -199,7 +199,7 @@ class BasePadding(TransformationPass):
         # Now set the current block index.
         self._current_block_idx = block_idx
 
-        t1 = t0 + node.op.duration # pylint: disable=invalid-name
+        t1 = t0 + node.op.duration  # pylint: disable=invalid-name
         self._block_duration = max(self._block_duration, t1)
 
         for bit in node.qargs:
