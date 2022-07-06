@@ -233,9 +233,9 @@ class DynamicCircuitScheduleAnalysis(BaseScheduler):
         op_duration = self._get_duration(node)
 
         # It happens to be directives such as barrier
-        t0 = max(
+        t0 = max(  # pylint: disable=invalid-name
             self._idle_after[bit][1] for bit in node.qargs + node.cargs
-        )  # pylint: disable=invalid-name
+        )
         t1 = t0 + op_duration  # pylint: disable=invalid-name
         self._update_idles(node, t0, t1)
 
