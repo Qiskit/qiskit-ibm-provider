@@ -15,7 +15,7 @@
 import itertools
 
 import qiskit
-from qiskit.circuit import Measure
+from qiskit.circuit import Measure, Reset
 from qiskit.transpiler.exceptions import TranspilerError
 from qiskit.transpiler.passes.scheduling.scheduling.base_scheduler import BaseScheduler
 
@@ -108,6 +108,8 @@ class DynamicCircuitScheduleAnalysis(BaseScheduler):
 
             if isinstance(node.op, Measure):
                 self._visit_measure(node)
+            elif isinstance(node.op, Reset):
+                self._visit_reset(node)
             else:
                 self._visit_generic(node)
 
@@ -171,11 +173,9 @@ class DynamicCircuitScheduleAnalysis(BaseScheduler):
         Measurement currently triggers the end of a pulse block in IBM dynamic circuits hardware.
         This means that it is possible to schedule *up to* a measurement (and during its pulses)
         but the measurement will be followed by a period of indeterminism.
-        All measurements on disjoing qubits will be collected on the same qubits to be run simulataneously.
+        All measurements on disjoint qubits will be collected on the same qubits to be run simultaneously.
 
         """
-        op_duration = self._get_node_duration(node)
-
         current_block_measure_qargs = self._current_block_measure_qargs()
         measure_qargs = set(node.qargs)
 
@@ -198,9 +198,25 @@ class DynamicCircuitScheduleAnalysis(BaseScheduler):
 
         for measure in self._current_block_measures:
             t0 = t0q
-            t1 = t0 + self._get_node_duration(measure)
+            bit_indices = {bit: index for index, bit in enumerate(self._dag.qubits)}
+            measure_duration = self.durations.get(
+                    Measure(), [bit_indices[qarg] for qarg in node.qargs], unit="dt"
+                )
+            t1 = t0 + measure_duration
             self._update_idles(measure, t0, t1)
 
+    def _visit_reset(self, node):
+        """Visit a reset node.
+
+        Reset currently triggers the end of a pulse block in IBM dynamic circuits hardware
+        as conditional reset is performed internally using a c_if.
+        This means that it is possible to schedule *up to* a reset (and during its measurement pulses)
+        but the reset will be followed by a period of conditional indeterminism.
+        All resets on disjoint qubits will be collected on the same qubits to be run simultaneously.
+        This means that from the perspective of scheduling resets have the same behaviour and duration
+        as a measurement.
+        """
+        self._visit_measure(node)
 
     def _visit_generic(self, node):
         """Visit a generic node such as a gate or barrier."""
