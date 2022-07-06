@@ -20,7 +20,9 @@ from qiskit.transpiler.passmanager import PassManager
 from qiskit.transpiler.exceptions import TranspilerError
 
 from qiskit_ibm_provider.transpiler.passes.scheduling.pad_delay import PadDelay
-from qiskit_ibm_provider.transpiler.passes.scheduling.scheduler import DynamicCircuitScheduleAnalysis
+from qiskit_ibm_provider.transpiler.passes.scheduling.scheduler import (
+    DynamicCircuitScheduleAnalysis,
+)
 
 
 class TestSchedulingAndPaddingPass(QiskitTestCase):
