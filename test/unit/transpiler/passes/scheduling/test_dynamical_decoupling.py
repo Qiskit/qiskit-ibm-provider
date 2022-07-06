@@ -115,6 +115,7 @@ class TestPadDynamicalDecoupling(QiskitTestCase):
         expected = expected.compose(Delay(100), [1])
         expected = expected.compose(XGate(), [1])
         expected = expected.compose(Delay(50), [1])
+        expected.barrier()
 
         self.assertEqual(ghz4_dd, expected)
 
@@ -144,6 +145,7 @@ class TestPadDynamicalDecoupling(QiskitTestCase):
         expected = expected.compose(Delay(300), [1])
 
         expected.measure_all()
+        expected.barrier()
 
         self.assertEqual(ghz4_dd, expected)
 
@@ -185,6 +187,7 @@ class TestPadDynamicalDecoupling(QiskitTestCase):
         expected = expected.compose(Delay(100), [1])
         expected = expected.compose(YGate(), [1])
         expected = expected.compose(Delay(50), [1])
+        expected.barrier()
 
         self.assertEqual(ghz4_dd, expected)
 
@@ -224,6 +227,7 @@ class TestPadDynamicalDecoupling(QiskitTestCase):
         expected = expected.compose(Delay(25), [1])
         expected = expected.compose(YGate(), [1])
         expected = expected.compose(Delay(12), [1])
+        expected.barrier()
 
         self.assertEqual(ghz4_dd, expected)
 
@@ -252,6 +256,7 @@ class TestPadDynamicalDecoupling(QiskitTestCase):
         expected.cx(1, 2)
         expected.delay(1000, 1)
         expected.measure(2, 0)
+        expected.barrier()
         expected.cx(1, 2)
         expected.cx(0, 1)
         expected.delay(700, 2)
@@ -285,6 +290,7 @@ class TestPadDynamicalDecoupling(QiskitTestCase):
         expected.cx(1, 2)
         expected.delay(1000, 1)
         expected.measure(2, 0)
+        expected.barrier()
         expected.cx(1, 2)
         expected.cx(0, 1)
         expected.delay(700, 2)
@@ -347,6 +353,7 @@ class TestPadDynamicalDecoupling(QiskitTestCase):
         expected = expected.compose(Delay(3), [0])
 
         expected = expected.compose(Delay(300), [1])
+        expected.barrier()
 
         self.assertEqual(ghz4_dd, expected)
 
@@ -377,6 +384,7 @@ class TestPadDynamicalDecoupling(QiskitTestCase):
         expected.y(0)
         expected.delay(450, 0)
         expected.h(0)
+        expected.barrier()
         expected.global_phase = pi
 
         t2_dd = pm.run(t2)
@@ -454,8 +462,11 @@ class TestPadDynamicalDecoupling(QiskitTestCase):
         pm = PassManager(
             [DynamicCircuitScheduleAnalysis(durations), PadDynamicalDecoupling(durations, dd_sequence)]
         )
-
-        self.assertEqual(pm.run(circ).duration, rx_duration + 100 + 300)
+        pm.run(circ)
+        node_start_times = pm.property_set["node_start_time"]
+        for node, times in node_start_times.items():
+            if isinstance(node.op, RXGate):
+                self.assertEqual(node.op.duration, rx_duration)
 
     def test_insert_dd_ghz_xy4_with_alignment(self):
         """Test DD with pulse alignment constraints."""
@@ -498,6 +509,7 @@ class TestPadDynamicalDecoupling(QiskitTestCase):
         expected = expected.compose(Delay(20), [1])
         expected = expected.compose(YGate(), [1])
         expected = expected.compose(Delay(20), [1])
+        expected.barrier()
 
         self.assertEqual(ghz4_dd, expected)
 
