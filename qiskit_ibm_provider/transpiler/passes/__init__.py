@@ -11,16 +11,16 @@
 # that they have been altered from the originals.
 
 """
-===================================================
+================================================================
 Transpiler Passes (:mod:`qiskit_ibm_provider.transpiler.passes`)
-===================================================
+================================================================
 
 .. currentmodule:: qiskit_ibm_provider.transpiler.passes
 
 .. autosummary::
    :toctree: ../stubs/
 
-   Dynamic circuit scheduling <scheduling>
+   scheduling
 
 
 """

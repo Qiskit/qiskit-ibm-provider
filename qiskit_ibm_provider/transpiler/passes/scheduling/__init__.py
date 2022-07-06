@@ -11,9 +11,9 @@
 # that they have been altered from the originals.
 
 """
-==============================================================
+====================================================================
 Scheduling (:mod:`qiskit_ibm_provider.transpiler.passes.scheduling`)
-==============================================================
+====================================================================
 
 .. currentmodule:: qiskit_ibm_provider.transpiler.passes.scheduling
 
@@ -29,13 +29,16 @@ for a dynamic circuit backend's execution model
 
 .. jupyter-execute::
 
+    from qiskit import transpile
+    from qiskit.circuit import ClassicalRegister, QuantumCircuit, QuantumRegister
     from qiskit.transpiler.instruction_durations import InstructionDurations
+    from qiskit.transpiler.passmanager import PassManager
 
-    from qiskit_ibm_provider.transpiler.scheduling import DynamicCircuitScheduleAnalysis, PadDelay
-    from qiskit_ibm_provider.test.ibm_provider_mock import mock_get_backend
+    from qiskit_ibm_provider.transpiler.passes.scheduling import DynamicCircuitScheduleAnalysis, PadDelay
+    from qiskit.providers.fake_provider.backends.jakarta.fake_jakarta import FakeJakarta
 
 
-    backend = mock_get_backend('FakePerth')
+    backend = FakeJakarta()
 
     durations = InstructionDurations.from_backend(backend)
     pm = PassManager([DynamicCircuitScheduleAnalysis(durations), PadDelay()])
@@ -57,9 +60,11 @@ for a dynamic circuit backend's execution model
     teleport.x(qr[2]).c_if(crx, 1)
     teleport.measure(qr[2], result)
 
+    teleport = transpile(teleport, backend)
+
     scheduled_teleport = pm.run(teleport)
 
-    teleport.draw(output="mpl")
+    scheduled_teleport.draw(output="mpl")
 
 
 Scheduling & Dynamical Decoupling
@@ -75,5 +80,6 @@ Scheduling & Dynamical Decoupling
 
 """
 
+from .block_base_padder import BlockBasePadder
 from .pad_delay import PadDelay
 from .scheduler import DynamicCircuitScheduleAnalysis

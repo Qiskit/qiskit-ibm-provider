@@ -26,6 +26,6 @@ Transpiler Passes
 .. autosummary::
     :toctree: ../stubs/
 
-    Scheduling <passes/scheduling>
+    passes
 
 """
