@@ -12,10 +12,12 @@
 
 """Scheduler for dynamic circuit backends."""
 
+from typing import Dict, Optional, Union, Set, Tuple
 import itertools
 
 import qiskit
-from qiskit.circuit import Measure, Reset
+from qiskit.circuit import Clbit, Measure, Qubit, Reset
+from qiskit.dagcircuit import DAGCircuit, DAGNode
 from qiskit.transpiler.exceptions import TranspilerError
 from qiskit.transpiler.passes.scheduling.scheduling.base_scheduler import BaseScheduler
 
@@ -46,7 +48,7 @@ class DynamicCircuitScheduleAnalysis(BaseScheduler):
 
     def __init__(
         self, durations: qiskit.transpiler.instruction_durations.InstructionDurations
-    ):
+    ) -> None:
         """Scheduler for dynamic circuit backends.
 
         Args:
@@ -57,14 +59,14 @@ class DynamicCircuitScheduleAnalysis(BaseScheduler):
 
         self._current_block_idx = 0
 
-        self._node_start_time = None
-        self._idle_after = None
-        self._current_block_measures = None
-        self._bit_indices = None
+        self._node_start_time: Optional[Dict[DAGNode, Tuple[int, int]]] = None
+        self._idle_after: Optional[Dict[Union[Qubit, Clbit], Tuple[int, int]]] = None
+        self._current_block_measures: Set[DAGNode] = set()
+        self._bit_indices: Optional[Dict[Qubit, int]] = None
 
         super().__init__(durations)
 
-    def run(self, dag):
+    def run(self, dag: DAGCircuit) -> None:
         """Run the ASAPSchedule pass on `dag`.
         Args:
             dag (DAGCircuit): DAG to schedule.
@@ -79,7 +81,7 @@ class DynamicCircuitScheduleAnalysis(BaseScheduler):
 
         self.property_set["node_start_time"] = self._node_start_time
 
-    def _init_run(self, dag):
+    def _init_run(self, dag: DAGCircuit) -> None:
         """Setup for initial run."""
 
         self._dag = dag
@@ -92,10 +94,10 @@ class DynamicCircuitScheduleAnalysis(BaseScheduler):
         self._current_block_measures = set()
         self._bit_indices = {q: index for index, q in enumerate(dag.qubits)}
 
-    def _get_duration(self, node):
+    def _get_duration(self, node: DAGNode) -> int:
         return super()._get_node_duration(node, self._bit_indices, self._dag)
 
-    def _visit_node(self, node):
+    def _visit_node(self, node: DAGNode) -> None:
         # compute t0, t1: instruction interval, note that
         # t0: start time of instruction
         # t1: end time of instruction
@@ -114,7 +116,7 @@ class DynamicCircuitScheduleAnalysis(BaseScheduler):
             else:
                 self._visit_generic(node)
 
-    def _visit_conditional_node(self, node):
+    def _visit_conditional_node(self, node: DAGNode) -> None:
         """Handling case of a conditional execution.
 
         Conditional execution durations are currently non-deterministic. as we do not know
@@ -168,7 +170,7 @@ class DynamicCircuitScheduleAnalysis(BaseScheduler):
             # Fall through to generic case if not conditional
             self._visit_generic(node)
 
-    def _visit_measure(self, node):
+    def _visit_measure(self, node: DAGNode) -> None:
         """Visit a measurement node.
 
         Measurement currently triggers the end of a pulse block in IBM dynamic circuits hardware.
@@ -215,7 +217,7 @@ class DynamicCircuitScheduleAnalysis(BaseScheduler):
             t1 = t0 + measure_duration  # pylint: disable=invalid-name
             self._update_idles(measure, t0, t1)
 
-    def _visit_reset(self, node):
+    def _visit_reset(self, node: DAGNode) -> None:
         """Visit a reset node.
 
         Reset currently triggers the end of a pulse block in IBM dynamic circuits hardware
@@ -228,7 +230,7 @@ class DynamicCircuitScheduleAnalysis(BaseScheduler):
         """
         self._visit_measure(node)
 
-    def _visit_generic(self, node):
+    def _visit_generic(self, node: DAGNode) -> None:
         """Visit a generic node such as a gate or barrier."""
         op_duration = self._get_duration(node)
 
@@ -239,7 +241,9 @@ class DynamicCircuitScheduleAnalysis(BaseScheduler):
         t1 = t0 + op_duration  # pylint: disable=invalid-name
         self._update_idles(node, t0, t1)
 
-    def _update_idles(self, node, t0, t1):  # pylint: disable=invalid-name
+    def _update_idles(
+        self, node: DAGNode, t0: int, t1: int  # pylint: disable=invalid-name
+    ) -> None:
         for bit in node.qargs:
             self._idle_after[bit] = (self._current_block_idx, t1)
 
@@ -248,13 +252,13 @@ class DynamicCircuitScheduleAnalysis(BaseScheduler):
 
         self._node_start_time[node] = (self._current_block_idx, t0)
 
-    def _begin_new_circuit_block(self):
+    def _begin_new_circuit_block(self) -> None:
         """Create a new timed circuit block completing the previous block."""
         self._current_block_idx += 1
         self._current_block_measures = set()
         self._idle_after = {q: (0, 0) for q in self._dag.qubits + self._dag.clbits}
 
-    def _current_block_measure_qargs(self):
+    def _current_block_measure_qargs(self) -> Set[Qubit]:
         return set(
             qarg for measure in self._current_block_measures for qarg in measure.qargs
         )

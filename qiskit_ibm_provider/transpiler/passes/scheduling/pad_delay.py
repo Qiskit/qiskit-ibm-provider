@@ -67,7 +67,7 @@ class PadDelay(BasePadding):
         t_end: int,
         next_node: DAGNode,
         prev_node: DAGNode,
-    ):
+    ) -> None:
         if not self.fill_very_end and isinstance(next_node, DAGOutNode):
             return
 
