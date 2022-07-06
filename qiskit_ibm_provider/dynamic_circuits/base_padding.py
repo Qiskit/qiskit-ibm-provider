@@ -60,7 +60,6 @@ class BasePadding(TransformationPass):
 
         super().__init__()
 
-
     def run(self, dag: DAGCircuit):
         """Run the padding pass on ``dag``.
 
@@ -75,7 +74,6 @@ class BasePadding(TransformationPass):
                 is inserted before this node is called.
         """
         self._pre_runhook(dag)
-
 
         self._init_run(dag)
 
@@ -126,7 +124,6 @@ class BasePadding(TransformationPass):
         self._dag.unit = self.property_set["time_unit"]
         self._dag.calibrations = dag.calibrations
         self._dag.global_phase = dag.global_phase
-
 
     def _pre_runhook(self, dag: DAGCircuit):
         """Extra routine inserted before running the padding pass.
@@ -190,7 +187,6 @@ class BasePadding(TransformationPass):
         """Visit a generic node to pad."""
         block_idx, t0 = self._node_start_time[node]
 
-
         # Trigger the end of a block
         if block_idx > self._current_block_idx:
 
@@ -202,7 +198,6 @@ class BasePadding(TransformationPass):
 
         # Now set the current block index.
         self._current_block_idx = block_idx
-
 
         t1 = t0 + node.op.duration
         self._block_duration = max(self._block_duration, t1)
@@ -239,16 +234,17 @@ class BasePadding(TransformationPass):
 
         # Terminate with a barrier to be clear timing is non-deterministic
         # across the barrier.
-        self._dag.apply_operation_back(Barrier(self._dag.num_qubits()), self._dag.qubits, [])
+        self._dag.apply_operation_back(
+            Barrier(self._dag.num_qubits()), self._dag.qubits, []
+        )
 
         # Reset idles for the new block.
         self._idle_after = {bit: 0 for bit in self._dag.qubits}
         self._block_duration = 0
         self._conditional_block = False
 
-
     def _pad_until_block_end(self, block_duration, block_idx):
-                # Add delays until the end of circuit.
+        # Add delays until the end of circuit.
         for bit in self._dag.qubits:
             if block_duration - self._idle_after[bit] > 0:
                 node = self._dag.output_map[bit]
