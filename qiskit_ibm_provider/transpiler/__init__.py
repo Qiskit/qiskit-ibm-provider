@@ -19,4 +19,13 @@ A collection of transpiler tools for working with IBM Quantum's
 next-generation backends that support advanced "dynamic circuit"
 capabilities. Ie., circuits with support for classical
 compute and control-flow/feedback based off of measurement results.
+
+Transpiler Passes
+==================
+
+.. autosummary::
+    :toctree: ../stubs/
+
+    Scheduling <passes/scheduling>
+
 """

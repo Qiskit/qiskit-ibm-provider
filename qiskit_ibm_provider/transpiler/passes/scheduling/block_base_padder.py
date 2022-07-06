@@ -234,7 +234,13 @@ class BlockBasePadder(TransformationPass):
 
         # Terminate with a barrier to be clear timing is non-deterministic
         # across the barrier.
-        self._apply_scheduled_op(block_idx, block_duration, Barrier(self._dag.num_qubits()), self._dag.qubits, [])
+        self._apply_scheduled_op(
+            block_idx,
+            block_duration,
+            Barrier(self._dag.num_qubits()),
+            self._dag.qubits,
+            [],
+        )
 
         # Reset idles for the new block.
         self._idle_after = {bit: 0 for bit in self._dag.qubits}
