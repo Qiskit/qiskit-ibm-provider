@@ -173,7 +173,8 @@ class DynamicCircuitScheduleAnalysis(BaseScheduler):
     def _visit_measure(self, node: DAGNode) -> None:
         """Visit a measurement node.
 
-        Measurement currently triggers the end of a pulse block in IBM dynamic circuits hardware.
+        Measurement currently triggers the end of a deterministically scheduled block
+        of instructions in IBM dynamic circuits hardware.
         This means that it is possible to schedule *up to* a measurement (and during its pulses)
         but the measurement will be followed by a period of indeterminism.
         All measurements on disjoint qubits will be collected on the same qubits
