@@ -116,7 +116,7 @@ class BlockBasePadder(TransformationPass):
 
         # Update start time dictionary for the new_dag.
         # This information may be used for further scheduling tasks,
-        # but this is immediately invalidated becasue node id is updated in the new_dag.
+        # but this is immediately invalidated because most node ids are updated in the new_dag.
         self.property_set["node_start_time"].clear()
 
         self._dag.name = dag.name
@@ -234,9 +234,7 @@ class BlockBasePadder(TransformationPass):
 
         # Terminate with a barrier to be clear timing is non-deterministic
         # across the barrier.
-        self._dag.apply_operation_back(
-            Barrier(self._dag.num_qubits()), self._dag.qubits, []
-        )
+        self._apply_scheduled_op(block_idx, block_duration, Barrier(self._dag.num_qubits()), self._dag.qubits, [])
 
         # Reset idles for the new block.
         self._idle_after = {bit: 0 for bit in self._dag.qubits}
