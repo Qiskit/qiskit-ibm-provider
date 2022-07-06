@@ -397,6 +397,88 @@ class TestSchedulingAndPaddingPass(QiskitTestCase):
 
         self.assertEqual(expected, scheduled)
 
+    def test_reset_terminates_block(self):
+        """Test if reset operations terminate the block scheduled
+
+        Note: For dynamic circuits support we currently group resets to start at the same time which in turn trigger
+        the end of a block."""
+        qc = QuantumCircuit(3, 1)
+        qc.x(0)
+        qc.reset(0)
+        qc.reset(1)
+
+        durations = InstructionDurations(
+            [
+                ("x", None, 200),
+                (
+                    "reset",
+                    [0],
+                    1000,
+                ),  # ignored as only the duration of the measurement is used for scheduling
+                (
+                    "reset",
+                    [1],
+                    900,
+                ),  # ignored as only the duration of the measurement is used for scheduling
+                ("measure", [0], 600),
+                ("measure", [1], 700),
+            ]
+        )
+        pm = PassManager([DynamicCircuitScheduleAnalysis(durations), PadDelay()])
+        scheduled = pm.run(qc)
+
+        expected = QuantumCircuit(3, 1)
+        expected.x(0)
+        expected.delay(200, 1)
+        expected.delay(1200, 2)
+        expected.reset(0)
+        expected.reset(1)
+        expected.delay(100, 1)
+        expected.barrier()
+
+        self.assertEqual(expected, scheduled)
+
+    def test_reset_merged_with_measure(self):
+        """Test if reset operations terminate the block scheduled
+
+        Note: For dynamic circuits support we currently group resets to start at the same time which in turn trigger
+        the end of a block."""
+        qc = QuantumCircuit(3, 1)
+        qc.x(0)
+        qc.reset(0)
+        qc.reset(1)
+
+        durations = InstructionDurations(
+            [
+                ("x", None, 200),
+                (
+                    "reset",
+                    [0],
+                    1000,
+                ),  # ignored as only the duration of the measurement is used for scheduling
+                (
+                    "reset",
+                    [1],
+                    900,
+                ),  # ignored as only the duration of the measurement is used for scheduling
+                ("measure", [0], 600),
+                ("measure", [1], 700),
+            ]
+        )
+        pm = PassManager([DynamicCircuitScheduleAnalysis(durations), PadDelay()])
+        scheduled = pm.run(qc)
+
+        expected = QuantumCircuit(3, 1)
+        expected.x(0)
+        expected.delay(200, 1)
+        expected.delay(1200, 2)
+        expected.reset(0)
+        expected.reset(1)
+        expected.delay(100, 1)
+        expected.barrier()
+
+        self.assertEqual(expected, scheduled)
+
 
 if __name__ == "__main__":
     unittest.main()
