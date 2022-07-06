@@ -12,7 +12,7 @@
 
 """Padding pass to fill timeslots for IBM (dynamic circuit) backends."""
 
-from typing import List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 from qiskit.circuit import Qubit, Clbit, Instruction
 from qiskit.circuit.library import Barrier
@@ -50,9 +50,9 @@ class BasePadding(TransformationPass):
     which may result in violation of hardware alignment constraints.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._node_start_time = None
-        self._idle_after = None
+        self._idle_after: Optional[Dict[Qubit, int]] = None
         self._dag = None
         self._block_duration = 0
         self._current_block_idx = 0
@@ -60,7 +60,7 @@ class BasePadding(TransformationPass):
 
         super().__init__()
 
-    def run(self, dag: DAGCircuit):
+    def run(self, dag: DAGCircuit) -> DAGCircuit:
         """Run the padding pass on ``dag``.
 
         Args:
@@ -99,7 +99,7 @@ class BasePadding(TransformationPass):
 
         return self._dag
 
-    def _init_run(self, dag):
+    def _init_run(self, dag: DAGCircuit) -> None:
         """Setup for initial run."""
         self._node_start_time = self.property_set["node_start_time"].copy()
         self._idle_after = {bit: 0 for bit in dag.qubits}
@@ -125,7 +125,7 @@ class BasePadding(TransformationPass):
         self._dag.calibrations = dag.calibrations
         self._dag.global_phase = dag.global_phase
 
-    def _pre_runhook(self, dag: DAGCircuit):
+    def _pre_runhook(self, dag: DAGCircuit) -> None:
         """Extra routine inserted before running the padding pass.
 
         Args:
@@ -148,7 +148,7 @@ class BasePadding(TransformationPass):
         t_end: int,
         next_node: DAGNode,
         prev_node: DAGNode,
-    ):
+    ) -> None:
         """Interleave instruction sequence in between two nodes.
 
         .. note::
@@ -176,14 +176,14 @@ class BasePadding(TransformationPass):
         """
         raise NotImplementedError
 
-    def _visit_delay(self, node):
+    def _visit_delay(self, node: DAGNode) -> None:
         """The padding class considers a delay instruction as idle time
         rather than instruction. Delay node is not added so that
         we can extract non-delay predecessors.
         """
         pass
 
-    def _visit_generic(self, node):
+    def _visit_generic(self, node: DAGNode) -> None:
         """Visit a generic node to pad."""
         block_idx, t0 = self._node_start_time[node]  # pylint: disable=invalid-name
 
@@ -220,7 +220,7 @@ class BasePadding(TransformationPass):
 
         self._apply_scheduled_op(block_idx, t0, node.op, node.qargs, node.cargs)
 
-    def _terminate_block(self, block_duration, block_idx):
+    def _terminate_block(self, block_duration: int, block_idx: int) -> None:
         """Terminate the end of a block scheduling region."""
         # Update all other qubits as not idle so that delays are *not*
         # inserted. This is because we need the delays to be inserted in
@@ -243,7 +243,7 @@ class BasePadding(TransformationPass):
         self._block_duration = 0
         self._conditional_block = False
 
-    def _pad_until_block_end(self, block_duration, block_idx):
+    def _pad_until_block_end(self, block_duration: int, block_idx: int) -> None:
         # Add delays until the end of circuit.
         for bit in self._dag.qubits:
             if block_duration - self._idle_after[bit] > 0:
@@ -265,7 +265,7 @@ class BasePadding(TransformationPass):
         oper: Instruction,
         qubits: Union[Qubit, List[Qubit]],
         clbits: Optional[Union[Clbit, List[Clbit]]] = None,
-    ):
+    ) -> None:
         """Add new operation to DAG with scheduled information.
 
         This is identical to apply_operation_back + updating the node_start_time propety.
