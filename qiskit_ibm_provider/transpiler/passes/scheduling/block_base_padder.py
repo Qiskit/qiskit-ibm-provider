@@ -185,6 +185,8 @@ class BlockBasePadder(TransformationPass):
 
     def _visit_generic(self, node: DAGNode) -> None:
         """Visit a generic node to pad."""
+        # Note: t0 is the relative time with respect to the current block specified
+        # by block_idx.
         block_idx, t0 = self._node_start_time[node]  # pylint: disable=invalid-name
 
         # Trigger the end of a block
