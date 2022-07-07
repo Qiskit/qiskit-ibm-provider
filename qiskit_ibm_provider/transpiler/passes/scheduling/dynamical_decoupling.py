@@ -44,7 +44,9 @@ class PadDynamicalDecoupling(BlockBasePadder):
     This can be used, for instance, as a Hahn echo.
     This pass ensures that the inserted sequence preserves the circuit exactly
     (including global phase).
+
     .. jupyter-execute::
+
         import numpy as np
         from qiskit.circuit import QuantumCircuit
         from qiskit.circuit.library import XGate
@@ -65,14 +67,18 @@ class PadDynamicalDecoupling(BlockBasePadder):
              ("cx", [1, 2], 200), ("cx", [2, 3], 300),
              ("x", None, 50), ("measure", None, 1000)]
         )
+
     .. jupyter-execute::
+
         # balanced X-X sequence on all qubits
         dd_sequence = [XGate(), XGate()]
         pm = PassManager([DynamicCircuitScheduleAnalysis(durations),
                           PadDynamicalDecoupling(durations, dd_sequence)])
         circ_dd = pm.run(circ)
-        timeline_drawer(circ_dd)
+        circ_dd.draw()
+
     .. jupyter-execute::
+
         # Uhrig sequence on qubit 0
         n = 8
         dd_sequence = [XGate()] * n
@@ -84,13 +90,15 @@ class PadDynamicalDecoupling(BlockBasePadder):
         spacing.append(1 - sum(spacing))
         pm = PassManager(
             [
-                ALAPScheduleAnalysis(durations),
+                DynamicCircuitScheduleAnalysis(durations),
                 PadDynamicalDecoupling(durations, dd_sequence, qubits=[0], spacing=spacing),
             ]
         )
         circ_dd = pm.run(circ)
-        timeline_drawer(circ_dd)
+        circ_dd.draw()
+
     .. note::
+
         You need to call
         :class:`~qiskit_ibm_provider.transpiler.passes.scheduling.DynamicCircuitScheduleAnalysis`
         before running dynamical decoupling to guarantee your circuit satisfies acquisition
@@ -108,6 +116,7 @@ class PadDynamicalDecoupling(BlockBasePadder):
         extra_slack_distribution: str = "middle",
     ):
         """Dynamical decoupling initializer.
+
         Args:
             durations: Durations of instructions to be used in scheduling.
             dd_sequence: Sequence of gates to apply in idle spots.
@@ -133,14 +142,16 @@ class PadDynamicalDecoupling(BlockBasePadder):
                 the created sequence being shorter than the idle time
                 that you want to fill with the sequence, i.e. `extra slack`.
                 This option takes following values.
-                    - "middle": Put the extra slack to the interval at the middle of the sequence.
-                    - "edges": Divide the extra slack as evenly as possible into
+
+                    * "middle": Put the extra slack to the interval at the middle of the sequence.
+                    * "edges": Divide the extra slack as evenly as possible into
                       intervals at beginning and end of the sequence.
         Raises:
             TranspilerError: When invalid DD sequence is specified.
             TranspilerError: When pulse gate with the duration which is
                 non-multiple of the alignment constraint value is found.
         """
+
         super().__init__()
         self._durations = durations
         self._dd_sequence = dd_sequence
