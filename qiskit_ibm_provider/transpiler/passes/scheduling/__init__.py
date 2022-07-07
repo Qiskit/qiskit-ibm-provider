@@ -15,6 +15,8 @@
 Scheduling (:mod:`qiskit_ibm_provider.transpiler.passes.scheduling`)
 ====================================================================
 
+.. currentmodule:: qiskit_ibm_provider.transpiler.passes.scheduling
+
 A collection of scheduling passes for working with IBM Quantum's next-generation
 backends that support advanced "dynamic circuit" capabilities. Ie.,
 circuits with support for classical control-flow/feedback based off
@@ -22,8 +24,7 @@ of measurement results.
 
 
 Below we demonstrate how to schedule and pad a teleportation circuit with delays
-for a dynamic circuit backend's execution model
-
+for a dynamic circuit backend's execution model:
 
 .. jupyter-execute::
 
@@ -65,6 +66,30 @@ for a dynamic circuit backend's execution model
     scheduled_teleport.draw(output="mpl")
 
 
+Instead of padding with delays we may also insert a dynamical decoupling sequence
+using the :class:`PadDynamicalDecoupling` pass as shown below:
+
+.. jupyter-execute::
+
+    from qiskit.circuit.library import XGate
+
+    from qiskit_ibm_provider.transpiler.passes.scheduling import PadDynamicalDecoupling
+
+
+    dd_sequence = [XGate(), XGate()]
+
+    pm = PassManager(
+        [
+            DynamicCircuitScheduleAnalysis(durations),
+            PadDynamicalDecoupling(durations, dd_sequence),
+        ]
+    )
+
+    dd_teleport = pm.run(teleport)
+
+    dd_teleport.draw(output="mpl")
+
+
 Scheduling & Dynamical Decoupling
 =================================
 .. autosummary::
@@ -73,11 +98,13 @@ Scheduling & Dynamical Decoupling
     BlockBasePadder
     DynamicCircuitScheduleAnalysis
     PadDelay
+    PadDynamicalDecoupling
 
 
 
 """
 
 from .block_base_padder import BlockBasePadder
+from .dynamical_decoupling import PadDynamicalDecoupling
 from .pad_delay import PadDelay
 from .scheduler import DynamicCircuitScheduleAnalysis
