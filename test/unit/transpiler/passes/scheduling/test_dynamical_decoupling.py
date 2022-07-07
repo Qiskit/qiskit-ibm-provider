@@ -40,26 +40,7 @@ class TestPadDynamicalDecoupling(QiskitTestCase):
     """Tests PadDynamicalDecoupling pass."""
 
     def setUp(self):
-        """Circuits to test DD on.
-             ┌───┐
-        q_0: ┤ H ├──■────────────
-             └───┘┌─┴─┐
-        q_1: ─────┤ X ├──■───────
-                  └───┘┌─┴─┐
-        q_2: ──────────┤ X ├──■──
-                       └───┘┌─┴─┐
-        q_3: ───────────────┤ X ├
-                            └───┘
-                  ┌──────────┐
-        q_0: ──■──┤ U(π,0,π) ├──────────■──
-             ┌─┴─┐└──────────┘        ┌─┴─┐
-        q_1: ┤ X ├─────■───────────■──┤ X ├
-             └───┘   ┌─┴─┐    ┌─┐┌─┴─┐└───┘
-        q_2: ────────┤ X ├────┤M├┤ X ├─────
-                     └───┘    └╥┘└───┘
-        c: 1/══════════════════╩═══════════
-                               0
-        """
+        """Circuits to test dynamical decoupling on."""
         super().setUp()
 
         self.ghz4 = QuantumCircuit(4)
@@ -525,3 +506,65 @@ class TestPadDynamicalDecoupling(QiskitTestCase):
         circ2 = pm2.run(self.ghz4)
 
         self.assertEqual(circ1, circ2)
+
+    def test_dd_c_if(self):
+        """Test DD with c_if circuit."""
+
+        dd_sequence = [XGate(), XGate()]
+        pm = PassManager(
+            [
+                DynamicCircuitScheduleAnalysis(self.durations),
+                PadDynamicalDecoupling(self.durations, dd_sequence),
+            ]
+        )
+
+        qc = QuantumCircuit(3, 1)
+        qc.measure(0, 0)
+        qc.x(2)
+        qc.delay(1000, 1)
+        qc.x(1).c_if(0, True)
+        qc.delay(800, 1)
+        qc.x(2).c_if(0, True)
+        qc.delay(1000, 2)
+        qc.x(0)
+        qc.x(2)
+
+        qc_dd = pm.run(qc)
+
+        expected = QuantumCircuit(3, 1)
+        expected.x(2)
+        expected.delay(212, 2)
+        expected.x(2)
+        expected.delay(426, 2)
+        expected.x(2)
+        expected.delay(212, 2)
+        expected.delay(1000, 1)
+        expected.measure(0, 0)
+        expected.barrier()
+        expected.x(0)
+        expected.delay(50, 1)
+        expected.delay(50, 2)
+        expected.barrier()
+        expected.x(1).c_if(0, True)
+        expected.barrier()
+        expected.x(2).c_if(0, True)
+        expected.barrier()
+        expected.delay(237, 0)
+        expected.x(0)
+        expected.delay(476, 0)
+        expected.x(0)
+        expected.delay(237, 0)
+        expected.delay(237, 1)
+        expected.x(1)
+        expected.delay(476, 1)
+        expected.x(1)
+        expected.delay(237, 1)
+        expected.delay(225, 2)
+        expected.x(2)
+        expected.delay(450, 2)
+        expected.x(2)
+        expected.delay(225, 2)
+        expected.x(2)
+        expected.barrier()
+
+        self.assertEqual(expected, qc_dd)
