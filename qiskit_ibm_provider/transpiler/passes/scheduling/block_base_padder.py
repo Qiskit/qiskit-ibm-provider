@@ -54,6 +54,7 @@ class BlockBasePadder(TransformationPass):
         self._node_start_time = None
         self._idle_after: Optional[Dict[Qubit, int]] = None
         self._dag = None
+        self._prev_node: Optional[DAGNode] = None
         self._block_duration = 0
         self._current_block_idx = 0
         self._conditional_block = False
@@ -94,8 +95,10 @@ class BlockBasePadder(TransformationPass):
                     "Schedule the circuit again if you transformed it."
                 )
 
+            self._prev_node = node
+
         # terminate final block
-        self._terminate_block(self._block_duration, self._current_block_idx)
+        self._terminate_block(self._block_duration, self._current_block_idx, None)
 
         return self._dag
 
@@ -124,6 +127,8 @@ class BlockBasePadder(TransformationPass):
         self._dag.unit = self.property_set["time_unit"]
         self._dag.calibrations = dag.calibrations
         self._dag.global_phase = dag.global_phase
+
+        self._prev_node = None
 
     def _pre_runhook(self, dag: DAGCircuit) -> None:
         """Extra routine inserted before running the padding pass.
@@ -191,8 +196,7 @@ class BlockBasePadder(TransformationPass):
 
         # Trigger the end of a block
         if block_idx > self._current_block_idx:
-
-            self._terminate_block(self._block_duration, self._current_block_idx)
+            self._terminate_block(self._block_duration, self._current_block_idx, node)
 
         # This block will not be padded as it is conditional.
         # See TODO below.
@@ -222,7 +226,9 @@ class BlockBasePadder(TransformationPass):
 
         self._apply_scheduled_op(block_idx, t0, node.op, node.qargs, node.cargs)
 
-    def _terminate_block(self, block_duration: int, block_idx: int) -> None:
+    def _terminate_block(
+        self, block_duration: int, block_idx: int, node: Optional[DAGNode]
+    ) -> None:
         """Terminate the end of a block scheduling region."""
         # Update all other qubits as not idle so that delays are *not*
         # inserted. This is because we need the delays to be inserted in
@@ -234,15 +240,27 @@ class BlockBasePadder(TransformationPass):
         if not self._conditional_block:
             self._pad_until_block_end(block_duration, block_idx)
 
-        # Terminate with a barrier to be clear timing is non-deterministic
-        # across the barrier.
-        self._apply_scheduled_op(
-            block_idx,
-            block_duration,
-            Barrier(self._dag.num_qubits()),
-            self._dag.qubits,
-            [],
-        )
+        def _is_terminating_barrier(node: Optional[DAGNode]) -> bool:
+            return (
+                node
+                and isinstance(node.op, Barrier)
+                and len(node.qargs) == self._dag.num_qubits()
+            )
+
+        # Only add a barrier to the end if a viable barrier is not already present on all qubits
+        is_terminating_barrier = _is_terminating_barrier(
+            self._prev_node
+        ) or _is_terminating_barrier(node)
+        if not is_terminating_barrier:
+            # Terminate with a barrier to be clear timing is non-deterministic
+            # across the barrier.
+            self._apply_scheduled_op(
+                block_idx,
+                block_duration,
+                Barrier(self._dag.num_qubits()),
+                self._dag.qubits,
+                [],
+            )
 
         # Reset idles for the new block.
         self._idle_after = {bit: 0 for bit in self._dag.qubits}

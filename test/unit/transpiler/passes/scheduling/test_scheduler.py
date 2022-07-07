@@ -472,3 +472,31 @@ class TestSchedulingAndPaddingPass(QiskitTestCase):
         expected.barrier()
 
         self.assertEqual(expected, scheduled)
+
+    def test_scheduling_is_idempotent(self):
+        """Test that padding can be applied back to back without changing the circuit."""
+        qc = QuantumCircuit(1, 1)
+        qc.measure(0, 0)
+        qc.x(0).c_if(0, 1)
+        qc.measure(0, 0)
+        qc.x(0).c_if(0, 1)
+        qc.measure(0, 0)
+        qc.x(0).c_if(0, 1)
+
+        durations = InstructionDurations([("x", None, 100), ("measure", None, 1000)])
+
+        scheduled0 = PassManager(
+            [
+                DynamicCircuitScheduleAnalysis(durations),
+                PadDelay(),
+            ]
+        ).run(qc)
+
+        scheduled1 = PassManager(
+            [
+                DynamicCircuitScheduleAnalysis(durations),
+                PadDelay(),
+            ]
+        ).run(scheduled0)
+
+        self.assertEqual(scheduled0, scheduled1)
