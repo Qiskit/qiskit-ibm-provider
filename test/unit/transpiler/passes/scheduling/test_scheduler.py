@@ -500,3 +500,25 @@ class TestSchedulingAndPaddingPass(QiskitTestCase):
         ).run(scheduled0)
 
         self.assertEqual(scheduled0, scheduled1)
+
+    def test_gate_on_measured_qubit(self):
+        """Test that a gate on a previously measured qubit triggers the end of the block"""
+        qc = QuantumCircuit(2, 1)
+        qc.measure(0, 0)
+        qc.x(0)
+        qc.x(1)
+
+        durations = InstructionDurations([("x", None, 200), ("measure", None, 1000)])
+        pm = PassManager([DynamicCircuitScheduleAnalysis(durations), PadDelay()])
+        scheduled = pm.run(qc)
+
+        expected = QuantumCircuit(2, 1)
+        expected.x(1)
+        expected.delay(800, 1)
+        expected.measure(0, 0)
+        expected.barrier()
+        expected.x(0)
+        expected.delay(200, 1)
+        expected.barrier()
+
+        self.assertEqual(expected, scheduled)

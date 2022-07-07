@@ -239,10 +239,15 @@ class DynamicCircuitScheduleAnalysis(BaseScheduler):
         """Visit a generic node such as a gate or barrier."""
         op_duration = self._get_duration(node)
 
-        # It happens to be directives such as barrier
-        t0 = max(  # pylint: disable=invalid-name
-            self._idle_after[bit][1] for bit in node.qargs + node.cargs
-        )
+        # If the measurement qubits overlap, we need to start a new scheduling block.
+        if self._current_block_measure_qargs() & set(node.qargs):
+            self._begin_new_circuit_block()
+            t0 = 0 # pylint: disable=invalid-name
+        else:
+            t0 = max(  # pylint: disable=invalid-name
+                self._idle_after[bit][1] for bit in node.qargs + node.cargs
+            )
+
         t1 = t0 + op_duration  # pylint: disable=invalid-name
         self._update_idles(node, t0, t1)
 
