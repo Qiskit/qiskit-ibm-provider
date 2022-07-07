@@ -12,12 +12,11 @@
 
 """Test dynamical decoupling insertion pass."""
 
-import unittest
 import numpy as np
 from numpy import pi
 
-import qiskit.pulse as pulse
 from ddt import ddt, data
+from qiskit import pulse
 from qiskit.circuit import QuantumCircuit, Delay
 from qiskit.circuit.library import XGate, YGate, RXGate, UGate
 from qiskit.quantum_info import Operator
@@ -26,10 +25,15 @@ from qiskit.transpiler.instruction_durations import InstructionDurations
 from qiskit.transpiler.passmanager import PassManager
 from qiskit.transpiler.exceptions import TranspilerError
 
-from qiskit_ibm_provider.transpiler.passes.scheduling.dynamical_decoupling import PadDynamicalDecoupling
+from qiskit_ibm_provider.transpiler.passes.scheduling.dynamical_decoupling import (
+    PadDynamicalDecoupling,
+)
 from qiskit_ibm_provider.transpiler.passes.scheduling.scheduler import (
     DynamicCircuitScheduleAnalysis,
 )
+
+# pylint: disable=invalid-name
+
 
 @ddt
 class TestPadDynamicalDecoupling(QiskitTestCase):
@@ -155,7 +159,9 @@ class TestPadDynamicalDecoupling(QiskitTestCase):
         pm = PassManager(
             [
                 DynamicCircuitScheduleAnalysis(self.durations),
-                PadDynamicalDecoupling(self.durations, dd_sequence, skip_reset_qubits=False),
+                PadDynamicalDecoupling(
+                    self.durations, dd_sequence, skip_reset_qubits=False
+                ),
             ]
         )
 
@@ -231,42 +237,7 @@ class TestPadDynamicalDecoupling(QiskitTestCase):
 
         self.assertEqual(ghz4_dd, expected)
 
-    def test_insert_midmeas_hahn_alap(self):
-        """Test a single X gate as Hahn echo can absorb in the downstream circuit.
-        global phase: 3π/2."""
-        dd_sequence = [XGate()]
-        pm = PassManager(
-            [
-                DynamicCircuitScheduleAnalysis(self.durations),
-                PadDynamicalDecoupling(self.durations, dd_sequence),
-            ]
-        )
-
-        midmeas_dd = pm.run(self.midmeas)
-
-        combined_u = UGate(0, pi / 2, -pi / 2)
-
-        expected = QuantumCircuit(3, 1)
-        expected.cx(0, 1)
-        expected.delay(625, 0)
-        expected.x(0)
-        expected.delay(625, 0)
-        expected.compose(combined_u, [0], inplace=True)
-        expected.delay(700, 2)
-        expected.cx(1, 2)
-        expected.delay(1000, 1)
-        expected.measure(2, 0)
-        expected.barrier()
-        expected.cx(1, 2)
-        expected.cx(0, 1)
-        expected.delay(700, 2)
-        expected.global_phase = 4.71238898038469
-
-        self.assertEqual(midmeas_dd, expected)
-        # check the absorption into U was done correctly
-        self.assertEqual(Operator(combined_u), Operator(XGate()) & Operator(XGate()))
-
-    def test_insert_midmeas_hahn_asap(self):
+    def test_insert_midmeas_hahn(self):
         """Test a single X gate as Hahn echo can absorb in the upstream circuit."""
         dd_sequence = [RXGate(pi / 4)]
         pm = PassManager(
@@ -283,17 +254,19 @@ class TestPadDynamicalDecoupling(QiskitTestCase):
         expected = QuantumCircuit(3, 1)
         expected.cx(0, 1)
         expected.compose(combined_u, [0], inplace=True)
-        expected.delay(600, 0)
+        expected.delay(500, 0)
         expected.rx(pi / 4, 0)
-        expected.delay(600, 0)
+        expected.delay(500, 0)
         expected.delay(700, 2)
         expected.cx(1, 2)
         expected.delay(1000, 1)
         expected.measure(2, 0)
         expected.barrier()
+        expected.delay(200, 0)
         expected.cx(1, 2)
         expected.cx(0, 1)
         expected.delay(700, 2)
+        expected.barrier()
 
         self.assertEqual(midmeas_dd, expected)
         # check the absorption into U was done correctly
@@ -323,7 +296,9 @@ class TestPadDynamicalDecoupling(QiskitTestCase):
         pm = PassManager(
             [
                 DynamicCircuitScheduleAnalysis(self.durations),
-                PadDynamicalDecoupling(self.durations, dd_sequence, qubits=[0], spacing=spacing),
+                PadDynamicalDecoupling(
+                    self.durations, dd_sequence, qubits=[0], spacing=spacing
+                ),
             ]
         )
 
@@ -415,13 +390,18 @@ class TestPadDynamicalDecoupling(QiskitTestCase):
 
         expected = QuantumCircuit(1)
         expected.reset(0)
-        expected.delay(1000)
+        expected.barrier()
+        expected.delay(90)
+        expected.x(0)
+        expected.delay(810)
+        expected.x(0)
         expected.h(0)
         expected.delay(190, 0)
         expected.x(0)
         expected.delay(1710, 0)
         expected.x(0)
         expected.h(0)
+        expected.barrier()
 
         t2_dd = pm.run(t2)
 
@@ -452,7 +432,10 @@ class TestPadDynamicalDecoupling(QiskitTestCase):
         rx_duration = int(param_value * 1000)
 
         with pulse.build() as rx:
-            pulse.play(pulse.Gaussian(rx_duration, 0.1, rx_duration // 4), pulse.DriveChannel(1))
+            pulse.play(
+                pulse.Gaussian(rx_duration, 0.1, rx_duration // 4),
+                pulse.DriveChannel(1),
+            )
 
         circ.add_calibration("rx", (1,), rx, params=[param_value])
 
@@ -460,11 +443,14 @@ class TestPadDynamicalDecoupling(QiskitTestCase):
 
         dd_sequence = [XGate(), XGate()]
         pm = PassManager(
-            [DynamicCircuitScheduleAnalysis(durations), PadDynamicalDecoupling(durations, dd_sequence)]
+            [
+                DynamicCircuitScheduleAnalysis(durations),
+                PadDynamicalDecoupling(durations, dd_sequence),
+            ]
         )
         pm.run(circ)
         node_start_times = pm.property_set["node_start_time"]
-        for node, times in node_start_times.items():
+        for node, _ in node_start_times.items():
             if isinstance(node.op, RXGate):
                 self.assertEqual(node.op.duration, rx_duration)
 

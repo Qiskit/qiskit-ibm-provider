@@ -12,7 +12,7 @@
 
 """Dynamical decoupling insertion pass for IBM (dynamic circuit) backends."""
 
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 import numpy as np
 from qiskit.circuit import Qubit, Gate
@@ -150,10 +150,10 @@ class PadDynamicalDecoupling(BlockBasePadder):
         self._spacing = spacing
         self._extra_slack_distribution = extra_slack_distribution
 
-        self._dd_sequence_lengths = dict()
+        self._dd_sequence_lengths: Dict[Qubit, list] = {}
         self._sequence_phase = 0
 
-    def _pre_runhook(self, dag: DAGCircuit):
+    def _pre_runhook(self, dag: DAGCircuit) -> None:
         super()._pre_runhook(dag)
 
         num_pulses = len(self._dd_sequence)
@@ -177,12 +177,16 @@ class PadDynamicalDecoupling(BlockBasePadder):
         # Check if DD sequence is identity
         if num_pulses != 1:
             if num_pulses % 2 != 0:
-                raise TranspilerError("DD sequence must contain an even number of gates (or 1).")
+                raise TranspilerError(
+                    "DD sequence must contain an even number of gates (or 1)."
+                )
             noop = np.eye(2)
             for gate in self._dd_sequence:
                 noop = noop.dot(gate.to_matrix())
             if not matrix_equal(noop, IGate().to_matrix(), ignore_phase=True):
-                raise TranspilerError("The DD sequence does not make an identity operation.")
+                raise TranspilerError(
+                    "The DD sequence does not make an identity operation."
+                )
             self._sequence_phase = np.angle(noop[0][0])
 
         # Precompute qubit-wise DD sequence length for performance
@@ -195,7 +199,9 @@ class PadDynamicalDecoupling(BlockBasePadder):
             for gate in self._dd_sequence:
                 try:
                     # Check calibration.
-                    gate_length = dag.calibrations[gate.name][(physical_index, gate.params)]
+                    gate_length = dag.calibrations[gate.name][
+                        (physical_index, gate.params)
+                    ]
                     if gate_length % self._alignment != 0:
                         # This is necessary to implement lightweight scheduling logic for this pass.
                         # Usually the pulse alignment constraint and pulse data chunk size take
@@ -224,7 +230,7 @@ class PadDynamicalDecoupling(BlockBasePadder):
         t_end: int,
         next_node: DAGNode,
         prev_node: DAGNode,
-    ):
+    ) -> None:
         # This routine takes care of the pulse alignment constraint for the DD sequence.
         # Note that the alignment constraint acts on the t0 of the DAGOpNode.
         # Now this constrained scheduling problem is simplified to the problem of
@@ -258,14 +264,18 @@ class PadDynamicalDecoupling(BlockBasePadder):
 
         if self._qubits and self._dag.qubits.index(qubit) not in self._qubits:
             # Target physical qubit is not the target of this DD sequence.
-            self._apply_scheduled_op(block_idx, t_start, Delay(time_interval, self._dag.unit), qubit)
+            self._apply_scheduled_op(
+                block_idx, t_start, Delay(time_interval, self._dag.unit), qubit
+            )
             return
 
         if self._skip_reset_qubits and (
             isinstance(prev_node, DAGInNode) or isinstance(prev_node.op, Reset)
         ):
             # Previous node is the start edge or reset, i.e. qubit is ground state.
-            self._apply_scheduled_op(block_idx, t_start, Delay(time_interval, self._dag.unit), qubit)
+            self._apply_scheduled_op(
+                block_idx, t_start, Delay(time_interval, self._dag.unit), qubit
+            )
             return
 
         slack = time_interval - np.sum(self._dd_sequence_lengths[qubit])
@@ -273,21 +283,27 @@ class PadDynamicalDecoupling(BlockBasePadder):
 
         if slack <= 0:
             # Interval too short.
-            self._apply_scheduled_op(block_idx, t_start, Delay(time_interval, self._dag.unit), qubit)
+            self._apply_scheduled_op(
+                block_idx, t_start, Delay(time_interval, self._dag.unit), qubit
+            )
             return
 
         if len(self._dd_sequence) == 1:
             # Special case of using a single gate for DD
             u_inv = self._dd_sequence[0].inverse().to_matrix()
             theta, phi, lam, phase = OneQubitEulerDecomposer().angles_and_phase(u_inv)
-            if isinstance(next_node, DAGOpNode) and isinstance(next_node.op, (UGate, U3Gate)):
+            if isinstance(next_node, DAGOpNode) and isinstance(
+                next_node.op, (UGate, U3Gate)
+            ):
                 # Absorb the inverse into the successor (from left in circuit)
                 theta_r, phi_r, lam_r = next_node.op.params
                 next_node.op.params = Optimize1qGates.compose_u3(
                     theta_r, phi_r, lam_r, theta, phi, lam
                 )
                 sequence_gphase += phase
-            elif isinstance(prev_node, DAGOpNode) and isinstance(prev_node.op, (UGate, U3Gate)):
+            elif isinstance(prev_node, DAGOpNode) and isinstance(
+                prev_node.op, (UGate, U3Gate)
+            ):
                 # Absorb the inverse into the predecessor (from right in circuit)
                 theta_l, phi_l, lam_l = prev_node.op.params
                 prev_node.op.params = Optimize1qGates.compose_u3(
@@ -296,10 +312,12 @@ class PadDynamicalDecoupling(BlockBasePadder):
                 sequence_gphase += phase
             else:
                 # Don't do anything if there's no single-qubit gate to absorb the inverse
-                self._apply_scheduled_op(block_idx, t_start, Delay(time_interval, self._dag.unit), qubit)
+                self._apply_scheduled_op(
+                    block_idx, t_start, Delay(time_interval, self._dag.unit), qubit
+                )
                 return
 
-        def _constrained_length(values):
+        def _constrained_length(values: np.array) -> np.array:
             return self._alignment * np.floor(values / self._alignment)
 
         # (1) Compute DD intervals satisfying the constraint
@@ -332,7 +350,9 @@ class PadDynamicalDecoupling(BlockBasePadder):
             if dd_ind < len(taus):
                 tau = taus[dd_ind]
                 if tau > 0:
-                    self._apply_scheduled_op(block_idx, idle_after, Delay(tau, self._dag.unit), qubit)
+                    self._apply_scheduled_op(
+                        block_idx, idle_after, Delay(tau, self._dag.unit), qubit
+                    )
                     idle_after += tau
             if dd_ind < len(self._dd_sequence):
                 gate = self._dd_sequence[dd_ind]
@@ -343,12 +363,9 @@ class PadDynamicalDecoupling(BlockBasePadder):
         self._dag.global_phase = self._mod_2pi(self._dag.global_phase + sequence_gphase)
 
     @staticmethod
-    def _mod_2pi(angle: float, atol: float = 0):
+    def _mod_2pi(angle: float, atol: float = 0) -> float:
         """Wrap angle into interval [-π,π). If within atol of the endpoint, clamp to -π"""
         wrapped = (angle + np.pi) % (2 * np.pi) - np.pi
         if abs(wrapped - np.pi) < atol:
             wrapped = -np.pi
         return wrapped
-
-
-
