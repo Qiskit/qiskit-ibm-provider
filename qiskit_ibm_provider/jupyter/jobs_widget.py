@@ -18,7 +18,7 @@ from typing import Any, Union
 
 import ipywidgets as wid
 import plotly.graph_objects as go
-from qiskit.test.mock import FakeBackendV2 as FakeBackend
+from qiskit.providers.fake_provider.fake_backend import FakeBackendV2 as FakeBackend
 
 from ..ibm_backend import IBMBackend
 from ..visualization.interactive.plotly_wrapper import PlotlyWidget

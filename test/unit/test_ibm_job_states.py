@@ -26,7 +26,8 @@ from typing import List, Any, Dict, Optional
 from qiskit import transpile
 from qiskit.providers import JobTimeoutError
 from qiskit.providers.jobstatus import JobStatus
-from qiskit.test.mock.backends.bogota.fake_bogota import FakeBogota
+from qiskit.providers.fake_provider.backends.bogota.fake_bogota import FakeBogota
+
 from qiskit.test.reference_circuits import ReferenceCircuits
 
 from qiskit_ibm_provider.api.exceptions import (
