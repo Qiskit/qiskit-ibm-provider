@@ -23,11 +23,12 @@ from base64 import b64encode
 import logging
 import pytz
 from websocket import WebSocketApp
+
 import ipywidgets as widgets
 import numpy as np
 from sklearn.decomposition import PCA
 from qiskit.providers.jobstatus import JobStatus
-from qiskit.test.mock import FakeBackendV2 as FakeBackend
+from qiskit.providers.fake_provider.fake_backend import FakeBackendV2 as FakeBackend
 
 # PLOTS
 ENABLE_LEVEL_0 = False
