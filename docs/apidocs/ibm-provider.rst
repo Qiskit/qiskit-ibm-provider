@@ -10,3 +10,4 @@ qiskit-ibm-provider API Reference
    ibm_visualization
    ibm_jupyter
    ibm_utils
+   ibm_transpiler
