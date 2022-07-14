@@ -20,7 +20,8 @@ from concurrent import futures
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import suppress
 from unittest import mock
-from typing import List, Any, Dict
+from datetime import datetime
+from typing import List, Any, Dict, Optional
 
 from qiskit import transpile
 from qiskit.providers import JobTimeoutError
@@ -490,6 +491,24 @@ class BaseFakeAPI:
             "pending_jobs": 0,
             "status_msg": "active",
         }
+
+    def backend_properties(self, **_kwargs: Optional[datetime]) -> Dict[str, Any]:
+        """Return backend properties"""
+        return {}
+
+    def backend_pulse_defaults(self) -> Dict:
+        """Return pulse defaults"""
+        return {}
+
+    def backend_job_limit(self) -> Dict[str, Any]:
+        """Return job limit"""
+        return {"maximum_jobs": -1, "running_jobs": 0}
+
+    def backend_reservations(
+        self, *_args: str, **_kwargs: Optional[datetime]
+    ) -> List[Any]:
+        """Return backend reservations"""
+        return []
 
 
 class UnknownStatusAPI(BaseFakeAPI):
