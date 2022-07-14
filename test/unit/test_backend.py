@@ -15,7 +15,7 @@ import os
 import uuid
 from unittest import mock, skipIf
 from test.fake_account_client import BaseFakeAccountClient
-from qiskit.test.mock.backends.bogota.fake_bogota import FakeBogota
+from qiskit.providers.fake_provider.backends.bogota.fake_bogota import FakeBogota
 from qiskit.transpiler.target import Target
 from qiskit import transpile
 from qiskit.test.reference_circuits import ReferenceCircuits
