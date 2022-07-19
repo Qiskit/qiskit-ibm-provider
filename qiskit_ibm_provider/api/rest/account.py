@@ -20,7 +20,6 @@ from qiskit_ibm_provider.utils.utils import filter_data
 
 from .base import RestAdapterBase
 from .backend import Backend
-from .job import Job
 from ..session import RetrySession
 
 logger = logging.getLogger(__name__)
@@ -67,17 +66,6 @@ class Account(RestAdapterBase):
             The backend adapter.
         """
         return Backend(self.session, backend_name, self.url_prefix)
-
-    def job(self, job_id: str) -> Job:
-        """Return an adapter for the job.
-
-        Args:
-            job_id: ID of the job.
-
-        Returns:
-            The backend adapter.
-        """
-        return Job(self.session, job_id, self.url_prefix)
 
     # Client functions.
 
