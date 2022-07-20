@@ -540,10 +540,13 @@ class AccountClient(BaseClient):
         """
         return self.account_api.job(job_id).update_attribute({attr_name: attr_value})
 
-    def job_delete(self, job_id: str) -> None:
+    def job_delete(self, job_id: str) -> Dict[str, Any]:
         """Mark the job for deletion.
 
         Args:
             job_id: ID of the job to be deleted.
+
+        Returns:
+            The job deletion response
         """
-        self.account_api.job(job_id).delete()
+        return self.account_api.job(job_id).delete()
