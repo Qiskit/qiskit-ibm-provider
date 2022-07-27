@@ -1227,10 +1227,10 @@ class IBMCompositeJob(IBMJob):
         if self._result and not refresh:
             return self._result
 
-        job_results = [
-            sub_job.result(refresh=refresh, partial=partial)
-            for sub_job in self._sub_jobs
-        ]
+        for sub_job in self._sub_jobs:
+            if not sub_job.job._use_object_storage:
+                sub_job.job.refresh()
+            job_results = [sub_job.result(refresh=refresh, partial=partial)]
 
         if not partial and any(result is None for result in job_results):
             return None
