@@ -853,6 +853,19 @@ class TestIBMCompositeJobIntegration(IBMTestCase):
                 for job_circ, rjob_circ in zip(job_circuits, rjob_circuits):
                     self.assertEqual(job_circ.data, rjob_circ.data)
 
+    def test_retrieve_result(self):
+        """Test retrieving the results of a composite job multiple times."""
+        job_tags = [uuid.uuid4().hex]
+        job_set = self.sim_backend.run(
+            [self._qc] * 2, max_circuits_per_job=1, job_tags=job_tags
+        )
+        job_set.block_for_submit()
+        # first time retrieving results
+        self.assertTrue(job_set.result())
+        rjob = self.dependencies.provider.job(job_set.job_id())
+        # second time retrieving results
+        self.assertTrue(rjob.result())
+
     def test_jobs(self):
         """Test retrieving a composite job using jobs."""
         job_tags = [uuid.uuid4().hex]

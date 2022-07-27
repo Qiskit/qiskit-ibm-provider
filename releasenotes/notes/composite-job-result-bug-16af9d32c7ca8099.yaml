@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Fixed a bug where :meth:`~qiskit_ibm_provider.job.IBMCompositeJob.result` would
+    error out because the results of sub jobs could not be retrieved. 
