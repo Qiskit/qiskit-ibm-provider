@@ -19,15 +19,16 @@ from qiskit import ClassicalRegister, QuantumCircuit, QuantumRegister
 from qiskit.compiler import transpile
 from qiskit.providers.exceptions import QiskitBackendNotFoundError
 from qiskit.providers.models.backendproperties import BackendProperties
-from qiskit.test import slow_test
 
 from qiskit_ibm_provider import hub_group_project
 from qiskit_ibm_provider.api.clients import AccountClient
 from qiskit_ibm_provider.api.exceptions import RequestsApiError
 
+from qiskit_ibm_provider.job.ibm_job import IBMJob
 from qiskit_ibm_provider.ibm_backend import IBMBackend
 from qiskit_ibm_provider.ibm_backend_service import IBMBackendService
 from qiskit_ibm_provider.ibm_provider import IBMProvider
+from ..account import temporary_account_config_file
 from ..decorators import (
     IntegrationTestDependencies,
     integration_test_setup,
@@ -100,6 +101,7 @@ class TestIBMProviderHubGroupProject(IBMTestCase):
         """Initial test setup."""
         # pylint: disable=arguments-differ
         super().setUp()
+        self.dependencies = dependencies
         self.provider = IBMProvider(token=dependencies.token, url=dependencies.url)
 
     def test_get_hgp(self):
@@ -116,6 +118,26 @@ class TestIBMProviderHubGroupProject(IBMTestCase):
         """Test get hgps without a filter."""
         hgps = self.provider._get_hgps()
         self.assertIn(self.provider.backend._default_hgp, hgps)
+
+    def test_active_account_instance(self):
+        """Test active_account returns correct instance."""
+        hgp = self.provider._get_hgp()
+        provider = IBMProvider(
+            token=self.dependencies.token,
+            url=self.dependencies.url,
+            instance=hgp.name,
+        )
+        self.assertEqual(hgp.name, provider.active_account()["instance"])
+
+    def test_active_account_with_saved_instance(self):
+        """Test active_account with a saved instance."""
+        hgp = self.provider._get_hgp()
+        name = "foo"
+        with temporary_account_config_file(
+            name=name, token=self.dependencies.token, instance=hgp.name
+        ):
+            provider = IBMProvider(name=name)
+        self.assertEqual(hgp.name, provider.active_account()["instance"])
 
 
 class TestIBMProviderServices(IBMTestCase):
@@ -149,6 +171,23 @@ class TestIBMProviderServices(IBMTestCase):
         """Test the provider has backends."""
         backends = self.dependencies.provider.backends()
         self.assertTrue(len(backends) > 0)
+
+    def test_jobs(self):
+        """Test accessing jobs directly from the provider."""
+        jobs = self.dependencies.provider.jobs()
+        job = self.dependencies.provider.job(jobs[0].job_id())
+        self.assertIsInstance(job, IBMJob)
+        self.assertTrue(len(jobs) > 0)
+
+    def test_job_ids(self):
+        """Test job_ids from the provider."""
+        job_ids = self.dependencies.provider.job_ids()
+        self.assertTrue(len(job_ids) > 0)
+
+    def test_reservations(self):
+        """Test my_reservations from the provider."""
+        reservations = self.dependencies.provider.my_reservations()
+        self.assertTrue(len(reservations) > 0)
 
     def test_get_backend(self):
         """Test getting a backend from the provider."""
@@ -191,6 +230,7 @@ class TestIBMProviderServices(IBMTestCase):
             if backend.configuration().simulator:
                 self.assertEqual(properties, None)
 
+    @skip("Test is intermittently timeing out")
     def test_headers_in_result_sims(self):
         """Test that the qobj headers are passed onto the results for sims."""
         backend = self.dependencies.provider.get_backend("ibmq_qasm_simulator")
@@ -202,23 +242,6 @@ class TestIBMProviderServices(IBMTestCase):
         # qobj.experiments[0].header.some_field = 'extra info'
 
         job = backend.run(circuits, header=custom_header)
-        result = job.result()
-        self.assertTrue(custom_header.items() <= job.header().items())
-        self.assertTrue(custom_header.items() <= result.header.to_dict().items())
-        # self.assertEqual(result.results[0].header.some_field, 'extra info')
-
-    @slow_test
-    def test_headers_in_result_devices(self):
-        """Test that the qobj headers are passed onto the results for devices."""
-        custom_header = {"x": 1, "y": [1, 2, 3], "z": {"a": 4}}
-
-        # TODO Use circuit metadata for individual header when terra PR-5270 is released.
-        # qobj.experiments[0].header.some_field = 'extra info'
-
-        job = self.real_device_backend.run(
-            transpile(self.qc1, backend=self.real_device_backend), header=custom_header
-        )
-        job.wait_for_final_state(wait=300, callback=self.simple_job_callback)
         result = job.result()
         self.assertTrue(custom_header.items() <= job.header().items())
         self.assertTrue(custom_header.items() <= result.header.to_dict().items())

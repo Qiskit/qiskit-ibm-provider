@@ -17,7 +17,9 @@ from unittest import skip
 
 from qiskit import ClassicalRegister, QuantumCircuit, QuantumRegister
 from qiskit.compiler import transpile
-from qiskit.providers.aer.noise import NoiseModel
+from qiskit.providers.aer.noise import (
+    NoiseModel,
+)  # pylint: disable=import-error,no-name-in-module
 from qiskit.test.reference_circuits import ReferenceCircuits
 
 from qiskit_ibm_provider import IBMBackend
