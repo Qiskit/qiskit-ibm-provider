@@ -197,7 +197,7 @@ class WebsocketClient(BaseWebsocketClient):
             WebsocketError: If the websocket connection ended unexpectedly.
             WebsocketTimeoutError: If the timeout has been reached.
         """
-        url = "{}/jobs/{}/status/v/1".format(self._websocket_url, self._job_id)
+        url = "{}/jobs/{}/status".format(self._websocket_url, self._job_id)
         return self.stream(url=url, retries=retries, backoff_factor=backoff_factor)
 
     def _handle_stream_iteration(self) -> None:
