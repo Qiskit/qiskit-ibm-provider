@@ -29,7 +29,7 @@ class DynamicCircuitScheduleAnalysis(BaseScheduler):
     backends due to the limitations imposed by hardware. This is expected to evolve over time as the
     dynamic circuit backends also change.
 
-    In its current form this is slow to Qiskit's ASAP scheduler in which instructions
+    In its current form this is similar to Qiskit's ASAP scheduler in which instructions
     start as early as possible.
 
     The primary differences are that:
