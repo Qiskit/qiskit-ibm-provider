@@ -121,7 +121,7 @@ class DynamicCircuitScheduleAnalysis(BaseScheduler):
         """Handling case of a conditional execution.
 
         Conditional execution durations are currently non-deterministic. as we do not know
-        the time it will take to begin executing the block. We do however know when the
+        the time it will take to begin executing the block. We do however know the
         duration of the block contents execution (provided it does not also contain
         conditional executions).
 
@@ -150,9 +150,9 @@ class DynamicCircuitScheduleAnalysis(BaseScheduler):
                 #           |t0q
                 # Q ▒▒▒▒▒▒▒▒▒▒▒
                 # C ▒▒▒░░░▒▒░░░
-                #         |t0q
+                #         |t0c
                 #
-                t0c = max(t0q, t0c)
+                t0c = t0q
             t1c = t0c
             for bit in node.op.condition_bits:
                 # Lock clbit until state is read
