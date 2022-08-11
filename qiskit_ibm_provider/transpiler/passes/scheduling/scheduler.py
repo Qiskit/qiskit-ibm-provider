@@ -184,6 +184,8 @@ class DynamicCircuitScheduleAnalysis(BaseScheduler):
         which begins another grouping sequence. This behavior will change in future
         backend software updates."""
         current_block_measure_qargs = self._current_block_measure_qargs()
+        # We handle a set of qubits here as _visit_reset currently calls
+        # this method and a reset may have multiple qubits.
         measure_qargs = set(node.qargs)
 
         t0q = max(
