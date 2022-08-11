@@ -191,6 +191,7 @@ class PadDynamicalDecoupling(BlockBasePadder):
                 raise TranspilerError(
                     "DD sequence must contain an even number of gates (or 1)."
                 )
+            # TODO: this check should use the quantum info package in Qiskit.
             noop = np.eye(2)
             for gate in self._dd_sequence:
                 noop = noop.dot(gate.to_matrix())
