@@ -42,6 +42,7 @@ class DynamicCircuitScheduleAnalysis(BaseScheduler):
     * It is possible to apply gates during a measurement.
     * Measurements on disjoint qubits happen simultaneously and are part of the same block.
         Measurements that are not lexicographically neighbors in the generated QASM3 will
+        such as ``measure $0; x $1; measure $2;``
         happen in separate blocks.
 
     """
