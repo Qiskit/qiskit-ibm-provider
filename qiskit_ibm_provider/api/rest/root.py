@@ -20,7 +20,7 @@ from qiskit_ibm_provider.utils.utils import filter_data
 
 from .base import RestAdapterBase
 from .utils.data_mapper import map_job_response
-
+from .job import Job
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +36,17 @@ class Api(RestAdapterBase):
         "bookings": "/Network/bookings/v2",
         "jobs": "/jobs/v2",
     }
+
+    def job(self, job_id: str) -> Job:
+        """Return an adapter for the job.
+
+        Args:
+            job_id: ID of the job.
+
+        Returns:
+            The backend adapter.
+        """
+        return Job(self.session, job_id)
 
     # Client functions.
 

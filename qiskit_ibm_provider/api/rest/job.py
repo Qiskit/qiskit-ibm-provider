@@ -38,7 +38,7 @@ class Job(RestAdapterBase):
         "download_url": "/jobDownloadUrl",
         "self": "/v/1",
         "self_update": "",
-        "status": "/status/v/1",
+        "status": "/status",
         "properties": "/properties",
         "result_url": "/resultDownloadUrl",
         "upload_url": "/jobUploadUrl",
