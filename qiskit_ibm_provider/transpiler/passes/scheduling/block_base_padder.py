@@ -206,7 +206,6 @@ class BlockBasePadder(TransformationPass):
         self._current_block_idx = block_idx
 
         t1 = t0 + node.op.duration  # pylint: disable=invalid-name
-
         self._block_duration = max(self._block_duration, t1)
 
         for bit in node.qargs:
