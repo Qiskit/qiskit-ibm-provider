@@ -254,13 +254,14 @@ class BlockBasePadder(TransformationPass):
         if not is_terminating_barrier:
             # Terminate with a barrier to be clear timing is non-deterministic
             # across the barrier.
-            self._apply_scheduled_op(
+            barrier_node = self._apply_scheduled_op(
                 block_idx,
                 block_duration,
                 Barrier(self._dag.num_qubits()),
                 self._dag.qubits,
                 [],
             )
+            barrier_node.op.duration = 0
 
         # Reset idles for the new block.
         self._idle_after = {bit: 0 for bit in self._dag.qubits}
@@ -289,7 +290,7 @@ class BlockBasePadder(TransformationPass):
         oper: Instruction,
         qubits: Union[Qubit, List[Qubit]],
         clbits: Optional[Union[Clbit, List[Clbit]]] = None,
-    ) -> None:
+    ) -> DAGNode:
         """Add new operation to DAG with scheduled information.
 
         This is identical to apply_operation_back + updating the node_start_time propety.
@@ -308,3 +309,4 @@ class BlockBasePadder(TransformationPass):
 
         new_node = self._dag.apply_operation_back(oper, qargs=qubits, cargs=clbits)
         self.property_set["node_start_time"][new_node] = (block_idx, t_start)
+        return new_node

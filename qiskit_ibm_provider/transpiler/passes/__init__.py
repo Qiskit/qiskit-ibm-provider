@@ -17,6 +17,8 @@ Transpiler Passes (:mod:`qiskit_ibm_provider.transpiler.passes`)
 
 .. currentmodule:: qiskit_ibm_provider.transpiler.passes
 
+A collection of transpiler passes for IBM backends.
+
 .. autosummary::
    :toctree: ../stubs/
 
@@ -27,4 +29,5 @@ Transpiler Passes (:mod:`qiskit_ibm_provider.transpiler.passes`)
 
 # circuit scheduling
 from .scheduling import DynamicCircuitScheduleAnalysis
+from .scheduling import PadDynamicalDecoupling
 from .scheduling import PadDelay
