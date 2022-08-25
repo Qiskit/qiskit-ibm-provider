@@ -153,7 +153,7 @@ def qubit_props_list_from_props(
             t_1 = None
         try:
             t_2 = properties.t2(qubit)
-        except Exception:
+        except Exception: # pylint: disable=broad-except
             t_2 = None
         try:
             frequency = properties.frequency(qubit)
