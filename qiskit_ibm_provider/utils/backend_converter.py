@@ -149,7 +149,7 @@ def qubit_props_list_from_props(
     for qubit, _ in enumerate(properties.qubits):
         try:
             t_1 = properties.t1(qubit)
-        except Exception:
+        except Exception: # pylint: disable=broad-except
             t_1 = None
         try:
             t_2 = properties.t2(qubit)
