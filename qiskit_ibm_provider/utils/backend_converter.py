@@ -157,7 +157,7 @@ def qubit_props_list_from_props(
             t_2 = None
         try:
             frequency = properties.frequency(qubit)
-        except Exception:
+        except Exception: # pylint: disable=broad-except
             t_2 = None
         try:
             anharmonicity = properties.qubit_property(qubit, "anharmonicity")[0]
