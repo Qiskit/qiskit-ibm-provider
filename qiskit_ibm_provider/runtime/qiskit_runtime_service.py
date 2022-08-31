@@ -33,8 +33,6 @@ from .exceptions import IBMNotAuthorizedError, IBMInputValueError, IBMAccountErr
 
 from .hub_group_project import HubGroupProject  # pylint: disable=cyclic-import
 
-from .runtime_program import RuntimeProgram
-
 from .utils import to_python_identifier
 from .utils.backend_decoder import configuration_from_server_data
 from .utils.hgp import to_instance_format, from_instance_format
@@ -183,7 +181,6 @@ class QiskitRuntimeService(Provider):
         )
 
         self._channel = self._account.channel
-        self._programs: Dict[str, RuntimeProgram] = {}
         self._backends: Dict[str, "ibm_backend.IBMBackend"] = {}
 
         if self._channel == "ibm_cloud":
