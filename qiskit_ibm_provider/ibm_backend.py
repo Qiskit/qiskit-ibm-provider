@@ -20,7 +20,6 @@ from typing import Iterable, Dict, List, Union, Optional, Any
 
 from qiskit.circuit import QuantumCircuit, Parameter, Delay
 from qiskit.circuit.duration import duration_in_dt
-from qiskit.compiler import assemble
 from qiskit.providers.backend import BackendV2 as Backend
 from qiskit.providers.models import (
     BackendStatus,
@@ -56,7 +55,7 @@ from .exceptions import (
     IBMBackendApiError,
     IBMBackendApiProtocolError,
 )
-from .job import IBMJob, IBMCircuitJob, IBMCompositeJob
+from .job import IBMJob, IBMCircuitJob
 from .utils import validate_job_tags
 from .utils.backend import convert_reservation_data
 from .utils.backend_converter import (
@@ -64,6 +63,8 @@ from .utils.backend_converter import (
 )
 from .utils.converters import local_to_utc
 from .utils.json_decoder import defaults_from_server_data, properties_from_server_data
+
+from .runtime.qiskit_runtime_service import QiskitRuntimeService
 
 logger = logging.getLogger(__name__)
 
@@ -345,6 +346,7 @@ class IBMBackend(Backend):
         circuits: Union[
             QuantumCircuit, Schedule, List[Union[QuantumCircuit, Schedule]]
         ],
+        program_id: str = "circuit-runner",
         job_name: Optional[str] = None,
         job_tags: Optional[List[str]] = None,
         max_circuits_per_job: Optional[int] = None,
@@ -457,31 +459,12 @@ class IBMBackend(Backend):
                 - If ESP readout is used and the backend does not support this.
         """
         # pylint: disable=arguments-differ
+
         validate_job_tags(job_tags, IBMBackendValueError)
 
         status = self.status()
         if status.operational is True and status.status_msg != "active":
             warnings.warn(f"The backend {self.name} is currently paused.")
-
-        sim_method = None
-        if self.configuration().simulator:
-            sim_method = getattr(self.configuration(), "simulation_method", None)
-        if noise_model:
-            try:
-                noise_model = noise_model.to_dict()
-            except AttributeError:
-                pass
-        measure_esp_enabled = getattr(
-            self.configuration(), "measure_esp_enabled", False
-        )
-        # set ``use_measure_esp`` to backend value if not set by user
-        if use_measure_esp is None:
-            use_measure_esp = measure_esp_enabled
-        if use_measure_esp and not measure_esp_enabled:
-            raise IBMBackendValueError(
-                "ESP readout not supported on this device. Please make sure the flag "
-                "'use_measure_esp' is unset or set to 'False'."
-            )
 
         if isinstance(shots, float):
             shots = int(shots)
@@ -489,8 +472,15 @@ class IBMBackend(Backend):
         if not self.configuration().simulator:
             circuits = self._deprecate_id_instruction(circuits)
 
-        run_config_dict = self._get_run_config(
-            qobj_header=header,
+        service = QiskitRuntimeService()
+        backend = service.backend(self.name)
+        return backend.run(
+            circuits,
+            program_id=program_id,
+            job_name=job_name,
+            job_tags=job_tags,
+            max_circuits_per_job=max_circuits_per_job,
+            header=header,
             shots=shots,
             memory=memory,
             qubit_lo_freq=qubit_lo_freq,
@@ -503,44 +493,12 @@ class IBMBackend(Backend):
             rep_time=rep_time,
             rep_delay=rep_delay,
             init_qubits=init_qubits,
+            parameter_binds=parameter_binds,
             use_measure_esp=use_measure_esp,
+            live_data_enabled=live_data_enabled,
             noise_model=noise_model,
             **run_config,
         )
-        if parameter_binds:
-            run_config_dict["parameter_binds"] = parameter_binds
-        if sim_method and "method" not in run_config_dict:
-            run_config_dict["method"] = sim_method
-
-        if isinstance(circuits, list):
-            chunk_size = None
-            if hasattr(self.configuration(), "max_experiments"):
-                backend_max = self.configuration().max_experiments
-                chunk_size = (
-                    backend_max
-                    if max_circuits_per_job is None
-                    else min(backend_max, max_circuits_per_job)
-                )
-            elif max_circuits_per_job:
-                chunk_size = max_circuits_per_job
-
-            if chunk_size and len(circuits) > chunk_size:
-                circuits_list = [
-                    circuits[x : x + chunk_size]
-                    for x in range(0, len(circuits), chunk_size)
-                ]
-                return IBMCompositeJob(
-                    backend=self,
-                    api_client=self._api_client,
-                    circuits_list=circuits_list,
-                    run_config=run_config_dict,
-                    name=job_name,
-                    tags=job_tags,
-                )
-
-        qobj = assemble(circuits, self, **run_config_dict)
-
-        return self._submit_job(qobj, job_name, job_tags, live_data_enabled)
 
     def _get_run_config(self, **kwargs: Any) -> Dict:
         """Return the consolidated runtime configuration."""
