@@ -12,14 +12,11 @@
 
 """Qiskit runtime service."""
 
-import json
 import logging
 import traceback
 import warnings
-from datetime import datetime
 from collections import OrderedDict
-from typing import Dict, Callable, Optional, Union, List, Any, Type
-from dataclasses import asdict
+from typing import Dict, Callable, Optional, Union, List, Any
 
 from qiskit.providers.backend import BackendV1 as Backend
 from qiskit.providers.provider import ProviderV1 as Provider
@@ -31,27 +28,18 @@ from .accounts import AccountManager, Account, AccountType, ChannelType
 from .proxies import ProxyConfiguration
 from .api.clients import AuthClient, VersionClient
 from .api.clients.runtime import RuntimeClient
-from .api.exceptions import RequestsApiError
 from .constants import QISKIT_IBM_RUNTIME_API_URL
 from .exceptions import IBMNotAuthorizedError, IBMInputValueError, IBMAccountError
-from .exceptions import (
-    IBMRuntimeError,
-    RuntimeDuplicateProgramError,
-    RuntimeProgramNotFound,
-    RuntimeJobNotFound,
-)
+
 from .hub_group_project import HubGroupProject  # pylint: disable=cyclic-import
-from .program.result_decoder import ResultDecoder
-from .runtime_job import RuntimeJob
-from .runtime_program import RuntimeProgram, ParameterNamespace
-from .runtime_session import RuntimeSession  # pylint: disable=cyclic-import
-from .utils import RuntimeDecoder, to_base64_string, to_python_identifier
+
+from .runtime_program import RuntimeProgram
+
+from .utils import to_python_identifier
 from .utils.backend_decoder import configuration_from_server_data
 from .utils.hgp import to_instance_format, from_instance_format
-from .utils.utils import validate_job_tags, validate_runtime_options
+
 from .api.client_parameters import ClientParameters
-from .runtime_options import RuntimeOptions
-from .utils.deprecation import deprecate_function
 
 logger = logging.getLogger(__name__)
 
@@ -551,7 +539,6 @@ class QiskitRuntimeService(Provider):
             )
         return filter_backends(backends, filters=filters, **kwargs)
 
-
     @staticmethod
     def _get_channel_for_auth(auth: str) -> str:
         """Returns channel type based on auth"""
@@ -663,7 +650,6 @@ class QiskitRuntimeService(Provider):
             raise QiskitBackendNotFoundError("No backend matches the criteria")
         return backends[0]
 
- 
     @property
     def channel(self) -> str:
         """Return the channel type used.
