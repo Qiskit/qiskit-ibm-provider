@@ -64,7 +64,7 @@ from .utils.backend_converter import (
 from .utils.converters import local_to_utc
 from .utils.json_decoder import defaults_from_server_data, properties_from_server_data
 
-from .runtime.qiskit_runtime_service import QiskitRuntimeService
+from .qiskit_ibm_runtime.qiskit_runtime_service import QiskitRuntimeService
 
 logger = logging.getLogger(__name__)
 
