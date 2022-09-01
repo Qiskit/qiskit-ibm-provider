@@ -76,7 +76,7 @@ setuptools.setup(
     extras_require={
         "visualization": [
             "matplotlib>=2.1",
-            "ipywidgets<=8.0.0",
+            "ipywidgets<8.0.0",
             "seaborn>=0.9.0",
             "plotly>=4.4",
             "ipyvuetify>=1.1",
