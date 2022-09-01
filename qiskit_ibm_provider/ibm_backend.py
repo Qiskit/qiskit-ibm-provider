@@ -18,7 +18,7 @@ import warnings
 from datetime import datetime as python_datetime
 from typing import Iterable, Dict, List, Union, Optional, Any
 
-from qiskit_ibm_runtime.runtime_job import RuntimeJob
+
 from qiskit.circuit import QuantumCircuit, Parameter, Delay
 from qiskit.circuit.duration import duration_in_dt
 from qiskit.providers.backend import BackendV2 as Backend
@@ -43,6 +43,7 @@ from qiskit.qobj import QasmQobj, PulseQobj
 from qiskit.qobj.utils import MeasLevel, MeasReturnType
 from qiskit.tools.events.pubsub import Publisher
 from qiskit.transpiler.target import Target
+from qiskit_ibm_runtime.runtime_job import RuntimeJob
 
 from qiskit_ibm_provider import ibm_provider  # pylint: disable=unused-import
 from .api.clients import AccountClient

@@ -43,5 +43,10 @@ from .converters import (
     seconds_to_duration,
     duration_difference,
 )
-from .utils import to_python_identifier, validate_job_tags, get_runtime_api_base_url
+from .utils import (
+    to_python_identifier,
+    validate_job_tags,
+    get_runtime_api_base_url,
+    resolve_crn,
+)
 from .json import RuntimeEncoder, RuntimeDecoder, to_base64_string

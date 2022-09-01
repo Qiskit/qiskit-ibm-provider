@@ -19,10 +19,11 @@ from urllib.parse import urlparse
 from requests.auth import AuthBase
 from typing_extensions import Literal
 
-from .exceptions import InvalidAccountError
+from .exceptions import InvalidAccountError, CloudResourceNameResolutionError
 from ..api.auth import QuantumAuth
 from ..proxies import ProxyConfiguration
 from ..utils.hgp import from_instance_format
+from ..utils import resolve_crn
 
 AccountType = Optional[Literal["cloud", "legacy"]]
 ChannelType = Optional[Literal["ibm_cloud", "ibm_quantum"]]
@@ -116,6 +117,39 @@ class Account:
         self._assert_valid_instance(self.channel, self.instance)
         self._assert_valid_proxies(self.proxies)
         return self
+
+    def resolve_crn(self) -> None:
+        """Resolves the corresponding unique Cloud Resource Name (CRN) for the given non-unique service
+        instance name and updates the ``instance`` attribute accordingly.
+
+        No-op if ``channel`` attribute is set to ``ibm_quantum``.
+        No-op if ``instance`` attribute is set to a Cloud Resource Name (CRN).
+
+        Raises:
+            CloudResourceNameResolutionError: if CRN value cannot be resolved.
+        """
+        if self.channel == "ibm_cloud":
+            crn = resolve_crn(
+                channel=self.channel,
+                url=self.url,
+                token=self.token,
+                instance=self.instance,
+            )
+            if len(crn) == 0:
+                raise CloudResourceNameResolutionError(
+                    f"Failed to resolve CRN value for the provided service name {self.instance}."
+                )
+            if len(crn) > 1:
+                # handle edge-case where multiple service instances with the same name exist
+                logger.warning(
+                    "Multiple CRN values found for service name %s: %s. Using %s.",
+                    self.instance,
+                    crn,
+                    crn[0],
+                )
+
+            # overwrite with CRN value
+            self.instance = crn[0]
 
     @staticmethod
     def _assert_valid_channel(channel: ChannelType) -> None:
