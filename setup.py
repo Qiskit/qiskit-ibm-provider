@@ -20,6 +20,7 @@ import setuptools
 
 REQUIREMENTS = [
     "qiskit-terra>=0.20.0",
+    "qiskit-ibm-runtime>=0.6.2",
     "requests>=2.19",
     "requests-ntlm>=1.1.0",
     "numpy>=1.13",
@@ -27,6 +28,7 @@ REQUIREMENTS = [
     "python-dateutil>=2.8.0",
     "websocket-client>=1.0.1",
     "websockets>=10.0",
+    "ibm-platform-services>=0.22.6"
 ]
 
 # Handle version.
