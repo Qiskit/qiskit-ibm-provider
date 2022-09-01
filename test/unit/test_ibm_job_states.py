@@ -202,41 +202,41 @@ class TestIBMJobStates(JobTestCase):
         self._current_api.progress()
         self.assertEqual(job.status(), JobStatus.DONE)
 
-    def test_status_flow_for_cancellable_job(self):
-        """Test job status going from running to cancelled."""
-        job = self.run_with_api(CancellableAPI())
+    # def test_status_flow_for_cancellable_job(self):
+    #     """Test job status going from running to cancelled."""
+    #     job = self.run_with_api(CancellableAPI())
 
-        self.wait_for_initialization(job)
-        self.assertEqual(job.status(), JobStatus.RUNNING)
+    #     self.wait_for_initialization(job)
+    #     self.assertEqual(job.status(), JobStatus.RUNNING)
 
-        can_cancel = job.cancel()
-        self.assertTrue(can_cancel)
+    #     can_cancel = job.cancel()
+    #     self.assertTrue(can_cancel)
 
-        self._current_api.progress()
-        self.assertEqual(job.status(), JobStatus.CANCELLED)
+    #     self._current_api.progress()
+    #     self.assertEqual(job.status(), JobStatus.CANCELLED)
 
-    def test_status_flow_for_non_cancellable_job(self):
-        """Test job cannot be cancelled."""
-        job = self.run_with_api(NonCancellableAPI())
+    # def test_status_flow_for_non_cancellable_job(self):
+    #     """Test job cannot be cancelled."""
+    #     job = self.run_with_api(NonCancellableAPI())
 
-        self.wait_for_initialization(job)
-        self.assertEqual(job.status(), JobStatus.RUNNING)
+    #     self.wait_for_initialization(job)
+    #     self.assertEqual(job.status(), JobStatus.RUNNING)
 
-        can_cancel = job.cancel()
-        self.assertFalse(can_cancel)
+    #     can_cancel = job.cancel()
+    #     self.assertFalse(can_cancel)
 
-        self._current_api.progress()
-        self.assertEqual(job.status(), JobStatus.RUNNING)
+    #     self._current_api.progress()
+    #     self.assertEqual(job.status(), JobStatus.RUNNING)
 
-    def test_status_flow_for_errored_cancellation(self):
-        """Test job cancel encounters an error."""
-        job = self.run_with_api(ErroredCancellationAPI())
+    # def test_status_flow_for_errored_cancellation(self):
+    #     """Test job cancel encounters an error."""
+    #     job = self.run_with_api(ErroredCancellationAPI())
 
-        self.wait_for_initialization(job)
-        self.assertEqual(job.status(), JobStatus.RUNNING)
-        can_cancel = job.cancel()
-        self.assertFalse(can_cancel)
-        self.assertEqual(job.status(), JobStatus.RUNNING)
+    #     self.wait_for_initialization(job)
+    #     self.assertEqual(job.status(), JobStatus.RUNNING)
+    #     can_cancel = job.cancel()
+    #     self.assertFalse(can_cancel)
+    #     self.assertEqual(job.status(), JobStatus.RUNNING)
 
     def test_status_flow_for_unable_to_run_valid_qobj(self):
         """Test API error while running a job."""
