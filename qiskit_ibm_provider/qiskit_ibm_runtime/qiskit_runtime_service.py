@@ -25,7 +25,7 @@ from qiskit.providers.exceptions import QiskitBackendNotFoundError
 from qiskit.providers.providerutils import filter_backends
 
 from qiskit_ibm_runtime import ibm_backend
-from .accounts import AccountManager, Account, AccountType, ChannelType
+from ..accounts import AccountManager, Account, AccountType, ChannelType
 from .proxies import ProxyConfiguration
 from .api.clients import AuthClient, VersionClient
 from .api.clients.runtime import RuntimeClient
