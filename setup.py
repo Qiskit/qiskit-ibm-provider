@@ -28,7 +28,7 @@ REQUIREMENTS = [
     "python-dateutil>=2.8.0",
     "websocket-client>=1.0.1",
     "websockets>=10.0",
-    "ibm-platform-services>=0.22.6"
+    "ibm-platform-services>=0.22.6",
 ]
 
 # Handle version.
