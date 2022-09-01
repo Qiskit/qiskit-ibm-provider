@@ -16,7 +16,7 @@ from typing import Optional, List, Dict, Union, Any
 from dataclasses import dataclass, asdict, field
 import copy
 
-from .utils.deprecation import issue_deprecation_msg
+from ..utils.deprecation import issue_deprecation_msg
 
 
 @dataclass

@@ -21,8 +21,8 @@ from .base import RestAdapterBase
 from .program import Program
 from .program_job import ProgramJob
 from .runtime_session import RuntimeSession
-from ...utils import RuntimeEncoder
-from ...utils.converters import local_to_utc
+from ....utils import RuntimeEncoder
+from ....utils.converters import local_to_utc
 from .cloud_backend import CloudBackend
 
 logger = logging.getLogger(__name__)

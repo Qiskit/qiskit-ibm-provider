@@ -18,7 +18,7 @@ from dataclasses import dataclass
 from typing import Optional, Any
 
 from .exceptions import IBMInputValueError
-from .utils.deprecation import issue_deprecation_msg
+from ..utils.deprecation import issue_deprecation_msg
 from .options import Options
 
 

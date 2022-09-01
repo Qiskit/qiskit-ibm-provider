@@ -26,7 +26,7 @@ from qiskit.providers.providerutils import filter_backends
 
 from qiskit_ibm_runtime import ibm_backend
 from ..accounts import AccountManager, Account, AccountType, ChannelType
-from .proxies import ProxyConfiguration
+from ..proxies import ProxyConfiguration
 from .api.clients import AuthClient, VersionClient
 from .api.clients.runtime import RuntimeClient
 from .constants import QISKIT_IBM_RUNTIME_API_URL
@@ -35,10 +35,10 @@ from .api.exceptions import RequestsApiError
 
 from .hub_group_project import HubGroupProject  # pylint: disable=cyclic-import
 
-from .utils import to_python_identifier
-from .utils.backend_decoder import configuration_from_server_data
-from .utils.hgp import to_instance_format, from_instance_format
-from .utils.utils import validate_job_tags, validate_runtime_options
+from ..utils import to_python_identifier
+from ..utils.backend_decoder import configuration_from_server_data
+from ..utils.hgp import to_instance_format, from_instance_format
+from ..utils.utils import validate_job_tags, validate_runtime_options
 from .runtime_program import ParameterNamespace
 from .program.result_decoder import ResultDecoder
 

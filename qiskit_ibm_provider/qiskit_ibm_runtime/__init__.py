@@ -206,10 +206,10 @@ import logging
 from .qiskit_runtime_service import QiskitRuntimeService
 
 from .runtime_job import RuntimeJob
-from .utils.json import RuntimeEncoder, RuntimeDecoder
+from ..utils.json import RuntimeEncoder, RuntimeDecoder
 
 from .exceptions import *
-from .utils.utils import setup_logger
+from ..utils.utils import setup_logger
 from .version import __version__
 
 # Setup the logger for the IBM Quantum Provider package.

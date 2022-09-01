@@ -22,9 +22,9 @@ from qiskit_ibm_runtime import (  # pylint: disable=unused-import
 )
 
 from .api.clients import AccountClient
-from .utils.backend_decoder import configuration_from_server_data
+from ..utils.backend_decoder import configuration_from_server_data
 from .api.client_parameters import ClientParameters
-from .utils.hgp import from_instance_format
+from ..utils.hgp import from_instance_format
 
 logger = logging.getLogger(__name__)
 

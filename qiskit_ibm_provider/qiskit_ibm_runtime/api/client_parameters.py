@@ -14,9 +14,9 @@
 
 from typing import Dict, Optional, Any, Union
 
-from ..utils import get_runtime_api_base_url
+from ...utils import get_runtime_api_base_url
 from ..api.auth import QuantumAuth, CloudAuth
-from ..proxies import ProxyConfiguration
+from ...proxies import ProxyConfiguration
 
 TEMPLATE_IBM_HUBS = "{prefix}/Network/{hub}/Groups/{group}/Projects/{project}"
 """str: Template for creating an IBM Quantum URL with hub/group/project information."""

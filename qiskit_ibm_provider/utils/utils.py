@@ -20,10 +20,12 @@ import re
 from queue import Queue
 from threading import Condition
 from typing import List, Optional, Type, Any, Dict, Union, Tuple
+from urllib.parse import urlparse
 
 from qiskit.providers.jobstatus import JobStatus
 
 from ..apiconstants import ApiJobStatus
+from ..exceptions import IBMInputValueError
 
 API_TO_JOB_STATUS = {
     ApiJobStatus.CREATING: JobStatus.INITIALIZING,
@@ -102,6 +104,88 @@ def validate_job_tags(
     ):
         raise exception("job_tags needs to be a list or strings.")
 
+def validate_runtime_options(options: Dict, channel: str) -> None:
+    """Validate runtime options.
+
+    Args:
+        options: Runtime options to validate.
+
+    Raises:
+        IBMInputValueError: If input values are invalid.
+    """
+    if options.get("image") and not re.match(
+        "[a-zA-Z0-9]+([/.\\-_][a-zA-Z0-9]+)*:[a-zA-Z0-9]+([.\\-_][a-zA-Z0-9]+)*$",
+        options["image"],
+    ):
+        raise IBMInputValueError('"image" needs to be in form of image_name:tag')
+
+    if channel == "ibm_quantum" and not options.get("backend"):
+        raise IBMInputValueError('"backend" is required for ``ibm_quantum`` runtime.')
+
+    if options.get("log_level") and not isinstance(
+        logging.getLevelName(options["log_level"].upper()), int
+    ):
+        raise IBMInputValueError(
+            f"{options['log_level']} is not a valid log level. The valid log levels are: "
+            "`DEBUG`, `INFO`, `WARNING`, `ERROR`, and `CRITICAL`."
+        )
+
+def is_crn(locator: str) -> bool:
+    """Check if a given value is a CRN (Cloud Resource Name).
+
+    Args:
+        locator: The value to check.
+
+    Returns:
+        Whether the input is a CRN.
+    """
+    return isinstance(locator, str) and locator.startswith("crn:")
+
+def get_runtime_api_base_url(url: str, instance: str) -> str:
+    """Computes the Runtime API base URL based on the provided input parameters.
+
+    Args:
+        url: The URL.
+        instance: The instance.
+
+    Returns:
+        Runtime API base URL
+    """
+
+    # ibm_quantum: no need to resolve runtime API URL
+    api_host = url
+
+    # cloud: compute runtime API URL based on crn and URL
+    if is_crn(instance) and not _is_experimental_runtime_url(url):
+        parsed_url = urlparse(url)
+        api_host = (
+            f"{parsed_url.scheme}://{_location_from_crn(instance)}"
+            f".quantum-computing.{parsed_url.hostname}"
+        )
+
+    return api_host
+
+def _is_experimental_runtime_url(url: str) -> bool:
+    """Checks if the provided url points to an experimental runtime cluster.
+    This type of URLs is used for internal development purposes only.
+
+    Args:
+        url: The URL.
+    """
+    return isinstance(url, str) and "experimental" in url and url.endswith(".cloud")
+
+
+def _location_from_crn(crn: str) -> str:
+    """Computes the location from a given CRN.
+
+    Args:
+        crn: A CRN (format: https://cloud.ibm.com/docs/account?topic=account-crn#format-crn)
+
+    Returns:
+        The location.
+    """
+    pattern = "(.*?):(.*?):(.*?):(.*?):(.*?):(.*?):.*"
+    return re.search(pattern, crn).group(6)
 
 def setup_logger(logger: logging.Logger) -> None:
     """Setup the logger for the provider modules with the appropriate level.

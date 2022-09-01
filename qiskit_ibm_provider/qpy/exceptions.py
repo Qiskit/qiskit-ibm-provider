@@ -10,8 +10,19 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-"""
-Proxy configuration.
-"""
+"""Exception for errors raised by the pulse module."""
+from typing import Any
+from qiskit.exceptions import QiskitError
 
-from .configuration import ProxyConfiguration
+
+class QpyError(QiskitError):
+    """Errors raised by the qpy module."""
+
+    def __init__(self, *message: Any):
+        """Set the error message."""
+        super().__init__(*message)
+        self.message = " ".join(message)
+
+    def __str__(self) -> str:
+        """Return the message."""
+        return repr(self.message)
