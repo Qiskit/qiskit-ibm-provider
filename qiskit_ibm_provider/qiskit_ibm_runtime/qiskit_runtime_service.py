@@ -16,7 +16,8 @@ import logging
 import traceback
 import warnings
 from collections import OrderedDict
-from typing import Dict, Callable, Optional, Union, List, Any
+from typing import Dict, Callable, Optional, Union, List, Any, Type
+from dataclasses import asdict
 
 from qiskit.providers.backend import BackendV1 as Backend
 from qiskit.providers.provider import ProviderV1 as Provider
@@ -30,14 +31,25 @@ from .api.clients import AuthClient, VersionClient
 from .api.clients.runtime import RuntimeClient
 from .constants import QISKIT_IBM_RUNTIME_API_URL
 from .exceptions import IBMNotAuthorizedError, IBMInputValueError, IBMAccountError
+from .api.exceptions import RequestsApiError
 
 from .hub_group_project import HubGroupProject  # pylint: disable=cyclic-import
 
 from .utils import to_python_identifier
 from .utils.backend_decoder import configuration_from_server_data
 from .utils.hgp import to_instance_format, from_instance_format
+from .utils.utils import validate_job_tags, validate_runtime_options
+from .runtime_program import ParameterNamespace
+from .program.result_decoder import ResultDecoder
 
 from .api.client_parameters import ClientParameters
+from .runtime_job import RuntimeJob
+from .runtime_options import RuntimeOptions
+
+from .exceptions import (
+    IBMRuntimeError,
+    RuntimeProgramNotFound,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -646,6 +658,131 @@ class QiskitRuntimeService(Provider):
         if not backends:
             raise QiskitBackendNotFoundError("No backend matches the criteria")
         return backends[0]
+
+    def run(
+        self,
+        program_id: str,
+        inputs: Union[Dict, ParameterNamespace],
+        options: Optional[Union[RuntimeOptions, Dict]] = None,
+        callback: Optional[Callable] = None,
+        result_decoder: Optional[Type[ResultDecoder]] = None,
+        instance: Optional[str] = None,
+        session_id: Optional[str] = None,
+        job_tags: Optional[List[str]] = None,
+        max_execution_time: Optional[int] = None,
+        start_session: Optional[bool] = False,
+    ) -> RuntimeJob:
+        """Execute the runtime program.
+
+        Args:
+            program_id: Program ID.
+            inputs: Program input parameters. These input values are passed
+                to the runtime program.
+            options: Runtime options that control the execution environment.
+                The use of :class:`RuntimeOptions` has been deprecated.
+
+                * backend: target backend to run on. This is required for ``ibm_quantum`` runtime.
+                * image: the runtime image used to execute the program, specified in
+                    the form of ``image_name:tag``. Not all accounts are
+                    authorized to select a different image.
+                * log_level: logging level to set in the execution environment. The valid
+                    log levels are: ``DEBUG``, ``INFO``, ``WARNING``, ``ERROR``, and ``CRITICAL``.
+                    The default level is ``WARNING``.
+
+            callback: Callback function to be invoked for any interim results and final result.
+                The callback function will receive 2 positional parameters:
+
+                    1. Job ID
+                    2. Job result.
+
+            result_decoder: A :class:`ResultDecoder` subclass used to decode job results.
+                ``ResultDecoder`` is used if not specified.
+            instance: This is only supported for ``ibm_quantum`` runtime and is in the
+                hub/group/project format.
+            session_id: Job ID of the first job in a runtime session.
+            job_tags: Tags to be assigned to the job. The tags can subsequently be used
+                as a filter in the :meth:`jobs()` function call.
+            max_execution_time: Maximum execution time in seconds. This overrides
+                the max_execution_time of the program and cannot exceed it.
+            start_session: Set to True to explicitly start a runtime session. Defaults to False.
+
+        Returns:
+            A ``RuntimeJob`` instance representing the execution.
+
+        Raises:
+            IBMInputValueError: If input is invalid.
+            RuntimeProgramNotFound: If the program cannot be found.
+            IBMRuntimeError: An error occurred running the program.
+        """
+        if program_id in DEPRECATED_PROGRAMS:
+            warnings.warn(
+                f"The {program_id} program will be deprecated on August 29th.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+        validate_job_tags(job_tags, IBMInputValueError)
+
+        if instance and self._channel != "ibm_quantum":
+            raise IBMInputValueError(
+                "The 'instance' keyword is only supported for ``ibm_quantum`` runtime. "
+            )
+
+        # If using params object, extract as dictionary
+        if isinstance(inputs, ParameterNamespace):
+            inputs.validate()
+            inputs = vars(inputs)
+
+        if options is None:
+            options = {}
+        elif isinstance(options, RuntimeOptions):
+            options = asdict(options)
+        options["backend"] = options.get("backend", options.get("backend_name", None))
+        validate_runtime_options(options=options, channel=self.channel)
+
+        backend = None
+        hgp_name = None
+        if self._channel == "ibm_quantum":
+            # Find the right hgp
+            hgp = self._get_hgp(instance=instance, backend_name=options["backend"])
+            backend = hgp.backend(options["backend"])
+            hgp_name = hgp.name
+
+        result_decoder = result_decoder or ResultDecoder
+        try:
+            response = self._api_client.program_run(
+                program_id=program_id,
+                backend_name=options["backend"],
+                params=inputs,
+                image=options.get("image"),
+                hgp=hgp_name,
+                log_level=options.get("log_level"),
+                session_id=session_id,
+                job_tags=job_tags,
+                max_execution_time=max_execution_time,
+                start_session=start_session,
+            )
+        except RequestsApiError as ex:
+            if ex.status_code == 404:
+                raise RuntimeProgramNotFound(
+                    f"Program not found: {ex.message}"
+                ) from None
+            raise IBMRuntimeError(f"Failed to run program: {ex}") from None
+
+        if not backend:
+            backend = self.backend(name=response["backend"])
+
+        job = RuntimeJob(
+            backend=backend,
+            api_client=self._api_client,
+            client_params=self._client_params,
+            job_id=response["id"],
+            program_id=program_id,
+            params=inputs,
+            user_callback=callback,
+            result_decoder=result_decoder,
+            image=options.get("image"),
+        )
+        return job
 
     @property
     def channel(self) -> str:

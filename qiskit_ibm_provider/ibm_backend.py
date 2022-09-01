@@ -18,6 +18,7 @@ import warnings
 from datetime import datetime as python_datetime
 from typing import Iterable, Dict, List, Union, Optional, Any
 
+from qiskit_ibm_runtime.runtime_job import RuntimeJob
 from qiskit.circuit import QuantumCircuit, Parameter, Delay
 from qiskit.circuit.duration import duration_in_dt
 from qiskit.providers.backend import BackendV2 as Backend
@@ -63,7 +64,6 @@ from .utils.backend_converter import (
 )
 from .utils.converters import local_to_utc
 from .utils.json_decoder import defaults_from_server_data, properties_from_server_data
-
 from .qiskit_ibm_runtime.qiskit_runtime_service import QiskitRuntimeService
 
 logger = logging.getLogger(__name__)
@@ -373,7 +373,7 @@ class IBMBackend(Backend):
         live_data_enabled: Optional[bool] = None,
         noise_model: Optional[Any] = None,
         **run_config: Dict,
-    ) -> IBMJob:
+    ) -> RuntimeJob:
         """Run on the backend.
 
         If a keyword specified here is also present in the ``options`` attribute/object,
@@ -474,31 +474,53 @@ class IBMBackend(Backend):
 
         instance = self._api_client._params.instance
         service = QiskitRuntimeService(instance=instance)
-        backend = service.backend(self.name)
-        return backend.run(
-            circuits,
-            program_id=program_id,
-            job_name=job_name,
-            job_tags=job_tags,
-            max_circuits_per_job=max_circuits_per_job,
-            header=header,
-            shots=shots,
-            memory=memory,
-            qubit_lo_freq=qubit_lo_freq,
-            meas_lo_freq=meas_lo_freq,
-            schedule_los=schedule_los,
-            meas_level=meas_level,
-            meas_return=meas_return,
-            memory_slots=memory_slots,
-            memory_slot_size=memory_slot_size,
-            rep_time=rep_time,
-            rep_delay=rep_delay,
-            init_qubits=init_qubits,
-            parameter_binds=parameter_binds,
-            use_measure_esp=use_measure_esp,
-            live_data_enabled=live_data_enabled,
-            noise_model=noise_model,
-            **run_config,
+        inputs = {"circuits": circuits}
+        options = {"backend": self.name}
+
+        if job_name:
+            inputs["job_name"] = job_name
+        if max_circuits_per_job:
+            inputs["max_circuits_per_job"] = max_circuits_per_job
+        if header:
+            inputs["header"] = header
+        if shots:
+            inputs["shots"] = shots
+        if memory is not None:
+            inputs["memory"] = memory
+        if qubit_lo_freq:
+            inputs["qubit_lo_freq"] = qubit_lo_freq
+        if meas_lo_freq:
+            inputs["meas_lo_freq"] = meas_lo_freq
+        if schedule_los:
+            inputs["schedule_los"] = schedule_los
+        if meas_level:
+            inputs["meas_level"] = meas_level
+        if meas_return:
+            inputs["meas_return"] = meas_return
+        if memory_slots:
+            inputs["memory_slots"] = memory_slots
+        if memory_slot_size:
+            inputs["memory_slot_size"] = memory_slot_size
+        if rep_time:
+            inputs["rep_time"] = rep_time
+        if rep_delay:
+            inputs["rep_delay"] = rep_delay
+        if init_qubits is not None:
+            inputs["init_qubits"] = init_qubits
+        if parameter_binds:
+            inputs["parameter_binds"] = parameter_binds
+        if use_measure_esp is not None:
+            inputs["use_measure_esp"] = use_measure_esp
+        if live_data_enabled is not None:
+            inputs["live_data_enabled"] = live_data_enabled
+        if noise_model:
+            inputs["noise_model"] = noise_model
+        if run_config:
+            for key, value in run_config.items():
+                inputs[key] = value
+
+        return service.run(
+            program_id=program_id, inputs=inputs, options=options, job_tags=job_tags
         )
 
     def _get_run_config(self, **kwargs: Any) -> Dict:

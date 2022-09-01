@@ -68,11 +68,7 @@ Classes
 .. autosummary::
    :toctree: ../stubs/
 
-   ProgramBackend
-   UserMessenger
    ResultDecoder
 """
 
-from .program_backend import ProgramBackend
-from .user_messenger import UserMessenger
 from .result_decoder import ResultDecoder
