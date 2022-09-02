@@ -33,11 +33,15 @@ from .exceptions import (
     RuntimeJobMaxTimeoutError,
 )
 from .program.result_decoder import ResultDecoder
-from .api.clients import RuntimeClient, RuntimeWebsocketClient, WebsocketClientCloseCode
+from ..api.clients import (
+    RuntimeClient,
+    RuntimeWebsocketClient,
+    WebsocketClientCloseCode,
+)
 from .exceptions import IBMError
-from .api.exceptions import RequestsApiError
+from ..api.exceptions import RequestsApiError
 from ..utils.converters import utc_to_local
-from .api.client_parameters import ClientParameters
+from ..api.client_parameters import ClientParameters
 
 logger = logging.getLogger(__name__)
 

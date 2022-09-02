@@ -18,8 +18,8 @@ from typing import Optional, Dict
 from types import SimpleNamespace
 from qiskit_ibm_runtime.exceptions import IBMInputValueError, IBMNotAuthorizedError
 from .exceptions import IBMRuntimeError, RuntimeProgramNotFound
-from .api.clients.runtime import RuntimeClient
-from .api.exceptions import RequestsApiError
+from ..api.clients.runtime import RuntimeClient
+from ..api.exceptions import RequestsApiError
 
 logger = logging.getLogger(__name__)
 

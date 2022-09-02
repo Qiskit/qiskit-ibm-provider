@@ -16,4 +16,6 @@ from .account import AccountClient
 from .auth import AuthClient
 from .base import BaseClient, WebsocketClientCloseCode
 from .version import VersionClient
+from .runtime import RuntimeClient
+from .runtime_ws import RuntimeWebsocketClient
 from .websocket import WebsocketClient
