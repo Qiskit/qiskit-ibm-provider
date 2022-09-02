@@ -53,7 +53,6 @@ class FakeProvider(IBMProvider):
             hgp_name = self.DEFAULT_HGPS[idx]
 
             hgp_params = ClientParameters(
-                channel="ibm_quantum",
                 token="some_token",
                 url="some_url",
                 instance=hgp_name,

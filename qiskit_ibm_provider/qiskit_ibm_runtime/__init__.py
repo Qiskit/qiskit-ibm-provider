@@ -210,7 +210,6 @@ from ..utils.json import RuntimeEncoder, RuntimeDecoder
 
 from .exceptions import *
 from ..utils.utils import setup_logger
-from .version import __version__
 
 # Setup the logger for the IBM Quantum Provider package.
 logger = logging.getLogger(__name__)
