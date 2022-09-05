@@ -473,13 +473,9 @@ class IBMBackend(Backend):
         if not self.configuration().simulator:
             circuits = self._deprecate_id_instruction(circuits)
         instance = None
-        token = None
-        channel = None
         if hasattr(self._api_client, "_params"):
-            token = self._api_client._params.token
-            channel = self._api_client._params.channel
             instance = self._api_client._params.instance
-        service = QiskitRuntimeService(token=token, channel=channel, instance=instance)
+        service = QiskitRuntimeService(instance=instance)
         inputs = {"circuits": circuits}
         options = {"backend": self.name}
 
