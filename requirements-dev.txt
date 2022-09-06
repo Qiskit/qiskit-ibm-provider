@@ -7,8 +7,9 @@ sphinx-rtd-theme>=0.4.0
 sphinx-tabs>=1.1.11
 sphinx-automodapi
 sphinx-autodoc-typehints
-matplotlib>=2.1
+matplotlib>=3.3
 jupyter
+ipywidgets<8.0.0
 plotly>=4.4
 ipyvuetify>=1.1
 ipyvue>=1.4.1
@@ -25,3 +26,5 @@ websockets>=8
 black==22.3.0
 coverage>=6.3
 scikit-learn>=0.20.0
+ddt>=1.2.0,!=1.4.0,!=1.4.3
+pylatexenc>=1.4

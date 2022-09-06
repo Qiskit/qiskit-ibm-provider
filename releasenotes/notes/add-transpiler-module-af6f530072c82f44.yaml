@@ -1,0 +1,13 @@
+---
+prelude: >
+  A :mod:`~qiskit_ibm_provider.transpiler` module has been added.
+  It will contain routines that are specific to IBM hardware backends and
+  which consequently can not be placed directly within Qiskit Terra.
+features:
+  - |
+    The module :mod:`~qiskit_ibm_provider.transpiler`` has been added.
+
+    Primarily, it will contain all specialized Qiskit routines for running
+    applications on IBM's next-generation quantum devices that support dynamic
+    capabilities such as control-flow(feedforward) and classical
+    compute.
