@@ -236,7 +236,7 @@ class AccountClient(BaseClient):
         # Get the upload URL.
         job_id = job_info["id"]
         upload_url = job_info["objectStorageInfo"]["uploadUrl"]
-        job_api = self.account_api.job(job_id)
+        job_api = self.base_api.job(job_id)
 
         try:
             # Upload the Qobj to object storage.
@@ -275,7 +275,7 @@ class AccountClient(BaseClient):
         Returns:
             ``Qobj`` in dictionary form.
         """
-        job_api = self.account_api.job(job_id)
+        job_api = self.base_api.job(job_id)
 
         # Get the download URL.
         download_url = job_api.download_url()["url"]
@@ -315,7 +315,7 @@ class AccountClient(BaseClient):
         Returns:
             Job result.
         """
-        job_api = self.account_api.job(job_id)
+        job_api = self.base_api.job(job_id)
 
         # Get the download URL.
         download_url = job_api.result_url()["url"]
@@ -343,7 +343,7 @@ class AccountClient(BaseClient):
         Returns:
             Job information.
         """
-        return self.account_api.job(job_id).get()
+        return self.base_api.job(job_id).get()
 
     def job_status(self, job_id: str) -> Dict[str, Any]:
         """Return the status of the job.
@@ -357,7 +357,7 @@ class AccountClient(BaseClient):
         Raises:
             ApiIBMProtocolError: If unexpected data is received from the server.
         """
-        return self.account_api.job(job_id).status()
+        return self.base_api.job(job_id).status()
 
     def job_final_status(
         self,
@@ -507,7 +507,7 @@ class AccountClient(BaseClient):
         Returns:
             Backend properties.
         """
-        return self.account_api.job(job_id).properties()
+        return self.base_api.job(job_id).properties()
 
     def job_cancel(self, job_id: str) -> Dict[str, Any]:
         """Submit a request for cancelling the job.
@@ -518,7 +518,7 @@ class AccountClient(BaseClient):
         Returns:
             Job cancellation response.
         """
-        return self.account_api.job(job_id).cancel()
+        return self.base_api.job(job_id).cancel()
 
     def job_update_attribute(
         self, job_id: str, attr_name: str, attr_value: Union[str, List[str]]
@@ -538,7 +538,7 @@ class AccountClient(BaseClient):
             A dictionary containing the name of the updated attribute and the new value
             it is associated with.
         """
-        return self.account_api.job(job_id).update_attribute({attr_name: attr_value})
+        return self.base_api.job(job_id).update_attribute({attr_name: attr_value})
 
     def job_delete(self, job_id: str) -> None:
         """Mark the job for deletion.
@@ -546,4 +546,4 @@ class AccountClient(BaseClient):
         Args:
             job_id: ID of the job to be deleted.
         """
-        self.account_api.job(job_id).delete()
+        self.base_api.job(job_id).delete()
