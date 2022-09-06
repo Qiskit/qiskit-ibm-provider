@@ -103,7 +103,7 @@ def create_job_widget(
     Returns:
         The job widget.
     """
-    job_id = job.job_id()
+    job_id = job.job_id
 
     id_label = widgets.HTML(
         value="{}".format(job_id), layout=widgets.Layout(width="190px")
