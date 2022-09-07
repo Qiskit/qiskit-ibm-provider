@@ -37,7 +37,7 @@ integration-test-1:
 	test/integration/test_jupyter.py test/integration/test_proxies.py 
 
 integration-test-2:
-	python -m unittest -v test/integration/test_ibm_job.py test/integration/test_composite_job.py \ 
+	python -m unittest -v test/integration/test_composite_job.py test/integration/test_ibm_job.py \
 	test/integration/test_ibm_job_attributes.py
 
 integration-test-3:
