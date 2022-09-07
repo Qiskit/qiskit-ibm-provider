@@ -103,6 +103,7 @@ class TestIBMJobAttributes(IBMTestCase):
         self.assertEqual(len(retrieved_jobs), 1)
         self.assertEqual(job_id, retrieved_jobs[0].job_id())
 
+    @skip("Skip this test since it is not supported by the API.")
     def test_job_name_update(self):
         """Test changing the name associated with a job."""
         # Use a unique job name
@@ -389,6 +390,7 @@ class TestIBMJobAttributes(IBMTestCase):
                 self.assertEqual(rjobs[0].job_id(), job.job_id())
                 self.assertEqual(set(rjobs[0].tags()), set(job_tags))
 
+    @skip("Skip this test since it is not supported by the API.")
     def test_job_tags_replace(self):
         """Test updating job tags by replacing a job's existing tags."""
         initial_job_tags = [uuid.uuid4().hex]
