@@ -27,7 +27,7 @@ unit-test:
 	python -m unittest -v test/unit/test_ibm_logger.py test/unit/test_serialization.py test/unit/test_websocket.py 
 
 unit-test-coverage:
-	coverage run -m unittest discover --verbose --top-level-directory . --start-directory test/unit
+	coverage run -m unittest -v test/unit/test_ibm_logger.py test/unit/test_serialization.py test/unit/test_websocket.py 
 	coverage lcov
 
 integration-test-1:
