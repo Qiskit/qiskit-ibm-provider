@@ -41,6 +41,7 @@ from .job import IBMJob  # pylint: disable=cyclic-import
 from .backendreservation import BackendReservation  # pylint: disable=cyclic-import
 from .proxies.configuration import ProxyConfiguration
 from .utils.hgp import to_instance_format, from_instance_format
+from .qiskit_ibm_runtime.qiskit_runtime_service import QiskitRuntimeService
 
 logger = logging.getLogger(__name__)
 
@@ -174,7 +175,14 @@ class IBMProvider(Provider):
             verify=self._account.verify,
         )
         self._auth_client = self._authenticate_ibm_quantum_account(self._client_params)
-
+        self._runtime = QiskitRuntimeService(
+            token=token,
+            url=url,
+            instance=instance,
+            name=name,
+            proxies=ProxyConfiguration(**proxies) if proxies else None,
+            verify=verify,
+        )
         self._hgps = self._initialize_hgps(self._auth_client)
         self._initialize_services()
 

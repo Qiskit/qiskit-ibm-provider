@@ -65,7 +65,6 @@ from .utils.backend_converter import (
 )
 from .utils.converters import local_to_utc
 from .utils.json_decoder import defaults_from_server_data, properties_from_server_data
-from .qiskit_ibm_runtime.qiskit_runtime_service import QiskitRuntimeService
 
 logger = logging.getLogger(__name__)
 
@@ -472,10 +471,7 @@ class IBMBackend(Backend):
 
         if not self.configuration().simulator:
             circuits = self._deprecate_id_instruction(circuits)
-        instance = None
-        if hasattr(self._api_client, "_params"):
-            instance = self._api_client._params.instance
-        service = QiskitRuntimeService(instance=instance)
+
         inputs = {"circuits": circuits}
         options = {"backend": self.name}
 
@@ -521,7 +517,7 @@ class IBMBackend(Backend):
             for key, value in run_config.items():
                 inputs[key] = value
 
-        return service.run(
+        return self.provider._runtime.run(
             program_id=program_id, inputs=inputs, options=options, job_tags=job_tags
         )
 
