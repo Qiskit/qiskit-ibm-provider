@@ -176,6 +176,7 @@ class IBMProvider(Provider):
         )
         self._auth_client = self._authenticate_ibm_quantum_account(self._client_params)
         self._runtime = QiskitRuntimeService(
+            channel="ibm_quantum",
             token=token,
             url=url,
             instance=instance,
