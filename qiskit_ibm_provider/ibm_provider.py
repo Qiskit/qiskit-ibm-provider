@@ -181,7 +181,7 @@ class IBMProvider(Provider):
             url=url,
             instance=instance,
             name=name,
-            proxies=ProxyConfiguration(**proxies) if proxies else None,
+            proxies=proxies if proxies else None,
             verify=verify,
         )
         self._hgps = self._initialize_hgps(self._auth_client)
