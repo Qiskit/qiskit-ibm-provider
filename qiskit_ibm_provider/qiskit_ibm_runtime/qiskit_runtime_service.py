@@ -24,7 +24,7 @@ from qiskit.providers.provider import ProviderV1 as Provider
 from qiskit.providers.exceptions import QiskitBackendNotFoundError
 from qiskit.providers.providerutils import filter_backends
 
-from qiskit_ibm_runtime import ibm_backend # pylint: disable=unused-import
+from qiskit_ibm_runtime import ibm_backend  # pylint: disable=unused-import
 from ..api.clients import AuthClient, VersionClient
 from ..api.clients.runtime import RuntimeClient
 from .constants import QISKIT_IBM_RUNTIME_API_URL
