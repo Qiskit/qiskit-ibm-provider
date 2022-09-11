@@ -24,9 +24,7 @@ from qiskit.providers.provider import ProviderV1 as Provider
 from qiskit.providers.exceptions import QiskitBackendNotFoundError
 from qiskit.providers.providerutils import filter_backends
 
-from qiskit_ibm_runtime import ibm_backend
-from ..accounts import AccountManager, Account, AccountType, ChannelType
-from ..proxies import ProxyConfiguration
+from qiskit_ibm_runtime import ibm_backend # pylint: disable=unused-import
 from ..api.clients import AuthClient, VersionClient
 from ..api.clients.runtime import RuntimeClient
 from .constants import QISKIT_IBM_RUNTIME_API_URL
@@ -36,7 +34,6 @@ from ..api.exceptions import RequestsApiError
 from .hub_group_project import HubGroupProject  # pylint: disable=cyclic-import
 
 from ..utils import to_python_identifier
-from ..utils.backend_decoder import configuration_from_server_data
 from ..utils.hgp import to_instance_format, from_instance_format
 from ..utils.utils import validate_job_tags, validate_runtime_options
 from .runtime_program import ParameterNamespace
@@ -63,7 +60,7 @@ DEPRECATED_PROGRAMS = [
 ]
 
 
-class QiskitRuntimeService(Provider):
+class QiskitRuntimeService:
     """Class for interacting with the Qiskit Runtime service.
 
     Qiskit Runtime is a new architecture offered by IBM Quantum that
@@ -118,17 +115,7 @@ class QiskitRuntimeService(Provider):
     canceling job.
     """
 
-    def __init__(
-        self,
-        channel: Optional[ChannelType] = None,
-        auth: Optional[AccountType] = None,
-        token: Optional[str] = None,
-        url: Optional[str] = None,
-        name: Optional[str] = None,
-        instance: Optional[str] = None,
-        proxies: Optional[dict] = None,
-        verify: Optional[bool] = None,
-    ) -> None:
+    def __init__(self, provider: Provider) -> None:
         """QiskitRuntimeService constructor
 
         An account is selected in the following order:
@@ -167,162 +154,26 @@ class QiskitRuntimeService(Provider):
         Raises:
             IBMInputValueError: If an input is invalid.
         """
-        super().__init__()
+        self._provider = provider
+        self._api_client = RuntimeClient(provider._client_params)
+        self._client_params = provider._client_params
+        self._account = provider._account
 
-        if auth:
-            self._auth_warning()
-
-        self._account = self._discover_account(
-            token=token,
-            url=url,
-            instance=instance,
-            channel=channel,
-            auth=auth,
-            name=name,
-            proxies=ProxyConfiguration(**proxies) if proxies else None,
-            verify=verify,
-        )
-
-        self._client_params = ClientParameters(
-            channel=self._account.channel,
-            token=self._account.token,
-            url=self._account.url,
-            instance=self._account.instance,
-            proxies=self._account.proxies,
-            verify=self._account.verify,
-        )
-
-        self._channel = self._account.channel
+        self._channel = "ibm_quantum"
         self._backends: Dict[str, "ibm_backend.IBMBackend"] = {}
 
-        if self._channel == "ibm_cloud":
-            self._api_client = RuntimeClient(self._client_params)
-            # TODO: We can make the backend discovery lazy
-            self._backends = self._discover_cloud_backends()
-            return
-        else:
-            auth_client = self._authenticate_ibm_quantum_account(self._client_params)
-            # Update client parameters to use authenticated values.
-            self._client_params.url = auth_client.current_service_urls()["services"][
-                "runtime"
-            ]
-            self._client_params.token = auth_client.current_access_token()
-            self._api_client = RuntimeClient(self._client_params)
-            self._hgps = self._initialize_hgps(auth_client)
-            for hgp in self._hgps.values():
-                for backend_name, backend in hgp.backends.items():
-                    if backend_name not in self._backends:
-                        self._backends[backend_name] = backend
-
-        # TODO - it'd be nice to allow some kind of autocomplete, but `service.ibmq_foo`
-        # just seems wrong since backends are not runtime service instances.
-        # self._discover_backends()
-
-    @staticmethod
-    def _auth_warning() -> None:
-        warnings.warn(
-            "Use of `auth` parameter is deprecated and will "
-            "be removed in a future release. "
-            "You can now use channel='ibm_cloud' or "
-            "channel='ibm_quantum' instead.",
-            DeprecationWarning,
-            stacklevel=3,
-        )
-
-    def _discover_account(
-        self,
-        token: Optional[str] = None,
-        url: Optional[str] = None,
-        instance: Optional[str] = None,
-        channel: Optional[ChannelType] = None,
-        auth: Optional[AccountType] = None,
-        name: Optional[str] = None,
-        proxies: Optional[ProxyConfiguration] = None,
-        verify: Optional[bool] = None,
-    ) -> Account:
-        """Discover account."""
-        account = None
-        verify_ = verify or True
-        if name:
-            if any([auth, channel, token, url]):
-                logger.warning(
-                    "Loading account with name %s. Any input 'auth', "
-                    "'channel', 'token' or 'url' are ignored.",
-                    name,
-                )
-            account = AccountManager.get(name=name)
-        elif auth or channel:
-            if auth and auth not in ["legacy", "cloud"]:
-                raise ValueError("'auth' can only be 'cloud' or 'legacy'")
-            if channel and channel not in ["ibm_cloud", "ibm_quantum"]:
-                raise ValueError("'channel' can only be 'ibm_cloud' or 'ibm_quantum'")
-            channel = channel or self._get_channel_for_auth(auth=auth)
-            if token:
-                account = Account(
-                    channel=channel,
-                    token=token,
-                    url=url,
-                    instance=instance,
-                    proxies=proxies,
-                    verify=verify_,
-                )
-            else:
-                if url:
-                    logger.warning(
-                        "Loading default %s account. Input 'url' is ignored.", channel
-                    )
-                account = AccountManager.get(channel=channel)
-        elif any([token, url]):
-            # Let's not infer based on these attributes as they may change in the future.
-            raise ValueError(
-                "'channel' or 'auth' is required if 'token', or 'url' is specified but 'name' is not."
-            )
-
-        if account is None:
-            account = AccountManager.get()
-
-        if instance:
-            account.instance = instance
-        if proxies:
-            account.proxies = proxies
-        if verify is not None:
-            account.verify = verify
-
-        # resolve CRN if needed
-        if account.channel == "ibm_cloud":
-            self._resolve_crn(account)
-
-        # ensure account is valid, fail early if not
-        account.validate()
-
-        return account
-
-    def _discover_cloud_backends(self) -> Dict[str, "ibm_backend.IBMBackend"]:
-        """Return the remote backends available for this service instance.
-
-        Returns:
-            A dict of the remote backend instances, keyed by backend name.
-        """
-        ret = OrderedDict()  # type: ignore[var-annotated]
-        backends_list = self._api_client.list_backends()
-        for backend_name in backends_list:
-            raw_config = self._api_client.backend_configuration(
-                backend_name=backend_name
-            )
-            config = configuration_from_server_data(
-                raw_config=raw_config, instance=self._account.instance
-            )
-            if not config:
-                continue
-            ret[config.backend_name] = ibm_backend.IBMBackend(
-                configuration=config,
-                service=self,
-                api_client=self._api_client,
-            )
-        return ret
-
-    def _resolve_crn(self, account: Account) -> None:
-        account.resolve_crn()
+        auth_client = self._authenticate_ibm_quantum_account(self._client_params)
+        # Update client parameters to use authenticated values.
+        self._client_params.url = auth_client.current_service_urls()["services"][
+            "runtime"
+        ]
+        self._client_params.token = auth_client.current_access_token()
+        self._api_client = RuntimeClient(self._client_params)
+        self._hgps = self._initialize_hgps(auth_client)
+        for hgp in self._hgps.values():
+            for backend_name, backend in hgp.backends.items():
+                if backend_name not in self._backends:
+                    self._backends[backend_name] = backend
 
     def _authenticate_ibm_quantum_account(
         self, client_params: ClientParameters
@@ -547,93 +398,6 @@ class QiskitRuntimeService(Provider):
                 filter(lambda b: b.configuration().n_qubits >= min_num_qubits, backends)
             )
         return filter_backends(backends, filters=filters, **kwargs)
-
-    @staticmethod
-    def _get_channel_for_auth(auth: str) -> str:
-        """Returns channel type based on auth"""
-        if auth == "legacy":
-            return "ibm_quantum"
-        return "ibm_cloud"
-
-    @staticmethod
-    def save_account(
-        token: Optional[str] = None,
-        url: Optional[str] = None,
-        instance: Optional[str] = None,
-        channel: Optional[ChannelType] = None,
-        auth: Optional[AccountType] = None,
-        name: Optional[str] = None,
-        proxies: Optional[dict] = None,
-        verify: Optional[bool] = None,
-        overwrite: Optional[bool] = False,
-    ) -> None:
-        """Save the account to disk for future use.
-
-        Args:
-            token: IBM Cloud API key or IBM Quantum API token.
-            url: The API URL.
-                Defaults to https://cloud.ibm.com (ibm_cloud) or
-                https://auth.quantum-computing.ibm.com/api (ibm_quantum).
-            instance: The CRN (ibm_cloud) or hub/group/project (ibm_quantum).
-            channel: Channel type. `ibm_cloud` or `ibm_quantum`.
-            auth: (DEPRECATED, use `channel` instead) Authentication type. `cloud` or `legacy`.
-            name: Name of the account to save.
-            proxies: Proxy configuration. Supported optional keys are
-                ``urls`` (a dictionary mapping protocol or protocol and host to the URL of the proxy,
-                documented at https://docs.python-requests.org/en/latest/api/#requests.Session.proxies),
-                ``username_ntlm``, ``password_ntlm`` (username and password to enable NTLM user
-                authentication)
-            verify: Verify the server's TLS certificate.
-            overwrite: ``True`` if the existing account is to be overwritten.
-        """
-        if auth:
-            QiskitRuntimeService._auth_warning()
-            channel = channel or QiskitRuntimeService._get_channel_for_auth(auth)
-
-        AccountManager.save(
-            token=token,
-            url=url,
-            instance=instance,
-            channel=channel,
-            name=name,
-            proxies=ProxyConfiguration(**proxies) if proxies else None,
-            verify=verify,
-            overwrite=overwrite,
-        )
-
-    @staticmethod
-    def saved_accounts(
-        default: Optional[bool] = None,
-        auth: Optional[str] = None,
-        channel: Optional[ChannelType] = None,
-        name: Optional[str] = None,
-    ) -> dict:
-        """List the accounts saved on disk.
-
-        Args:
-            default: If set to True, only default accounts are returned.
-            auth: (DEPRECATED, use `channel` instead) If set, only accounts with the given
-                authentication type are returned.
-            channel: Channel type. `ibm_cloud` or `ibm_quantum`.
-            name: If set, only accounts with the given name are returned.
-
-        Returns:
-            A dictionary with information about the accounts saved on disk.
-
-        Raises:
-            ValueError: If an invalid account is found on disk.
-        """
-        if auth:
-            QiskitRuntimeService._auth_warning()
-            channel = channel or QiskitRuntimeService._get_channel_for_auth(auth)
-        return dict(
-            map(
-                lambda kv: (kv[0], Account.to_saved_format(kv[1])),
-                AccountManager.list(
-                    default=default, channel=channel, name=name
-                ).items(),
-            ),
-        )
 
     def backend(
         self,

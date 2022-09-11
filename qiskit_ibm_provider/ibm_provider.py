@@ -175,15 +175,7 @@ class IBMProvider(Provider):
             verify=self._account.verify,
         )
         self._auth_client = self._authenticate_ibm_quantum_account(self._client_params)
-        self._runtime = QiskitRuntimeService(
-            channel="ibm_quantum",
-            token=token,
-            url=url,
-            instance=instance,
-            name=name,
-            proxies=proxies if proxies else None,
-            verify=verify,
-        )
+        self._runtime = QiskitRuntimeService(self)
         self._hgps = self._initialize_hgps(self._auth_client)
         self._initialize_services()
 
