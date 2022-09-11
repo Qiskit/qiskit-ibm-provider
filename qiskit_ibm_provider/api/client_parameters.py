@@ -15,7 +15,7 @@
 from typing import Dict, Optional, Any, Union
 
 from ..utils import get_runtime_api_base_url
-from ..api.auth import QuantumAuth, CloudAuth
+from ..api.auth import QuantumAuth
 from ..proxies import ProxyConfiguration
 
 TEMPLATE_IBM_HUBS = "{prefix}/Network/{hub}/Groups/{group}/Projects/{project}"
@@ -51,11 +51,8 @@ class ClientParameters:
         self.proxies = proxies
         self.verify = verify
 
-    def get_auth_handler(self) -> Union[CloudAuth, QuantumAuth]:
+    def get_auth_handler(self) -> QuantumAuth:
         """Returns the respective authentication handler."""
-        if self.channel == "ibm_cloud":
-            return CloudAuth(api_key=self.token, crn=self.instance)
-
         return QuantumAuth(access_token=self.token)
 
     def get_runtime_api_base_url(self) -> str:
