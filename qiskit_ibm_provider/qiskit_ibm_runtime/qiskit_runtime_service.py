@@ -31,7 +31,7 @@ from .constants import QISKIT_IBM_RUNTIME_API_URL
 from .exceptions import IBMNotAuthorizedError, IBMInputValueError, IBMAccountError
 from ..api.exceptions import RequestsApiError
 
-from .hub_group_project import HubGroupProject  # pylint: disable=cyclic-import
+from ..hub_group_project import HubGroupProject  # pylint: disable=cyclic-import
 
 from ..utils import to_python_identifier
 from ..utils.hgp import to_instance_format, from_instance_format
@@ -243,7 +243,9 @@ class QiskitRuntimeService:
             # Build the hgp.
             try:
                 hgp = HubGroupProject(
-                    client_params=hgp_params, instance=hgp_params.instance, service=self
+                    client_params=hgp_params,
+                    instance=hgp_params.instance,
+                    provider=self._provider,
                 )
                 hgps[hgp.name] = hgp
             except Exception:  # pylint: disable=broad-except
