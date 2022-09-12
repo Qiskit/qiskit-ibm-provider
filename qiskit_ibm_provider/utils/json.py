@@ -49,7 +49,7 @@ from qiskit.circuit.library import BlueprintCircuit
 from qiskit.result import Result
 from qiskit.version import __version__ as _terra_version_string
 
-from ..qpy import (
+from qiskit_ibm_runtime.qpy import (
     _write_parameter,
     _write_parameter_expression,
     _read_parameter_expression,
