@@ -14,7 +14,6 @@
 
 import logging
 from typing import Dict, List, Optional
-from datetime import datetime as python_datetime
 
 from qiskit_ibm_runtime.api.session import RetrySession
 
@@ -104,61 +103,6 @@ class RuntimeClient:
         logger.debug("Runtime job get response: %s", response)
         return response
 
-    def jobs_get(
-        self,
-        limit: int = None,
-        skip: int = None,
-        pending: bool = None,
-        program_id: str = None,
-        hub: str = None,
-        group: str = None,
-        project: str = None,
-        job_tags: Optional[List[str]] = None,
-        session_id: Optional[str] = None,
-        created_after: Optional[python_datetime] = None,
-        created_before: Optional[python_datetime] = None,
-        descending: bool = True,
-    ) -> Dict:
-        """Get job data for all jobs.
-
-        Args:
-            limit: Number of results to return.
-            skip: Number of results to skip.
-            pending: Returns 'QUEUED' and 'RUNNING' jobs if True,
-                returns 'DONE', 'CANCELLED' and 'ERROR' jobs if False.
-            program_id: Filter by Program ID.
-            hub: Filter by hub - hub, group, and project must all be specified.
-            group: Filter by group - hub, group, and project must all be specified.
-            project: Filter by project - hub, group, and project must all be specified.
-            job_tags: Filter by tags assigned to jobs. Matched jobs are associated with all tags.
-            session_id: Job ID of the first job in a runtime session.
-            created_after: Filter by the given start date, in local time. This is used to
-                find jobs whose creation dates are after (greater than or equal to) this
-                local date/time.
-            created_before: Filter by the given end date, in local time. This is used to
-                find jobs whose creation dates are before (less than or equal to) this
-                local date/time.
-            descending: If ``True``, return the jobs in descending order of the job
-                creation date (i.e. newest first) until the limit is reached.
-
-        Returns:
-            JSON response.
-        """
-        return self._api.jobs_get(
-            limit=limit,
-            skip=skip,
-            pending=pending,
-            program_id=program_id,
-            hub=hub,
-            group=group,
-            project=project,
-            job_tags=job_tags,
-            session_id=session_id,
-            created_after=created_after,
-            created_before=created_before,
-            descending=descending,
-        )
-
     def job_results(self, job_id: str) -> str:
         """Get the results of a program job.
 
@@ -218,11 +162,3 @@ class RuntimeClient:
             Job metadata.
         """
         return self._api.program_job(job_id).metadata()
-
-    def close_session(self, session_id: str) -> None:
-        """Close the runtime session.
-
-        Args:
-            session_id: Session ID.
-        """
-        self._api.runtime_session(session_id=session_id).close()

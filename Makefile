@@ -24,10 +24,10 @@ style:
 	black --check qiskit_ibm_provider test setup.py docs/tutorials
 
 unit-test:
-	python -m unittest -v test/unit/test_ibm_logger.py test/unit/test_serialization.py test/unit/test_websocket.py 
+	python -m unittest discover --verbose --top-level-directory . --start-directory test/unit
 
 unit-test-coverage:
-	coverage run -m unittest -v test/unit/test_ibm_logger.py test/unit/test_serialization.py test/unit/test_websocket.py 
+	coverage run -m unittest discover --verbose --top-level-directory . --start-directory test/unit
 	coverage lcov
 
 integration-test-1:

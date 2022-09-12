@@ -13,15 +13,12 @@
 """Runtime REST adapter."""
 
 import logging
-from datetime import datetime
-from typing import Dict, Any, List, Union, Optional
+from typing import Dict, Any, List, Optional
 import json
 
 from .base import RestAdapterBase
 from .program_job import ProgramJob
-from .runtime_session import RuntimeSession
 from ...utils import RuntimeEncoder
-from ...utils.converters import local_to_utc
 
 logger = logging.getLogger(__name__)
 
@@ -44,17 +41,6 @@ class Runtime(RestAdapterBase):
             The program job adapter.
         """
         return ProgramJob(self.session, job_id)
-
-    def runtime_session(self, session_id: str) -> "RuntimeSession":
-        """Return an adapter for the session.
-
-        Args:
-            session_id: Job ID of the first job in a session.
-
-        Returns:
-            The session adapter.
-        """
-        return RuntimeSession(self.session, session_id)
 
     def program_run(
         self,
@@ -115,67 +101,3 @@ class Runtime(RestAdapterBase):
             payload["project"] = project
         data = json.dumps(payload, cls=RuntimeEncoder)
         return self.session.post(url, data=data).json()
-
-    def jobs_get(
-        self,
-        limit: int = None,
-        skip: int = None,
-        pending: bool = None,
-        program_id: str = None,
-        hub: str = None,
-        group: str = None,
-        project: str = None,
-        job_tags: Optional[List[str]] = None,
-        session_id: Optional[str] = None,
-        created_after: Optional[datetime] = None,
-        created_before: Optional[datetime] = None,
-        descending: bool = True,
-    ) -> Dict:
-        """Get a list of job data.
-
-        Args:
-            limit: Number of results to return.
-            skip: Number of results to skip.
-            pending: Returns 'QUEUED' and 'RUNNING' jobs if True,
-                returns 'DONE', 'CANCELLED' and 'ERROR' jobs if False.
-            program_id: Filter by Program ID.
-            hub: Filter by hub - hub, group, and project must all be specified.
-            group: Filter by group - hub, group, and project must all be specified.
-            project: Filter by project - hub, group, and project must all be specified.
-            job_tags: Filter by tags assigned to jobs. Matched jobs are associated with all tags.
-            session_id: Job ID of the first job in a runtime session.
-            created_after: Filter by the given start date, in local time. This is used to
-                find jobs whose creation dates are after (greater than or equal to) this
-                local date/time.
-            created_before: Filter by the given end date, in local time. This is used to
-                find jobs whose creation dates are before (less than or equal to) this
-                local date/time.
-            descending: If ``True``, return the jobs in descending order of the job
-                creation date (i.e. newest first) until the limit is reached.
-
-        Returns:
-            JSON response.
-        """
-        url = self.get_url("jobs")
-        payload: Dict[str, Union[int, str, List[str]]] = {}
-        if limit:
-            payload["limit"] = limit
-        if skip:
-            payload["offset"] = skip
-        if pending is not None:
-            payload["pending"] = "true" if pending else "false"
-        if program_id:
-            payload["program"] = program_id
-        if job_tags:
-            payload["tags"] = job_tags
-        if session_id:
-            payload["session_id"] = session_id
-        if created_after:
-            payload["created_after"] = local_to_utc(created_after).isoformat()
-        if created_before:
-            payload["created_before"] = local_to_utc(created_before).isoformat()
-        if descending is False:
-            payload["sort"] = "ASC"
-        if all([hub, group, project]):
-            payload["provider"] = f"{hub}/{group}/{project}"
-        return self.session.get(url, params=payload).json()

@@ -117,36 +117,8 @@ class QiskitRuntimeService:
 
     def __init__(self, provider: Provider) -> None:
         """QiskitRuntimeService constructor
-
-        An account is selected in the following order:
-
-            - Account with the input `name`, if specified.
-            - Default account for the `channel` type, if `channel` is specified but `token` is not.
-            - Account defined by the input `channel` and `token`, if specified.
-            - Account defined by the environment variables, if defined.
-            - Default account for the ``ibm_cloud`` account, if one is available.
-            - Default account for the ``ibm_quantum`` account, if one is available.
-
-        `instance`, `proxies`, and `verify` can be used to overwrite corresponding
-        values in the loaded account.
-
         Args:
-            channel: Channel type. ``ibm_cloud`` or ``ibm_quantum``.
-            auth: (DEPRECATED, use `channel` instead) Authentication type. ``cloud`` or ``legacy``.
-            token: IBM Cloud API key or IBM Quantum API token.
-            url: The API URL.
-                Defaults to https://cloud.ibm.com (ibm_cloud) or
-                https://auth.quantum-computing.ibm.com/api (ibm_quantum).
-            name: Name of the account to load.
-            instance: The service instance to use.
-                For ``ibm_cloud`` runtime, this is the Cloud Resource Name (CRN) or the service name.
-                For ``ibm_quantum`` runtime, this is the hub/group/project in that format.
-            proxies: Proxy configuration. Supported optional keys are
-                ``urls`` (a dictionary mapping protocol or protocol and host to the URL of the proxy,
-                documented at https://docs.python-requests.org/en/latest/api/#requests.Session.proxies),
-                ``username_ntlm``, ``password_ntlm`` (username and password to enable NTLM user
-                authentication)
-            verify: Whether to verify the server's TLS certificate.
+            provider: IBM Quantum account provider.
 
         Returns:
             An instance of QiskitRuntimeService.

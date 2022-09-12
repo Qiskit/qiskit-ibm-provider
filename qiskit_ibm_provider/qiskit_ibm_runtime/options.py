@@ -36,58 +36,6 @@ class Transpilation:
 
 
 @dataclass
-class Resilience:
-    """Resilience settings."""
-
-    pass
-
-
-@dataclass
-class SimulatorOptions:
-    """Simulator options.
-
-    Args:
-        noise_model: Noise model, must have a to_dict() method.
-        seed_simulator: Random seed to control sampling.
-    """
-
-    def __init__(
-        self, noise_model: Any = None, seed_simulator: Optional[int] = None
-    ) -> None:
-        self.noise_model = noise_model
-        self.seed_simulator = seed_simulator
-
-    @property
-    def noise_model(self) -> Dict:
-        """Return the noise model.
-
-        Returns:
-            The noise model.
-        """
-        return self._noise_model
-
-    @noise_model.setter
-    def noise_model(self, noise_model: Any) -> None:
-        """Set the noise model.
-
-        Args:
-            noise_model: Noise model to use.
-
-        Raises:
-            ValueError: If the noise model doesn't have a ``to_dict()`` method.
-        """
-        if isinstance(noise_model, Dict):
-            self._noise_model = noise_model
-        else:
-            try:
-                self._noise_model = noise_model.to_dict()
-            except AttributeError:
-                raise ValueError(
-                    "Only noise models that have a to_dict() method are supported"
-                )
-
-
-@dataclass
 class Execution:
     """Execution options."""
 

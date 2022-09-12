@@ -188,13 +188,9 @@ Classes
    :toctree: ../stubs/
 
    QiskitRuntimeService
-   Estimator
-   Sampler
-   Session
    Options
    IBMBackend
    RuntimeJob
-   RuntimeProgram
    ParameterNamespace
    RuntimeOptions
    RuntimeEncoder
