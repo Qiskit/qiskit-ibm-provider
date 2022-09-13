@@ -64,6 +64,7 @@ from .utils.backend_converter import (
 )
 from .utils.converters import local_to_utc
 from .utils.json_decoder import defaults_from_server_data, properties_from_server_data
+from .api.exceptions import RequestsApiError
 
 logger = logging.getLogger(__name__)
 
@@ -718,8 +719,38 @@ class IBMBackend(Backend):
     def _runtime_run(
         self, inputs: Dict, options: Dict, job_tags: Optional[List[str]] = None
     ):
-        # TODO: Implement direct call to the runtime api
-        pass
+        hgp = self.provider._get_hgp(backend_name=options["backend"])
+        backend = hgp.backend(options["backend"])
+        hgp_name = hgp.name
+        program_id = "circuit-runner" # TODO: maybe use qasm3-runner as well
+        result_decoder = ResultDecoder # TODO: might have to copy over from qiskit-ibm-runtime
+        try:
+            response = self._runtime_api_run( # TODO: the main thing to implement right now
+                program_id=program_id,
+                backend_name=options["backend"],
+                params=inputs,
+                image=options.get("image"),
+                hgp=hgp_name,
+                log_level=options.get("log_level"),
+                job_tags=job_tags,
+            )
+        except RequestsApiError as ex:
+            raise IBMBackendApiError(
+                "Error submitting job: {}".format(str(ex))) from ex
+        try:
+            job = IBMCircuitJob(
+                backend=self, api_client=self._api_client, **response
+            )
+            logger.debug("Job %s was successfully submitted.", job.job_id())
+        except TypeError as err:
+            logger.debug("Invalid job data received: %s", response)
+            raise IBMBackendApiProtocolError(
+                "Unexpected return value received from the server "
+                "when submitting job: {}".format(str(err))
+            ) from err
+        Publisher().publish("ibm.job.start", job) #TODO: is this still needed?
+        return job
+
 
     def _get_run_config(self, **kwargs: Any) -> Dict:
         """Return the consolidated runtime configuration."""
