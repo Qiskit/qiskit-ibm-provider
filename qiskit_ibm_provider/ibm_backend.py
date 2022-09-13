@@ -542,6 +542,180 @@ class IBMBackend(Backend):
 
         return self._submit_job(qobj, job_name, job_tags, live_data_enabled)
 
+    def run_via_runtime(
+            self,
+            circuits: Union[
+                QuantumCircuit, Schedule, List[Union[QuantumCircuit, Schedule]]
+            ],
+            job_name: Optional[str] = None,
+            job_tags: Optional[List[str]] = None,
+            max_circuits_per_job: Optional[int] = None,
+            header: Optional[Dict] = None,
+            shots: Optional[Union[int, float]] = None,
+            memory: Optional[bool] = None,
+            qubit_lo_freq: Optional[List[int]] = None,
+            meas_lo_freq: Optional[List[int]] = None,
+            schedule_los: Optional[
+                Union[
+                    List[Union[Dict[PulseChannel, float], LoConfig]],
+                    Union[Dict[PulseChannel, float], LoConfig],
+                ]
+            ] = None,
+            meas_level: Optional[Union[int, MeasLevel]] = None,
+            meas_return: Optional[Union[str, MeasReturnType]] = None,
+            memory_slots: Optional[int] = None,
+            memory_slot_size: Optional[int] = None,
+            rep_time: Optional[int] = None,
+            rep_delay: Optional[float] = None,
+            init_qubits: Optional[bool] = None,
+            parameter_binds: Optional[List[Dict[Parameter, float]]] = None,
+            use_measure_esp: Optional[bool] = None,
+            live_data_enabled: Optional[bool] = None,
+            noise_model: Optional[Any] = None,
+            **run_config: Dict,
+    ) -> IBMJob:
+        """Run on the backend.
+        If a keyword specified here is also present in the ``options`` attribute/object,
+        the value specified here will be used for this run.
+        If the length of the input circuits exceeds the maximum allowed by
+        the backend, or if `max_circuits_per_job` is not ``None``, then the
+        input circuits will be divided into multiple jobs, and an
+        :class:`~qiskit_ibm_provider.job.IBMCompositeJob` instance is
+        returned.
+        Args:
+            circuits: An individual or a
+                list of :class:`~qiskit.circuits.QuantumCircuit` or
+                :class:`~qiskit.pulse.Schedule` objects to run on the backend.
+            job_name: Custom name to be assigned to the job. This job
+                name can subsequently be used as a filter in the
+                :meth:`jobs()` method. Job names do not need to be unique.
+            job_tags: Tags to be assigned to the job. The tags can subsequently be used
+                as a filter in the :meth:`jobs()` function call.
+            max_circuits_per_job: Maximum number of circuits to have in a single job.
+            header: User input that will be attached to the job and will be
+                copied to the corresponding result header. Headers do not affect the run.
+                This replaces the old ``Qobj`` header.
+            shots: Number of repetitions of each circuit, for sampling. Default: 4000
+                or ``max_shots`` from the backend configuration, whichever is smaller.
+            memory: If ``True``, per-shot measurement bitstrings are returned as well
+                (provided the backend supports it). For OpenPulse jobs, only
+                measurement level 2 supports this option.
+            qubit_lo_freq: List of default qubit LO frequencies in Hz. Will be overridden by
+                ``schedule_los`` if set.
+            meas_lo_freq: List of default measurement LO frequencies in Hz. Will be overridden
+                by ``schedule_los`` if set.
+            schedule_los: Experiment LO configurations, frequencies are given in Hz.
+            meas_level: Set the appropriate level of the measurement output for pulse experiments.
+            meas_return: Level of measurement data for the backend to return.
+                For ``meas_level`` 0 and 1:
+                    * ``single`` returns information from every shot.
+                    * ``avg`` returns average measurement output (averaged over number of shots).
+            memory_slots: Number of classical memory slots to use.
+            memory_slot_size: Size of each memory slot if the output is Level 0.
+            rep_time: Time per program execution in seconds. Must be from the list provided
+                by the backend (``backend.configuration().rep_times``).
+                Defaults to the first entry.
+            rep_delay: Delay between programs in seconds. Only supported on certain
+                backends (if ``backend.configuration().dynamic_reprate_enabled=True``).
+                If supported, ``rep_delay`` will be used instead of ``rep_time`` and must be
+                from the range supplied
+                by the backend (``backend.configuration().rep_delay_range``). Default is given by
+                ``backend.configuration().default_rep_delay``.
+            init_qubits: Whether to reset the qubits to the ground state for each shot.
+                Default: ``True``.
+            parameter_binds: List of Parameter bindings over which the set of experiments will be
+                executed. Each list element (bind) should be of the form
+                {Parameter1: value1, Parameter2: value2, ...}. All binds will be
+                executed across all experiments; e.g., if parameter_binds is a
+                length-n list, and there are m experiments, a total of m x n
+                experiments will be run (one for each experiment/bind pair).
+            use_measure_esp: Whether to use excited state promoted (ESP) readout for measurements
+                which are the terminal instruction to a qubit. ESP readout can offer higher fidelity
+                than standard measurement sequences. See
+                `here <https://arxiv.org/pdf/2008.08571.pdf>`_.
+                Default: ``True`` if backend supports ESP readout, else ``False``. Backend support
+                for ESP readout is determined by the flag ``measure_esp_enabled`` in
+                ``backend.configuration()``.
+            live_data_enabled (bool): Activate the live data in the backend, to receive data
+                from the instruments.
+            noise_model: Noise model. (Simulators only)
+            **run_config: Extra arguments used to configure the run.
+        Returns:
+            The job to be executed.
+        Raises:
+            IBMBackendApiError: If an unexpected error occurred while submitting
+                the job.
+            IBMBackendApiProtocolError: If an unexpected value received from
+                 the server.
+            IBMBackendValueError:
+                - If an input parameter value is not valid.
+                - If ESP readout is used and the backend does not support this.
+        """
+        # pylint: disable=arguments-differ
+
+        validate_job_tags(job_tags, IBMBackendValueError)
+
+        status = self.status()
+        if status.operational is True and status.status_msg != "active":
+            warnings.warn(f"The backend {self.name} is currently paused.")
+
+        if isinstance(shots, float):
+            shots = int(shots)
+
+        if not self.configuration().simulator:
+            circuits = self._deprecate_id_instruction(circuits)
+
+        inputs = {"circuits": circuits}
+        options = {"backend": self.name}
+
+        if job_name:
+            inputs["job_name"] = job_name
+        if max_circuits_per_job:
+            inputs["max_circuits_per_job"] = max_circuits_per_job
+        if header:
+            inputs["header"] = header
+        if shots:
+            inputs["shots"] = shots
+        if memory is not None:
+            inputs["memory"] = memory
+        if qubit_lo_freq:
+            inputs["qubit_lo_freq"] = qubit_lo_freq
+        if meas_lo_freq:
+            inputs["meas_lo_freq"] = meas_lo_freq
+        if schedule_los:
+            inputs["schedule_los"] = schedule_los
+        if meas_level:
+            inputs["meas_level"] = meas_level
+        if meas_return:
+            inputs["meas_return"] = meas_return
+        if memory_slots:
+            inputs["memory_slots"] = memory_slots
+        if memory_slot_size:
+            inputs["memory_slot_size"] = memory_slot_size
+        if rep_time:
+            inputs["rep_time"] = rep_time
+        if rep_delay:
+            inputs["rep_delay"] = rep_delay
+        if init_qubits is not None:
+            inputs["init_qubits"] = init_qubits
+        if parameter_binds:
+            inputs["parameter_binds"] = parameter_binds
+        if use_measure_esp is not None:
+            inputs["use_measure_esp"] = use_measure_esp
+        if live_data_enabled is not None:
+            inputs["live_data_enabled"] = live_data_enabled
+        if noise_model:
+            inputs["noise_model"] = noise_model
+        if run_config:
+            for key, value in run_config.items():
+                inputs[key] = value
+
+        # TODO: Replace lines with direct call to the runtime api
+        # return self.provider._runtime.run(
+        #     program_id=program_id, inputs=inputs, options=options,
+        #     job_tags=job_tags
+        # )
+
     def _get_run_config(self, **kwargs: Any) -> Dict:
         """Return the consolidated runtime configuration."""
         run_config_dict = copy.copy(self.options.__dict__)
