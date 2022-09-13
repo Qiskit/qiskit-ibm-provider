@@ -39,7 +39,7 @@ class RuntimeClient(AccountClient):
             params: Connection parameters.
         """
         self._session = RetrySession(
-            base_url=params.get_runtime_api_base_url(),
+            base_url=params.url,
             auth=params.get_auth_handler(),
             **params.connection_parameters()
         )
