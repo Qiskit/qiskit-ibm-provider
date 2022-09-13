@@ -723,9 +723,9 @@ class IBMBackend(Backend):
         backend = hgp.backend(options["backend"])
         hgp_name = hgp.name
         program_id = "circuit-runner" # TODO: maybe use qasm3-runner as well
-        result_decoder = ResultDecoder # TODO: might have to copy over from qiskit-ibm-runtime
+        # result_decoder = ResultDecoder # TODO: might have to copy over from qiskit-ibm-runtime
         try:
-            response = self._runtime_api_run( # TODO: the main thing to implement right now
+            response = self.provider._runtime_client.program_run(
                 program_id=program_id,
                 backend_name=options["backend"],
                 params=inputs,
@@ -739,7 +739,7 @@ class IBMBackend(Backend):
                 "Error submitting job: {}".format(str(ex))) from ex
         try:
             job = IBMCircuitJob(
-                backend=self, api_client=self._api_client, **response
+                backend=self, api_client=self._api_client, job_id=response['id']
             )
             logger.debug("Job %s was successfully submitted.", job.job_id())
         except TypeError as err:

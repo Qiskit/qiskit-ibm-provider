@@ -174,7 +174,9 @@ class IBMProvider(Provider):
             verify=self._account.verify,
         )
         self._auth_client = self._authenticate_ibm_quantum_account(self._client_params)
-        self._runtime_client = self._authenticate_ibm_quantum_runtime_account(self._client_params)
+        self._client_params.url = self._auth_client.current_service_urls()["services"]["runtime"]
+        self._client_params.token = self._auth_client.current_access_token()
+        self._runtime_client = RuntimeClient(self._client_params)
 
         self._hgps = self._initialize_hgps(self._auth_client)
         self._initialize_services()
@@ -323,32 +325,6 @@ class IBMProvider(Provider):
                 )
             )
         return AuthClient(client_params)
-
-    def _authenticate_ibm_quantum_runtime_account(
-        self, client_params: ClientParameters
-    ) -> AuthClient:
-        """Authenticate against IBM Quantum and populate the hub/group/projects.
-
-        Args:
-            client_params: Parameters used for server connection.
-
-        Raises:
-            IBMInputValueError: If the URL specified is not a valid IBM Quantum authentication URL.
-            IBMNotAuthorizedError: If the account is not authorized to use runtime.
-
-        Returns:
-            Authentication client.
-        """
-        version_info = self._check_api_version(client_params)
-        # Check the URL is a valid authentication URL.
-        if not version_info["new_api"] or "api-auth" not in version_info:
-            raise IBMInputValueError(
-                "The URL specified ({}) is not an IBM Quantum authentication URL. "
-                "Valid authentication URL: {}.".format(
-                    client_params.url, QISKIT_IBM_API_URL
-                )
-            )
-        return RuntimeClient(client_params)
 
     @staticmethod
     def _check_api_version(params: ClientParameters) -> Dict[str, Union[bool, str]]:
