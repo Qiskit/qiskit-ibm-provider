@@ -582,6 +582,7 @@ class IBMBackend(Backend):
         input circuits will be divided into multiple jobs, and an
         :class:`~qiskit_ibm_provider.job.IBMCompositeJob` instance is
         returned.
+
         Args:
             circuits: An individual or a
                 list of :class:`~qiskit.circuits.QuantumCircuit` or
@@ -640,8 +641,10 @@ class IBMBackend(Backend):
                 from the instruments.
             noise_model: Noise model. (Simulators only)
             **run_config: Extra arguments used to configure the run.
+
         Returns:
             The job to be executed.
+
         Raises:
             IBMBackendApiError: If an unexpected error occurred while submitting
                 the job.
@@ -710,11 +713,13 @@ class IBMBackend(Backend):
             for key, value in run_config.items():
                 inputs[key] = value
 
-        # TODO: Replace lines with direct call to the runtime api
-        # return self.provider._runtime.run(
-        #     program_id=program_id, inputs=inputs, options=options,
-        #     job_tags=job_tags
-        # )
+        return self._runtime_run(inputs=inputs, options=options, job_tags=job_tags)
+
+    def _runtime_run(
+        self, inputs: Dict, options: Dict, job_tags: Optional[List[str]] = None
+    ):
+        # TODO: Implement direct call to the runtime api
+        pass
 
     def _get_run_config(self, **kwargs: Any) -> Dict:
         """Return the consolidated runtime configuration."""
