@@ -477,7 +477,7 @@ class AccountClient(BaseClient):
         """
         start_time = time.time()
         status_response = self.job_status(job_id)
-        while ApiJobStatus(status_response["status"]) not in API_JOB_FINAL_STATES:
+        while ApiJobStatus(status_response["status"].upper()) not in API_JOB_FINAL_STATES:
             # Share the new status.
             if status_queue is not None:
                 status_queue.put(status_response)

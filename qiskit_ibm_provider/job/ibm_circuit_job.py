@@ -769,7 +769,7 @@ class IBMCircuitJob(IBMJob):
             return self._status in required_status
 
         try:
-            status_response = self._api_client.job_final_status(
+            status_response = self._runtime_client.job_final_status(
                 self.job_id(), timeout=timeout, wait=wait, status_queue=status_queue
             )
         except UserTimeoutExceededError:

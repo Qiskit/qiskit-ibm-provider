@@ -326,6 +326,17 @@ class RuntimeClient(AccountClient):
         """
         return self._api.program_job(job_id).metadata()
 
+    def job_status(self, job_id: str) -> Dict[str, Any]:
+        """Return the status of the job.
+
+        Args:
+            job_id: The ID of the job.
+
+        Returns:
+            Job status.
+        """
+        return self.job_get(job_id)['state']
+
     def close_session(self, session_id: str) -> None:
         """Close the runtime session.
 
@@ -395,3 +406,12 @@ class RuntimeClient(AccountClient):
             Backend pulse defaults.
         """
         return self._api.backend(backend_name).pulse_defaults()
+
+    def _job_final_status_websocket(
+        self,
+        job_id,
+        timeout = None,
+        status_queue = None,
+    ) -> Dict[str, Any]:
+        # stub method, as currently no implementation is available
+        return None
