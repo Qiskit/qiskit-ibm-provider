@@ -546,7 +546,7 @@ class IBMBackend(Backend):
     def run_via_runtime(
         self,
         circuits: Union[
-            QuantumCircuit, Schedule, List[Union[QuantumCircuit, Schedule]]
+            str, QuantumCircuit, Schedule, List[Union[QuantumCircuit, Schedule]]
         ],
         job_name: Optional[str] = None,
         job_tags: Optional[List[str]] = None,
@@ -587,7 +587,8 @@ class IBMBackend(Backend):
         Args:
             circuits: An individual or a
                 list of :class:`~qiskit.circuits.QuantumCircuit` or
-                :class:`~qiskit.pulse.Schedule` objects to run on the backend.
+                :class:`~qiskit.pulse.Schedule` or QASM3 string
+                object to run on the backend.
             job_name: Custom name to be assigned to the job. This job
                 name can subsequently be used as a filter in the
                 :meth:`jobs()` method. Job names do not need to be unique.
@@ -663,12 +664,15 @@ class IBMBackend(Backend):
         if status.operational is True and status.status_msg != "active":
             warnings.warn(f"The backend {self.name} is currently paused.")
 
+        program_id = "circuit-runner"
+        if isinstance(circuits, str):
+            # str circuit means QASM3 string
+            program_id = "qasm3-runner"
+
         if isinstance(shots, float):
             shots = int(shots)
-
         if not self.configuration().simulator:
             circuits = self._deprecate_id_instruction(circuits)
-
         inputs = {"circuits": circuits}
         options = {"backend": self.name}
 
@@ -714,15 +718,14 @@ class IBMBackend(Backend):
             for key, value in run_config.items():
                 inputs[key] = value
 
-        return self._runtime_run(inputs=inputs, options=options, job_tags=job_tags)
+        return self._runtime_run(program_id=program_id, inputs=inputs, options=options, job_tags=job_tags)
 
     def _runtime_run(
-        self, inputs: Dict, options: Dict, job_tags: Optional[List[str]] = None
+        self, program_id, inputs: Dict, options: Dict, job_tags: Optional[List[str]] = None
     ):
         hgp = self.provider._get_hgp(backend_name=options["backend"])
         backend = hgp.backend(options["backend"])
         hgp_name = hgp.name
-        program_id = "circuit-runner" # TODO: maybe use qasm3-runner as well
         try:
             response = self.provider._runtime_client.program_run(
                 program_id=program_id,
