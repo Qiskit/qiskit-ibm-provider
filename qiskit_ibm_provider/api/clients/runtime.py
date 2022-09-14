@@ -16,7 +16,7 @@ import logging
 from typing import Any, Dict, List, Optional
 from datetime import datetime as python_datetime
 
-from qiskit_ibm_runtime.api.session import RetrySession
+from qiskit_ibm_provider.api.session import RetrySession
 
 from .account import AccountClient
 from ..rest.runtime import Runtime

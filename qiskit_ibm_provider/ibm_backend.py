@@ -738,9 +738,7 @@ class IBMBackend(Backend):
             raise IBMBackendApiError(
                 "Error submitting job: {}".format(str(ex))) from ex
         try:
-            job = IBMCircuitJob(
-                backend=self, api_client=self._api_client, job_id=response['id']
-            )
+            job = self._runtime_create_job(response['id'])
             logger.debug("Job %s was successfully submitted.", job.job_id())
         except TypeError as err:
             logger.debug("Invalid job data received: %s", response)
@@ -749,6 +747,18 @@ class IBMBackend(Backend):
                 "when submitting job: {}".format(str(err))
             ) from err
         Publisher().publish("ibm.job.start", job) #TODO: is this still needed?
+        return job
+
+    def _runtime_create_job(self, job_id):
+        job_data = self.provider._runtime_client.job_get(job_id)
+        job_metadata = self.provider._runtime_client.job_metadata(job_id)
+        job = IBMCircuitJob(
+            backend=self,
+            api_client=self._api_client,
+            job_id=job_id,
+            creation_date=job_data['created'],
+            status = job_data['status']
+        )
         return job
 
 
