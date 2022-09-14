@@ -418,10 +418,13 @@ class IBMCircuitJob(IBMJob):
             return self._status
 
         with api_to_job_error():
-            api_response = self._api_client.job_status(self.job_id())
+            api_response = self._runtime_client.job_get(self.job_id())['state']
+            # response state possibly has two values: status and reason
+            # reason is not used in the current interface
             self._api_status = api_response["status"]
+            api_metadata = self._runtime_client.job_metadata(self.job_id())
             self._status, self._queue_info = self._get_status_position(
-                self._api_status, api_response.get("info_queue", None)
+                self._api_status, api_metadata
             )
 
         # Get all job attributes if the job is done.
@@ -941,13 +944,13 @@ class IBMCircuitJob(IBMJob):
             callback(self.job_id(), status, self, queue_info=queue_info)
 
     def _get_status_position(
-        self, api_status: str, api_info_queue: Optional[Dict] = None
+        self, api_status: str, api_metadata: Optional[Dict] = None
     ) -> Tuple[JobStatus, Optional[QueueInfo]]:
         """Return the corresponding job status for the input server job status.
 
         Args:
             api_status: Server job status
-            api_info_queue: Job queue information from the server response.
+            api_metadata: Job metadata information from the server response.
 
         Returns:
             A tuple of job status and queue information (``None`` if not available).
@@ -957,8 +960,8 @@ class IBMCircuitJob(IBMJob):
         """
         queue_info = None
         status = api_status_to_job_status(api_status)
-        if api_status == ApiJobStatus.QUEUED.value and api_info_queue:
-            queue_info = QueueInfo(job_id=self.job_id(), **api_info_queue)
+        if api_status == ApiJobStatus.QUEUED.value and api_metadata:
+            queue_info = QueueInfo(job_id=self.job_id(), **api_metadata)
 
         if status is not JobStatus.QUEUED:
             queue_info = None

@@ -29,10 +29,10 @@ class QueueInfo:
 
     def __init__(
         self,
-        position: Optional[int] = None,
+        position_in_queue: Optional[int] = None,
         status: Optional[str] = None,
         estimated_start_time: Optional[Union[str, datetime]] = None,
-        estimated_complete_time: Optional[Union[str, datetime]] = None,
+        estimated_completion_time: Optional[Union[str, datetime]] = None,
         hub_priority: Optional[float] = None,
         group_priority: Optional[float] = None,
         project_priority: Optional[float] = None,
@@ -52,14 +52,14 @@ class QueueInfo:
             job_id: Job ID.
             kwargs: Additional attributes.
         """
-        self.position = position
+        self.position = int(position_in_queue)
         self._status = status
         if isinstance(estimated_start_time, str):
             estimated_start_time = dateutil.parser.isoparse(estimated_start_time)
-        if isinstance(estimated_complete_time, str):
-            estimated_complete_time = dateutil.parser.isoparse(estimated_complete_time)
+        if isinstance(estimated_completion_time, str):
+            estimated_completion_time = dateutil.parser.isoparse(estimated_completion_time)
         self._estimated_start_time_utc = estimated_start_time
-        self._estimated_complete_time_utc = estimated_complete_time
+        self._estimated_complete_time_utc = estimated_completion_time
         self.hub_priority = hub_priority
         self.group_priority = group_priority
         self.project_priority = project_priority

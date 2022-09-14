@@ -755,10 +755,10 @@ class IBMBackend(Backend):
         job = IBMCircuitJob(
             backend=self,
             api_client=self._api_client,
-            runtime_client = self._runtime_client,
+            runtime_client = self.provider._runtime_client,
             job_id=job_id,
             creation_date=job_data['created'],
-            status=job_data['status']
+            status=job_data['state']['status']
         )
         return job
 
