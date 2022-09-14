@@ -39,7 +39,7 @@ from .exceptions import (
 from .ibm_job import IBMJob
 from .queueinfo import QueueInfo
 from .utils import build_error_report, api_to_job_error, get_cancel_status
-from ..api.clients import AccountClient
+from ..api.clients import AccountClient, RuntimeClient
 from ..api.exceptions import ApiError, UserTimeoutExceededError
 from ..apiconstants import ApiJobStatus, ApiJobKind
 from ..utils.converters import utc_to_local
@@ -114,6 +114,7 @@ class IBMCircuitJob(IBMJob):
         job_id: str,
         creation_date: str,
         status: str,
+        runtime_client: RuntimeClient = None, #TODO: make mandatory after completely switching
         kind: Optional[str] = None,
         name: Optional[str] = None,
         time_per_step: Optional[dict] = None,
@@ -147,6 +148,7 @@ class IBMCircuitJob(IBMJob):
         super().__init__(
             backend=backend, api_client=api_client, job_id=job_id, name=name, tags=tags
         )
+        self._runtime_client = runtime_client
         self._creation_date = dateutil.parser.isoparse(creation_date)
         self._api_status = status
         self._kind = ApiJobKind(kind) if kind else None
@@ -185,7 +187,8 @@ class IBMCircuitJob(IBMJob):
                 with the server.
         """
         with api_to_job_error():
-            properties = self._api_client.job_properties(job_id=self.job_id())
+            #properties = self._api_client.job_properties(job_id=self.job_id())
+            properties = self._runtime_client.ba_properties(job_id=self.job_id())
 
         if not properties:
             return None

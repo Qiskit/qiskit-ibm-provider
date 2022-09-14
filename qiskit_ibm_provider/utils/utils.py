@@ -43,6 +43,15 @@ API_TO_JOB_STATUS = {
     ApiJobStatus.ERROR_TRANSPILING_JOB: JobStatus.ERROR,
 }
 
+# Possible runtime state.status values: Queued,Running,Completed,Cancelled,Failed
+RUNTIME_API_TO_JOB_STATUS = {
+    "QUEUED": JobStatus.QUEUED,
+    "RUNNING": JobStatus.RUNNING,
+    "COMPLETED": JobStatus.DONE,
+    "CANCELLED": JobStatus.CANCELLED,
+    "FAILED": JobStatus.ERROR,
+}
+
 
 def api_status_to_job_status(api_status: Union[str, ApiJobStatus]) -> JobStatus:
     """Return the corresponding job status for the input server job status.
