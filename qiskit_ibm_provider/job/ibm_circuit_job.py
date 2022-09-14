@@ -44,6 +44,7 @@ from ..api.exceptions import ApiError, UserTimeoutExceededError
 from ..apiconstants import ApiJobStatus, ApiJobKind
 from ..utils.converters import utc_to_local
 from ..utils.json_decoder import properties_from_server_data, decode_result
+from ..utils.json import RuntimeDecoder
 from ..utils.qobj_utils import dict_to_qobj
 from ..utils.utils import RefreshQueue, validate_job_tags, api_status_to_job_status
 
@@ -115,6 +116,7 @@ class IBMCircuitJob(IBMJob):
         creation_date: str,
         status: str,
         runtime_client: RuntimeClient = None, #TODO: make mandatory after completely switching
+        result_decoder = None,
         kind: Optional[str] = None,
         name: Optional[str] = None,
         time_per_step: Optional[dict] = None,
@@ -134,6 +136,8 @@ class IBMCircuitJob(IBMJob):
             job_id: Job ID.
             creation_date: Job creation date.
             status: Job status returned by the server.
+            runtime_client: Object for connecting to the runtime server
+            result_decoder: Decoder for the returned results string
             kind: Job type.
             name: Job name.
             time_per_step: Time spent for each processing step.
@@ -149,6 +153,7 @@ class IBMCircuitJob(IBMJob):
             backend=backend, api_client=api_client, job_id=job_id, name=name, tags=tags
         )
         self._runtime_client = runtime_client
+        self._result_decoder = result_decoder or RuntimeDecoder
         self._creation_date = dateutil.parser.isoparse(creation_date)
         self._api_status = status
         self._kind = ApiJobKind(kind) if kind else None
@@ -601,24 +606,26 @@ class IBMCircuitJob(IBMJob):
             IBMJobApiError: If an unexpected error occurred when communicating
                 with the server.
         """
+        # TODO: Change to use runtime response data as much as possible
         with api_to_job_error():
-            api_response = self._api_client.job_get(self.job_id())
+            api_response = self._runtime_client.job_get(self.job_id())
 
         try:
-            api_response.pop("job_id")
+            api_response.pop("id")
             self._creation_date = dateutil.parser.isoparse(
-                api_response.pop("creation_date")
+                api_response.pop("created")
             )
-            self._api_status = api_response.pop("status")
-            if "kind" in api_response:
+            self._api_status = api_response.pop("state")['status']
+            if "kind" in api_response: # not relevant in runtime?
                 self._kind = ApiJobKind(api_response.pop("kind"))
-            if "qobj" in api_response:
+            if "qobj" in api_response: # not relevant in runtime?
                 self._qobj = dict_to_qobj(api_response.pop("qobj"))
         except (KeyError, TypeError) as err:
             raise IBMJobApiError(
                 "Unexpected return value received " "from the server: {}".format(err)
             ) from err
 
+        # not relevant in runtime?
         self._name = api_response.pop("name", None)
         self._time_per_step = api_response.pop("time_per_step", None)
         self._error = api_response.pop("error", None)
@@ -631,7 +638,8 @@ class IBMCircuitJob(IBMJob):
         self._client_version = self._extract_client_version(
             api_response.pop("client_info", None)
         )
-        self._set_result(api_response.pop("result", None))
+        api_result = self._runtime_client.job_results(self.job_id())
+        self._set_result(api_result)
 
         for key, value in api_response.items():
             self._data[key + "_"] = value
@@ -837,10 +845,11 @@ class IBMCircuitJob(IBMJob):
         if raw_data is None:
             self._result = None
             return
-        raw_data["client_version"] = self.client_version
-        decode_result(raw_data)
+        # TODO: check whether client version can be extracted from runtime data
+        # raw_data["client_version"] = self.client_version
+        data_dict = decode_result(raw_data, self._result_decoder)
         try:
-            self._result = Result.from_dict(raw_data)
+            self._result = Result.from_dict(data_dict)
         except (KeyError, TypeError) as err:
             if not self._kind:
                 raise IBMJobInvalidStateError(

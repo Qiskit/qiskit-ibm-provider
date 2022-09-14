@@ -13,6 +13,7 @@
 """Custom JSON decoder."""
 
 from typing import Dict, Union, List
+import json
 
 import dateutil.parser
 from qiskit.providers.models import (
@@ -97,16 +98,18 @@ def decode_backend_configuration(config: Dict) -> None:
                 u_channle_lo["scale"] = _to_complex(u_channle_lo["scale"])
 
 
-def decode_result(result: Dict) -> None:
+def decode_result(result: str, result_decoder) -> Dict:
     """Decode result data.
 
     Args:
         result: A `Result` in dictionary format.
     """
+    result_dict = json.loads(result, cls=result_decoder)
     if "date" in result:
-        if isinstance(result["date"], str):
-            result["date"] = dateutil.parser.isoparse(result["date"])
-        result["date"] = utc_to_local(result["date"])
+        if isinstance(result_dict["date"], str):
+            result_dict["date"] = dateutil.parser.isoparse(result_dict["date"])
+        result_dict["date"] = utc_to_local(result_dict["date"])
+    return result_dict
 
 
 def _to_complex(value: Union[List[float], complex]) -> complex:

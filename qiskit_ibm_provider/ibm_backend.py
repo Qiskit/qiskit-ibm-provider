@@ -723,7 +723,6 @@ class IBMBackend(Backend):
         backend = hgp.backend(options["backend"])
         hgp_name = hgp.name
         program_id = "circuit-runner" # TODO: maybe use qasm3-runner as well
-        # result_decoder = ResultDecoder # TODO: might have to copy over from qiskit-ibm-runtime
         try:
             response = self.provider._runtime_client.program_run(
                 program_id=program_id,
