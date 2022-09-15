@@ -967,9 +967,6 @@ class IBMCircuitJob(IBMJob):
              IBMJobApiError: if unexpected return value received from the server.
         """
         queue_info = None
-        print("polling")
-        print("api_status", api_status)
-        print("api_metadata", api_metadata)
         status = api_status_to_job_status(api_status)
         if api_status == ApiJobStatus.QUEUED.value and api_metadata:
             queue_info = QueueInfo(job_id=self.job_id(), **api_metadata)

@@ -13,18 +13,22 @@
 """Client for accessing IBM Quantum runtime service."""
 
 import logging
+import time
 from typing import Any, Dict, List, Optional
 from datetime import datetime as python_datetime
 
-from .account import AccountClient
+from .base import BaseClient
 from ..rest.runtime import Runtime
 from ..client_parameters import ClientParameters
+from ..session import RetrySession
 from ...utils.hgp import from_instance_format
+from ...utils.utils import RefreshQueue
+from ...apiconstants import API_JOB_FINAL_STATES, ApiJobStatus
 
 logger = logging.getLogger(__name__)
 
 # TODO: verify we can use AccountClient instead of qiskit-ibm-runtime's BaseBackendClient
-class RuntimeClient(AccountClient):
+class RuntimeClient(BaseClient):
     """Client for accessing runtime service."""
 
     def __init__(
@@ -36,7 +40,9 @@ class RuntimeClient(AccountClient):
         Args:
             params: Connection parameters.
         """
-        super().__init__(params)
+        self._session = RetrySession(
+            params.url, auth=params.get_auth_handler(), **params.connection_parameters()
+        )
         self._api = Runtime(self._session)
 
     def list_programs(self, limit: int = None, skip: int = None) -> Dict[str, Any]:
@@ -409,3 +415,103 @@ class RuntimeClient(AccountClient):
     ) -> Dict[str, Any]:
         # stub method, as currently no implementation is available
         return None
+
+    def job_final_status(
+            self,
+            job_id: str,
+            timeout: Optional[float] = None,
+            wait: float = 5,
+            status_queue: Optional[RefreshQueue] = None,
+    ) -> Dict[str, Any]:
+        """Wait until the job progresses to a final state.
+
+        Args:
+            job_id: The ID of the job.
+            timeout: Time to wait for job, in seconds. If ``None``, wait indefinitely.
+            wait: Seconds between queries.
+            status_queue: Queue used to share the latest status.
+
+        Returns:
+            Job status.
+
+        Raises:
+            UserTimeoutExceededError: If the job does not return results
+                before the specified timeout.
+            ApiIBMProtocolError: If unexpected data is received from the server.
+        """
+        status_response = None
+        # Attempt to use websocket if available.
+        start_time = time.time()
+        try:
+            status_response = self._job_final_status_websocket(
+                job_id=job_id, timeout=timeout, status_queue=status_queue
+            )
+        except WebsocketTimeoutError as ex:
+            logger.info(
+                "Timeout checking job status using websocket, "
+                "retrying using HTTP: %s",
+                ex,
+            )
+        except (RuntimeError, WebsocketError) as ex:
+            logger.info(
+                "Error checking job status using websocket, " "retrying using HTTP: %s",
+                ex,
+            )
+
+        # Adjust timeout for HTTP retry.
+        if timeout is not None:
+            timeout -= time.time() - start_time
+
+        if not status_response:
+            # Use traditional http requests if websocket not available or failed.
+            status_response = self._job_final_status_polling(
+                job_id, timeout, wait, status_queue
+            )
+
+        return status_response
+
+    def _job_final_status_polling(
+        self,
+        job_id: str,
+        timeout: Optional[float] = None,
+        wait: float = 5,
+        status_queue: Optional[RefreshQueue] = None,
+    ) -> Dict[str, Any]:
+        """Return the final status of the job via polling.
+
+        Args:
+            job_id: The ID of the job.
+            timeout: Time to wait for job, in seconds. If ``None``, wait indefinitely.
+            wait: Seconds between queries.
+            status_queue: Queue used to share the latest status.
+
+        Returns:
+            Job status.
+
+        Raises:
+            UserTimeoutExceededError: If the user specified timeout has been exceeded.
+        """
+        start_time = time.time()
+        status_response = self.job_status(job_id)
+        while (
+            ApiJobStatus(status_response["status"].upper()) not in API_JOB_FINAL_STATES
+        ):
+            # Share the new status.
+            if status_queue is not None:
+                status_queue.put(status_response)
+
+            elapsed_time = time.time() - start_time
+            if timeout is not None and elapsed_time >= timeout:
+                raise UserTimeoutExceededError(
+                    "Timeout while waiting for job {}.".format(job_id)
+                )
+
+            logger.info(
+                "API job status = %s (%d seconds)",
+                status_response["status"],
+                elapsed_time,
+            )
+            time.sleep(wait)
+            status_response = self.job_status(job_id)
+
+        return status_response
