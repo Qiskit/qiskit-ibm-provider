@@ -57,7 +57,9 @@ class QueueInfo:
         if isinstance(estimated_start_time, str):
             estimated_start_time = dateutil.parser.isoparse(estimated_start_time)
         if isinstance(estimated_completion_time, str):
-            estimated_completion_time = dateutil.parser.isoparse(estimated_completion_time)
+            estimated_completion_time = dateutil.parser.isoparse(
+                estimated_completion_time
+            )
         self._estimated_start_time_utc = estimated_start_time
         self._estimated_complete_time_utc = estimated_completion_time
         self.hub_priority = hub_priority

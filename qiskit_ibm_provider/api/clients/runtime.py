@@ -16,8 +16,6 @@ import logging
 from typing import Any, Dict, List, Optional
 from datetime import datetime as python_datetime
 
-from qiskit_ibm_provider.api.session import RetrySession
-
 from .account import AccountClient
 from ..rest.runtime import Runtime
 from ..client_parameters import ClientParameters
@@ -25,7 +23,7 @@ from ...utils.hgp import from_instance_format
 
 logger = logging.getLogger(__name__)
 
-#TODO: verify we can use AccountClient instead of qiskit-ibm-runtime's BaseBackendClient
+# TODO: verify we can use AccountClient instead of qiskit-ibm-runtime's BaseBackendClient
 class RuntimeClient(AccountClient):
     """Client for accessing runtime service."""
 
@@ -38,11 +36,7 @@ class RuntimeClient(AccountClient):
         Args:
             params: Connection parameters.
         """
-        self._session = RetrySession(
-            base_url=params.url,
-            auth=params.get_auth_handler(),
-            **params.connection_parameters()
-        )
+        super().__init__(params)
         self._api = Runtime(self._session)
 
     def list_programs(self, limit: int = None, skip: int = None) -> Dict[str, Any]:
@@ -335,7 +329,7 @@ class RuntimeClient(AccountClient):
         Returns:
             Job status.
         """
-        return self.job_get(job_id)['state']
+        return self.job_get(job_id)["state"]
 
     def close_session(self, session_id: str) -> None:
         """Close the runtime session.
@@ -347,13 +341,13 @@ class RuntimeClient(AccountClient):
 
     # IBM Cloud only functions
 
-    def list_backends(self) -> List[str]:
+    def list_backends(self, timeout: Optional[float] = None) -> List[str]:
         """Return IBM Cloud backends available for this service instance.
 
         Returns:
             IBM Cloud backends available for this service instance.
         """
-        return self._api.backends()["devices"]
+        return self._api.backends(timeout)["devices"]
 
     def backend_configuration(self, backend_name: str) -> Dict[str, Any]:
         """Return the configuration of the IBM Cloud backend.
@@ -410,8 +404,8 @@ class RuntimeClient(AccountClient):
     def _job_final_status_websocket(
         self,
         job_id,
-        timeout = None,
-        status_queue = None,
+        timeout=None,
+        status_queue=None,
     ) -> Dict[str, Any]:
         # stub method, as currently no implementation is available
         return None

@@ -44,6 +44,7 @@ API_TO_JOB_STATUS = {
     ApiJobStatus.FAILED: JobStatus.ERROR,
 }
 
+
 def api_status_to_job_status(api_status: Union[str, ApiJobStatus]) -> JobStatus:
     """Return the corresponding job status for the input server job status.
 

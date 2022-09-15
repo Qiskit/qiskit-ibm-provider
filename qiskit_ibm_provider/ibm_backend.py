@@ -20,7 +20,6 @@ from typing import Iterable, Dict, List, Union, Optional, Any
 
 from qiskit.circuit import QuantumCircuit, Parameter, Delay
 from qiskit.circuit.duration import duration_in_dt
-from qiskit.compiler import assemble
 from qiskit.providers.backend import BackendV2 as Backend
 from qiskit.providers.models import (
     BackendStatus,
@@ -56,7 +55,7 @@ from .exceptions import (
     IBMBackendApiError,
     IBMBackendApiProtocolError,
 )
-from .job import IBMJob, IBMCircuitJob, IBMCompositeJob
+from .job import IBMJob, IBMCircuitJob
 from .utils import validate_job_tags
 from .utils.backend import convert_reservation_data
 from .utils.backend_converter import (
@@ -344,208 +343,6 @@ class IBMBackend(Backend):
     def run(
         self,
         circuits: Union[
-            QuantumCircuit, Schedule, List[Union[QuantumCircuit, Schedule]]
-        ],
-        job_name: Optional[str] = None,
-        job_tags: Optional[List[str]] = None,
-        max_circuits_per_job: Optional[int] = None,
-        header: Optional[Dict] = None,
-        shots: Optional[Union[int, float]] = None,
-        memory: Optional[bool] = None,
-        qubit_lo_freq: Optional[List[int]] = None,
-        meas_lo_freq: Optional[List[int]] = None,
-        schedule_los: Optional[
-            Union[
-                List[Union[Dict[PulseChannel, float], LoConfig]],
-                Union[Dict[PulseChannel, float], LoConfig],
-            ]
-        ] = None,
-        meas_level: Optional[Union[int, MeasLevel]] = None,
-        meas_return: Optional[Union[str, MeasReturnType]] = None,
-        memory_slots: Optional[int] = None,
-        memory_slot_size: Optional[int] = None,
-        rep_time: Optional[int] = None,
-        rep_delay: Optional[float] = None,
-        init_qubits: Optional[bool] = None,
-        parameter_binds: Optional[List[Dict[Parameter, float]]] = None,
-        use_measure_esp: Optional[bool] = None,
-        live_data_enabled: Optional[bool] = None,
-        noise_model: Optional[Any] = None,
-        **run_config: Dict,
-    ) -> IBMJob:
-        """Run on the backend.
-
-        If a keyword specified here is also present in the ``options`` attribute/object,
-        the value specified here will be used for this run.
-
-        If the length of the input circuits exceeds the maximum allowed by
-        the backend, or if `max_circuits_per_job` is not ``None``, then the
-        input circuits will be divided into multiple jobs, and an
-        :class:`~qiskit_ibm_provider.job.IBMCompositeJob` instance is
-        returned.
-
-        Args:
-            circuits: An individual or a
-                list of :class:`~qiskit.circuits.QuantumCircuit` or
-                :class:`~qiskit.pulse.Schedule` objects to run on the backend.
-            job_name: Custom name to be assigned to the job. This job
-                name can subsequently be used as a filter in the
-                :meth:`jobs()` method. Job names do not need to be unique.
-            job_tags: Tags to be assigned to the job. The tags can subsequently be used
-                as a filter in the :meth:`jobs()` function call.
-            max_circuits_per_job: Maximum number of circuits to have in a single job.
-
-            header: User input that will be attached to the job and will be
-                copied to the corresponding result header. Headers do not affect the run.
-                This replaces the old ``Qobj`` header.
-            shots: Number of repetitions of each circuit, for sampling. Default: 4000
-                or ``max_shots`` from the backend configuration, whichever is smaller.
-            memory: If ``True``, per-shot measurement bitstrings are returned as well
-                (provided the backend supports it). For OpenPulse jobs, only
-                measurement level 2 supports this option.
-            qubit_lo_freq: List of default qubit LO frequencies in Hz. Will be overridden by
-                ``schedule_los`` if set.
-            meas_lo_freq: List of default measurement LO frequencies in Hz. Will be overridden
-                by ``schedule_los`` if set.
-            schedule_los: Experiment LO configurations, frequencies are given in Hz.
-            meas_level: Set the appropriate level of the measurement output for pulse experiments.
-            meas_return: Level of measurement data for the backend to return.
-
-                For ``meas_level`` 0 and 1:
-                    * ``single`` returns information from every shot.
-                    * ``avg`` returns average measurement output (averaged over number of shots).
-            memory_slots: Number of classical memory slots to use.
-            memory_slot_size: Size of each memory slot if the output is Level 0.
-            rep_time: Time per program execution in seconds. Must be from the list provided
-                by the backend (``backend.configuration().rep_times``).
-                Defaults to the first entry.
-            rep_delay: Delay between programs in seconds. Only supported on certain
-                backends (if ``backend.configuration().dynamic_reprate_enabled=True``).
-                If supported, ``rep_delay`` will be used instead of ``rep_time`` and must be
-                from the range supplied
-                by the backend (``backend.configuration().rep_delay_range``). Default is given by
-                ``backend.configuration().default_rep_delay``.
-            init_qubits: Whether to reset the qubits to the ground state for each shot.
-                Default: ``True``.
-            parameter_binds: List of Parameter bindings over which the set of experiments will be
-                executed. Each list element (bind) should be of the form
-                {Parameter1: value1, Parameter2: value2, ...}. All binds will be
-                executed across all experiments; e.g., if parameter_binds is a
-                length-n list, and there are m experiments, a total of m x n
-                experiments will be run (one for each experiment/bind pair).
-            use_measure_esp: Whether to use excited state promoted (ESP) readout for measurements
-                which are the terminal instruction to a qubit. ESP readout can offer higher fidelity
-                than standard measurement sequences. See
-                `here <https://arxiv.org/pdf/2008.08571.pdf>`_.
-                Default: ``True`` if backend supports ESP readout, else ``False``. Backend support
-                for ESP readout is determined by the flag ``measure_esp_enabled`` in
-                ``backend.configuration()``.
-            live_data_enabled (bool): Activate the live data in the backend, to receive data
-                from the instruments.
-            noise_model: Noise model. (Simulators only)
-            **run_config: Extra arguments used to configure the run.
-
-        Returns:
-            The job to be executed.
-
-        Raises:
-            IBMBackendApiError: If an unexpected error occurred while submitting
-                the job.
-            IBMBackendApiProtocolError: If an unexpected value received from
-                 the server.
-            IBMBackendValueError:
-                - If an input parameter value is not valid.
-                - If ESP readout is used and the backend does not support this.
-        """
-        # pylint: disable=arguments-differ
-        validate_job_tags(job_tags, IBMBackendValueError)
-
-        status = self.status()
-        if status.operational is True and status.status_msg != "active":
-            warnings.warn(f"The backend {self.name} is currently paused.")
-
-        sim_method = None
-        if self.configuration().simulator:
-            sim_method = getattr(self.configuration(), "simulation_method", None)
-        if noise_model:
-            try:
-                noise_model = noise_model.to_dict()
-            except AttributeError:
-                pass
-        measure_esp_enabled = getattr(
-            self.configuration(), "measure_esp_enabled", False
-        )
-        # set ``use_measure_esp`` to backend value if not set by user
-        if use_measure_esp is None:
-            use_measure_esp = measure_esp_enabled
-        if use_measure_esp and not measure_esp_enabled:
-            raise IBMBackendValueError(
-                "ESP readout not supported on this device. Please make sure the flag "
-                "'use_measure_esp' is unset or set to 'False'."
-            )
-
-        if isinstance(shots, float):
-            shots = int(shots)
-
-        if not self.configuration().simulator:
-            circuits = self._deprecate_id_instruction(circuits)
-
-        run_config_dict = self._get_run_config(
-            qobj_header=header,
-            shots=shots,
-            memory=memory,
-            qubit_lo_freq=qubit_lo_freq,
-            meas_lo_freq=meas_lo_freq,
-            schedule_los=schedule_los,
-            meas_level=meas_level,
-            meas_return=meas_return,
-            memory_slots=memory_slots,
-            memory_slot_size=memory_slot_size,
-            rep_time=rep_time,
-            rep_delay=rep_delay,
-            init_qubits=init_qubits,
-            use_measure_esp=use_measure_esp,
-            noise_model=noise_model,
-            **run_config,
-        )
-        if parameter_binds:
-            run_config_dict["parameter_binds"] = parameter_binds
-        if sim_method and "method" not in run_config_dict:
-            run_config_dict["method"] = sim_method
-
-        if isinstance(circuits, list):
-            chunk_size = None
-            if hasattr(self.configuration(), "max_experiments"):
-                backend_max = self.configuration().max_experiments
-                chunk_size = (
-                    backend_max
-                    if max_circuits_per_job is None
-                    else min(backend_max, max_circuits_per_job)
-                )
-            elif max_circuits_per_job:
-                chunk_size = max_circuits_per_job
-
-            if chunk_size and len(circuits) > chunk_size:
-                circuits_list = [
-                    circuits[x : x + chunk_size]
-                    for x in range(0, len(circuits), chunk_size)
-                ]
-                return IBMCompositeJob(
-                    backend=self,
-                    api_client=self._api_client,
-                    circuits_list=circuits_list,
-                    run_config=run_config_dict,
-                    name=job_name,
-                    tags=job_tags,
-                )
-
-        qobj = assemble(circuits, self, **run_config_dict)
-
-        return self._submit_job(qobj, job_name, job_tags, live_data_enabled)
-
-    def run_via_runtime(
-        self,
-        circuits: Union[
             str, QuantumCircuit, Schedule, List[Union[QuantumCircuit, Schedule]]
         ],
         job_name: Optional[str] = None,
@@ -718,13 +515,18 @@ class IBMBackend(Backend):
             for key, value in run_config.items():
                 inputs[key] = value
 
-        return self._runtime_run(program_id=program_id, inputs=inputs, options=options, job_tags=job_tags)
+        return self._runtime_run(
+            program_id=program_id, inputs=inputs, options=options, job_tags=job_tags
+        )
 
     def _runtime_run(
-        self, program_id, inputs: Dict, options: Dict, job_tags: Optional[List[str]] = None
+        self,
+        program_id,
+        inputs: Dict,
+        options: Dict,
+        job_tags: Optional[List[str]] = None,
     ):
         hgp = self.provider._get_hgp(backend_name=options["backend"])
-        backend = hgp.backend(options["backend"])
         hgp_name = hgp.name
         try:
             response = self.provider._runtime_client.program_run(
@@ -737,10 +539,9 @@ class IBMBackend(Backend):
                 job_tags=job_tags,
             )
         except RequestsApiError as ex:
-            raise IBMBackendApiError(
-                "Error submitting job: {}".format(str(ex))) from ex
+            raise IBMBackendApiError("Error submitting job: {}".format(str(ex))) from ex
         try:
-            job = self._runtime_create_job(response['id'])
+            job = self._runtime_create_job(response["id"])
             logger.debug("Job %s was successfully submitted.", job.job_id())
         except TypeError as err:
             logger.debug("Invalid job data received: %s", response)
@@ -748,22 +549,20 @@ class IBMBackend(Backend):
                 "Unexpected return value received from the server "
                 "when submitting job: {}".format(str(err))
             ) from err
-        Publisher().publish("ibm.job.start", job) #TODO: is this still needed?
+        Publisher().publish("ibm.job.start", job)  # TODO: is this still needed?
         return job
 
     def _runtime_create_job(self, job_id):
         job_data = self.provider._runtime_client.job_get(job_id)
-        job_metadata = self.provider._runtime_client.job_metadata(job_id)
         job = IBMCircuitJob(
             backend=self,
             api_client=self._api_client,
-            runtime_client = self.provider._runtime_client,
+            runtime_client=self.provider._runtime_client,
             job_id=job_id,
-            creation_date=job_data['created'],
-            status=job_data['state']['status']
+            creation_date=job_data["created"],
+            status=job_data["state"]["status"],
         )
         return job
-
 
     def _get_run_config(self, **kwargs: Any) -> Dict:
         """Return the consolidated runtime configuration."""

@@ -174,7 +174,9 @@ class IBMProvider(Provider):
             verify=self._account.verify,
         )
         self._auth_client = self._authenticate_ibm_quantum_account(self._client_params)
-        self._client_params.url = self._auth_client.current_service_urls()["services"]["runtime"]
+        self._client_params.url = self._auth_client.current_service_urls()["services"][
+            "runtime"
+        ]
         self._client_params.token = self._auth_client.current_access_token()
         self._runtime_client = RuntimeClient(self._client_params)
 

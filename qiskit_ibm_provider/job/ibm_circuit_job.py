@@ -115,8 +115,8 @@ class IBMCircuitJob(IBMJob):
         job_id: str,
         creation_date: str,
         status: str,
-        runtime_client: RuntimeClient = None, #TODO: make mandatory after completely switching
-        result_decoder = None,
+        runtime_client: RuntimeClient = None,  # TODO: make mandatory after completely switching
+        result_decoder=None,
         kind: Optional[str] = None,
         name: Optional[str] = None,
         time_per_step: Optional[dict] = None,
@@ -192,7 +192,7 @@ class IBMCircuitJob(IBMJob):
                 with the server.
         """
         with api_to_job_error():
-            #properties = self._api_client.job_properties(job_id=self.job_id())
+            # properties = self._api_client.job_properties(job_id=self.job_id())
             properties = self._runtime_client.ba_properties(job_id=self.job_id())
 
         if not properties:
@@ -423,9 +423,10 @@ class IBMCircuitJob(IBMJob):
             return self._status
 
         with api_to_job_error():
-            api_response = self._runtime_client.job_get(self.job_id())['state']
+            api_response = self._runtime_client.job_get(self.job_id())["state"]
             # response state possibly has two values: status and reason
             # reason is not used in the current interface
+            print("api_response", api_response)
             self._api_status = api_response["status"]
             api_metadata = self._runtime_client.job_metadata(self.job_id())
             self._status, self._queue_info = self._get_status_position(
@@ -612,13 +613,11 @@ class IBMCircuitJob(IBMJob):
 
         try:
             api_response.pop("id")
-            self._creation_date = dateutil.parser.isoparse(
-                api_response.pop("created")
-            )
-            self._api_status = api_response.pop("state")['status']
-            if "kind" in api_response: # not relevant in runtime?
+            self._creation_date = dateutil.parser.isoparse(api_response.pop("created"))
+            self._api_status = api_response.pop("state")["status"]
+            if "kind" in api_response:  # not relevant in runtime?
                 self._kind = ApiJobKind(api_response.pop("kind"))
-            if "qobj" in api_response: # not relevant in runtime?
+            if "qobj" in api_response:  # not relevant in runtime?
                 self._qobj = dict_to_qobj(api_response.pop("qobj"))
         except (KeyError, TypeError) as err:
             raise IBMJobApiError(
@@ -968,6 +967,9 @@ class IBMCircuitJob(IBMJob):
              IBMJobApiError: if unexpected return value received from the server.
         """
         queue_info = None
+        print("polling")
+        print("api_status", api_status)
+        print("api_metadata", api_metadata)
         status = api_status_to_job_status(api_status)
         if api_status == ApiJobStatus.QUEUED.value and api_metadata:
             queue_info = QueueInfo(job_id=self.job_id(), **api_metadata)

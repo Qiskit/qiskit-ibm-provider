@@ -12,7 +12,7 @@
 
 """Custom JSON decoder."""
 
-from typing import Dict, Union, List
+from typing import Dict, Union, List, Any
 import json
 
 import dateutil.parser
@@ -98,11 +98,12 @@ def decode_backend_configuration(config: Dict) -> None:
                 u_channle_lo["scale"] = _to_complex(u_channle_lo["scale"])
 
 
-def decode_result(result: str, result_decoder) -> Dict:
+def decode_result(result: str, result_decoder: Any) -> Dict:
     """Decode result data.
 
     Args:
-        result: A `Result` in dictionary format.
+        result: Run result in string format.
+        result_decoder: A decoder class for loading the json
     """
     result_dict = json.loads(result, cls=result_decoder)
     if "date" in result:
