@@ -41,6 +41,7 @@ API_TO_JOB_STATUS = {
     ApiJobStatus.ERROR_VALIDATING_JOB: JobStatus.ERROR,
     ApiJobStatus.ERROR_RUNNING_JOB: JobStatus.ERROR,
     ApiJobStatus.ERROR_TRANSPILING_JOB: JobStatus.ERROR,
+    ApiJobStatus.FAILED: JobStatus.ERROR,
 }
 
 def api_status_to_job_status(api_status: Union[str, ApiJobStatus]) -> JobStatus:
