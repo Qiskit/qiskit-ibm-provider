@@ -408,8 +408,8 @@ class IBMBackend(Backend):
             meas_level: Set the appropriate level of the measurement output for pulse experiments.
             meas_return: Level of measurement data for the backend to return.
                 For ``meas_level`` 0 and 1:
-                    * ``single`` returns information from every shot.
-                    * ``avg`` returns average measurement output (averaged over number of shots).
+                * ``single`` returns information from every shot.
+                * ``avg`` returns average measurement output (averaged over number of shots).
             memory_slots: Number of classical memory slots to use.
             memory_slot_size: Size of each memory slot if the output is Level 0.
             rep_time: Time per program execution in seconds. Must be from the list provided
@@ -419,7 +419,7 @@ class IBMBackend(Backend):
                 backends (if ``backend.configuration().dynamic_reprate_enabled=True``).
                 If supported, ``rep_delay`` will be used instead of ``rep_time`` and must be
                 from the range supplied
-                by the backend (``backend.configuration().rep_delay_range``). Default is given by
+                by the backend (``backend.configuration().rep_delay_range``). Default is givenby
                 ``backend.configuration().default_rep_delay``.
             init_qubits: Whether to reset the qubits to the ground state for each shot.
                 Default: ``True``.
