@@ -21,6 +21,7 @@ from .base import BaseClient
 from ..rest.runtime import Runtime
 from ..client_parameters import ClientParameters
 from ..session import RetrySession
+from ..exceptions import UserTimeoutExceededError
 from ...utils.hgp import from_instance_format
 from ...utils.utils import RefreshQueue
 from ...apiconstants import API_JOB_FINAL_STATES, ApiJobStatus
@@ -407,21 +408,12 @@ class RuntimeClient(BaseClient):
         """
         return self._api.backend(backend_name).pulse_defaults()
 
-    def _job_final_status_websocket(
-        self,
-        job_id,
-        timeout=None,
-        status_queue=None,
-    ) -> Dict[str, Any]:
-        # stub method, as currently no implementation is available
-        return None
-
     def job_final_status(
-            self,
-            job_id: str,
-            timeout: Optional[float] = None,
-            wait: float = 5,
-            status_queue: Optional[RefreshQueue] = None,
+        self,
+        job_id: str,
+        timeout: Optional[float] = None,
+        wait: float = 5,
+        status_queue: Optional[RefreshQueue] = None,
     ) -> Dict[str, Any]:
         """Wait until the job progresses to a final state.
 
@@ -439,34 +431,16 @@ class RuntimeClient(BaseClient):
                 before the specified timeout.
             ApiIBMProtocolError: If unexpected data is received from the server.
         """
-        status_response = None
         # Attempt to use websocket if available.
         start_time = time.time()
-        try:
-            status_response = self._job_final_status_websocket(
-                job_id=job_id, timeout=timeout, status_queue=status_queue
-            )
-        except WebsocketTimeoutError as ex:
-            logger.info(
-                "Timeout checking job status using websocket, "
-                "retrying using HTTP: %s",
-                ex,
-            )
-        except (RuntimeError, WebsocketError) as ex:
-            logger.info(
-                "Error checking job status using websocket, " "retrying using HTTP: %s",
-                ex,
-            )
 
         # Adjust timeout for HTTP retry.
         if timeout is not None:
             timeout -= time.time() - start_time
 
-        if not status_response:
-            # Use traditional http requests if websocket not available or failed.
-            status_response = self._job_final_status_polling(
-                job_id, timeout, wait, status_queue
-            )
+        status_response = self._job_final_status_polling(
+            job_id, timeout, wait, status_queue
+        )
 
         return status_response
 

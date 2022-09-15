@@ -116,7 +116,7 @@ class IBMCircuitJob(IBMJob):
         creation_date: str,
         status: str,
         runtime_client: RuntimeClient = None,  # TODO: make mandatory after completely switching
-        result_decoder=None,
+        result_decoder: Any = None,
         kind: Optional[str] = None,
         name: Optional[str] = None,
         time_per_step: Optional[dict] = None,
@@ -191,9 +191,8 @@ class IBMCircuitJob(IBMJob):
             IBMJobApiError: If an unexpected error occurred when communicating
                 with the server.
         """
-        with api_to_job_error():
-            # properties = self._api_client.job_properties(job_id=self.job_id())
-            properties = self._runtime_client.ba_properties(job_id=self.job_id())
+        with api_to_job_error():  # TODO: are those the correct properties?
+            properties = self._runtime_client.backend_properties(self.backend())
 
         if not properties:
             return None
@@ -816,13 +815,11 @@ class IBMCircuitJob(IBMJob):
 
         if not self._result or refresh:  # type: ignore[has-type]
             try:
-                result_response = self._api_client.job_result(
-                    self.job_id(), self._use_object_storage
-                )
-                self._set_result(result_response)
-                if self._status is JobStatus.ERROR:
-                    # Look for error message in result response.
-                    self._check_for_error_message(result_response)
+                api_result = self._runtime_client.job_results(self.job_id())
+                self._set_result(api_result)
+                # TODO: Look for error message in result response.
+                # if self._status is JobStatus.ERROR:
+                #     self._check_for_error_message(api_result)
             except ApiError as err:
                 if self._status not in (JobStatus.ERROR, JobStatus.CANCELLED):
                     raise IBMJobApiError(
@@ -830,7 +827,7 @@ class IBMCircuitJob(IBMJob):
                         "job {}: {}".format(self.job_id(), str(err))
                     ) from err
 
-    def _set_result(self, raw_data: Optional[Dict]) -> None:
+    def _set_result(self, raw_data: str) -> None:
         """Set the job result.
 
         Args:

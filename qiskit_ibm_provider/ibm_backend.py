@@ -521,11 +521,12 @@ class IBMBackend(Backend):
 
     def _runtime_run(
         self,
-        program_id,
+        program_id: str,
         inputs: Dict,
         options: Dict,
         job_tags: Optional[List[str]] = None,
-    ):
+    ) -> IBMCircuitJob:
+        """Runs the runtime program and returns the corresponding job object"""
         hgp = self.provider._get_hgp(backend_name=options["backend"])
         hgp_name = hgp.name
         try:
@@ -552,7 +553,8 @@ class IBMBackend(Backend):
         Publisher().publish("ibm.job.start", job)  # TODO: is this still needed?
         return job
 
-    def _runtime_create_job(self, job_id):
+    def _runtime_create_job(self, job_id: str) -> IBMCircuitJob:
+        """Create an IBMCircuitJob object corresponding to the server's runtime job"""
         job_data = self.provider._runtime_client.job_get(job_id)
         job = IBMCircuitJob(
             backend=self,
