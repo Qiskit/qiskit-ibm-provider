@@ -126,10 +126,6 @@ class TestIBMJobStates(JobTestCase):
         with self.assertRaises(ValueError):
             self.run_with_api(UnknownStatusAPI())
 
-        # with self.assertRaises(IBMJobApiError):
-        #     self.wait_for_initialization(job)
-
-    @skip("TODO - fix test")
     def test_done_status(self):
         """Test job status progresses to done."""
         job = self.run_with_api(QueuedAPI())
@@ -197,7 +193,6 @@ class TestIBMJobStates(JobTestCase):
         self._current_api.progress()
         self.assertEqual(job.status(), JobStatus.DONE)
 
-    @skip("TODO - fix test")
     def test_status_flow_for_queued_job(self):
         """Test job status progressing from queued to done."""
         job = self.run_with_api(QueuedAPI())
@@ -444,11 +439,12 @@ class BaseFakeAPI:
         return {
             "created": datetime.now().isoformat(),
             "state": self._job_status[self._state],
+            "metadata": {},
         }
 
-    def job_metadata(self, job_id: str) -> Any:
+    def job_metadata(self, job_id: str) -> Dict:
         """Return job metadata"""
-        return job_id
+        return self.job_get(job_id)["metadata"]
 
     def job_status(self, job_id):
         """Return the status of a job."""
