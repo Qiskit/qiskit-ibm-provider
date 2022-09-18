@@ -21,6 +21,8 @@ from qiskit.dagcircuit import DAGCircuit, DAGNode
 from qiskit.transpiler.basepasses import TransformationPass
 from qiskit.transpiler.exceptions import TranspilerError
 
+from .utils import block_order_op_nodes
+
 
 class BlockBasePadder(TransformationPass):
     """The base class of padding pass.
@@ -82,7 +84,7 @@ class BlockBasePadder(TransformationPass):
         # Note that pre-scheduled duration may change within the alignment passes, i.e.
         # if some instruction time t0 violating the hardware alignment constraint,
         # the alignment pass may delay t0 and accordingly the circuit duration changes.
-        for node in dag.topological_op_nodes():
+        for node in block_order_op_nodes(dag):
             if node in self._node_start_time:
                 if isinstance(node.op, Delay):
                     self._visit_delay(node)

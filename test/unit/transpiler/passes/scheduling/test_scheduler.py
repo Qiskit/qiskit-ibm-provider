@@ -522,3 +522,32 @@ class TestSchedulingAndPaddingPass(QiskitTestCase):
         expected.barrier()
 
         self.assertEqual(expected, scheduled)
+
+    def test_grouped_measurements_prior_control_flow(self):
+        """Test that measurements are grouped prior to control-flow"""
+        qc = QuantumCircuit(3, 3)
+        qc.measure(0, 0)
+        qc.measure(1, 1)
+        qc.x(2).c_if(0, 1)
+        qc.x(2).c_if(1, 1)
+        qc.measure(2, 2)
+
+        durations = InstructionDurations([("x", None, 200), ("measure", None, 1000)])
+        pm = PassManager([DynamicCircuitScheduleAnalysis(durations), PadDelay()])
+        scheduled = pm.run(qc)
+
+        expected = QuantumCircuit(3, 3)
+        expected.delay(1000, 2)
+        expected.measure(0, 0)
+        expected.measure(1, 1)
+        expected.barrier()
+        expected.x(2).c_if(0, 1)
+        expected.barrier()
+        expected.x(2).c_if(1, 1)
+        expected.barrier()
+        expected.delay(1000, 0)
+        expected.delay(1000, 1)
+        expected.measure(2, 2)
+        expected.barrier()
+
+        self.assertEqual(expected, scheduled)

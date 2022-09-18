@@ -21,6 +21,8 @@ from qiskit.dagcircuit import DAGCircuit, DAGNode
 from qiskit.transpiler.exceptions import TranspilerError
 from qiskit.transpiler.passes.scheduling.scheduling.base_scheduler import BaseScheduler
 
+from .utils import block_order_op_nodes
+
 
 class DynamicCircuitScheduleAnalysis(BaseScheduler):
     """Dynamic circuits scheduling analysis pass.
@@ -77,7 +79,7 @@ class DynamicCircuitScheduleAnalysis(BaseScheduler):
         """
         self._init_run(dag)
 
-        for node in dag.topological_op_nodes():
+        for node in block_order_op_nodes(dag):
             self._visit_node(node)
 
         self.property_set["node_start_time"] = self._node_start_time
