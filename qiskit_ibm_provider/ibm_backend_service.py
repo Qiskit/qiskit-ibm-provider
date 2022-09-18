@@ -288,12 +288,9 @@ class IBMBackendService:
         job_responses: List[Dict[str, Any]] = []
         current_page_limit = limit if (limit is not None and limit <= 50) else 50
         while True:
-            job_page = self._default_hgp._api_client.list_jobs(
-                limit=current_page_limit,
-                skip=skip,
-                descending=descending,
-                extra_filter=api_filter,
-            )
+            job_page = self._provider._runtime_client.jobs_get(
+                limit=current_page_limit, skip=skip, descending=descending, **api_filter
+            )["jobs"]
             if logger.getEffectiveLevel() is logging.DEBUG:
                 filtered_data = [filter_data(job) for job in job_page]
                 logger.debug("jobs() response data is %s", filtered_data)
@@ -329,8 +326,14 @@ class IBMBackendService:
                  from the server.
         """
         job_id = job_info.get("job_id", "")
+        job_params = {
+            "job_id": job_info["id"],
+            "creation_date": job_info["created"],
+            "status": job_info["status"],
+            "runtime_client": self._provider._runtime_client,
+        }
         # Recreate the backend used for this job.
-        backend_name = job_info.get("_backend_info", {}).get("name", "unknown")
+        backend_name = job_info.get("backend")
         try:
             backend = self._provider.get_backend(backend_name)
         except QiskitBackendNotFoundError:
@@ -341,7 +344,7 @@ class IBMBackendService:
             )
         try:
             job = IBMCircuitJob(
-                backend=backend, api_client=self._default_hgp._api_client, **job_info
+                backend=backend, api_client=self._default_hgp._api_client, **job_params
             )
             return job
         except TypeError as ex:
