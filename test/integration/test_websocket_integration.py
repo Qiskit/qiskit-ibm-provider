@@ -242,5 +242,5 @@ class TestWebsocketIntegration(IBMTestCase):
         with use_proxies(
             self.dependencies.provider.backend._default_hgp, invalid_proxy
         ):
-            with self.assertLogs("qiskit_ibm_provider", "INFO") as log_cm:
+            with self.assertLogs("qiskit_ibm_provider", "INFO"):
                 job.wait_for_final_state()
