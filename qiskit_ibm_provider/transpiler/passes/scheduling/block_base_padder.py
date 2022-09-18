@@ -188,7 +188,17 @@ class BlockBasePadder(TransformationPass):
         rather than instruction. Delay node is not added so that
         we can extract non-delay predecessors.
         """
-        pass
+        block_idx, t0 = self._node_start_time[node]  # pylint: disable=invalid-name
+        # Trigger the end of a block
+        if block_idx > self._current_block_idx:
+            self._terminate_block(self._block_duration, self._current_block_idx, node)
+
+        self._conditional_block = bool(node.op.condition_bits)
+
+        self._current_block_idx = block_idx
+
+        t1 = t0 + node.op.duration  # pylint: disable=invalid-name
+        self._block_duration = max(self._block_duration, t1)
 
     def _visit_generic(self, node: DAGNode) -> None:
         """Visit a generic node to pad."""

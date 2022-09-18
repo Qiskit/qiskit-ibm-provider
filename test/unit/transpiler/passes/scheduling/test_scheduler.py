@@ -118,7 +118,6 @@ class TestSchedulingAndPaddingPass(QiskitTestCase):
         expected.measure(0, 0)
         expected.barrier()
         expected.x(1).c_if(0, True)
-        expected.barrier()
         expected.x(2).c_if(0, True)
         expected.barrier()
 
@@ -323,9 +322,10 @@ class TestSchedulingAndPaddingPass(QiskitTestCase):
         scheduled = pm.run(qc)
 
         expected = QuantumCircuit(2, 1)
+        expected.delay(100, 0)
+        expected.delay(100, 1)
         expected.barrier()
         expected.x(0).c_if(0, True)
-        expected.barrier()
         expected.x(1).c_if(0, True)
         expected.barrier()
 
@@ -542,7 +542,6 @@ class TestSchedulingAndPaddingPass(QiskitTestCase):
         expected.measure(1, 1)
         expected.barrier()
         expected.x(2).c_if(0, 1)
-        expected.barrier()
         expected.x(2).c_if(1, 1)
         expected.barrier()
         expected.delay(1000, 0)

@@ -507,6 +507,58 @@ class TestPadDynamicalDecoupling(QiskitTestCase):
 
         self.assertEqual(circ1, circ2)
 
+    def test_back_to_back_c_if(self):
+        """Test DD with c_if circuit back to back."""
+
+        dd_sequence = [XGate(), XGate()]
+        pm = PassManager(
+            [
+                DynamicCircuitScheduleAnalysis(self.durations),
+                PadDynamicalDecoupling(self.durations, dd_sequence),
+            ]
+        )
+
+        qc = QuantumCircuit(3, 1)
+        qc.delay(800, 1)
+        qc.x(1).c_if(0, True)
+        qc.x(2).c_if(0, True)
+        qc.delay(1000, 2)
+        qc.x(1)
+
+        qc_dd = pm.run(qc)
+
+        expected = QuantumCircuit(3, 1)
+        expected.delay(800, 0)
+        expected.delay(800, 1)
+        expected.delay(800, 2)
+        expected.barrier()
+        expected.x(1).c_if(0, True)
+        expected.barrier()
+        expected.delay(50, 0)
+        expected.x(1)
+        expected.delay(50, 2)
+        expected.barrier()
+        expected.x(2).c_if(0, True)
+        expected.barrier()
+        expected.delay(225, 0)
+        expected.x(0)
+        expected.delay(450, 0)
+        expected.x(0)
+        expected.delay(225, 0)
+        expected.delay(225, 1)
+        expected.x(1)
+        expected.delay(450, 1)
+        expected.x(1)
+        expected.delay(225, 1)
+        expected.delay(225, 2)
+        expected.x(2)
+        expected.delay(450, 2)
+        expected.x(2)
+        expected.delay(225, 2)
+        expected.barrier()
+
+        self.assertEqual(expected, qc_dd)
+
     def test_dd_c_if(self):
         """Test DD with c_if circuit."""
 
@@ -523,7 +575,7 @@ class TestPadDynamicalDecoupling(QiskitTestCase):
         qc.x(2)
         qc.delay(1000, 1)
         qc.x(1).c_if(0, True)
-        qc.delay(800, 1)
+        qc.delay(8000, 1)
         qc.x(2).c_if(0, True)
         qc.delay(1000, 2)
         qc.x(0)
@@ -546,6 +598,22 @@ class TestPadDynamicalDecoupling(QiskitTestCase):
         expected.delay(50, 2)
         expected.barrier()
         expected.x(1).c_if(0, True)
+        expected.barrier()
+        expected.delay(1975, 0)
+        expected.x(0)
+        expected.delay(3950, 0)
+        expected.x(0)
+        expected.delay(1975, 0)
+        expected.delay(1975, 1)
+        expected.x(1)
+        expected.delay(3950, 1)
+        expected.x(1)
+        expected.delay(1975, 1)
+        expected.delay(1975, 2)
+        expected.x(2)
+        expected.delay(3950, 2)
+        expected.x(2)
+        expected.delay(1975, 2)
         expected.barrier()
         expected.x(2).c_if(0, True)
         expected.barrier()
