@@ -425,7 +425,6 @@ class IBMCircuitJob(IBMJob):
             api_response = self._runtime_client.job_get(self.job_id())["state"]
             # response state possibly has two values: status and reason
             # reason is not used in the current interface
-            print("api_response", api_response)
             self._api_status = api_response["status"]
             api_metadata = self._runtime_client.job_metadata(self.job_id())
             self._status, self._queue_info = self._get_status_position(

@@ -63,7 +63,7 @@ class TestIBMProviderEnableAccount(IBMTestCase):
                 token=self.dependencies.token, url=self.dependencies.url
             )
         self.assertIsInstance(provider, IBMProvider)
-        self.assertEqual(provider._client_params.token, self.dependencies.token)
+        self.assertEqual(provider._account.token, self.dependencies.token)
 
     def test_pass_unreachable_proxy(self):
         """Test using an unreachable proxy while enabling an account."""
