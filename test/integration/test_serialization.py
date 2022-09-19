@@ -43,7 +43,7 @@ class TestSerialization(IBMTestCase):
         )
         cls.bell = transpile(ReferenceCircuits.bell(), backend=cls.sim_backend)
 
-    @skip("need to support retrieving jobs")
+    @skip("need to support retrieving job qobj")
     def test_qasm_qobj(self):
         """Test serializing qasm qobj data."""
         job = self.sim_backend.run(self.bell)

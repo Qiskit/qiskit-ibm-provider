@@ -31,7 +31,7 @@ from qiskit_ibm_provider.api.rest.job import Job as RestJob
 from qiskit_ibm_provider.apiconstants import ApiJobStatus, API_JOB_FINAL_STATES
 from qiskit_ibm_provider.exceptions import IBMBackendApiError
 from qiskit_ibm_provider.ibm_backend import IBMRetiredBackend
-from qiskit_ibm_provider.job.exceptions import IBMJobTimeoutError, IBMJobNotFoundError
+from qiskit_ibm_provider.job.exceptions import IBMJobTimeoutError
 from qiskit_ibm_provider.utils.utils import api_status_to_job_status
 from ..decorators import (
     IntegrationTestDependencies,
@@ -144,7 +144,6 @@ class TestIBMJob(IBMTestCase):
         for job in job_list:
             self.assertTrue(isinstance(job.job_id(), str))
 
-    @skip("need to support retrieving jobs")
     def test_retrieve_job(self):
         """Test retrieving a single job."""
         retrieved_job = self.provider.backend.job(self.sim_job.job_id())
@@ -154,7 +153,6 @@ class TestIBMJob(IBMTestCase):
             self.sim_job.result().get_counts(), retrieved_job.result().get_counts()
         )
 
-    @skip("need to support retrieving jobs")
     def test_retrieve_job_uses_appropriate_backend(self):
         """Test that retrieved jobs come from their appropriate backend."""
         backend_1 = self.real_device_backend
@@ -183,10 +181,9 @@ class TestIBMJob(IBMTestCase):
         for job in [job_1, job_2]:
             cancel_job(job)
 
-    @skip("need to support retrieving jobs")
     def test_retrieve_job_error(self):
         """Test retrieving an invalid job."""
-        self.assertRaises(IBMJobNotFoundError, self.provider.backend.job, "BAD_JOB_ID")
+        self.assertRaises(IBMBackendApiError, self.provider.backend.job, "BAD_JOB_ID")
 
     def test_retrieve_jobs_status(self):
         """Test retrieving jobs filtered by status."""
@@ -208,7 +205,6 @@ class TestIBMJob(IBMTestCase):
                 ),
             )
 
-    @skip("need to support retrieving jobs")
     def test_retrieve_active_jobs(self):
         """Test retrieving jobs that are currently unfinished."""
         backend = most_busy_backend(self.provider, instance=self.dependencies.instance)
@@ -311,7 +307,6 @@ class TestIBMJob(IBMTestCase):
                     ),
                 )
 
-    @skip("need to support retrieving jobs")
     def test_retrieve_jobs_order(self):
         """Test retrieving jobs with different orders."""
         job = self.sim_backend.run(self.bell)
@@ -348,7 +343,6 @@ class TestIBMJob(IBMTestCase):
         self.assertTrue(result.results[0].success)
         self.assertFalse(result.results[1].success)
 
-    @skip("need to support retrieving jobs")
     def test_retrieve_from_retired_backend(self):
         """Test retrieving a job from a retired backend."""
         saved_backends = copy.copy(self.provider.backend._backends)
@@ -387,7 +381,7 @@ class TestIBMJob(IBMTestCase):
         self.assertDictEqual(cached_result, result.to_dict())
         self.assertNotEqual(result.results[0].header.name, "modified_result")
 
-    @skip("need to support retrieving jobs")
+    @skip("TODO update test case")
     def test_wait_for_final_state(self):
         """Test waiting for job to reach final state."""
 
@@ -470,7 +464,7 @@ class TestIBMJob(IBMTestCase):
                 thread.join(0.1)
             cancel_job(job)
 
-    @skip("need to support retrieving jobs")
+    @skip("not supported by api")
     def test_job_submit_partial_fail(self):
         """Test job submit partial fail."""
         job_id = []

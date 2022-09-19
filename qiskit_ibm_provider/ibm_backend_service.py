@@ -223,14 +223,16 @@ class IBMBackendService:
         api_filter = {}  # type: Dict[str, Any]
         if backend_name:
             api_filter["backend"] = backend_name
-        if status:
-            api_filter["status"] = status
+        if status == "pending":
+            api_filter["pending"] = True
+        if status == "completed":
+            api_filter["pending"] = False
         if job_name:
             api_filter["search"] = job_name
         if start_datetime:
-            api_filter["createdAfter"] = local_to_utc(start_datetime).isoformat()
+            api_filter["created_after"] = local_to_utc(start_datetime).isoformat()
         if end_datetime:
-            api_filter["createdBefore"] = local_to_utc(end_datetime).isoformat()
+            api_filter["created_before"] = local_to_utc(end_datetime).isoformat()
         if job_tags:
             validate_job_tags(job_tags, IBMBackendValueError)
             api_filter["tags"] = job_tags
@@ -700,7 +702,7 @@ class IBMBackendService:
                 job_id=job_id, jobs=sub_jobs, api_client=self._default_hgp._api_client
             )
         try:
-            job_info = self._default_hgp._api_client.job_get(job_id)
+            job_info = self._provider._runtime_client.job_get(job_id)
         except ApiError as ex:
             if "Error code: 3250." in str(ex):
                 raise IBMJobNotFoundError(f"Job {job_id} not found.")

@@ -165,7 +165,7 @@ class TestIBMBackend(IBMTestCase):
         self.assertEqual(backend_options["foo"], "foo")
         cancel_job(job)
 
-    @skip("Need to implement retrieving jobs")
+    @skip("backend_options not supported")
     def test_sim_backend_options(self):
         """Test simulator backend options."""
         provider: IBMProvider = self.backend.provider
