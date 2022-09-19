@@ -235,7 +235,7 @@ class IBMBackendService:
             api_filter["created_before"] = local_to_utc(end_datetime).isoformat()
         if job_tags:
             validate_job_tags(job_tags, IBMBackendValueError)
-            api_filter["tags"] = job_tags
+            api_filter["job_tags"] = job_tags
         if instance:
             api_filter["provider"] = instance
         # Retrieve all requested jobs.
