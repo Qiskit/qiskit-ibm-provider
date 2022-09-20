@@ -192,7 +192,7 @@ class IBMCircuitJob(IBMJob):
                 with the server.
         """
         with api_to_job_error():  # TODO: are those the correct properties?
-            properties = self._runtime_client.backend_properties(self.backend())
+            properties = self._runtime_client.backend_properties(self.backend().name)
 
         if not properties:
             return None
