@@ -14,7 +14,7 @@
 
 from queue import Queue
 from threading import Thread
-from unittest import mock, skip
+from unittest import mock
 
 from qiskit import transpile
 from qiskit.providers import JobTimeoutError
