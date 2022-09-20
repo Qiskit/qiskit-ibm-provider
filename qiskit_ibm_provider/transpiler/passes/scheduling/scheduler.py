@@ -21,6 +21,8 @@ from qiskit.dagcircuit import DAGCircuit, DAGNode
 from qiskit.transpiler.exceptions import TranspilerError
 from qiskit.transpiler.passes.scheduling.scheduling.base_scheduler import BaseScheduler
 
+from .utils import block_order_op_nodes
+
 
 class DynamicCircuitScheduleAnalysis(BaseScheduler):
     """Dynamic circuits scheduling analysis pass.
@@ -59,7 +61,7 @@ class DynamicCircuitScheduleAnalysis(BaseScheduler):
         self._dag = None
 
         self._current_block_idx = 0
-
+        self._conditional_block = False
         self._node_start_time: Optional[Dict[DAGNode, Tuple[int, int]]] = None
         self._idle_after: Optional[Dict[Union[Qubit, Clbit], Tuple[int, int]]] = None
         self._current_block_measures: Set[DAGNode] = set()
@@ -77,7 +79,7 @@ class DynamicCircuitScheduleAnalysis(BaseScheduler):
         """
         self._init_run(dag)
 
-        for node in dag.topological_op_nodes():
+        for node in block_order_op_nodes(dag):
             self._visit_node(node)
 
         self.property_set["node_start_time"] = self._node_start_time
@@ -86,6 +88,8 @@ class DynamicCircuitScheduleAnalysis(BaseScheduler):
         """Setup for initial run."""
 
         self._dag = dag
+        self._current_block_idx = 0
+        self._conditional_block = False
 
         if len(dag.qregs) != 1 or dag.qregs.get("q", None) is None:
             raise TranspilerError("ASAP schedule runs on physical circuits only")
@@ -102,13 +106,18 @@ class DynamicCircuitScheduleAnalysis(BaseScheduler):
         # compute t0, t1: instruction interval, note that
         # t0: start time of instruction
         # t1: end time of instruction
-        if isinstance(node.op, self.CONDITIONAL_SUPPORTED):
+        if isinstance(node.op, self.CONDITIONAL_SUPPORTED) and node.op.condition_bits:
             self._visit_conditional_node(node)
         else:
             if node.op.condition_bits:
                 raise TranspilerError(
                     f"Conditional instruction {node.op.name} is not supported in ASAP scheduler."
                 )
+
+            # If True we are coming from a conditional block.
+            # start a new block for the unconditional operations.
+            if self._conditional_block:
+                self._begin_new_circuit_block()
 
             if isinstance(node.op, Measure):
                 self._visit_measure(node)
@@ -129,8 +138,18 @@ class DynamicCircuitScheduleAnalysis(BaseScheduler):
         """
         # Special processing required to resolve conditional scheduling dependencies
         if node.op.condition_bits:
-            # Trigger the start of a conditional block
-            self._begin_new_circuit_block()
+            # We group conditional operations within
+            # a conditional block to allow the backend
+            # a chance to optimize them. If we did
+            # not do this barriers would be inserted
+            # between conditional operations.
+            # Therefore only trigger the start of a conditional
+            # block if we are not already within one.
+            if not self._conditional_block:
+                self._begin_new_circuit_block()
+
+            # This block is now by definition a "conditional_block".
+            self._conditional_block = True
 
             op_duration = self._get_duration(node)
 
@@ -163,9 +182,6 @@ class DynamicCircuitScheduleAnalysis(BaseScheduler):
 
             t1 = t0 + op_duration  # pylint: disable=invalid-name
             self._update_idles(node, t0, t1)
-
-            # Terminate the conditional block
-            self._begin_new_circuit_block()
 
         else:
             # Fall through to generic case if not conditional
@@ -265,6 +281,7 @@ class DynamicCircuitScheduleAnalysis(BaseScheduler):
     def _begin_new_circuit_block(self) -> None:
         """Create a new timed circuit block completing the previous block."""
         self._current_block_idx += 1
+        self._conditional_block = False
         self._current_block_measures = set()
         self._idle_after = {q: (0, 0) for q in self._dag.qubits + self._dag.clbits}
 
