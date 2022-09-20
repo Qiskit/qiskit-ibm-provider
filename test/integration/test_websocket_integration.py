@@ -116,7 +116,6 @@ class TestWebsocketIntegration(IBMTestCase):
 
         self.assertIs(job._status, JobStatus.DONE)
 
-    @skip("need to support retrieving jobs")
     def test_websockets_retry_bad_auth(self):
         """Test http retry after websocket error due to a failed authentication."""
         job = self.sim_backend.run(self.bell)
@@ -124,13 +123,12 @@ class TestWebsocketIntegration(IBMTestCase):
         with mock.patch.object(
             websocket.WebsocketAuthenticationMessage, "as_json", return_value="foo"
         ), mock.patch.object(
-            RuntimeClient, "job_status", side_effect=job._api_client.job_status
+            RuntimeClient, "job_status", side_effect=job._runtime_client.job_status
         ) as mocked_wait:
             job._wait_for_completion()
             self.assertIs(job._status, JobStatus.DONE)
             mocked_wait.assert_called_with(job.job_id())
 
-    @skip("need to support retrieving jobs")
     def test_websockets_retry_connection_closed(self):
         """Test http retry after websocket error due to closed connection."""
 
@@ -144,7 +142,7 @@ class TestWebsocketIntegration(IBMTestCase):
 
         # Save the originals.
         saved_job_id = job._job_id
-        saved_job_status = job._api_client.job_status
+        saved_job_status = job._runtime_client.job_status
         # Use bad job ID to fail the status retrieval.
         job._job_id = "12345"
 
