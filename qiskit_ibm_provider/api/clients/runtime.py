@@ -226,6 +226,7 @@ class RuntimeClient(BaseClient):
         created_after: Optional[python_datetime] = None,
         created_before: Optional[python_datetime] = None,
         descending: bool = True,
+        backend: str = None,
     ) -> Dict:
         """Get job data for all jobs.
 
@@ -265,6 +266,7 @@ class RuntimeClient(BaseClient):
             created_after=created_after,
             created_before=created_before,
             descending=descending,
+            backend=backend,
         )
 
     def job_results(self, job_id: str) -> str:

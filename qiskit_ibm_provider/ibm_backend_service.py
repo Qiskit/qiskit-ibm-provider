@@ -223,17 +223,19 @@ class IBMBackendService:
         api_filter = {}  # type: Dict[str, Any]
         if backend_name:
             api_filter["backend"] = backend_name
-        if status:
-            api_filter["status"] = status
+        if status == "pending":
+            api_filter["pending"] = True
+        if status == "completed":
+            api_filter["pending"] = False
         if job_name:
             api_filter["search"] = job_name
         if start_datetime:
-            api_filter["createdAfter"] = local_to_utc(start_datetime).isoformat()
+            api_filter["created_after"] = local_to_utc(start_datetime).isoformat()
         if end_datetime:
-            api_filter["createdBefore"] = local_to_utc(end_datetime).isoformat()
+            api_filter["created_before"] = local_to_utc(end_datetime).isoformat()
         if job_tags:
             validate_job_tags(job_tags, IBMBackendValueError)
-            api_filter["tags"] = job_tags
+            api_filter["job_tags"] = job_tags
         if instance:
             api_filter["provider"] = instance
         # Retrieve all requested jobs.
@@ -288,12 +290,9 @@ class IBMBackendService:
         job_responses: List[Dict[str, Any]] = []
         current_page_limit = limit if (limit is not None and limit <= 50) else 50
         while True:
-            job_page = self._default_hgp._api_client.list_jobs(
-                limit=current_page_limit,
-                skip=skip,
-                descending=descending,
-                extra_filter=api_filter,
-            )
+            job_page = self._provider._runtime_client.jobs_get(
+                limit=current_page_limit, skip=skip, descending=descending, **api_filter
+            )["jobs"]
             if logger.getEffectiveLevel() is logging.DEBUG:
                 filtered_data = [filter_data(job) for job in job_page]
                 logger.debug("jobs() response data is %s", filtered_data)
@@ -328,9 +327,15 @@ class IBMBackendService:
             IBMBackendApiProtocolError: If unexpected return value received
                  from the server.
         """
-        job_id = job_info.get("job_id", "")
+        job_params = {
+            "job_id": job_info["id"],
+            "creation_date": job_info["created"],
+            "status": job_info["status"],
+            "runtime_client": self._provider._runtime_client,
+            "tags": job_info.get("tags"),
+        }
         # Recreate the backend used for this job.
-        backend_name = job_info.get("_backend_info", {}).get("name", "unknown")
+        backend_name = job_info.get("backend")
         try:
             backend = self._provider.get_backend(backend_name)
         except QiskitBackendNotFoundError:
@@ -341,14 +346,14 @@ class IBMBackendService:
             )
         try:
             job = IBMCircuitJob(
-                backend=backend, api_client=self._default_hgp._api_client, **job_info
+                backend=backend, api_client=self._default_hgp._api_client, **job_params
             )
             return job
         except TypeError as ex:
             if raise_error:
                 raise IBMBackendApiProtocolError(
                     f"Unexpected return value received from the server "
-                    f"when retrieving job {job_id}: {ex}"
+                    f"when retrieving job {job_info['id']}: {ex}"
                 ) from ex
         return None
 
@@ -697,7 +702,7 @@ class IBMBackendService:
                 job_id=job_id, jobs=sub_jobs, api_client=self._default_hgp._api_client
             )
         try:
-            job_info = self._default_hgp._api_client.job_get(job_id)
+            job_info = self._provider._runtime_client.job_get(job_id)
         except ApiError as ex:
             if "Error code: 3250." in str(ex):
                 raise IBMJobNotFoundError(f"Job {job_id} not found.")

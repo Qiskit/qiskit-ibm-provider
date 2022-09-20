@@ -197,6 +197,7 @@ class Runtime(RestAdapterBase):
         created_after: Optional[datetime] = None,
         created_before: Optional[datetime] = None,
         descending: bool = True,
+        backend: str = None,
     ) -> Dict:
         """Get a list of job data.
 
@@ -243,6 +244,8 @@ class Runtime(RestAdapterBase):
             payload["created_before"] = local_to_utc(created_before).isoformat()
         if descending is False:
             payload["sort"] = "ASC"
+        if backend:
+            payload["backend"] = backend
         if all([hub, group, project]):
             payload["provider"] = f"{hub}/{group}/{project}"
         return self.session.get(url, params=payload).json()
