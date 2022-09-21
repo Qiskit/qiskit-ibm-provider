@@ -345,6 +345,7 @@ class IBMBackend(Backend):
         circuits: Union[
             str, QuantumCircuit, Schedule, List[Union[QuantumCircuit, Schedule]]
         ],
+        dynamic: bool = False,
         job_name: Optional[str] = None,
         job_tags: Optional[List[str]] = None,
         max_circuits_per_job: Optional[int] = None,
@@ -386,6 +387,7 @@ class IBMBackend(Backend):
                 list of :class:`~qiskit.circuits.QuantumCircuit` or
                 :class:`~qiskit.pulse.Schedule` or QASM3 string
                 object to run on the backend.
+            dynamic: Whether the circuit is dynamic (uses in-circuit conditionals)
             job_name: Custom name to be assigned to the job. This job
                 name can subsequently be used as a filter in the
                 :meth:`jobs()` method. Job names do not need to be unique.
@@ -462,7 +464,7 @@ class IBMBackend(Backend):
             warnings.warn(f"The backend {self.name} is currently paused.")
 
         program_id = "circuit-runner"
-        if isinstance(circuits, str):
+        if dynamic or isinstance(circuits, str):
             # str circuit means QASM3 string
             program_id = "qasm3-runner"
 

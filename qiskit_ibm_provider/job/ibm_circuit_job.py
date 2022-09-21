@@ -18,6 +18,7 @@ from datetime import datetime
 from queue import Empty
 from threading import Event
 from typing import Dict, Optional, Tuple, Any, List, Callable, Union
+import re
 
 import dateutil.parser
 from qiskit.assembler.disassemble import disassemble
@@ -31,6 +32,7 @@ from qiskit.result import Result
 from qiskit_ibm_provider import ibm_backend  # pylint: disable=unused-import
 from .constants import IBM_COMPOSITE_JOB_TAG_PREFIX, IBM_MANAGED_JOB_ID_PREFIX
 from .exceptions import (
+    IBMJobError,
     IBMJobApiError,
     IBMJobFailureError,
     IBMJobTimeoutError,
@@ -826,6 +828,20 @@ class IBMCircuitJob(IBMJob):
                         "job {}: {}".format(self.job_id(), str(err))
                     ) from err
 
+    def _check_result_for_errors(self, raw_data: str) -> None:
+        """Checks whether the job result contains errors
+
+        Args:
+            raw_data: Raw result data.
+
+        Raises:
+            IBMJobError: If an error was found in the result
+
+        """
+        result = re.search("JobError: '(.*)'", raw_data)
+        if result is not None:
+            raise IBMJobError(result.group(1))
+
     def _set_result(self, raw_data: str) -> None:
         """Set the job result.
 
@@ -840,6 +856,7 @@ class IBMCircuitJob(IBMJob):
         if raw_data is None:
             self._result = None
             return
+        self._check_result_for_errors(raw_data)
         # TODO: check whether client version can be extracted from runtime data
         # raw_data["client_version"] = self.client_version
         data_dict = decode_result(raw_data, self._result_decoder)
