@@ -15,6 +15,7 @@
 import copy
 import logging
 import warnings
+import re
 from datetime import datetime as python_datetime
 from typing import Iterable, Dict, List, Union, Optional, Any
 
@@ -462,8 +463,7 @@ class IBMBackend(Backend):
             warnings.warn(f"The backend {self.name} is currently paused.")
 
         program_id = "circuit-runner"
-        if dynamic or isinstance(circuits, str):
-            # str circuit means QASM3 string
+        if dynamic or self._is_qasm3_string(circuits):
             program_id = "qasm3-runner"
 
         if isinstance(shots, float):
@@ -518,6 +518,13 @@ class IBMBackend(Backend):
         return self._runtime_run(
             program_id=program_id, inputs=inputs, options=options, job_tags=job_tags
         )
+
+    def _is_qasm3_string(self, circuit):
+        if not isinstance(circuit, str):
+            return False
+        if re.search('OPENQASM 3', circuit) is None:
+            return False
+        return True
 
     def _runtime_run(
         self,
