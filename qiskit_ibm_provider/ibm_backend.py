@@ -388,9 +388,7 @@ class IBMBackend(Backend):
                 :class:`~qiskit.pulse.Schedule` or QASM3 string
                 object to run on the backend.
             dynamic: Whether the circuit is dynamic (uses in-circuit conditionals)
-            job_name: Custom name to be assigned to the job. This job
-                name can subsequently be used as a filter in the
-                :meth:`jobs()` method. Job names do not need to be unique.
+            job_name: Obsolete field not used when running via the runtime.
             job_tags: Tags to be assigned to the job. The tags can subsequently be used
                 as a filter in the :meth:`jobs()` function call.
             max_circuits_per_job: Maximum number of circuits to have in a single job.
@@ -476,7 +474,7 @@ class IBMBackend(Backend):
         options = {"backend": self.name}
 
         if job_name:
-            inputs["job_name"] = job_name
+            raise IBMBackendValueError("job_name is not supported anymore; use job_tags instead")
         if max_circuits_per_job:
             inputs["max_circuits_per_job"] = max_circuits_per_job
         if header:
