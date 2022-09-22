@@ -52,7 +52,7 @@ API_JOB_FINAL_STATES = (
     ApiJobStatus.ERROR_VALIDATING_JOB,
     ApiJobStatus.ERROR_RUNNING_JOB,
     ApiJobStatus.ERROR_TRANSPILING_JOB,
-    ApiJobStatus.ERROR_TRANSPILING_JOB.FAILED,
+    ApiJobStatus.FAILED,
 )
 
 

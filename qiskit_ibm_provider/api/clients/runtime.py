@@ -28,6 +28,7 @@ from ...apiconstants import API_JOB_FINAL_STATES, ApiJobStatus
 
 logger = logging.getLogger(__name__)
 
+
 class RuntimeClient(BaseClient):
     """Client for accessing runtime service."""
 
@@ -317,7 +318,7 @@ class RuntimeClient(BaseClient):
         """
         return self._api.program_job(job_id).logs()
 
-    def job_metadata(self, job_id: str) -> str:
+    def job_metadata(self, job_id: str) -> Dict[str, Any]:
         """Get job metadata.
 
         Args:

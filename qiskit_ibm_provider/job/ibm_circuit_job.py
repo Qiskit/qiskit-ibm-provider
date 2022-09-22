@@ -636,7 +636,7 @@ class IBMCircuitJob(IBMJob):
             self._api_status, api_response.pop("info_queue", None)
         )
         self._client_version = self._extract_client_version(
-            api_metadata.get('qiskit_version', None)
+            api_metadata.get("qiskit_version", None)
         )
         if self._status in JOB_FINAL_STATES:
             api_result = self._runtime_client.job_results(self.job_id())
@@ -1028,6 +1028,8 @@ class IBMCircuitJob(IBMJob):
             Where the numbers represent versions of qiskit-ibm-provider, qiskit-terra and qiskit-aer
         """
         if data is not None:
+            if "," not in data:  # sometimes only the metapackage version is returned
+                return {"qiskit": data}
             client_components = ["qiskit-ibm-provider", "qiskit-terra", "qiskit-aer"]
             return dict(zip(client_components, data.split(",")))
         return {}

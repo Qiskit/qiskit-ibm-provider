@@ -474,7 +474,9 @@ class IBMBackend(Backend):
         options = {"backend": self.name}
 
         if job_name:
-            raise IBMBackendValueError("job_name is not supported anymore; use job_tags instead")
+            raise IBMBackendValueError(
+                "job_name is not supported anymore; use job_tags instead"
+            )
         if max_circuits_per_job:
             inputs["max_circuits_per_job"] = max_circuits_per_job
         if header:
@@ -519,10 +521,16 @@ class IBMBackend(Backend):
             program_id=program_id, inputs=inputs, options=options, job_tags=job_tags
         )
 
-    def _is_qasm3_string(self, circuit):
+    def _is_qasm3_string(
+        self,
+        circuit: Union[
+            str, QuantumCircuit, Schedule, List[Union[QuantumCircuit, Schedule]]
+        ],
+    ) -> bool:
+        """Checks if circuit is a a qasm3 string."""
         if not isinstance(circuit, str):
             return False
-        if re.search('OPENQASM 3', circuit) is None:
+        if re.search("OPENQASM 3", circuit) is None:
             return False
         return True
 

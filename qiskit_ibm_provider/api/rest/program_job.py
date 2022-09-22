@@ -84,7 +84,7 @@ class ProgramJob(RestAdapterBase):
         """
         return self.session.get(self.get_url("logs")).text
 
-    def metadata(self) -> str:
+    def metadata(self) -> Dict:
         """Retrieve job metadata.
 
         Returns:
