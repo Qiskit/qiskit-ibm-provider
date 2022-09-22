@@ -610,6 +610,7 @@ class IBMCircuitJob(IBMJob):
         # TODO: Change to use runtime response data as much as possible
         with api_to_job_error():
             api_response = self._runtime_client.job_get(self.job_id())
+            api_metadata = self._runtime_client.job_metadata(self.job_id())
 
         try:
             api_response.pop("id")
@@ -635,7 +636,7 @@ class IBMCircuitJob(IBMJob):
             self._api_status, api_response.pop("info_queue", None)
         )
         self._client_version = self._extract_client_version(
-            api_response.pop("client_info", None)
+            api_metadata.get('qiskit_version', None)
         )
         if self._status in JOB_FINAL_STATES:
             api_result = self._runtime_client.job_results(self.job_id())
@@ -1012,7 +1013,7 @@ class IBMCircuitJob(IBMJob):
 
         return self._qobj
 
-    def _extract_client_version(self, data: Dict[str, str]) -> Dict:
+    def _extract_client_version(self, data: str) -> Dict:
         """Extract client version from API.
 
         Args:
@@ -1020,12 +1021,15 @@ class IBMCircuitJob(IBMJob):
 
         Returns:
             Extracted client version.
-        """
-        if data:
-            if data.get("name", "").startswith("qiskit"):
-                return dict(zip(data["name"].split(","), data["version"].split(",")))
 
-            return {data.get("name", "unknown"): data.get("version", "unknown")}
+        Additional info:
+            The runtime client returns the version as a string, e.g.
+            "0.1.0,0.21.2,0.10.4"
+            Where the numbers represent versions of qiskit-ibm-provider, qiskit-terra and qiskit-aer
+        """
+        if data is not None:
+            client_components = ["qiskit-ibm-provider", "qiskit-terra", "qiskit-aer"]
+            return dict(zip(client_components, data.split(",")))
         return {}
 
     def submit(self) -> None:

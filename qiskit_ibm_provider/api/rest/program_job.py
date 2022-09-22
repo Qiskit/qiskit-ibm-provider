@@ -90,4 +90,4 @@ class ProgramJob(RestAdapterBase):
         Returns:
             Job Metadata.
         """
-        return self.session.get(self.get_url("metrics")).text
+        return self.session.get(self.get_url("metrics")).json()
