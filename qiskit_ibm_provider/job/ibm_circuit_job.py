@@ -637,8 +637,9 @@ class IBMCircuitJob(IBMJob):
         self._client_version = self._extract_client_version(
             api_response.pop("client_info", None)
         )
-        api_result = self._runtime_client.job_results(self.job_id())
-        self._set_result(api_result)
+        if self._status in JOB_FINAL_STATES:
+            api_result = self._runtime_client.job_results(self.job_id())
+            self._set_result(api_result)
 
         for key, value in api_response.items():
             self._data[key + "_"] = value

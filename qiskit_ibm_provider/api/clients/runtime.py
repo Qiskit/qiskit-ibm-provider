@@ -28,7 +28,6 @@ from ...apiconstants import API_JOB_FINAL_STATES, ApiJobStatus
 
 logger = logging.getLogger(__name__)
 
-# TODO: verify we can use AccountClient instead of qiskit-ibm-runtime's BaseBackendClient
 class RuntimeClient(BaseClient):
     """Client for accessing runtime service."""
 
