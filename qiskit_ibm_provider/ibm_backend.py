@@ -549,7 +549,16 @@ class IBMBackend(Backend):
         except RequestsApiError as ex:
             raise IBMBackendApiError("Error submitting job: {}".format(str(ex))) from ex
         try:
-            job = self._runtime_create_job(response["id"])
+            job_id = response["id"]
+            job_data = self.provider._runtime_client.job_get(job_id)
+            job = IBMCircuitJob(
+                backend=self,
+                api_client=self._api_client,
+                runtime_client=self.provider._runtime_client,
+                job_id=job_id,
+                creation_date=job_data["created"],
+                status=job_data["state"]["status"],
+            )
             logger.debug("Job %s was successfully submitted.", job.job_id())
         except TypeError as err:
             logger.debug("Invalid job data received: %s", response)
@@ -557,20 +566,7 @@ class IBMBackend(Backend):
                 "Unexpected return value received from the server "
                 "when submitting job: {}".format(str(err))
             ) from err
-        Publisher().publish("ibm.job.start", job)  # TODO: is this still needed?
-        return job
-
-    def _runtime_create_job(self, job_id: str) -> IBMCircuitJob:
-        """Create an IBMCircuitJob object corresponding to the server's runtime job"""
-        job_data = self.provider._runtime_client.job_get(job_id)
-        job = IBMCircuitJob(
-            backend=self,
-            api_client=self._api_client,
-            runtime_client=self.provider._runtime_client,
-            job_id=job_id,
-            creation_date=job_data["created"],
-            status=job_data["state"]["status"],
-        )
+        Publisher().publish("ibm.job.start", job)
         return job
 
     def _get_run_config(self, **kwargs: Any) -> Dict:
