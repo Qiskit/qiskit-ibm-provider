@@ -421,7 +421,7 @@ class IBMBackend(Backend):
                 backends (if ``backend.configuration().dynamic_reprate_enabled=True``).
                 If supported, ``rep_delay`` will be used instead of ``rep_time`` and must be
                 from the range supplied
-                by the backend (``backend.configuration().rep_delay_range``). Default is givenby
+                by the backend (``backend.configuration().rep_delay_range``). Default is given by
                 ``backend.configuration().default_rep_delay``.
             init_qubits: Whether to reset the qubits to the ground state for each shot.
                 Default: ``True``.
