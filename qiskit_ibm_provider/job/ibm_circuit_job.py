@@ -22,10 +22,8 @@ import re
 
 import dateutil.parser
 from qiskit.assembler.disassemble import disassemble
-from qiskit.circuit.quantumcircuit import QuantumCircuit
 from qiskit.providers.jobstatus import JOB_FINAL_STATES, JobStatus
 from qiskit.providers.models import BackendProperties
-from qiskit.pulse import Schedule
 from qiskit.qobj import QasmQobj, PulseQobj
 from qiskit.result import Result
 
@@ -319,45 +317,6 @@ class IBMCircuitJob(IBMJob):
                 )
             ) from error
 
-    def update_name(self, name: str) -> str:
-        """Update the name associated with this job.
-
-        Args:
-            name: The new `name` for this job.
-
-        Returns:
-            The new name associated with this job.
-
-        Raises:
-            IBMJobApiError: If an unexpected error occurred when communicating
-                with the server or updating the job name.
-            IBMJobInvalidStateError: If the input job name is not a string.
-        """
-        if not isinstance(name, str):
-            raise IBMJobInvalidStateError(
-                '"{}" of type "{}" is not a valid job name. '
-                "The job name needs to be a string.".format(name, type(name))
-            )
-
-        with api_to_job_error():
-            response = self._api_client.job_update_attribute(
-                job_id=self.job_id(), attr_name="name", attr_value=name
-            )
-
-        # Get the name from the response and check if the update was successful.
-        updated_name = response.get("name", None)
-        if (updated_name is None) or (name != updated_name):
-            raise IBMJobApiError(
-                "An unexpected error occurred when updating the "
-                "name for job {}. The name was not updated for "
-                "the job.".format(self.job_id())
-            )
-
-        # Cache updated name.
-        self._name = updated_name
-
-        return self._name
-
     def update_tags(self, new_tags: List[str]) -> List[str]:
         """Update the tags associated with this job.
 
@@ -563,28 +522,6 @@ class IBMCircuitJob(IBMJob):
 
         return time_per_step_local
 
-    def scheduling_mode(self) -> Optional[str]:
-        """Return the scheduling mode the job is in.
-
-        The scheduling mode indicates how the job is scheduled to run. For example,
-        ``fairshare`` indicates the job is scheduled using a fairshare algorithm.
-
-        This information is only available if the job status is ``RUNNING`` or ``DONE``.
-
-        Returns:
-            The scheduling mode the job is in or ``None`` if the information
-            is not available.
-        """
-        if self._run_mode is None:
-            self.refresh()
-            if (
-                self._status in [JobStatus.RUNNING, JobStatus.DONE]
-                and self._run_mode is None
-            ):
-                self._run_mode = "fairshare"
-
-        return self._run_mode
-
     @property
     def client_version(self) -> Dict[str, str]:
         """Return version of the client used for this job.
@@ -616,24 +553,15 @@ class IBMCircuitJob(IBMJob):
             api_response.pop("id")
             self._creation_date = dateutil.parser.isoparse(api_response.pop("created"))
             self._api_status = api_response.pop("state")["status"]
-            if "kind" in api_response:  # not relevant in runtime?
-                self._kind = ApiJobKind(api_response.pop("kind"))
-            if "qobj" in api_response:  # not relevant in runtime?
-                self._qobj = dict_to_qobj(api_response.pop("qobj"))
         except (KeyError, TypeError) as err:
             raise IBMJobApiError(
                 "Unexpected return value received " "from the server: {}".format(err)
             ) from err
 
-        # not relevant in runtime?
-        self._name = api_response.pop("name", None)
         self._time_per_step = api_response.pop("time_per_step", None)
-        self._error = api_response.pop("error", None)
         self._tags = api_response.pop("tags", [])
-        self._run_mode = api_response.pop("run_mode", None)
-        self._use_object_storage = self._kind == ApiJobKind.QOBJECT_STORAGE
         self._status, self._queue_info = self._get_status_position(
-            self._api_status, api_response.pop("info_queue", None)
+            self._api_status, api_metadata
         )
         self._client_version = self._extract_client_version(
             api_metadata.get("qiskit_version", None)
@@ -645,20 +573,6 @@ class IBMCircuitJob(IBMJob):
         for key, value in api_response.items():
             self._data[key + "_"] = value
         self._refreshed = True
-
-    def circuits(self) -> List[Union[QuantumCircuit, Schedule]]:
-        """Return the circuits or pulse schedules for this job.
-
-        Returns:
-            The circuits or pulse schedules for this job. An empty list
-            is returned if the circuits cannot be retrieved (for example, if
-            the job uses an old format that is no longer supported).
-        """
-        qobj = self._get_qobj()
-        if not qobj:
-            return []
-        circuits, _, _ = disassemble(qobj)
-        return circuits
 
     def backend_options(self) -> Dict[str, Any]:
         """Return the backend configuration options used for this job.

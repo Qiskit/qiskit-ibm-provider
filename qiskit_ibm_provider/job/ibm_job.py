@@ -108,7 +108,6 @@ class IBMJob(Job, ABC):
         """
         pass
 
-    @abstractmethod
     def update_name(self, name: str) -> str:
         """Update the name associated with this job.
 
@@ -183,7 +182,6 @@ class IBMJob(Job, ABC):
         """
         pass
 
-    @abstractmethod
     def scheduling_mode(self) -> Optional[str]:
         """Return the scheduling mode the job is in.
 
@@ -198,7 +196,6 @@ class IBMJob(Job, ABC):
         """Obtain the latest job information from the server."""
         pass
 
-    @abstractmethod
     def circuits(self) -> List[Union[QuantumCircuit, Schedule]]:
         """Return the circuits or pulse schedules for this job.
 
