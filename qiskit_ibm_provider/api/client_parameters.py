@@ -51,6 +51,10 @@ class ClientParameters:
         """Returns the respective authentication handler."""
         return QuantumAuth(access_token=self.token)
 
+    def get_runtime_api_base_url(self) -> str:
+        """Returns the Runtime API base url."""
+        return self.url
+
     def connection_parameters(self) -> Dict[str, Any]:
         """Construct connection related parameters.
 

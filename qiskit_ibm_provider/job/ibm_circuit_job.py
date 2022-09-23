@@ -13,6 +13,8 @@
 """IBM Quantum job."""
 
 import logging
+import time
+import queue
 from concurrent import futures
 from datetime import datetime
 from queue import Empty
@@ -38,9 +40,14 @@ from .exceptions import (
 )
 from .ibm_job import IBMJob
 from .queueinfo import QueueInfo
-from .utils import build_error_report, api_to_job_error, get_cancel_status
-from ..api.clients import AccountClient, RuntimeClient
-from ..api.exceptions import ApiError, UserTimeoutExceededError
+from .utils import build_error_report, api_to_job_error
+from ..api.clients import (
+    AccountClient,
+    RuntimeClient,
+    RuntimeWebsocketClient,
+    WebsocketClientCloseCode,
+)
+from ..api.exceptions import ApiError, RequestsApiError
 from ..apiconstants import ApiJobStatus, ApiJobKind
 from ..utils.converters import utc_to_local
 from ..utils.json_decoder import properties_from_server_data, decode_result
@@ -126,7 +133,7 @@ class IBMCircuitJob(IBMJob):
         tags: Optional[List[str]] = None,
         run_mode: Optional[str] = None,
         client_info: Optional[Dict[str, str]] = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         """IBMCircuitJob constructor.
 
@@ -180,6 +187,17 @@ class IBMCircuitJob(IBMJob):
         self._job_error_msg = None  # type: Optional[str]
         self._refreshed = False
 
+        self._ws_client_future = None  # type: Optional[futures.Future]
+        self._result_queue = queue.Queue()  # type: queue.Queue
+        self._ws_client = RuntimeWebsocketClient(
+            websocket_url=self._api_client._params.get_runtime_api_base_url().replace(
+                "https", "wss"
+            ),
+            client_params=self._api_client._params,
+            job_id=job_id,
+            message_queue=self._result_queue,
+        )
+
     def properties(self) -> Optional[BackendProperties]:
         """Return the backend properties for this job.
 
@@ -199,11 +217,9 @@ class IBMCircuitJob(IBMJob):
 
         return properties_from_server_data(properties)
 
-    def result(
+    def result(  # type: ignore[override]
         self,
         timeout: Optional[float] = None,
-        wait: float = 5,
-        partial: bool = False,
         refresh: bool = False,
     ) -> Result:
         """Return the result of the job.
@@ -241,8 +257,6 @@ class IBMCircuitJob(IBMJob):
 
         Args:
             timeout: Number of seconds to wait for job.
-            wait: Time in seconds between queries.
-            partial: If ``True``, return partial results if possible.
             refresh: If ``True``, re-query the server for the result. Otherwise
                 return the cached value.
 
@@ -256,33 +270,19 @@ class IBMCircuitJob(IBMJob):
                 with the server.
         """
         # pylint: disable=arguments-differ
-        if not self._wait_for_completion(
-            timeout=timeout, wait=wait, required_status=(JobStatus.DONE,)
-        ):
+        if self._result is None:
+            self.wait_for_final_state(timeout=timeout)
             if self._status is JobStatus.CANCELLED:
                 raise IBMJobInvalidStateError(
                     "Unable to retrieve result for job {}. "
                     "Job was cancelled.".format(self.job_id())
                 )
-            # Job failed.
-            if partial:
-                self._retrieve_result(refresh=refresh)
-            if not partial or not self._result or not self._result.results:
-                error_message = self.error_message()
-                if "\n" in error_message:
-                    error_message = (
-                        ". Use the error_message() method to get more details"
-                    )
-                else:
-                    error_message = ": " + error_message
+            if self._status == JobStatus.ERROR:
+                error_message = self.error_message()  # TODO refactor error_message()
                 raise IBMJobFailureError(
-                    "Unable to retrieve result for job {}. Job has failed{}".format(
-                        self.job_id(), error_message
-                    )
+                    f"Unable to retrieve job result. " f"{error_message}"
                 )
-        else:
             self._retrieve_result(refresh=refresh)
-
         return self._result
 
     def cancel(self) -> bool:
@@ -296,26 +296,26 @@ class IBMCircuitJob(IBMJob):
             ``True`` if the job is cancelled, else ``False``.
 
         Raises:
-            IBMJobApiError: If an unexpected error occurred when communicating
-                with the server.
+            IBMJobInvalidStateError: If the job is in a state that cannot be cancelled.
+            IBMJobError: If unable to cancel job.
         """
         try:
-            response = self._api_client.job_cancel(self.job_id())
-            self._cancelled = get_cancel_status(response)
+            self._runtime_client.job_cancel(self.job_id())
+            self._cancelled = True
             logger.debug(
-                'Job %s cancel status is "%s". Response data: %s.',
+                'Job %s cancel status is "%s".',
                 self.job_id(),
                 self._cancelled,
-                response,
             )
+            self._ws_client.disconnect(WebsocketClientCloseCode.CANCEL)
+            self._status = JobStatus.CANCELLED
             return self._cancelled
-        except ApiError as error:
-            self._cancelled = False
-            raise IBMJobApiError(
-                "Unexpected error when cancelling job {}: {}".format(
-                    self.job_id(), str(error)
-                )
-            ) from error
+        except RequestsApiError as ex:
+            if ex.status_code == 409:
+                raise IBMJobInvalidStateError(
+                    f"Job cannot be cancelled: {ex}"
+                ) from None
+            raise IBMJobError(f"Failed to cancel job: {ex}") from None
 
     def update_tags(self, new_tags: List[str]) -> List[str]:
         """Update the tags associated with this job.
@@ -405,8 +405,8 @@ class IBMCircuitJob(IBMJob):
             An error report if the job failed or ``None`` otherwise.
         """
         # pylint: disable=attribute-defined-outside-init
-        if not self._wait_for_completion(required_status=(JobStatus.ERROR,)):
-            return None
+        # if not self._wait_for_completion(required_status=(JobStatus.ERROR,)):
+        #     return None
 
         if not self._job_error_msg:
             # First try getting error messages from the result.
@@ -605,111 +605,53 @@ class IBMCircuitJob(IBMJob):
         _, _, header = disassemble(qobj)
         return header
 
-    def wait_for_final_state(
+    def wait_for_final_state(  # pylint: disable=arguments-differ
         self,
         timeout: Optional[float] = None,
-        wait: Optional[float] = None,
-        callback: Optional[Callable] = None,
     ) -> None:
-        """Wait until the job progresses to a final state such as ``DONE`` or ``ERROR``.
+        """Use the websocket server to wait for the final the state of a job. The server
+            will remain open if the job is still running and the connection will be terminated
+            once the job completes. Then update and return the status of the job.
 
         Args:
             timeout: Seconds to wait for the job. If ``None``, wait indefinitely.
-            wait: Seconds to wait between invoking the callback function. If ``None``,
-                the callback function is invoked only if job status or queue position
-                has changed.
-            callback: Callback function invoked after each querying iteration.
-                The following positional arguments are provided to the callback function:
-
-                    * job_id: Job ID
-                    * job_status: Status of the job from the last query.
-                    * job: This ``IBMCircuitJob`` instance.
-
-                In addition, the following keyword arguments are also provided:
-
-                    * queue_info: A :class:`QueueInfo` instance with job queue information,
-                      or ``None`` if queue information is unknown or not applicable.
-                      You can use the ``to_dict()`` method to convert the
-                      :class:`QueueInfo` instance to a dictionary, if desired.
 
         Raises:
-            IBMJobTimeoutError: if the job does not reach a final state before the
-                specified timeout.
+            IBMJobTimeoutError: If the job does not complete within given timeout.
         """
-        exit_event = Event()
-        status_queue = RefreshQueue(maxsize=1)
-        future = None
-        if callback:
-            future = self._executor.submit(
-                self._status_callback,
-                status_queue=status_queue,
-                exit_event=exit_event,
-                callback=callback,
-                wait=wait,
-            )
         try:
-            self._wait_for_completion(timeout=timeout, status_queue=status_queue)
-        finally:
-            if future:
-                # Make sure the callback thread wakes up.
-                exit_event.set()
-                status_queue.notify_all()
-                future.result()
+            start_time = time.time()
+            if self._is_streaming():
+                self._ws_client_future.result(timeout)
+            # poll for status after stream has closed until status is final
+            # because status doesn't become final as soon as stream closes
+            status = self.status()
+            while status not in JOB_FINAL_STATES:
+                elapsed_time = time.time() - start_time
+                if timeout is not None and elapsed_time >= timeout:
+                    raise IBMJobTimeoutError(
+                        f"Timed out waiting for job to complete after {timeout} secs."
+                    )
+                time.sleep(3)
+                status = self.status()
+        except futures.TimeoutError:
+            raise IBMJobTimeoutError(
+                f"Timed out waiting for job to complete after {timeout} secs."
+            )
 
-    def _wait_for_completion(
-        self,
-        timeout: Optional[float] = None,
-        wait: float = 5,
-        required_status: Tuple[JobStatus] = JOB_FINAL_STATES,
-        status_queue: Optional[RefreshQueue] = None,
-    ) -> bool:
-        """Wait until the job progress to a final state such as ``DONE`` or ``ERROR``.
-
-        Args:
-            timeout: Seconds to wait for job. If ``None``, wait indefinitely.
-            wait: Seconds between queries.
-            required_status: The final job status required.
-            status_queue: Queue used to share the latest status.
+    def _is_streaming(self) -> bool:
+        """Return whether job results are being streamed.
 
         Returns:
-            ``True`` if the final job status matches one of the required states.
-
-        Raises:
-            IBMJobTimeoutError: if the job does not return results before a
-                specified timeout.
-            IBMJobApiError: if there was an error getting the job status
-                due to a network issue.
+            Whether job results are being streamed.
         """
-        if self._status in JOB_FINAL_STATES:
-            return self._status in required_status
+        if self._ws_client_future is None:
+            return False
 
-        try:
-            status_response = self._runtime_client.job_final_status(
-                self.job_id(), timeout=timeout, wait=wait, status_queue=status_queue
-            )
-        except UserTimeoutExceededError:
-            raise IBMJobTimeoutError(
-                "Timeout while waiting for job {}.".format(self._job_id)
-            ) from None
-        except ApiError as api_err:
-            logger.error(
-                "Maximum retries exceeded: "
-                "Error checking job status due to a network error."
-            )
-            raise IBMJobApiError(
-                "Error checking job status due to a network "
-                "error: {}".format(str(api_err))
-            ) from api_err
+        if self._ws_client_future.done():
+            return False
 
-        self._api_status = status_response["status"]
-        self._status, self._queue_info = self._get_status_position(
-            self._api_status, status_response.get("info_queue", None)
-        )
-
-        # Get all job attributes when the job is done.
-        self.refresh()
-
-        return self._status in required_status
+        return True
 
     def _retrieve_result(self, refresh: bool = False) -> None:
         """Retrieve the job result response.
