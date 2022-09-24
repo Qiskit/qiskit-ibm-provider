@@ -575,11 +575,9 @@ class IBMCircuitJob(IBMJob):
             User header specified for this job. An empty dictionary
             is returned if the header cannot be retrieved.
         """
-        qobj = self._get_qobj()
-        if not qobj:
-            return {}
-        _, _, header = disassemble(qobj)
-        return header
+        if self._result:
+            return vars(self._result.header)
+        return {}
 
     def wait_for_final_state(  # pylint: disable=arguments-differ
         self,
