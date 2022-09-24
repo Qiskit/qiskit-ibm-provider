@@ -228,6 +228,7 @@ class TestIBMJobStates(JobTestCase):
         self.assertEqual(job.status(), JobStatus.RUNNING)
 
         can_cancel = job.cancel()
+        self.assertFalse(can_cancel)
 
         self._current_api.progress()
         self.assertEqual(job.status(), JobStatus.RUNNING)
