@@ -66,7 +66,6 @@ class IBMJob(Job, ABC):
             # Append suffix to key to avoid conflicts.
             self._data[key + "_"] = value
 
-    @abstractmethod
     def properties(self) -> Optional[BackendProperties]:
         """Return the backend properties for this job.
 
