@@ -440,26 +440,6 @@ class TestIBMJobAttributes(IBMTestCase):
             job_tags=[1, 2, 3],
         )
 
-    def test_run_mode(self):
-        """Test job run mode."""
-        self.sim_job.wait_for_final_state()
-        self.assertEqual(
-            self.sim_job.scheduling_mode(),
-            "fairshare",
-            "Job {} scheduling mode is {}".format(
-                self.sim_job.job_id(), self.sim_job.scheduling_mode()
-            ),
-        )
-
-        rjob = self.dependencies.provider.backend.job(self.sim_job.job_id())
-        self.assertEqual(
-            rjob.scheduling_mode(),
-            "fairshare",
-            "Job {} scheduling mode is {}".format(
-                rjob.job_id(), rjob.scheduling_mode()
-            ),
-        )
-
     @skip("TODO refactor fake client")
     def test_missing_required_fields(self):
         """Test response data is missing required fields."""

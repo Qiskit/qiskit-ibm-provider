@@ -247,7 +247,7 @@ class IBMCircuitJob(IBMJob):
                 with the server.
         """
         # pylint: disable=arguments-differ
-        if self._result is None:
+        if self._result is None or refresh:
             self.wait_for_final_state(timeout=timeout)
             if self._status is JobStatus.CANCELLED:
                 raise IBMJobInvalidStateError(
