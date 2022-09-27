@@ -725,6 +725,11 @@ class IBMProvider(Provider):
                 `project` are specified.
         """
         # pylint: disable=arguments-differ
+        if instance:
+            self._hgps.move_to_end(instance, last=False)  # type: ignore[attr-defined]
+        else:
+            self._hgps = self._initialize_hgps(self._auth_client)
+
         backends = self.backends(name, instance=instance, **kwargs)
         if len(backends) > 1:
             raise QiskitBackendNotFoundError(

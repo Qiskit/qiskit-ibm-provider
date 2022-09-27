@@ -542,7 +542,7 @@ class IBMBackend(Backend):
         job_tags: Optional[List[str]] = None,
     ) -> IBMCircuitJob:
         """Runs the runtime program and returns the corresponding job object"""
-        hgp = self.provider._get_hgp(backend_name=options["backend"])
+        hgp = self.provider._get_hgps()[0]
         hgp_name = hgp.name
         try:
             response = self.provider._runtime_client.program_run(

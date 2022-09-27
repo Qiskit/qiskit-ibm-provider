@@ -23,7 +23,6 @@ from .program_job import ProgramJob
 from .runtime_session import RuntimeSession
 from ...utils import RuntimeEncoder
 from ...utils.converters import local_to_utc
-from .cloud_backend import CloudBackend
 
 logger = logging.getLogger(__name__)
 
@@ -249,28 +248,3 @@ class Runtime(RestAdapterBase):
         if all([hub, group, project]):
             payload["provider"] = f"{hub}/{group}/{project}"
         return self.session.get(url, params=payload).json()
-
-    # IBM Cloud only functions
-
-    def backend(self, backend_name: str) -> CloudBackend:
-        """Return an adapter for the IBM Cloud backend.
-
-        Args:
-            backend_name: Name of the backend.
-
-        Returns:
-            The backend adapter.
-        """
-        return CloudBackend(self.session, backend_name)
-
-    def backends(self, timeout: Optional[float] = None) -> Dict[str, List[str]]:
-        """Return a list of IBM Cloud backends.
-
-        Args:
-            timeout: Number of seconds to wait for the request.
-
-        Returns:
-            JSON response.
-        """
-        url = self.get_url("backends")
-        return self.session.get(url, timeout=timeout).json()
