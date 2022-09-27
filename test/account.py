@@ -136,14 +136,10 @@ def get_account_config_contents(
 ):
     """Generate qiskitrc content"""
     if instance is None:
-        instance = "some_instance" if channel == "ibm_cloud" else "hub/group/project"
+        instance = "hub/group/project"
     token = token or uuid.uuid4().hex
     if name is None:
-        name = (
-            management._DEFAULT_ACCOUNT_NAME_IBM_CLOUD
-            if channel == "ibm_cloud"
-            else management._DEFAULT_ACCOUNT_NAME_IBM_QUANTUM
-        )
+        name = management._DEFAULT_ACCOUNT_NAME_IBM_QUANTUM
     if url is None:
         url = IBM_QUANTUM_API_URL
     out = {

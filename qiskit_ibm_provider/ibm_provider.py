@@ -438,7 +438,7 @@ class IBMProvider(Provider):
             True if the account was deleted.
             False if no account was found.
         """
-        return AccountManager.delete(name=name, channel="ibm_quantum")
+        return AccountManager.delete(name=name)
 
     @staticmethod
     def save_account(
@@ -453,7 +453,7 @@ class IBMProvider(Provider):
         """Save the account to disk for future use.
 
         Args:
-            token: IBM Cloud API key or IBM Quantum API token.
+            token: IBM Quantum API token.
             url: The API URL.
                 Defaults to https://auth.quantum-computing.ibm.com/api
             instance: The hub/group/project.
