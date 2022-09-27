@@ -120,7 +120,7 @@ class Account:
     @staticmethod
     def _assert_valid_channel(channel: ChannelType) -> None:
         """Assert that the channel parameter is valid."""
-        if channel == "ibm_quantum":
+        if channel != "ibm_quantum":
             raise InvalidAccountError(
                 f"Invalid `channel` value. Expected "
                 f"{'ibm_quantum'}, got '{channel}'."

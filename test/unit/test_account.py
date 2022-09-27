@@ -103,7 +103,6 @@ class TestAccount(IBMTestCase):
 
         subtests = [
             {"channel": "ibm_quantum", "instance": ""},
-            {"channel": "ibm_quantum"},
             {"channel": "ibm_quantum", "instance": "no-hgp-format"},
         ]
         for params in subtests:
@@ -260,7 +259,7 @@ class TestAccountManager(IBMTestCase):
         ), self.subTest("non-empty list of accounts"):
             accounts = AccountManager.list()
 
-            self.assertEqual(len(accounts), 2)
+            self.assertEqual(len(accounts), 1)
             self.assertTrue(accounts["key2"], _TEST_IBM_QUANTUM_ACCOUNT)
 
         with temporary_account_config_file(contents={}), self.subTest(
@@ -281,12 +280,9 @@ class TestAccountManager(IBMTestCase):
             self.assertEqual(len(accounts), 2)
             self.assertListEqual(accounts, ["key2", _DEFAULT_ACCOUNT_NAME_IBM_QUANTUM])
 
-            accounts = list(AccountManager.list(name="key1").keys())
-            self.assertEqual(len(accounts), 1)
-            self.assertListEqual(accounts, ["key1"])
-
     @temporary_account_config_file(
         contents={
+            "key1": _TEST_IBM_QUANTUM_ACCOUNT.to_saved_format(),
             _DEFAULT_ACCOUNT_NAME_IBM_QUANTUM: _TEST_IBM_QUANTUM_ACCOUNT.to_saved_format(),
         }
     )
@@ -304,6 +300,7 @@ class TestAccountManager(IBMTestCase):
 
     @temporary_account_config_file(
         contents={
+            "key1": _TEST_LEGACY_ACCOUNT,
             _DEFAULT_ACCOUNT_NAME_LEGACY: _TEST_LEGACY_ACCOUNT,
         }
     )
