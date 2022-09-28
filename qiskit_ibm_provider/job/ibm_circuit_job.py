@@ -673,9 +673,6 @@ class IBMCircuitJob(IBMJob):
         result = re.search("JobError: '(.*)'", raw_data)
         if result is not None:
             raise IBMJobError(result.group(1))
-        if self._status == JobStatus.ERROR:
-            error_message = self.error_message()
-            raise IBMJobError(error_message)
 
     def _set_result(self, raw_data: str) -> None:
         """Set the job result.
