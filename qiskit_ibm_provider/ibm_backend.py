@@ -574,6 +574,7 @@ class IBMBackend(Backend):
                 if (
                     key not in self.options.__dict__
                     and not self.configuration().simulator
+                    and not key == "circuits"
                 ):
                     warnings.warn(  # type: ignore[unreachable]
                         f"{key} is not a recognized runtime option and may be ignored by the backend.",
