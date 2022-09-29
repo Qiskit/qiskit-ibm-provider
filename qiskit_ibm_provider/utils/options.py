@@ -13,13 +13,20 @@
 """Backend run options."""
 
 from dataclasses import dataclass
-from typing import Dict, List, Union
+from typing import Dict, List, Union, Any
+from qiskit.circuit import QuantumCircuit, Parameter
+from qiskit.pulse import Schedule, LoConfig
+from qiskit.pulse.channels import PulseChannel
+from qiskit.qobj.utils import MeasLevel, MeasReturnType
 
-# TODO how do we want to separate the options between qasm2 and qasm3?
+
 @dataclass
 class QASM3Options:
-    """Options for qasm3 jobs."""
+    """Options for the QASM3 path."""
 
+    circuits: Union[
+        str, QuantumCircuit, Schedule, List[Union[QuantumCircuit, Schedule]]
+    ] = None
     exporter_config: Dict = None
     init_circuit: List[Dict] = None
     init_delay: int = None
@@ -27,6 +34,38 @@ class QASM3Options:
     merge_circuits: bool = True
     qasm3_args: Union[Dict, List] = None
     run_config: Dict = None
-    skip_transpiliation: bool = False
+    skip_transpilation: bool = False
     transpiler_config: Dict = None
     use_measurement_mitigation: bool = False
+
+
+@dataclass
+class QASM2Options:
+    """Options for the QASM2 path."""
+
+    circuits: Union[
+        str, QuantumCircuit, Schedule, List[Union[QuantumCircuit, Schedule]]
+    ] = None
+    job_tags: str = None
+    max_circuits_per_job: int = None
+    header: Dict = None
+    shots: int = None
+    memory: bool = None
+    qubit_lo_freq: List[int] = None
+    meas_lo_freq: List[int] = None
+    schedule_los: Union[
+        List[Union[Dict[PulseChannel, float], LoConfig]],
+        Union[Dict[PulseChannel, float], LoConfig],
+    ] = None
+    meas_level: Union[int, MeasLevel] = None
+    meas_return: Union[str, MeasReturnType] = None
+    memory_slots: int = None
+    memory_slot_size: int = None
+    rep_time: int = None
+    rep_delay: float = None
+    init_qubits: bool = None
+    parameter_binds: List[Dict[Parameter, float]] = None
+    use_measure_esp: bool = None
+    live_data_enabled: bool = None
+    noise_model: Any = None
+    seed_simulator: Any = None

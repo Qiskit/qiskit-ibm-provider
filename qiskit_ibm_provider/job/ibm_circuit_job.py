@@ -256,9 +256,7 @@ class IBMCircuitJob(IBMJob):
                 )
             if self._status == JobStatus.ERROR:
                 error_message = self.error_message()
-                raise IBMJobFailureError(
-                    f"Job failed: " f"{error_message}"
-                )
+                raise IBMJobFailureError(f"Job failed: " f"{error_message}")
             self._retrieve_result(refresh=refresh)
         return self._result
 

@@ -16,6 +16,7 @@ import copy
 import logging
 import warnings
 import re
+from dataclasses import asdict
 from datetime import datetime as python_datetime
 from typing import Iterable, Dict, List, Union, Optional, Any
 
@@ -58,6 +59,7 @@ from .exceptions import (
 )
 from .job import IBMJob, IBMCircuitJob
 from .utils import validate_job_tags
+from .utils.options import QASM2Options, QASM3Options
 from .utils.backend import convert_reservation_data
 from .utils.backend_converter import (
     convert_to_target,
@@ -477,9 +479,8 @@ class IBMBackend(Backend):
                 "job_name is not supported anymore; use job_tags instead"
             )
 
-        # TODO use different run config for qasm3 jobs
-        # make it clear which options are supported for each path
         run_config_dict = self._get_run_config(
+            program_id=program_id,
             circuits=circuits,
             header=header,
             shots=shots,
@@ -565,14 +566,19 @@ class IBMBackend(Backend):
         Publisher().publish("ibm.job.start", job)
         return job
 
-    def _get_run_config(self, **kwargs: Any) -> Dict:
+    def _get_run_config(self, program_id: str, **kwargs: Any) -> Dict:
         """Return the consolidated runtime configuration."""
-        run_config_dict = copy.copy(self.options.__dict__)
+        if program_id == "qasm3-runner":
+            original_dict = asdict(QASM3Options())
+            run_config_dict = copy.copy(asdict(QASM3Options(**original_dict)))
+        else:
+            original_dict = self.options.__dict__
+            run_config_dict = copy.copy(asdict(QASM2Options(**original_dict)))
         for key, val in kwargs.items():
             if val is not None:
                 run_config_dict[key] = val
                 if (
-                    key not in self.options.__dict__
+                    key not in original_dict
                     and not self.configuration().simulator
                     and not key == "circuits"
                 ):
