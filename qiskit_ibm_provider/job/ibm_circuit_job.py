@@ -257,7 +257,7 @@ class IBMCircuitJob(IBMJob):
             if self._status == JobStatus.ERROR:
                 error_message = self.error_message()
                 raise IBMJobFailureError(
-                    f"Unable to retrieve job result. " f"{error_message}"
+                    f"Job failed: " f"{error_message}"
                 )
             self._retrieve_result(refresh=refresh)
         return self._result
@@ -384,21 +384,26 @@ class IBMCircuitJob(IBMJob):
         # pylint: disable=attribute-defined-outside-init
         if self._status == JobStatus.DONE:
             return None
+        if self._job_error_msg is not None:
+            return self._job_error_msg
 
-        if not self._job_error_msg:
-            # First try getting error messages from the result.
-            self._retrieve_result()
-        if not self._job_error_msg:
-            # Then try refreshing the job
-            if not self._error:
-                self.refresh()
-            if self._error:
-                self._job_error_msg = self._format_message_from_error(self._error)
-            elif self._api_status.startswith("ERROR"):
-                self._job_error_msg = self._api_status
-            else:
-                self._job_error_msg = "Unknown error."
+        # First try getting error message from the runtime job data
+        response = self._runtime_client.job_get(job_id=self.job_id())
+        reason = response["state"].get("reason")
+        # If there is a meaningful reason, return it
+        if reason is not None and reason != "Error":
+            self._job_error_msg = reason
+            return self._job_error_msg
 
+        # Now try parsing a meaningful reason from the results, if possible
+        api_result = self._runtime_client.job_results(self.job_id())
+        reason = self._parse_result_for_errors(api_result)
+        if reason is not None:
+            self._job_error_msg = reason
+            return self._job_error_msg
+
+        # We don't really know the error; return the data to the user
+        self._job_error_msg = "Unknown error; job result was\n" + api_result
         return self._job_error_msg
 
     def queue_position(self, refresh: bool = False) -> Optional[int]:
@@ -542,7 +547,7 @@ class IBMCircuitJob(IBMJob):
         self._client_version = self._extract_client_version(
             api_metadata.get("qiskit_version", None)
         )
-        if self._status in JOB_FINAL_STATES:
+        if self._status == JobStatus.DONE:
             api_result = self._runtime_client.job_results(self.job_id())
             self._set_result(api_result)
 
@@ -650,9 +655,6 @@ class IBMCircuitJob(IBMJob):
             try:
                 api_result = self._runtime_client.job_results(self.job_id())
                 self._set_result(api_result)
-                # TODO: Look for error message in result response.
-                # if self._status is JobStatus.ERROR:
-                #     self._check_for_error_message(api_result)
             except ApiError as err:
                 if self._status not in (JobStatus.ERROR, JobStatus.CANCELLED):
                     raise IBMJobApiError(
@@ -660,19 +662,20 @@ class IBMCircuitJob(IBMJob):
                         "job {}: {}".format(self.job_id(), str(err))
                     ) from err
 
-    def _check_result_for_errors(self, raw_data: str) -> None:
+    def _parse_result_for_errors(self, raw_data: str) -> str:
         """Checks whether the job result contains errors
 
         Args:
             raw_data: Raw result data.
 
-        Raises:
-            IBMJobError: If an error was found in the result
+        returns:
+            The error message, if found
 
         """
         result = re.search("JobError: '(.*)'", raw_data)
         if result is not None:
-            raise IBMJobError(result.group(1))
+            return result.group(1)
+        return None
 
     def _set_result(self, raw_data: str) -> None:
         """Set the job result.
@@ -688,11 +691,10 @@ class IBMCircuitJob(IBMJob):
         if raw_data is None:
             self._result = None
             return
-        self._check_result_for_errors(raw_data)
         # TODO: check whether client version can be extracted from runtime data
         # raw_data["client_version"] = self.client_version
-        data_dict = decode_result(raw_data, self._result_decoder)
         try:
+            data_dict = decode_result(raw_data, self._result_decoder)
             self._result = Result.from_dict(data_dict)
         except (KeyError, TypeError) as err:
             if not self._kind:
