@@ -21,11 +21,12 @@ from typing import Dict, Optional, Tuple, Any, List, Union
 import re
 
 import dateutil.parser
-from qiskit.assembler.disassemble import disassemble
 from qiskit.providers.jobstatus import JOB_FINAL_STATES, JobStatus
+from qiskit.circuit.quantumcircuit import QuantumCircuit
 
 from qiskit.qobj import QasmQobj, PulseQobj
 from qiskit.result import Result
+from qiskit.pulse import Schedule
 
 from qiskit_ibm_provider import ibm_backend  # pylint: disable=unused-import
 from .constants import IBM_COMPOSITE_JOB_TAG_PREFIX, IBM_MANAGED_JOB_ID_PREFIX
@@ -359,9 +360,8 @@ class IBMCircuitJob(IBMJob):
             # response state possibly has two values: status and reason
             # reason is not used in the current interface
             self._api_status = api_response["status"]
-            api_metadata = self._runtime_client.job_metadata(self.job_id())
             self._status, self._queue_info = self._get_status_position(
-                self._api_status, api_metadata
+                self._api_status, None
             )
 
         # Get all job attributes if the job is done.
@@ -533,8 +533,7 @@ class IBMCircuitJob(IBMJob):
             raise IBMJobApiError(
                 "Unexpected return value received " "from the server: {}".format(err)
             ) from err
-
-        self._time_per_step = api_response.pop("time_per_step", None)
+        self._time_per_step = api_metadata.get("timestamps", None)
         self._tags = api_response.pop("tags", [])
         self._status, self._queue_info = self._get_status_position(
             self._api_status, api_metadata
@@ -562,11 +561,9 @@ class IBMCircuitJob(IBMJob):
             Backend options used for this job. An empty dictionary
             is returned if the options cannot be retrieved.
         """
-        qobj = self._get_qobj()
-        if not qobj:
-            return {}
-        _, options, _ = disassemble(qobj)
-        return options
+        if self._backend:
+            return self._backend.options  # are these the right options
+        return {}
 
     def header(self) -> Dict:
         """Return the user header specified for this job.
@@ -575,9 +572,21 @@ class IBMCircuitJob(IBMJob):
             User header specified for this job. An empty dictionary
             is returned if the header cannot be retrieved.
         """
-        if self._result:
-            return vars(self._result.header)
+        if self.params_:
+            return self.params_.get("header", {})
         return {}
+
+    def circuits(self) -> List[Union[QuantumCircuit, Schedule]]:
+        """Return the circuits or pulse schedules for this job.
+
+        Returns:
+            The circuits or pulse schedules for this job. An empty list
+            is returned if the circuits cannot be retrieved (for example, if
+            the job uses an old format that is no longer supported).
+        """
+        if self.params_:
+            return self.params_.get("circuits", [])  # need to disassemble circuit
+        return []
 
     def wait_for_final_state(  # pylint: disable=arguments-differ
         self,
@@ -760,28 +769,6 @@ class IBMCircuitJob(IBMJob):
             queue_info = None
 
         return status, queue_info
-
-    def _get_qobj(self) -> Optional[Union[QasmQobj, PulseQobj]]:
-        """Return the Qobj for this job.
-
-        Returns:
-            The Qobj for this job, or ``None`` if the job does not have a Qobj.
-
-        Raises:
-            IBMJobApiError: If an unexpected error occurred when retrieving
-                job information from the server.
-        """
-        if not self._kind:
-            return None
-
-        if not self._qobj:
-            with api_to_job_error():
-                qobj = self._api_client.job_download_qobj(
-                    self.job_id(), self._use_object_storage
-                )
-                self._qobj = dict_to_qobj(qobj)
-
-        return self._qobj
 
     def _extract_client_version(self, data: str) -> Dict:
         """Extract client version from API.

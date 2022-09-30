@@ -52,7 +52,7 @@ class QueueInfo:
             job_id: Job ID.
             kwargs: Additional attributes.
         """
-        self.position = int(position_in_queue)
+        self.position = int(position_in_queue) if position_in_queue else None
         self._status = status
         if isinstance(estimated_start_time, str):
             estimated_start_time = dateutil.parser.isoparse(estimated_start_time)

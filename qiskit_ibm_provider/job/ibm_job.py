@@ -245,7 +245,6 @@ class IBMJob(Job, ABC):
         except KeyError:
             raise AttributeError("Attribute {} is not defined.".format(name)) from None
 
-    @abstractmethod
     def _get_qobj(self) -> Optional[Union[QasmQobj, PulseQobj]]:
         """Return the Qobj for this job.
 
