@@ -15,6 +15,7 @@
 import logging
 import time
 import queue
+import json
 from concurrent import futures
 from datetime import datetime
 from typing import Dict, Optional, Tuple, Any, List, Union
@@ -24,7 +25,6 @@ import dateutil.parser
 from qiskit.providers.jobstatus import JOB_FINAL_STATES, JobStatus
 from qiskit.circuit.quantumcircuit import QuantumCircuit
 
-from qiskit.qobj import QasmQobj, PulseQobj
 from qiskit.result import Result
 from qiskit.pulse import Schedule
 
@@ -51,7 +51,6 @@ from ..apiconstants import ApiJobStatus, ApiJobKind
 from ..utils.converters import utc_to_local
 from ..utils.json_decoder import decode_result
 from ..utils.json import RuntimeDecoder
-from ..utils.qobj_utils import dict_to_qobj
 from ..utils.utils import validate_job_tags, api_status_to_job_status
 
 logger = logging.getLogger(__name__)
@@ -126,7 +125,6 @@ class IBMCircuitJob(IBMJob):
         name: Optional[str] = None,
         time_per_step: Optional[dict] = None,
         result: Optional[dict] = None,
-        qobj: Optional[Union[dict, QasmQobj, PulseQobj]] = None,
         error: Optional[dict] = None,
         tags: Optional[List[str]] = None,
         run_mode: Optional[str] = None,
@@ -146,7 +144,6 @@ class IBMCircuitJob(IBMJob):
             name: Job name.
             time_per_step: Time spent for each processing step.
             result: Job result.
-            qobj: Qobj for this job.
             error: Job error.
             tags: Job tags.
             run_mode: Scheduling mode the job runs in.
@@ -161,13 +158,9 @@ class IBMCircuitJob(IBMJob):
         self._api_status = status
         self._kind = ApiJobKind(kind) if kind else None
         self._time_per_step = time_per_step
-        if isinstance(qobj, dict):
-            qobj = dict_to_qobj(qobj)
-        self._qobj = qobj
         self._error = error
         self._run_mode = run_mode
         self._status, self._queue_info = self._get_status_position(status)
-        self._use_object_storage = self._kind == ApiJobKind.QOBJECT_STORAGE
         self._client_version = self._extract_client_version(client_info)
         self._set_result(result)
 
@@ -585,7 +578,9 @@ class IBMCircuitJob(IBMJob):
             the job uses an old format that is no longer supported).
         """
         if self.params_:
-            return self.params_.get("circuits", [])  # need to disassemble circuit
+            return [
+                json.loads(json.dumps(self.params_["circuits"]), cls=RuntimeDecoder)
+            ]
         return []
 
     def wait_for_final_state(  # pylint: disable=arguments-differ
