@@ -40,20 +40,18 @@ from qiskit.pulse.channels import (
     DriveChannel,
     MeasureChannel,
 )
-from qiskit.qobj import QasmQobj, PulseQobj
+
 from qiskit.qobj.utils import MeasLevel, MeasReturnType
 from qiskit.tools.events.pubsub import Publisher
 from qiskit.transpiler.target import Target
 
 from qiskit_ibm_provider import ibm_provider  # pylint: disable=unused-import
 from .api.clients import AccountClient
-from .api.exceptions import ApiError
 from .backendjoblimit import BackendJobLimit
 from .backendreservation import BackendReservation
 from .exceptions import (
     IBMBackendError,
     IBMBackendValueError,
-    IBMBackendJobLimitError,
     IBMBackendApiError,
     IBMBackendApiProtocolError,
 )
@@ -300,7 +298,6 @@ class IBMBackend(Backend):
             rep_delay=None,
             init_qubits=True,
             use_measure_esp=None,
-            live_data_enabled=None,
             # Simulator only
             noise_model=None,
             seed_simulator=None,
@@ -349,9 +346,7 @@ class IBMBackend(Backend):
             str, QuantumCircuit, Schedule, List[Union[QuantumCircuit, Schedule]]
         ],
         dynamic: bool = False,
-        job_name: Optional[str] = None,
         job_tags: Optional[List[str]] = None,
-        max_circuits_per_job: Optional[int] = None,
         header: Optional[Dict] = None,
         shots: Optional[Union[int, float]] = None,
         memory: Optional[bool] = None,
@@ -372,18 +367,12 @@ class IBMBackend(Backend):
         init_qubits: Optional[bool] = None,
         parameter_binds: Optional[List[Dict[Parameter, float]]] = None,
         use_measure_esp: Optional[bool] = None,
-        live_data_enabled: Optional[bool] = None,
         noise_model: Optional[Any] = None,
         **run_config: Dict,
     ) -> IBMJob:
         """Run on the backend.
         If a keyword specified here is also present in the ``options`` attribute/object,
         the value specified here will be used for this run.
-        If the length of the input circuits exceeds the maximum allowed by
-        the backend, or if `max_circuits_per_job` is not ``None``, then the
-        input circuits will be divided into multiple jobs, and an
-        :class:`~qiskit_ibm_provider.job.IBMCompositeJob` instance is
-        returned.
 
         Args:
             circuits: An individual or a
@@ -391,10 +380,8 @@ class IBMBackend(Backend):
                 :class:`~qiskit.pulse.Schedule` or QASM3 string
                 object to run on the backend.
             dynamic: Whether the circuit is dynamic (uses in-circuit conditionals)
-            job_name: Obsolete field not used when running via the runtime.
             job_tags: Tags to be assigned to the job. The tags can subsequently be used
                 as a filter in the :meth:`jobs()` function call.
-            max_circuits_per_job: Maximum number of circuits to have in a single job.
             header: User input that will be attached to the job and will be
                 copied to the corresponding result header. Headers do not affect the run.
                 This replaces the old ``Qobj`` header.
@@ -439,8 +426,6 @@ class IBMBackend(Backend):
                 Default: ``True`` if backend supports ESP readout, else ``False``. Backend support
                 for ESP readout is determined by the flag ``measure_esp_enabled`` in
                 ``backend.configuration()``.
-            live_data_enabled (bool): Activate the live data in the backend, to receive data
-                from the instruments.
             noise_model: Noise model. (Simulators only)
             **run_config: Extra arguments used to configure the run.
 
@@ -474,11 +459,6 @@ class IBMBackend(Backend):
             circuits = self._deprecate_id_instruction(circuits)
         options = {"backend": self.name}
 
-        if job_name:
-            raise IBMBackendValueError(
-                "job_name is not supported anymore; use job_tags instead"
-            )
-
         run_config_dict = self._get_run_config(
             program_id=program_id,
             circuits=circuits,
@@ -497,9 +477,7 @@ class IBMBackend(Backend):
             init_qubits=init_qubits,
             use_measure_esp=use_measure_esp,
             noise_model=noise_model,
-            max_circuits_per_job=max_circuits_per_job,
             parameter_binds=parameter_binds,
-            live_data_enabled=live_data_enabled,
             **run_config,
         )
 
@@ -538,9 +516,7 @@ class IBMBackend(Backend):
                 program_id=program_id,
                 backend_name=options["backend"],
                 params=inputs,
-                image=options.get("image"),
                 hgp=hgp_name,
-                log_level=options.get("log_level"),
                 job_tags=job_tags,
             )
         except RequestsApiError as ex:
@@ -587,81 +563,6 @@ class IBMBackend(Backend):
                         stacklevel=4,
                     )
         return run_config_dict
-
-    def _submit_job(
-        self,
-        qobj: Union[QasmQobj, PulseQobj],
-        job_name: Optional[str] = None,
-        job_tags: Optional[List[str]] = None,
-        composite_job_id: Optional[str] = None,
-        live_data_enabled: Optional[bool] = None,
-    ) -> IBMJob:
-        """Submit the Qobj to the backend.
-
-        Args:
-            qobj: The Qobj to be executed.
-            job_name: Custom name to be assigned to the job. This job
-                name can subsequently be used as a filter in the
-                ``jobs()``method.
-                Job names do not need to be unique.
-            job_tags: Tags to be assigned to the job.
-            composite_job_id: Composite job ID, if this Qobj belongs to a composite job.
-            live_data_enabled: Used to activate/deactivate live data on the backend.
-
-        Returns:
-            The job to be executed.
-
-        Events:
-            ibm.job.start: The job has started.
-
-        Raises:
-            IBMBackendApiError: If an unexpected error occurred while submitting
-                the job.
-            IBMBackendError: If an unexpected error occurred after submitting
-                the job.
-            IBMBackendApiProtocolError: If an unexpected value is received from
-                 the server.
-            IBMBackendJobLimitError: If the job could not be submitted because
-                the job limit has been reached.
-        """
-        try:
-            qobj_dict = qobj.to_dict()
-            submit_info = self._api_client.job_submit(
-                backend_name=self.name,
-                qobj_dict=qobj_dict,
-                job_name=job_name,
-                job_tags=job_tags,
-                experiment_id=composite_job_id,
-                live_data_enabled=live_data_enabled,
-            )
-        except ApiError as ex:
-            if "Error code: 3458" in str(ex):
-                raise IBMBackendJobLimitError(
-                    "Error submitting job: {}".format(str(ex))
-                ) from ex
-            raise IBMBackendApiError("Error submitting job: {}".format(str(ex))) from ex
-
-        # Error in the job after submission:
-        # Transition to the `ERROR` final state.
-        if "error" in submit_info:
-            raise IBMBackendError(
-                "Error submitting job: {}".format(str(submit_info["error"]))
-            )
-
-        # Submission success.
-        try:
-            job = IBMCircuitJob(
-                backend=self, api_client=self._api_client, qobj=qobj, **submit_info
-            )
-            logger.debug("Job %s was successfully submitted.", job.job_id())
-        except TypeError as err:
-            logger.debug("Invalid job data received: %s", submit_info)
-            raise IBMBackendApiProtocolError(
-                "Unexpected return value received from the server "
-                "when submitting job: {}".format(str(err))
-            ) from err
-        Publisher().publish("ibm.job.start", job)
-        return job
 
     def properties(
         self, refresh: bool = False, datetime: Optional[python_datetime] = None

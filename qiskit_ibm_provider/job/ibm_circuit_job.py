@@ -121,7 +121,6 @@ class IBMCircuitJob(IBMJob):
         creation_date: str,
         status: str,
         runtime_client: RuntimeClient = None,  # TODO: make mandatory after completely switching
-        result_decoder: Any = None,
         kind: Optional[str] = None,
         name: Optional[str] = None,
         time_per_step: Optional[dict] = None,
@@ -142,7 +141,6 @@ class IBMCircuitJob(IBMJob):
             creation_date: Job creation date.
             status: Job status returned by the server.
             runtime_client: Object for connecting to the runtime server
-            result_decoder: Decoder for the returned results string
             kind: Job type.
             name: Job name.
             time_per_step: Time spent for each processing step.
@@ -158,7 +156,6 @@ class IBMCircuitJob(IBMJob):
             backend=backend, api_client=api_client, job_id=job_id, name=name, tags=tags
         )
         self._runtime_client = runtime_client
-        self._result_decoder = result_decoder or RuntimeDecoder
         self._creation_date = dateutil.parser.isoparse(creation_date)
         self._api_status = status
         self._kind = ApiJobKind(kind) if kind else None
@@ -692,7 +689,7 @@ class IBMCircuitJob(IBMJob):
         # TODO: check whether client version can be extracted from runtime data
         # raw_data["client_version"] = self.client_version
         try:
-            data_dict = decode_result(raw_data, self._result_decoder)
+            data_dict = decode_result(raw_data, RuntimeDecoder)
             self._result = Result.from_dict(data_dict)
         except (KeyError, TypeError) as err:
             if not self._kind:

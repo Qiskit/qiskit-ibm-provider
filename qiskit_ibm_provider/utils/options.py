@@ -47,7 +47,6 @@ class QASM2Options:
         str, QuantumCircuit, Schedule, List[Union[QuantumCircuit, Schedule]]
     ] = None
     job_tags: str = None
-    max_circuits_per_job: int = None
     header: Dict = None
     shots: int = None
     memory: bool = None
@@ -66,6 +65,5 @@ class QASM2Options:
     init_qubits: bool = None
     parameter_binds: List[Dict[Parameter, float]] = None
     use_measure_esp: bool = None
-    live_data_enabled: bool = None
     noise_model: Any = None
     seed_simulator: Any = None
