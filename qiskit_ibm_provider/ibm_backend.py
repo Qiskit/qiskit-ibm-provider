@@ -461,7 +461,6 @@ class IBMBackend(Backend):
 
         run_config_dict = self._get_run_config(
             program_id=program_id,
-            circuits=circuits,
             header=header,
             shots=shots,
             memory=memory,
@@ -480,6 +479,8 @@ class IBMBackend(Backend):
             parameter_binds=parameter_binds,
             **run_config,
         )
+
+        run_config_dict["circuits"] = circuits
 
         return self._runtime_run(
             program_id=program_id,
@@ -553,11 +554,7 @@ class IBMBackend(Backend):
         for key, val in kwargs.items():
             if val is not None:
                 run_config_dict[key] = val
-                if (
-                    key not in original_dict
-                    and not self.configuration().simulator
-                    and not key == "circuits"
-                ):
+                if key not in original_dict and not self.configuration().simulator:
                     warnings.warn(  # type: ignore[unreachable]
                         f"{key} is not a recognized runtime option and may be ignored by the backend.",
                         stacklevel=4,

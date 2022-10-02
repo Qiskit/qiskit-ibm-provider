@@ -51,7 +51,6 @@ class TestBasicServerPaths(IBMTestCase):
                 retrieved_jobs = self.dependencies[provider].backend.jobs(
                     backend_name=backend_name,
                     start_datetime=self.last_week,
-                    ignore_composite_jobs=True,
                 )
                 self.assertGreaterEqual(len(retrieved_jobs), 1)
                 retrieved_job_ids = {job.job_id() for job in retrieved_jobs}

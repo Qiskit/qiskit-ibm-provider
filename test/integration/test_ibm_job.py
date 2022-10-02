@@ -138,7 +138,6 @@ class TestIBMJob(IBMTestCase):
             limit=5,
             skip=0,
             start_datetime=self.last_month,
-            ignore_composite_jobs=True,
         )
         self.assertLessEqual(len(job_list), 5)
         for job in job_list:
@@ -193,7 +192,6 @@ class TestIBMJob(IBMTestCase):
             skip=5,
             status="completed",
             start_datetime=self.last_month,
-            ignore_composite_jobs=True,
         )
         self.assertTrue(backend_jobs)
 
@@ -243,7 +241,6 @@ class TestIBMJob(IBMTestCase):
             backend_name=self.sim_backend.name,
             limit=2,
             start_datetime=past_month,
-            ignore_composite_jobs=True,
         )
         self.assertTrue(job_list)
         for job in job_list:
@@ -265,7 +262,6 @@ class TestIBMJob(IBMTestCase):
             backend_name=self.sim_backend.name,
             limit=2,
             end_datetime=past_month,
-            ignore_composite_jobs=True,
         )
         self.assertTrue(job_list)
         for job in job_list:
@@ -316,7 +312,6 @@ class TestIBMJob(IBMTestCase):
             status="completed",
             descending=True,
             start_datetime=self.last_month,
-            ignore_composite_jobs=True,
         )
         self.assertIn(job.job_id(), [rjob.job_id() for rjob in newest_jobs])
 
@@ -325,7 +320,6 @@ class TestIBMJob(IBMTestCase):
             status="completed",
             descending=False,
             start_datetime=self.last_month,
-            ignore_composite_jobs=True,
         )
         self.assertNotIn(job.job_id(), [rjob.job_id() for rjob in oldest_jobs])
 
@@ -355,7 +349,6 @@ class TestIBMJob(IBMTestCase):
             recent_jobs = self.provider.backend.jobs(
                 limit=None,
                 start_datetime=fifteen_minutes_ago,
-                ignore_composite_jobs=True,
                 backend_name=new_job.backend().name,
             )
             recent_job_ids = [job.job_id() for job in recent_jobs]

@@ -353,9 +353,7 @@ class IBMCircuitJob(IBMJob):
             # response state possibly has two values: status and reason
             # reason is not used in the current interface
             self._api_status = api_response["status"]
-            self._status, self._queue_info = self._get_status_position(
-                self._api_status, None
-            )
+            self._status = api_status_to_job_status(self._api_status)
 
         # Get all job attributes if the job is done.
         if self._status in JOB_FINAL_STATES:
@@ -370,13 +368,15 @@ class IBMCircuitJob(IBMJob):
             An error report if the job failed or ``None`` otherwise.
         """
         # pylint: disable=attribute-defined-outside-init
-        if self._status == JobStatus.DONE:
+        if self._status in [JobStatus.DONE, JobStatus.CANCELLED]:
             return None
         if self._job_error_msg is not None:
             return self._job_error_msg
 
         # First try getting error message from the runtime job data
         response = self._runtime_client.job_get(job_id=self.job_id())
+        if self.status() != JobStatus.ERROR:
+            return None
         reason = response["state"].get("reason")
         # If there is a meaningful reason, return it
         if reason is not None and reason != "Error":
