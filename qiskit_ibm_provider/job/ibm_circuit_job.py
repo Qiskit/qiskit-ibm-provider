@@ -118,8 +118,8 @@ class IBMCircuitJob(IBMJob):
         backend: "ibm_backend.IBMBackend",
         api_client: AccountClient,
         job_id: str,
-        creation_date: str,
-        status: str,
+        creation_date: Optional[str] = None,
+        status: Optional[str] = None,
         runtime_client: RuntimeClient = None,  # TODO: make mandatory after completely switching
         kind: Optional[str] = None,
         name: Optional[str] = None,
@@ -154,13 +154,18 @@ class IBMCircuitJob(IBMJob):
             backend=backend, api_client=api_client, job_id=job_id, name=name, tags=tags
         )
         self._runtime_client = runtime_client
-        self._creation_date = dateutil.parser.isoparse(creation_date)
+        self._creation_date = None
+        if creation_date is not None:
+            self._creation_date = dateutil.parser.isoparse(creation_date)
         self._api_status = status
         self._kind = ApiJobKind(kind) if kind else None
         self._time_per_step = time_per_step
         self._error = error
         self._run_mode = run_mode
-        self._status, self._queue_info = self._get_status_position(status)
+        self._status = None
+        self._queue_info = None
+        if status is not None:
+            self._status, self._queue_info = self._get_status_position(status)
         self._client_version = self._extract_client_version(client_info)
         self._set_result(result)
 
@@ -345,7 +350,7 @@ class IBMCircuitJob(IBMJob):
             IBMJobApiError: If an unexpected error occurred when communicating
                 with the server.
         """
-        if self._status in JOB_FINAL_STATES:
+        if self._status is not None and self._status in JOB_FINAL_STATES:
             return self._status
 
         with api_to_job_error():
@@ -451,6 +456,8 @@ class IBMCircuitJob(IBMJob):
         Returns:
             The job creation date as a datetime object, in local time.
         """
+        if self._creation_date is None:
+            self.refresh()
         creation_date_local_dt = utc_to_local(self._creation_date)
         return creation_date_local_dt
 

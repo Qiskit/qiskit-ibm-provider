@@ -524,14 +524,11 @@ class IBMBackend(Backend):
             raise IBMBackendApiError("Error submitting job: {}".format(str(ex))) from ex
         try:
             job_id = response["id"]
-            job_data = self.provider._runtime_client.job_get(job_id)
             job = IBMCircuitJob(
                 backend=self,
                 api_client=self._api_client,
                 runtime_client=self.provider._runtime_client,
                 job_id=job_id,
-                creation_date=job_data["created"],
-                status=job_data["state"]["status"],
             )
             logger.debug("Job %s was successfully submitted.", job.job_id())
         except TypeError as err:
