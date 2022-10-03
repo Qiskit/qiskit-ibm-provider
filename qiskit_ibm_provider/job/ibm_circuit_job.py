@@ -165,7 +165,7 @@ class IBMCircuitJob(IBMJob):
         self._status = None
         self._queue_info = None
         if status is not None:
-            self._status, self._queue_info = self._get_status_position(status)
+            self._status = api_status_to_job_status(status)
         self._client_version = self._extract_client_version(client_info)
         self._set_result(result)
 
@@ -415,7 +415,7 @@ class IBMCircuitJob(IBMJob):
         """
         if refresh:
             # Get latest position
-            self.status()
+            self.queue_info()
 
         if self._queue_info:
             return self._queue_info.position
@@ -439,7 +439,12 @@ class IBMCircuitJob(IBMJob):
             applicable.
         """
         # Get latest queue information.
-        self.status()
+        api_metadata = self._runtime_client.job_metadata(self.job_id())
+        self._queue_info = QueueInfo(position_in_queue=api_metadata.get('position_in_queue'),
+                                     status = self.status(),
+                                     estimated_start_time = api_metadata.get('estimated_start_time'),
+                                     estimated_completion_time=api_metadata.get('estimated_completion_time')
+        )
 
         # Return queue information only if it has any useful information.
         if self._queue_info and any(
@@ -535,9 +540,7 @@ class IBMCircuitJob(IBMJob):
             ) from err
         self._time_per_step = api_metadata.get("timestamps", None)
         self._tags = api_response.pop("tags", [])
-        self._status, self._queue_info = self._get_status_position(
-            self._api_status, api_metadata
-        )
+        self._status = self._status = api_status_to_job_status(self._api_status),
         self._client_version = self._extract_client_version(
             api_metadata.get("qiskit_version", None)
         )
@@ -746,31 +749,6 @@ class IBMCircuitJob(IBMJob):
                 "Failed to get error message for job {}. Invalid error "
                 "data received: {}".format(self.job_id(), error)
             ) from ex
-
-    def _get_status_position(
-        self, api_status: str, api_metadata: Optional[Dict] = None
-    ) -> Tuple[JobStatus, Optional[QueueInfo]]:
-        """Return the corresponding job status for the input server job status.
-
-        Args:
-            api_status: Server job status
-            api_metadata: Job metadata information from the server response.
-
-        Returns:
-            A tuple of job status and queue information (``None`` if not available).
-
-        Raises:
-             IBMJobApiError: if unexpected return value received from the server.
-        """
-        queue_info = None
-        status = api_status_to_job_status(api_status)
-        if api_status == ApiJobStatus.QUEUED.value and api_metadata:
-            queue_info = QueueInfo(job_id=self.job_id(), **api_metadata)
-
-        if status is not JobStatus.QUEUED:
-            queue_info = None
-
-        return status, queue_info
 
     def _extract_client_version(self, data: str) -> Dict:
         """Extract client version from API.
