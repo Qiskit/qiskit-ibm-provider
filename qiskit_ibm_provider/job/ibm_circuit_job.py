@@ -18,7 +18,7 @@ import queue
 import json
 from concurrent import futures
 from datetime import datetime
-from typing import Dict, Optional, Tuple, Any, List, Union
+from typing import Dict, Optional, Any, List, Union
 import re
 
 import dateutil.parser
@@ -163,7 +163,7 @@ class IBMCircuitJob(IBMJob):
         self._error = error
         self._run_mode = run_mode
         self._status = None
-        self._queue_info = None
+        self._queue_info: QueueInfo = None
         if status is not None:
             self._status = api_status_to_job_status(status)
         self._client_version = self._extract_client_version(client_info)
@@ -414,8 +414,13 @@ class IBMCircuitJob(IBMJob):
             Position in the queue or ``None`` if position is unknown or not applicable.
         """
         if refresh:
-            # Get latest position
-            self.queue_info()
+            api_metadata = self._runtime_client.job_metadata(self.job_id())
+            self._queue_info = QueueInfo(
+                position_in_queue=api_metadata.get("position_in_queue"),
+                status=self._api_status,
+                estimated_start_time=api_metadata.get("estimated_start_time"),
+                estimated_completion_time=api_metadata.get("estimated_completion_time"),
+            )
 
         if self._queue_info:
             return self._queue_info.position
@@ -440,12 +445,12 @@ class IBMCircuitJob(IBMJob):
         """
         # Get latest queue information.
         api_metadata = self._runtime_client.job_metadata(self.job_id())
-        self._queue_info = QueueInfo(position_in_queue=api_metadata.get('position_in_queue'),
-                                     status = self.status(),
-                                     estimated_start_time = api_metadata.get('estimated_start_time'),
-                                     estimated_completion_time=api_metadata.get('estimated_completion_time')
+        self._queue_info = QueueInfo(
+            position_in_queue=api_metadata.get("position_in_queue"),
+            status=self._api_status,
+            estimated_start_time=api_metadata.get("estimated_start_time"),
+            estimated_completion_time=api_metadata.get("estimated_completion_time"),
         )
-
         # Return queue information only if it has any useful information.
         if self._queue_info and any(
             value is not None
@@ -540,7 +545,7 @@ class IBMCircuitJob(IBMJob):
             ) from err
         self._time_per_step = api_metadata.get("timestamps", None)
         self._tags = api_response.pop("tags", [])
-        self._status = self._status = api_status_to_job_status(self._api_status),
+        self._status = api_status_to_job_status(self._api_status)
         self._client_version = self._extract_client_version(
             api_metadata.get("qiskit_version", None)
         )
