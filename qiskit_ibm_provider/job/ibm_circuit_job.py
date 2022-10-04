@@ -547,7 +547,7 @@ class IBMCircuitJob(IBMJob):
         self._time_per_step = api_metadata.get("timestamps", None)
         self._tags = api_response.pop("tags", [])
         self._status = api_status_to_job_status(self._api_status)
-        self._params = api_response.get("params", None)
+        self._params = api_response.get("params", {})
         self._client_version = self._extract_client_version(
             api_metadata.get("qiskit_version", None)
         )
@@ -559,7 +559,7 @@ class IBMCircuitJob(IBMJob):
             self._data[key + "_"] = value
         self._refreshed = True
 
-    def backend_options(self) -> Dict[str, Any]:
+    def backend_options(self) -> Dict:
         """Return the backend configuration options used for this job.
 
         Options that are not applicable to the job execution are not returned.
@@ -571,9 +571,7 @@ class IBMCircuitJob(IBMJob):
             Backend options used for this job. An empty dictionary
             is returned if the options cannot be retrieved.
         """
-        if self._params:
-            return self._params
-        return {}
+        return self._params or {}
 
     def header(self) -> Dict:
         """Return the user header specified for this job.
@@ -582,9 +580,7 @@ class IBMCircuitJob(IBMJob):
             User header specified for this job. An empty dictionary
             is returned if the header cannot be retrieved.
         """
-        if self._params:
-            return self._params.get("header", {})
-        return {}
+        return self._params.get("header", {})
 
     def circuits(self) -> List[Union[QuantumCircuit, Schedule]]:
         """Return the circuits or pulse schedules for this job.
@@ -594,7 +590,7 @@ class IBMCircuitJob(IBMJob):
             is returned if the circuits cannot be retrieved (for example, if
             the job uses an old format that is no longer supported).
         """
-        if self._params:
+        if self._params.get("circuits"):
             return [
                 json.loads(json.dumps(self._params["circuits"]), cls=RuntimeDecoder)
             ]

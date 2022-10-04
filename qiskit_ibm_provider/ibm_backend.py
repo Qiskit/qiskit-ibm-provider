@@ -343,7 +343,7 @@ class IBMBackend(Backend):
     def run(
         self,
         circuits: Union[
-            str, QuantumCircuit, Schedule, List[Union[QuantumCircuit, Schedule]]
+            QuantumCircuit, Schedule, List[Union[QuantumCircuit, Schedule]]
         ],
         dynamic: bool = False,
         job_tags: Optional[List[str]] = None,
@@ -377,8 +377,7 @@ class IBMBackend(Backend):
         Args:
             circuits: An individual or a
                 list of :class:`~qiskit.circuits.QuantumCircuit` or
-                :class:`~qiskit.pulse.Schedule` or QASM3 string
-                object to run on the backend.
+                :class:`~qiskit.pulse.Schedule` object to run on the backend.
             dynamic: Whether the circuit is dynamic (uses in-circuit conditionals)
             job_tags: Tags to be assigned to the job. The tags can subsequently be used
                 as a filter in the :meth:`jobs()` function call.
@@ -450,7 +449,7 @@ class IBMBackend(Backend):
             warnings.warn(f"The backend {self.name} is currently paused.")
 
         program_id = "circuit-runner"
-        if dynamic or self._is_qasm3_string(circuits):
+        if dynamic:
             program_id = "qasm3-runner"
 
         if isinstance(shots, float):
@@ -488,19 +487,6 @@ class IBMBackend(Backend):
             options=options,
             job_tags=job_tags,
         )
-
-    def _is_qasm3_string(
-        self,
-        circuit: Union[
-            str, QuantumCircuit, Schedule, List[Union[QuantumCircuit, Schedule]]
-        ],
-    ) -> bool:
-        """Checks if circuit is a a qasm3 string."""
-        if not isinstance(circuit, str):
-            return False
-        if re.search("OPENQASM 3", circuit) is None:
-            return False
-        return True
 
     def _runtime_run(
         self,

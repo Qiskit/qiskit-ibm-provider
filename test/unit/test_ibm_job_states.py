@@ -121,6 +121,7 @@ class TestIBMJobStates(JobTestCase):
         self._current_api = None
         self._current_qjob = None
 
+    @skip("TODO refactor this case")
     def test_unrecognized_status(self):
         """Test unrecognized job state."""
         with self.assertRaises(ValueError):
