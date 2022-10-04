@@ -15,7 +15,6 @@
 import copy
 import logging
 import warnings
-import re
 from dataclasses import asdict
 from datetime import datetime as python_datetime
 from typing import Iterable, Dict, List, Union, Optional, Any
