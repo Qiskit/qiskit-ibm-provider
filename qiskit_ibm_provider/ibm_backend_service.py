@@ -39,6 +39,7 @@ from .utils.backend import convert_reservation_data
 from .utils.converters import local_to_utc
 from .utils.utils import to_python_identifier, validate_job_tags, filter_data
 from .utils.hgp import to_instance_format
+from .utils.utils import api_status_to_job_status
 
 logger = logging.getLogger(__name__)
 
@@ -171,7 +172,9 @@ class IBMBackendService:
         limit: Optional[int] = 10,
         skip: int = 0,
         backend_name: Optional[str] = None,
-        status: Optional[Literal["pending", "completed"]] = None,
+        status: Optional[
+            Union[Literal["pending", "completed"], List[Union[JobStatus, str]]]
+        ] = None,
         start_datetime: Optional[datetime] = None,
         end_datetime: Optional[datetime] = None,
         job_tags: Optional[List[str]] = None,
@@ -211,7 +214,17 @@ class IBMBackendService:
                 is not valid.
         """
         # Build the filter for the query.
+
         api_filter = {}  # type: Dict[str, Any]
+        if isinstance(status, list):
+            if status in (["INITIALIZING"], ["VALIDATING"]):
+                return []
+            elif all(x in ["DONE", "CANCELLED", "ERROR"] for x in status):
+                print("pending false")
+                api_filter["pending"] = False
+            elif all(x in ["QUEUED", "RUNNING"] for x in status):
+                print("pending true")
+                api_filter["pending"] = True
         if backend_name:
             api_filter["backend"] = backend_name
         if status == "pending":
@@ -233,14 +246,18 @@ class IBMBackendService:
         )
         job_list = []
         for job_info in job_responses:
-            job = self._restore_circuit_job(job_info, raise_error=False)
-            if job is None:
-                logger.warning(
-                    'Discarding job "%s" because it contains invalid data.',
-                    job_info.get("job_id", ""),
-                )
-                continue
-            job_list.append(job)
+            job_status = api_status_to_job_status(job_info["state"]["status"])
+            if job_status.name in status or not isinstance(
+                status, list
+            ):  # this logic is not perfect
+                job = self._restore_circuit_job(job_info, raise_error=False)
+                if job is None:
+                    logger.warning(
+                        'Discarding job "%s" because it contains invalid data.',
+                        job_info.get("job_id", ""),
+                    )
+                    continue
+                job_list.append(job)
         return job_list
 
     def _get_jobs(

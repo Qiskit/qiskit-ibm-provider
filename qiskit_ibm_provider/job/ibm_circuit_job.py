@@ -163,6 +163,7 @@ class IBMCircuitJob(IBMJob):
         self._error = error
         self._run_mode = run_mode
         self._status = None
+        self._params = None
         self._queue_info: QueueInfo = None
         if status is not None:
             self._status = api_status_to_job_status(status)
@@ -546,6 +547,7 @@ class IBMCircuitJob(IBMJob):
         self._time_per_step = api_metadata.get("timestamps", None)
         self._tags = api_response.pop("tags", [])
         self._status = api_status_to_job_status(self._api_status)
+        self._params = api_response.get("params", None)
         self._client_version = self._extract_client_version(
             api_metadata.get("qiskit_version", None)
         )
@@ -569,8 +571,8 @@ class IBMCircuitJob(IBMJob):
             Backend options used for this job. An empty dictionary
             is returned if the options cannot be retrieved.
         """
-        if self._backend:
-            return self._backend.options  # are these the right options
+        if self._params:
+            return self._params
         return {}
 
     def header(self) -> Dict:
@@ -580,8 +582,8 @@ class IBMCircuitJob(IBMJob):
             User header specified for this job. An empty dictionary
             is returned if the header cannot be retrieved.
         """
-        if self.params_:
-            return self.params_.get("header", {})
+        if self._params:
+            return self._params.get("header", {})
         return {}
 
     def circuits(self) -> List[Union[QuantumCircuit, Schedule]]:
@@ -592,9 +594,9 @@ class IBMCircuitJob(IBMJob):
             is returned if the circuits cannot be retrieved (for example, if
             the job uses an old format that is no longer supported).
         """
-        if self.params_:
+        if self._params:
             return [
-                json.loads(json.dumps(self.params_["circuits"]), cls=RuntimeDecoder)
+                json.loads(json.dumps(self._params["circuits"]), cls=RuntimeDecoder)
             ]
         return []
 
