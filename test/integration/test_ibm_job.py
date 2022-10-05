@@ -182,7 +182,9 @@ class TestIBMJob(IBMTestCase):
 
     def test_retrieve_job_error(self):
         """Test retrieving an invalid job."""
-        self.assertRaises(IBMBackendApiError, self.provider.backend.job, "BAD_JOB_ID")
+        self.assertRaises(
+            IBMBackendApiError, self.provider.backend.retrieve_job, "BAD_JOB_ID"
+        )
 
     def test_retrieve_jobs_status(self):
         """Test retrieving jobs filtered by status."""

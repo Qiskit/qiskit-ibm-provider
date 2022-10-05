@@ -163,7 +163,7 @@ class IBMCircuitJob(IBMJob):
         self._error = error
         self._run_mode = run_mode
         self._status = None
-        self._params = None
+        self._params: Dict[str, Any] = None
         self._queue_info: QueueInfo = None
         if status is not None:
             self._status = api_status_to_job_status(status)
@@ -580,7 +580,9 @@ class IBMCircuitJob(IBMJob):
             User header specified for this job. An empty dictionary
             is returned if the header cannot be retrieved.
         """
-        return self._params.get("header", {})
+        if self._params:
+            return self._params.get("header")
+        return {}
 
     def circuits(self) -> List[Union[QuantumCircuit, Schedule]]:
         """Return the circuits or pulse schedules for this job.
@@ -590,7 +592,7 @@ class IBMCircuitJob(IBMJob):
             is returned if the circuits cannot be retrieved (for example, if
             the job uses an old format that is no longer supported).
         """
-        if self._params.get("circuits"):
+        if self._params:
             return [
                 json.loads(json.dumps(self._params["circuits"]), cls=RuntimeDecoder)
             ]
