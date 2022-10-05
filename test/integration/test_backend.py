@@ -156,7 +156,7 @@ class TestIBMBackend(IBMTestCase):
             qubit_lo_freq=[4.9e9, 5.0e9], meas_lo_freq=[6.5e9, 6.6e9], meas_level=2
         )
         job = backend.run(get_pulse_schedule(backend), meas_level=1, foo="foo")
-        backend_options = provider.backend.job(job.job_id()).backend_options()
+        backend_options = provider.backend.retrieve_job(job.job_id()).backend_options()
         self.assertEqual(backend_options["shots"], 2048)
         # Qobj config freq is in GHz.
         self.assertAlmostEqual(backend_options["qubit_lo_freq"], [4.9e9, 5.0e9])
@@ -173,7 +173,7 @@ class TestIBMBackend(IBMTestCase):
         backend.options.shots = 2048
         backend.set_options(memory=True)
         job = backend.run(ReferenceCircuits.bell(), shots=1024, foo="foo")
-        backend_options = provider.backend.job(job.job_id()).backend_options()
+        backend_options = provider.backend.retrieve_job(job.job_id()).backend_options()
         self.assertEqual(backend_options["shots"], 1024)
         self.assertTrue(backend_options["memory"])
         self.assertEqual(backend_options["foo"], "foo")

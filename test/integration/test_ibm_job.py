@@ -145,7 +145,7 @@ class TestIBMJob(IBMTestCase):
 
     def test_retrieve_job(self):
         """Test retrieving a single job."""
-        retrieved_job = self.provider.backend.job(self.sim_job.job_id())
+        retrieved_job = self.provider.backend.retrieve_job(self.sim_job.job_id())
         self.assertEqual(self.sim_job.job_id(), retrieved_job.job_id())
         self.assertEqual(self.sim_job.circuits(), retrieved_job.circuits())
         self.assertEqual(
@@ -170,10 +170,10 @@ class TestIBMJob(IBMTestCase):
 
         # test a retrieved job's backend is the same as the queried backend
         self.assertEqual(
-            provider.backend.job(job_1.job_id()).backend().name, backend_1.name
+            provider.backend.retrieve_job(job_1.job_id()).backend().name, backend_1.name
         )
         self.assertEqual(
-            provider.backend.job(job_2.job_id()).backend().name, backend_2.name
+            provider.backend.retrieve_job(job_2.job_id()).backend().name, backend_2.name
         )
 
         # Cleanup
@@ -342,7 +342,7 @@ class TestIBMJob(IBMTestCase):
         saved_backends = copy.copy(self.provider.backend._backends)
         try:
             del self.provider.backend._backends[self.sim_backend.name]
-            new_job = self.provider.backend.job(self.sim_job.job_id())
+            new_job = self.provider.backend.retrieve_job(self.sim_job.job_id())
             self.assertTrue(isinstance(new_job.backend(), IBMRetiredBackend))
             self.assertNotEqual(new_job.backend().name, "unknown")
             fifteen_minutes_ago = datetime.now() - timedelta(minutes=15)
@@ -478,7 +478,7 @@ class TestIBMJob(IBMTestCase):
                         self.sim_backend.run(self.bell)
 
                 self.assertTrue(job_id, "Job ID not saved.")
-                job = self.provider.backend.job(job_id[0])
+                job = self.provider.backend.retrieve_job(job_id[0])
                 self.assertEqual(
                     job.status(),
                     JobStatus.CANCELLED,

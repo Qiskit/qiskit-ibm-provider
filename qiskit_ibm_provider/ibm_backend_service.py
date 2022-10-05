@@ -39,7 +39,6 @@ from .utils.backend import convert_reservation_data
 from .utils.converters import local_to_utc
 from .utils.utils import to_python_identifier, validate_job_tags, filter_data
 from .utils.hgp import to_instance_format
-from .utils.utils import api_status_to_job_status
 
 logger = logging.getLogger(__name__)
 
@@ -64,7 +63,7 @@ class IBMBackendService:
 
     It is also possible to retrieve a single job without specifying the backend name::
 
-        job = provider.backend.job(<JOB_ID>)
+        job = provider.backend.retrieve_job(<JOB_ID>)
     """
 
     def __init__(
@@ -246,18 +245,17 @@ class IBMBackendService:
         )
         job_list = []
         for job_info in job_responses:
-            job_status = api_status_to_job_status(job_info["state"]["status"])
-            if job_status.name in status or not isinstance(
-                status, list
-            ):  # this logic is not perfect
-                job = self._restore_circuit_job(job_info, raise_error=False)
-                if job is None:
-                    logger.warning(
-                        'Discarding job "%s" because it contains invalid data.',
-                        job_info.get("job_id", ""),
-                    )
-                    continue
-                job_list.append(job)
+            # TODO how do we want to filter by status here
+            # job_status = api_status_to_job_status(job_info["state"]["status"])
+            # if job_status.name in status:
+            job = self._restore_circuit_job(job_info, raise_error=False)
+            if job is None:
+                logger.warning(
+                    'Discarding job "%s" because it contains invalid data.',
+                    job_info.get("job_id", ""),
+                )
+                continue
+            job_list.append(job)
         return job_list
 
     def _get_jobs(
