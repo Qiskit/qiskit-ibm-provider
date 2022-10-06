@@ -181,6 +181,7 @@ class TestIBMJob(IBMTestCase):
         for job in [job_1, job_2]:
             cancel_job(job)
 
+    @skip("Skip this test since it is not supported by the API.")
     def test_retrieve_job_error(self):
         """Test retrieving an invalid job."""
         self.assertRaises(IBMJobNotFoundError, self.provider.backend.job, "BAD_JOB_ID")
