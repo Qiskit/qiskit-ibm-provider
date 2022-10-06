@@ -219,10 +219,8 @@ class IBMBackendService:
             if status in (["INITIALIZING"], ["VALIDATING"]):
                 return []
             elif all(x in ["DONE", "CANCELLED", "ERROR"] for x in status):
-                print("pending false")
                 api_filter["pending"] = False
             elif all(x in ["QUEUED", "RUNNING"] for x in status):
-                print("pending true")
                 api_filter["pending"] = True
         if backend_name:
             api_filter["backend"] = backend_name
@@ -245,9 +243,7 @@ class IBMBackendService:
         )
         job_list = []
         for job_info in job_responses:
-            # TODO how do we want to filter by status here
-            # job_status = api_status_to_job_status(job_info["state"]["status"])
-            # if job_status.name in status:
+            # TODO filter by status
             job = self._restore_circuit_job(job_info, raise_error=False)
             if job is None:
                 logger.warning(

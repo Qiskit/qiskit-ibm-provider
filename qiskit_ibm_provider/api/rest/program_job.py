@@ -16,6 +16,7 @@ from typing import Dict
 
 from .base import RestAdapterBase
 from ..session import RetrySession
+from ...utils.json import RuntimeDecoder
 
 
 class ProgramJob(RestAdapterBase):
@@ -48,7 +49,7 @@ class ProgramJob(RestAdapterBase):
         Returns:
             JSON response.
         """
-        return self.session.get(self.get_url("self")).json()
+        return self.session.get(self.get_url("self")).json(cls=RuntimeDecoder)
 
     def delete(self) -> None:
         """Delete program job."""

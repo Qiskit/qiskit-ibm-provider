@@ -15,7 +15,6 @@
 import logging
 import time
 import queue
-import json
 from concurrent import futures
 from datetime import datetime
 from typing import Dict, Optional, Any, List, Union
@@ -381,7 +380,7 @@ class IBMCircuitJob(IBMJob):
 
         # First try getting error message from the runtime job data
         response = self._runtime_client.job_get(job_id=self.job_id())
-        if self.status() != JobStatus.ERROR:
+        if api_status_to_job_status(response["state"]["status"]) != JobStatus.ERROR:
             return None
         reason = response["state"].get("reason")
         # If there is a meaningful reason, return it
@@ -571,7 +570,13 @@ class IBMCircuitJob(IBMJob):
             Backend options used for this job. An empty dictionary
             is returned if the options cannot be retrieved.
         """
-        return self._params or {}
+        if self._params:
+            return {
+                k: v
+                for (k, v) in self._params.items()
+                if k not in ["header", "circuits"]
+            }
+        return {}
 
     def header(self) -> Dict:
         """Return the user header specified for this job.
@@ -593,9 +598,7 @@ class IBMCircuitJob(IBMJob):
             the job uses an old format that is no longer supported).
         """
         if self._params:
-            return [
-                json.loads(json.dumps(self._params["circuits"]), cls=RuntimeDecoder)
-            ]
+            return [self._params["circuits"]]
         return []
 
     def wait_for_final_state(  # pylint: disable=arguments-differ
@@ -766,13 +769,13 @@ class IBMCircuitJob(IBMJob):
 
         Additional info:
             The runtime client returns the version as a string, e.g.
-            "0.1.0,0.21.2,0.10.4"
-            Where the numbers represent versions of qiskit-ibm-provider, qiskit-terra and qiskit-aer
+            "0.1.0,0.21.2"
+            Where the numbers represent versions of qiskit-ibm-provider and qiskit-terra
         """
         if data is not None:
             if "," not in data:  # sometimes only the metapackage version is returned
                 return {"qiskit": data}
-            client_components = ["qiskit-ibm-provider", "qiskit-terra", "qiskit-aer"]
+            client_components = ["qiskit-ibm-provider", "qiskit-terra"]
             return dict(zip(client_components, data.split(",")))
         return {}
 
