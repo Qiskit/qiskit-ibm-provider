@@ -76,19 +76,19 @@ class TestAccountClient(IBMTestCase):
     def test_exception_message(self):
         """Check exception has proper message."""
         client = self._get_client()
-
         with self.assertRaises(RequestsApiError) as exception_context:
             client.job_status("foo")
 
         raised_exception = exception_context.exception
-        original_error = raised_exception.__cause__.response.json()["error"]
+        original_error = raised_exception.__cause__.response
+
         self.assertIn(
-            original_error["message"],
+            original_error.reason,
             raised_exception.message,
             "Original error message not in raised exception",
         )
         self.assertIn(
-            str(original_error["code"]),
+            str(original_error.status_code),
             raised_exception.message,
             "Original error code not in raised exception",
         )
@@ -255,7 +255,12 @@ class TestAuthClient(IBMTestCase):
 
     def test_api_version(self):
         """Check the version of the QX API."""
-        client = AuthClient(self.dependencies.provider._client_params)
+        iqx_url = self.dependencies.provider._account.url
+        iqx_token = self.dependencies.provider._account.token
+        client_params = self.dependencies.provider._client_params
+        client_params.url = iqx_url
+        client_params.token = iqx_token
+        client = AuthClient(client_params)
         version = client.api_version()
         self.assertIsNotNone(version)
 

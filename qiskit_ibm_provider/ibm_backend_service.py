@@ -33,12 +33,12 @@ from .exceptions import (
 )
 from .hub_group_project import HubGroupProject
 from .ibm_backend import IBMBackend, IBMRetiredBackend
-from .job import IBMJob, IBMCompositeJob, IBMCircuitJob
-from .job.constants import IBM_COMPOSITE_JOB_ID_PREFIX
+from .job import IBMJob, IBMCircuitJob
 from .job.exceptions import IBMJobNotFoundError
 from .utils.backend import convert_reservation_data
 from .utils.converters import local_to_utc
 from .utils.utils import to_python_identifier, validate_job_tags, filter_data
+from .utils.hgp import to_instance_format
 
 logger = logging.getLogger(__name__)
 
@@ -63,7 +63,7 @@ class IBMBackendService:
 
     It is also possible to retrieve a single job without specifying the backend name::
 
-        job = provider.backend.job(<JOB_ID>)
+        job = provider.backend.retrieve_job(<JOB_ID>)
     """
 
     def __init__(
@@ -171,13 +171,13 @@ class IBMBackendService:
         limit: Optional[int] = 10,
         skip: int = 0,
         backend_name: Optional[str] = None,
-        status: Optional[Literal["pending", "completed"]] = None,
-        job_name: Optional[str] = None,
+        status: Optional[
+            Union[Literal["pending", "completed"], List[Union[JobStatus, str]]]
+        ] = None,
         start_datetime: Optional[datetime] = None,
         end_datetime: Optional[datetime] = None,
         job_tags: Optional[List[str]] = None,
         descending: bool = True,
-        ignore_composite_jobs: bool = False,
         instance: Optional[str] = None,
     ) -> List[IBMJob]:
         """Return a list of jobs, subject to optional filtering.
@@ -193,10 +193,6 @@ class IBMBackendService:
             skip: Starting index for the job retrieval.
             backend_name: Name of the backend to retrieve jobs from.
             status: Filter jobs with either "pending" or "completed" status.
-            job_name: Filter by job name. The `job_name` is matched partially
-                and `regular expressions
-                <https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions>`_
-                can be used.
             start_datetime: Filter by the given start date, in local time. This is used to
                 find jobs whose creation dates are after (greater than or equal to) this
                 local date/time.
@@ -206,9 +202,6 @@ class IBMBackendService:
             job_tags: Filter by tags assigned to jobs. Matched jobs are associated with all tags.
             descending: If ``True``, return the jobs in descending order of the job
                 creation date (i.e. newest first) until the limit is reached.
-            ignore_composite_jobs: If ``True``, sub-jobs of a single
-                :class:`~qiskit_ibm_provider.job.IBMCompositeJob` will be
-                returned as individual jobs instead of merged together.
             instance: The provider in the hub/group/project format.
 
         Returns:
@@ -220,20 +213,28 @@ class IBMBackendService:
                 is not valid.
         """
         # Build the filter for the query.
+
         api_filter = {}  # type: Dict[str, Any]
+        if isinstance(status, list):
+            if status in (["INITIALIZING"], ["VALIDATING"]):
+                return []
+            elif all(x in ["DONE", "CANCELLED", "ERROR"] for x in status):
+                api_filter["pending"] = False
+            elif all(x in ["QUEUED", "RUNNING"] for x in status):
+                api_filter["pending"] = True
         if backend_name:
             api_filter["backend"] = backend_name
-        if status:
-            api_filter["status"] = status
-        if job_name:
-            api_filter["search"] = job_name
+        if status == "pending":
+            api_filter["pending"] = True
+        if status == "completed":
+            api_filter["pending"] = False
         if start_datetime:
-            api_filter["createdAfter"] = local_to_utc(start_datetime).isoformat()
+            api_filter["created_after"] = local_to_utc(start_datetime).isoformat()
         if end_datetime:
-            api_filter["createdBefore"] = local_to_utc(end_datetime).isoformat()
+            api_filter["created_before"] = local_to_utc(end_datetime).isoformat()
         if job_tags:
             validate_job_tags(job_tags, IBMBackendValueError)
-            api_filter["tags"] = job_tags
+            api_filter["job_tags"] = job_tags
         if instance:
             api_filter["provider"] = instance
         # Retrieve all requested jobs.
@@ -241,27 +242,16 @@ class IBMBackendService:
             api_filter=api_filter, limit=limit, skip=skip, descending=descending
         )
         job_list = []
-        composite_ids = set()
         for job_info in job_responses:
-            # Check if it's a composite job.
-            job_tags = job_info.get("tags", [])
-            composite_job_id = [
-                tag for tag in job_tags if tag.startswith(IBM_COMPOSITE_JOB_ID_PREFIX)
-            ]
-            if composite_job_id and not ignore_composite_jobs:
-                if composite_job_id[0] not in composite_ids:
-                    composite_ids.add(composite_job_id[0])
-                    logger.debug("Adding composite job %s", composite_job_id[0])
-                    job_list.append(self.job(composite_job_id[0]))
-            else:
-                job = self._restore_circuit_job(job_info, raise_error=False)
-                if job is None:
-                    logger.warning(
-                        'Discarding job "%s" because it contains invalid data.',
-                        job_info.get("job_id", ""),
-                    )
-                    continue
-                job_list.append(job)
+            # TODO filter by status
+            job = self._restore_circuit_job(job_info, raise_error=False)
+            if job is None:
+                logger.warning(
+                    'Discarding job "%s" because it contains invalid data.',
+                    job_info.get("job_id", ""),
+                )
+                continue
+            job_list.append(job)
         return job_list
 
     def _get_jobs(
@@ -288,12 +278,9 @@ class IBMBackendService:
         job_responses: List[Dict[str, Any]] = []
         current_page_limit = limit if (limit is not None and limit <= 50) else 50
         while True:
-            job_page = self._default_hgp._api_client.list_jobs(
-                limit=current_page_limit,
-                skip=skip,
-                descending=descending,
-                extra_filter=api_filter,
-            )
+            job_page = self._provider._runtime_client.jobs_get(
+                limit=current_page_limit, skip=skip, descending=descending, **api_filter
+            )["jobs"]
             if logger.getEffectiveLevel() is logging.DEBUG:
                 filtered_data = [filter_data(job) for job in job_page]
                 logger.debug("jobs() response data is %s", filtered_data)
@@ -328,11 +315,20 @@ class IBMBackendService:
             IBMBackendApiProtocolError: If unexpected return value received
                  from the server.
         """
-        job_id = job_info.get("job_id", "")
+        job_params = {
+            "job_id": job_info["id"],
+            "creation_date": job_info["created"],
+            "status": job_info["status"],
+            "runtime_client": self._provider._runtime_client,
+            "tags": job_info.get("tags"),
+        }
         # Recreate the backend used for this job.
-        backend_name = job_info.get("_backend_info", {}).get("name", "unknown")
+        backend_name = job_info.get("backend")
+        instance = to_instance_format(
+            job_info["hub"], job_info["group"], job_info["project"]
+        )
         try:
-            backend = self._provider.get_backend(backend_name)
+            backend = self._provider.get_backend(backend_name, instance)
         except QiskitBackendNotFoundError:
             backend = IBMRetiredBackend.from_name(
                 backend_name=backend_name,
@@ -341,14 +337,14 @@ class IBMBackendService:
             )
         try:
             job = IBMCircuitJob(
-                backend=backend, api_client=self._default_hgp._api_client, **job_info
+                backend=backend, api_client=self._default_hgp._api_client, **job_params
             )
             return job
         except TypeError as ex:
             if raise_error:
                 raise IBMBackendApiProtocolError(
                     f"Unexpected return value received from the server "
-                    f"when retrieving job {job_id}: {ex}"
+                    f"when retrieving job {job_info['id']}: {ex}"
                 ) from ex
         return None
 
@@ -358,7 +354,6 @@ class IBMBackendService:
         skip: int = 0,
         backend_name: Optional[str] = None,
         status: Optional[Union[JobStatus, str, List[Union[JobStatus, str]]]] = None,
-        job_name: Optional[str] = None,
         start_datetime: Optional[datetime] = None,
         end_datetime: Optional[datetime] = None,
         job_tags: Optional[List[str]] = None,
@@ -377,10 +372,6 @@ class IBMBackendService:
             backend_name: Name of the backend to retrieve jobs from.
             status: Only get jobs with this status or one of the statuses. For example, you can specify
                 `status=JobStatus.RUNNING` or `status="RUNNING"` or `status=["RUNNING", "ERROR"]`
-            job_name: Filter by job name. The `job_name` is matched partially
-                and `regular expressions
-                <https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions>`_
-                can be used.
             start_datetime: Filter by the given start date, in local time. This is used to
                 find jobs whose creation dates are after (greater than or equal to) this
                 local date/time.
@@ -415,9 +406,6 @@ class IBMBackendService:
         if status:
             status_filter = self._get_status_db_filter(status)
             api_filter.update(status_filter)
-
-        if job_name:
-            api_filter["name"] = {"regexp": job_name}
 
         if start_datetime or end_datetime:
             api_filter["creationDate"] = self._update_creation_date_filter(
@@ -666,7 +654,7 @@ class IBMBackendService:
             )
         return _status_filter
 
-    def job(self, job_id: str) -> IBMJob:
+    def retrieve_job(self, job_id: str) -> IBMJob:
         """Return a single job.
 
         Args:
@@ -682,22 +670,8 @@ class IBMBackendService:
                  from the server.
             IBMJobNotFoundError: If job cannot be found.
         """
-        if job_id.startswith(IBM_COMPOSITE_JOB_ID_PREFIX):
-            job_responses = self._get_jobs(
-                api_filter={"experimentTag": job_id}, limit=None
-            )
-            sub_jobs = []
-            for job_info in job_responses:
-                sub_job = self._restore_circuit_job(job_info, raise_error=True)
-                if sub_job:
-                    sub_jobs.append(sub_job)
-            if not sub_jobs:
-                raise IBMJobNotFoundError(f"Job {job_id} not found.")
-            return IBMCompositeJob.from_jobs(
-                job_id=job_id, jobs=sub_jobs, api_client=self._default_hgp._api_client
-            )
         try:
-            job_info = self._default_hgp._api_client.job_get(job_id)
+            job_info = self._provider._runtime_client.job_get(job_id)
         except ApiError as ex:
             if "Error code: 3250." in str(ex):
                 raise IBMJobNotFoundError(f"Job {job_id} not found.")
