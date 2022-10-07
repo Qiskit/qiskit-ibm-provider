@@ -66,7 +66,6 @@ class IBMJob(Job, ABC):
             # Append suffix to key to avoid conflicts.
             self._data[key + "_"] = value
 
-    @abstractmethod
     def properties(self) -> Optional[BackendProperties]:
         """Return the backend properties for this job.
 
@@ -108,7 +107,6 @@ class IBMJob(Job, ABC):
         """
         pass
 
-    @abstractmethod
     def update_name(self, name: str) -> str:
         """Update the name associated with this job.
 
@@ -183,7 +181,6 @@ class IBMJob(Job, ABC):
         """
         pass
 
-    @abstractmethod
     def scheduling_mode(self) -> Optional[str]:
         """Return the scheduling mode the job is in.
 
@@ -198,7 +195,6 @@ class IBMJob(Job, ABC):
         """Obtain the latest job information from the server."""
         pass
 
-    @abstractmethod
     def circuits(self) -> List[Union[QuantumCircuit, Schedule]]:
         """Return the circuits or pulse schedules for this job.
 
@@ -249,7 +245,6 @@ class IBMJob(Job, ABC):
         except KeyError:
             raise AttributeError("Attribute {} is not defined.".format(name)) from None
 
-    @abstractmethod
     def _get_qobj(self) -> Optional[Union[QasmQobj, PulseQobj]]:
         """Return the Qobj for this job.
 

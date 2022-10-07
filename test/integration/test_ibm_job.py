@@ -31,7 +31,7 @@ from qiskit_ibm_provider.api.rest.job import Job as RestJob
 from qiskit_ibm_provider.apiconstants import ApiJobStatus, API_JOB_FINAL_STATES
 from qiskit_ibm_provider.exceptions import IBMBackendApiError
 from qiskit_ibm_provider.ibm_backend import IBMRetiredBackend
-from qiskit_ibm_provider.job.exceptions import IBMJobTimeoutError, IBMJobNotFoundError
+from qiskit_ibm_provider.job.exceptions import IBMJobTimeoutError
 from qiskit_ibm_provider.utils.utils import api_status_to_job_status
 from ..decorators import (
     IntegrationTestDependencies,
@@ -138,7 +138,6 @@ class TestIBMJob(IBMTestCase):
             limit=5,
             skip=0,
             start_datetime=self.last_month,
-            ignore_composite_jobs=True,
         )
         self.assertLessEqual(len(job_list), 5)
         for job in job_list:
@@ -146,7 +145,7 @@ class TestIBMJob(IBMTestCase):
 
     def test_retrieve_job(self):
         """Test retrieving a single job."""
-        retrieved_job = self.provider.backend.job(self.sim_job.job_id())
+        retrieved_job = self.provider.backend.retrieve_job(self.sim_job.job_id())
         self.assertEqual(self.sim_job.job_id(), retrieved_job.job_id())
         self.assertEqual(self.sim_job.circuits(), retrieved_job.circuits())
         self.assertEqual(
@@ -171,20 +170,21 @@ class TestIBMJob(IBMTestCase):
 
         # test a retrieved job's backend is the same as the queried backend
         self.assertEqual(
-            provider.backend.job(job_1.job_id()).backend().name, backend_1.name
+            provider.backend.retrieve_job(job_1.job_id()).backend().name, backend_1.name
         )
         self.assertEqual(
-            provider.backend.job(job_2.job_id()).backend().name, backend_2.name
+            provider.backend.retrieve_job(job_2.job_id()).backend().name, backend_2.name
         )
 
         # Cleanup
         for job in [job_1, job_2]:
             cancel_job(job)
 
-    @skip("Skip this test since it is not supported by the API.")
     def test_retrieve_job_error(self):
         """Test retrieving an invalid job."""
-        self.assertRaises(IBMJobNotFoundError, self.provider.backend.job, "BAD_JOB_ID")
+        self.assertRaises(
+            IBMBackendApiError, self.provider.backend.retrieve_job, "BAD_JOB_ID"
+        )
 
     def test_retrieve_jobs_status(self):
         """Test retrieving jobs filtered by status."""
@@ -194,7 +194,6 @@ class TestIBMJob(IBMTestCase):
             skip=5,
             status="completed",
             start_datetime=self.last_month,
-            ignore_composite_jobs=True,
         )
         self.assertTrue(backend_jobs)
 
@@ -244,7 +243,6 @@ class TestIBMJob(IBMTestCase):
             backend_name=self.sim_backend.name,
             limit=2,
             start_datetime=past_month,
-            ignore_composite_jobs=True,
         )
         self.assertTrue(job_list)
         for job in job_list:
@@ -266,7 +264,6 @@ class TestIBMJob(IBMTestCase):
             backend_name=self.sim_backend.name,
             limit=2,
             end_datetime=past_month,
-            ignore_composite_jobs=True,
         )
         self.assertTrue(job_list)
         for job in job_list:
@@ -317,7 +314,6 @@ class TestIBMJob(IBMTestCase):
             status="completed",
             descending=True,
             start_datetime=self.last_month,
-            ignore_composite_jobs=True,
         )
         self.assertIn(job.job_id(), [rjob.job_id() for rjob in newest_jobs])
 
@@ -326,7 +322,6 @@ class TestIBMJob(IBMTestCase):
             status="completed",
             descending=False,
             start_datetime=self.last_month,
-            ignore_composite_jobs=True,
         )
         self.assertNotIn(job.job_id(), [rjob.job_id() for rjob in oldest_jobs])
 
@@ -349,14 +344,13 @@ class TestIBMJob(IBMTestCase):
         saved_backends = copy.copy(self.provider.backend._backends)
         try:
             del self.provider.backend._backends[self.sim_backend.name]
-            new_job = self.provider.backend.job(self.sim_job.job_id())
+            new_job = self.provider.backend.retrieve_job(self.sim_job.job_id())
             self.assertTrue(isinstance(new_job.backend(), IBMRetiredBackend))
             self.assertNotEqual(new_job.backend().name, "unknown")
             fifteen_minutes_ago = datetime.now() - timedelta(minutes=15)
             recent_jobs = self.provider.backend.jobs(
                 limit=None,
                 start_datetime=fifteen_minutes_ago,
-                ignore_composite_jobs=True,
                 backend_name=new_job.backend().name,
             )
             recent_job_ids = [job.job_id() for job in recent_jobs]
@@ -382,6 +376,7 @@ class TestIBMJob(IBMTestCase):
         self.assertDictEqual(cached_result, result.to_dict())
         self.assertNotEqual(result.results[0].header.name, "modified_result")
 
+    @skip("TODO update test case")
     def test_wait_for_final_state(self):
         """Test waiting for job to reach final state."""
 
@@ -464,6 +459,7 @@ class TestIBMJob(IBMTestCase):
                 thread.join(0.1)
             cancel_job(job)
 
+    @skip("not supported by api")
     def test_job_submit_partial_fail(self):
         """Test job submit partial fail."""
         job_id = []
@@ -484,23 +480,26 @@ class TestIBMJob(IBMTestCase):
                         self.sim_backend.run(self.bell)
 
                 self.assertTrue(job_id, "Job ID not saved.")
-                job = self.provider.backend.job(job_id[0])
+                job = self.provider.backend.retrieve_job(job_id[0])
                 self.assertEqual(
                     job.status(),
                     JobStatus.CANCELLED,
                     f"Job {job.job_id()} status is {job.status()} and not cancelled!",
                 )
 
+    @skip("not supported by api")
     def test_job_circuits(self):
         """Test job circuits."""
         self.assertEqual(str(self.bell), str(self.sim_job.circuits()[0]))
 
+    @skip("not supported by api")
     def test_job_backend_options(self):
         """Test job backend options."""
         run_config = {"shots": 2048, "memory": True}
         job = self.sim_backend.run(self.bell, **run_config)
         self.assertLessEqual(run_config.items(), job.backend_options().items())
 
+    @skip("not supported by api")
     def test_job_header(self):
         """Test job header."""
         custom_header = {"test": "test_job_header"}

@@ -326,7 +326,6 @@ class IBMCompositeJob(IBMJob):
                     oldest_running = self._provider.backend.jobs(
                         limit=1,
                         descending=False,
-                        ignore_composite_jobs=True,
                         status=list(set(JobStatus) - set(JOB_FINAL_STATES)),
                     )
                     if oldest_running:
