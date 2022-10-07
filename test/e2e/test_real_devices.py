@@ -73,7 +73,9 @@ class TestRealDevices(IBMTestCase):
 
                 # Fetch the circuits.
                 circuit = (
-                    self.dependencies[provider].backend.job(job.job_id()).circuits()
+                    self.dependencies[provider]
+                    .backend.retrieve_job(job.job_id())
+                    .circuits()
                 )
                 self.assertEqual(circuit, job.circuits())
 
@@ -207,7 +209,7 @@ class TestRealDevices(IBMTestCase):
         job = submit_job_one_bad_instr(backend)
         job.wait_for_final_state(wait=300, callback=self.simple_job_callback)
 
-        rjob = self.dependencies.provider.backend.job(job.job_id())
+        rjob = self.dependencies.provider.backend.retrieve_job(job.job_id())
 
         for q_job, partial in [(job, False), (rjob, True)]:
             with self.subTest(partial=partial):

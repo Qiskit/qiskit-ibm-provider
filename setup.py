@@ -27,6 +27,7 @@ REQUIREMENTS = [
     "python-dateutil>=2.8.0",
     "websocket-client<=1.3.3",
     "websockets>=10.0",
+    "typing_extensions>=4.3",
 ]
 
 # Handle version.

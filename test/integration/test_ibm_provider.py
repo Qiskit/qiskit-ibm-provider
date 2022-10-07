@@ -63,7 +63,7 @@ class TestIBMProviderEnableAccount(IBMTestCase):
                 token=self.dependencies.token, url=self.dependencies.url
             )
         self.assertIsInstance(provider, IBMProvider)
-        self.assertEqual(provider._client_params.token, self.dependencies.token)
+        self.assertEqual(provider._account.token, self.dependencies.token)
 
     def test_pass_unreachable_proxy(self):
         """Test using an unreachable proxy while enabling an account."""
@@ -175,7 +175,7 @@ class TestIBMProviderServices(IBMTestCase):
     def test_jobs(self):
         """Test accessing jobs directly from the provider."""
         jobs = self.dependencies.provider.jobs()
-        job = self.dependencies.provider.job(jobs[0].job_id())
+        job = self.dependencies.provider.retrieve_job(jobs[0].job_id())
         self.assertIsInstance(job, IBMJob)
         self.assertTrue(len(jobs) > 0)
 
