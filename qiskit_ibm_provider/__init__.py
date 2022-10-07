@@ -54,7 +54,6 @@ Classes
     :toctree: ../stubs/
 
     IBMProvider
-    BackendJobLimit
     IBMBackend
     IBMBackendService
 
@@ -82,7 +81,6 @@ from qiskit.providers import Backend  # type: ignore[attr-defined]
 from .ibm_provider import IBMProvider
 from .ibm_backend import IBMBackend
 from .job.ibm_job import IBMJob
-from .backendjoblimit import BackendJobLimit
 from .exceptions import *
 from .ibm_backend_service import IBMBackendService
 from .utils.utils import setup_logger

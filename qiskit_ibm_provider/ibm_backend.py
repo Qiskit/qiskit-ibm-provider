@@ -46,7 +46,6 @@ from qiskit.transpiler.target import Target
 
 from qiskit_ibm_provider import ibm_provider  # pylint: disable=unused-import
 from .api.clients import AccountClient
-from .backendjoblimit import BackendJobLimit
 from .backendreservation import BackendReservation
 from .exceptions import (
     IBMBackendError,
@@ -107,12 +106,6 @@ class IBMBackend(Backend):
         status = backend.status()
         is_operational = status.operational
         jobs_in_queue = status.pending_jobs
-
-    It is also possible to see the number of remaining jobs you are able to submit to the
-    backend with the :meth:`job_limit()` method, which returns a
-    :class:`BackendJobLimit<qiskit_ibm_provider.BackendJobLimit>` instance::
-
-        job_limit = backend.job_limit()
 
     Here is list of attributes available on the ``IBMBackend`` class:
         * name: backend name.
@@ -644,78 +637,6 @@ class IBMBackend(Backend):
 
         return self._defaults
 
-    def job_limit(self) -> BackendJobLimit:
-        """Return the job limit for the backend.
-
-        The job limit information includes the current number of active jobs
-        you have on the backend and the maximum number of active jobs you can have
-        on it.
-
-        Note:
-            Job limit information for a backend is provider specific.
-            For example, if you have access to the same backend via
-            different providers, the job limit information might be
-            different for each provider.
-
-        If the method call was successful, you can inspect the job limit for
-        the backend by accessing the ``maximum_jobs`` and ``active_jobs`` attributes
-        of the :class:`BackendJobLimit<BackendJobLimit>` instance returned. For example::
-
-            backend_job_limit = backend.job_limit()
-            maximum_jobs = backend_job_limit.maximum_jobs
-            active_jobs = backend_job_limit.active_jobs
-
-        If ``maximum_jobs`` is equal to ``None``, then there is
-        no limit to the maximum number of active jobs you could
-        have on the backend.
-
-        Returns:
-            The job limit for the backend, with this provider.
-
-        Raises:
-            IBMBackendApiProtocolError: If an unexpected value is received from the server.
-        """
-        api_job_limit = self._api_client.backend_job_limit(self.name)
-
-        try:
-            job_limit = BackendJobLimit(**api_job_limit)
-            if job_limit.maximum_jobs == -1:
-                # Manually set `maximum` to `None` if backend has no job limit.
-                job_limit.maximum_jobs = None
-            return job_limit
-        except TypeError as ex:
-            raise IBMBackendApiProtocolError(
-                "Unexpected return value received from the server when "
-                "querying job limit data for the backend: {}.".format(ex)
-            ) from ex
-
-    def remaining_jobs_count(self) -> Optional[int]:
-        """Return the number of remaining jobs that could be submitted to the backend.
-
-        Note:
-            The number of remaining jobs for a backend is provider
-            specific. For example, if you have access to the same backend
-            via different providers, the number of remaining jobs might
-            be different for each. See :class:`BackendJobLimit<BackendJobLimit>`
-            for the job limit information of a backend.
-
-        If ``None`` is returned, there are no limits to the maximum
-        number of active jobs you could have on the backend.
-
-        Returns:
-            The remaining number of jobs a user could submit to the backend, with
-            this provider, before the maximum limit on active jobs is reached.
-
-        Raises:
-            IBMBackendApiProtocolError: If an unexpected value is received from the server.
-        """
-        job_limit = self.job_limit()
-
-        if job_limit.maximum_jobs is None:
-            return None
-
-        return job_limit.maximum_jobs - job_limit.active_jobs
-
     def active_jobs(self, limit: int = 10) -> List[IBMJob]:
         """Return the unfinished jobs submitted to this backend.
 
@@ -946,10 +867,6 @@ class IBMRetiredBackend(IBMBackend):
     def status(self) -> BackendStatus:
         """Return the backend status."""
         return self._status
-
-    def job_limit(self) -> None:
-        """Return the job limits for the backend."""
-        return None
 
     def remaining_jobs_count(self) -> None:
         """Return the number of remaining jobs that could be submitted to the backend."""
