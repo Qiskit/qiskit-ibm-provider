@@ -42,6 +42,28 @@ class RuntimeClient(BaseClient):
         )
         self._api = Runtime(self._session)
 
+    def backend_properties(self, backend: str) -> Dict[str, Any]:
+        """Return the properties of the backend.
+
+        Args:
+            backend: The name of the backend.
+
+        Returns:
+            Backend properties.
+        """
+        return self._api.backend(backend).properties()
+
+    def backend_pulse_defaults(self, backend: str) -> Dict:
+        """Return the pulse defaults of the backend.
+
+        Args:
+            backend: The name of the backend.
+
+        Returns:
+            Backend pulse defaults.
+        """
+        return self._api.backend(backend).pulse_defaults()
+
     def list_programs(self, limit: int = None, skip: int = None) -> Dict[str, Any]:
         """Return a list of runtime programs.
 

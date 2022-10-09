@@ -252,7 +252,7 @@ class IBMBackend(Backend):
     def _get_properties(self) -> None:
         """Gets backend properties and decodes it"""
         if not self._properties:
-            api_properties = self._api_client.backend_properties(self.name)
+            api_properties = self.provider._runtime_client.backend_properties(self.name)
             if api_properties:
                 backend_properties = properties_from_server_data(api_properties)
                 self._properties = backend_properties
@@ -260,7 +260,9 @@ class IBMBackend(Backend):
     def _get_defaults(self) -> None:
         """Gets defaults if pulse backend and decodes it"""
         if not self._defaults:
-            api_defaults = self._api_client.backend_pulse_defaults(self.name)
+            api_defaults = self.provider._runtime_client.backend_pulse_defaults(
+                self.name
+            )
             if api_defaults:
                 self._defaults = defaults_from_server_data(api_defaults)
 
@@ -629,7 +631,9 @@ class IBMBackend(Backend):
             The backend pulse defaults or ``None`` if the backend does not support pulse.
         """
         if refresh or self._defaults is None:
-            api_defaults = self._api_client.backend_pulse_defaults(self.name)
+            api_defaults = self.provider._runtime_client.backend_pulse_defaults(
+                self.name
+            )
             if api_defaults:
                 self._defaults = defaults_from_server_data(api_defaults)
             else:

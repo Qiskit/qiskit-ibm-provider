@@ -17,6 +17,7 @@ from datetime import datetime
 from typing import Dict, Any, List, Union, Optional
 import json
 
+from .backend import Backend
 from .base import RestAdapterBase
 from .program import Program
 from .program_job import ProgramJob
@@ -35,6 +36,17 @@ class Runtime(RestAdapterBase):
         "jobs": "/jobs",
         "backends": "/backends",
     }
+
+    def backend(self, backend: str) -> Backend:
+        """Return an adapter for the backend.
+
+        Args:
+            backend: Name of the backend.
+
+        Returns:
+            The backend adapter.
+        """
+        return Backend(self.session, backend)
 
     def program(self, program_id: str) -> "Program":
         """Return an adapter for the program.
