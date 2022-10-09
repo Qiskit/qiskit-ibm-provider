@@ -46,7 +46,6 @@ from qiskit.transpiler.target import Target
 
 from qiskit_ibm_provider import ibm_provider  # pylint: disable=unused-import
 from .api.clients import AccountClient
-from .backendreservation import BackendReservation
 from .exceptions import (
     IBMBackendError,
     IBMBackendValueError,
@@ -56,7 +55,6 @@ from .exceptions import (
 from .job import IBMJob, IBMCircuitJob
 from .utils import validate_job_tags
 from .utils.options import QASM2Options, QASM3Options
-from .utils.backend import convert_reservation_data
 from .utils.backend_converter import (
     convert_to_target,
 )
@@ -581,7 +579,7 @@ class IBMBackend(Backend):
             datetime = local_to_utc(datetime)
 
         if datetime or refresh or self._properties is None:
-            api_properties = self._api_client.backend_properties(
+            api_properties = self.provider._runtime_client.backend_properties(
                 self.name, datetime=datetime
             )
             if not api_properties:
@@ -606,7 +604,7 @@ class IBMBackend(Backend):
         Raises:
             IBMBackendApiProtocolError: If the status for the backend cannot be formatted properly.
         """
-        api_status = self._api_client.backend_status(self.name)
+        api_status = self.provider._runtime_client.backend_status(self.name)
 
         try:
             return BackendStatus.from_dict(api_status)
@@ -656,33 +654,6 @@ class IBMBackend(Backend):
             A list of the unfinished jobs for this backend on this provider.
         """
         return self.provider.backend.jobs(status="pending", limit=limit)
-
-    def reservations(
-        self,
-        start_datetime: Optional[python_datetime] = None,
-        end_datetime: Optional[python_datetime] = None,
-    ) -> List[BackendReservation]:
-        """Return backend reservations.
-
-        If start_datetime and/or end_datetime is specified, reservations with
-        time slots that overlap with the specified time window will be returned.
-
-        Some of the reservation information is only available if you are the
-        owner of the reservation.
-
-        Args:
-            start_datetime: Filter by the given start date/time, in local timezone.
-            end_datetime: Filter by the given end date/time, in local timezone.
-
-        Returns:
-            A list of reservations that match the criteria.
-        """
-        start_datetime = local_to_utc(start_datetime) if start_datetime else None
-        end_datetime = local_to_utc(end_datetime) if end_datetime else None
-        raw_response = self._api_client.backend_reservations(
-            self.name, start_datetime, end_datetime
-        )
-        return convert_reservation_data(raw_response, self.name)
 
     def configuration(
         self,
@@ -879,13 +850,6 @@ class IBMRetiredBackend(IBMBackend):
     def active_jobs(self, limit: int = 10) -> None:
         """Return the unfinished jobs submitted to this backend."""
         return None
-
-    def reservations(
-        self,
-        start_datetime: Optional[python_datetime] = None,
-        end_datetime: Optional[python_datetime] = None,
-    ) -> List[BackendReservation]:
-        return []
 
     def run(self, *args: Any, **kwargs: Any) -> None:  # type: ignore[override]
         """Run a Circuit."""

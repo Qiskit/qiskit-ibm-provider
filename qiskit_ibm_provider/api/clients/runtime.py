@@ -42,7 +42,9 @@ class RuntimeClient(BaseClient):
         )
         self._api = Runtime(self._session)
 
-    def backend_properties(self, backend: str) -> Dict[str, Any]:
+    def backend_properties(
+        self, backend: str, datetime: Optional[python_datetime] = None
+    ) -> Dict[str, Any]:
         """Return the properties of the backend.
 
         Args:
@@ -51,7 +53,7 @@ class RuntimeClient(BaseClient):
         Returns:
             Backend properties.
         """
-        return self._api.backend(backend).properties()
+        return self._api.backend(backend).properties(datetime=datetime)
 
     def backend_pulse_defaults(self, backend: str) -> Dict:
         """Return the pulse defaults of the backend.
@@ -63,6 +65,17 @@ class RuntimeClient(BaseClient):
             Backend pulse defaults.
         """
         return self._api.backend(backend).pulse_defaults()
+
+    def backend_status(self, backend: str) -> Dict[str, Any]:
+        """Return the status of the backend.
+
+        Args:
+            backend: The name of the backend.
+
+        Returns:
+            Backend status.
+        """
+        return self._api.backend(backend).status()
 
     def list_programs(self, limit: int = None, skip: int = None) -> Dict[str, Any]:
         """Return a list of runtime programs.

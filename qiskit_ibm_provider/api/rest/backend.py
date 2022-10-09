@@ -27,7 +27,7 @@ class Backend(RestAdapterBase):
     URL_MAP = {
         "properties": "/properties",
         "pulse_defaults": "/defaults",
-        "status": "/queue/status",
+        "status": "/status",
         "jobs_limit": "/jobsLimit",
         "bookings": "/bookings/v2",
     }
