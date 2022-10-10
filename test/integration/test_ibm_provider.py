@@ -184,11 +184,6 @@ class TestIBMProviderServices(IBMTestCase):
         job_ids = self.dependencies.provider.job_ids()
         self.assertTrue(len(job_ids) > 0)
 
-    def test_reservations(self):
-        """Test my_reservations from the provider."""
-        reservations = self.dependencies.provider.my_reservations()
-        self.assertTrue(len(reservations) > 0)
-
     def test_get_backend(self):
         """Test getting a backend from the provider."""
         backend = self.dependencies.provider.get_backend(name=self.backend_name)

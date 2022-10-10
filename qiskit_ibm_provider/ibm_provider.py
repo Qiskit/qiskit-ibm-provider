@@ -38,7 +38,6 @@ from .hub_group_project import HubGroupProject  # pylint: disable=cyclic-import
 from .ibm_backend import IBMBackend  # pylint: disable=cyclic-import
 from .ibm_backend_service import IBMBackendService  # pylint: disable=cyclic-import
 from .job import IBMJob  # pylint: disable=cyclic-import
-from .backendreservation import BackendReservation  # pylint: disable=cyclic-import
 from .proxies.configuration import ProxyConfiguration
 from .utils.hgp import to_instance_format, from_instance_format
 
@@ -675,15 +674,6 @@ class IBMProvider(Provider):
             The job with the given id.
         """
         return self._backend.retrieve_job(job_id=job_id)
-
-    def my_reservations(self) -> List[BackendReservation]:
-        """Return your upcoming reservations.
-
-        Returns:
-            A list of your upcoming reservations.
-        """
-
-        return self._backend.my_reservations()
 
     def get_backend(
         self,

@@ -25,7 +25,6 @@ from qiskit.providers.providerutils import filter_backends
 from qiskit_ibm_provider import ibm_provider  # pylint: disable=unused-import
 from .api.exceptions import ApiError
 from .apiconstants import ApiJobStatus
-from .backendreservation import BackendReservation
 from .exceptions import (
     IBMBackendValueError,
     IBMBackendApiError,
@@ -35,7 +34,6 @@ from .hub_group_project import HubGroupProject
 from .ibm_backend import IBMBackend, IBMRetiredBackend
 from .job import IBMJob, IBMCircuitJob
 from .job.exceptions import IBMJobNotFoundError
-from .utils.backend import convert_reservation_data
 from .utils.converters import local_to_utc
 from .utils.utils import to_python_identifier, validate_job_tags, filter_data
 from .utils.hgp import to_instance_format
@@ -680,15 +678,6 @@ class IBMBackendService:
             ) from ex
         job = self._restore_circuit_job(job_info, raise_error=True)
         return job
-
-    def my_reservations(self) -> List[BackendReservation]:
-        """Return your upcoming reservations.
-
-        Returns:
-            A list of your upcoming reservations.
-        """
-        raw_response = self._default_hgp._api_client.my_reservations()
-        return convert_reservation_data(raw_response)
 
     @staticmethod
     def _deprecated_backend_names() -> Dict[str, str]:

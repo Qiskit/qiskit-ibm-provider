@@ -115,25 +115,3 @@ class Backend(RestAdapterBase):
         """
         url = self.get_url("jobs_limit")
         return map_jobs_limit_response(self.session.get(url).json())
-
-    def reservations(
-        self,
-        start_datetime: Optional[datetime] = None,
-        end_datetime: Optional[datetime] = None,
-    ) -> List:
-        """Return backend reservation information.
-
-        Args:
-            start_datetime: Starting datetime in UTC.
-            end_datetime: Ending datetime in UTC.
-
-        Returns:
-            JSON response.
-        """
-        params = {}
-        if start_datetime:
-            params["initialDate"] = start_datetime.isoformat()
-        if end_datetime:
-            params["endDate"] = end_datetime.isoformat()
-        url = self.get_url("bookings")
-        return self.session.get(url, params=params).json()
