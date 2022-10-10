@@ -12,8 +12,7 @@
 
 """Backend REST adapter."""
 
-import json
-from typing import Dict, Optional, Any, List
+from typing import Dict, Optional, Any
 from datetime import datetime
 
 from .base import RestAdapterBase
@@ -58,12 +57,8 @@ class Backend(RestAdapterBase):
         url = self.get_url("properties")
 
         params = {}
-
-        query = {}
         if datetime:
-            extra_filter = {"last_update_date": {"lt": datetime.isoformat()}}
-            query["where"] = extra_filter
-            params["filter"] = json.dumps(query)  # type: ignore[assignment]
+            params["updated_before"] = datetime.isoformat()
 
         response = self.session.get(url, params=params).json()
 
