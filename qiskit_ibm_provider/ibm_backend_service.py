@@ -12,7 +12,6 @@
 
 """Backend namespace for an IBM Quantum account."""
 
-import copy
 import logging
 from datetime import datetime
 from typing import Dict, List, Callable, Optional, Any, Union
@@ -351,13 +350,14 @@ class IBMBackendService:
         limit: Optional[int] = 10,
         skip: int = 0,
         backend_name: Optional[str] = None,
-        status: Optional[Union[JobStatus, str, List[Union[JobStatus, str]]]] = None,
+        status: Optional[
+            Union[Literal["pending", "completed"], List[Union[JobStatus, str]]]
+        ] = None,
         start_datetime: Optional[datetime] = None,
         end_datetime: Optional[datetime] = None,
         job_tags: Optional[List[str]] = None,
-        job_tags_operator: Optional[str] = "OR",
         descending: bool = True,
-    ) -> List[IBMJob]:
+    ) -> List[Any]:
         """Return a list of job IDs, subject to optional filtering.
         Retrieve jobs that match the given filters and paginate the results
         if desired. Note that the server has a limit for the number of jobs
@@ -377,14 +377,6 @@ class IBMBackendService:
                 find jobs whose creation dates are before (less than or equal to) this
                 local date/time.
             job_tags: Filter by tags assigned to jobs.
-            job_tags_operator: Logical operator to use when filtering by job tags. Valid
-                values are "AND" and "OR":
-
-                    * If "AND" is specified, then a job must have all of the tags
-                        specified in ``job_tags`` to be included.
-                    * If "OR" is specified, then a job only needs to have any
-                        of the tags specified in ``job_tags`` to be included.
-
             descending: If ``True``, return the jobs in descending order of the job
                 creation date (i.e. newest first) until the limit is reached.
 
@@ -395,128 +387,21 @@ class IBMBackendService:
             IBMBackendValueError: If a keyword value is not recognized.
             TypeError: If the input `start_datetime` or `end_datetime` parameter value is not valid.
         """
-        # Build the filter for the query.
-        api_filter = {}  # type: Dict[str, Any]
-
-        if backend_name:
-            api_filter["backend.name"] = backend_name
-
-        if status:
-            status_filter = self._get_status_db_filter(status)
-            api_filter.update(status_filter)
-
-        if start_datetime or end_datetime:
-            api_filter["creationDate"] = self._update_creation_date_filter(
-                cur_dt_filter={},
-                gte_dt=local_to_utc(start_datetime).isoformat()
-                if start_datetime
-                else None,
-                lte_dt=local_to_utc(end_datetime).isoformat() if end_datetime else None,
-            )
-
-        if job_tags:
-            validate_job_tags(job_tags, IBMBackendValueError)
-            job_tags_operator = job_tags_operator.upper()
-            if job_tags_operator == "OR":
-                api_filter["tags"] = {"inq": job_tags}
-            elif job_tags_operator == "AND":
-                and_tags = []
-                for tag in job_tags:
-                    and_tags.append({"tags": tag})
-                api_filter["and"] = and_tags
-            else:
-                raise IBMBackendValueError(
-                    '"{}" is not a valid job_tags_operator value. '
-                    'Valid values are "AND" and "OR"'.format(job_tags_operator)
-                )
-
-        # Retrieve all requested jobs.
-        jobs_id_list = self._get_job_ids(
-            api_filter=api_filter, limit=limit, skip=skip, descending=descending
+        jobs = self.jobs(
+            limit=limit,
+            skip=skip,
+            backend_name=backend_name,
+            status=status,
+            start_datetime=start_datetime,
+            end_datetime=end_datetime,
+            job_tags=job_tags,
+            descending=descending,
         )
 
-        return jobs_id_list
-
-    def _get_job_ids(
-        self,
-        api_filter: Dict,
-        limit: Optional[int] = 10,
-        skip: int = 0,
-        descending: bool = True,
-    ) -> List:
-        """Retrieve the requested number of jobs IDs from the server using pagination.
-        Args:
-            api_filter: Filter used for querying.
-            limit: Number of jobs to retrieve. ``None`` means no limit.
-            skip: Starting index for the job retrieval.
-            descending: If ``True``, return the jobs in descending order of the job
-                creation date (i.e. newest first) until the limit is reached.
-        Returns:
-            A list of raw API response.
-        """
-        # Retrieve the requested number of jobs, using pagination.
-        job_responses: List[Dict[str, Any]] = []
-        current_page_limit = limit or 20
-        initial_filter = copy.deepcopy(api_filter)
-
-        while True:
-            job_page = self._default_hgp._api_client.list_jobs_ids(
-                limit=current_page_limit,
-                skip=skip,
-                descending=descending,
-                extra_filter=api_filter,
-            )
-            if logger.getEffectiveLevel() is logging.DEBUG:
-                filtered_data = list(job_page)
-                logger.debug("jobs_id() response data is %s", filtered_data)
-
-            if not job_page:
-                # Stop if there are no more jobs returned by the server.
-                break
-
-            job_responses += job_page
-
-            if limit:
-                if len(job_responses) >= limit:
-                    # Stop if we have reached the limit.
-                    break
-                current_page_limit = limit - len(job_responses)
-            else:
-                current_page_limit = 20
-
-            # Use the last received job for pagination.
-            skip = 0
-            last_job = job_page[-1]
-            api_filter = copy.deepcopy(initial_filter)
-            cur_dt_filter = api_filter.pop("creationDate", {})
-            if descending:
-                new_dt_filter = self._update_creation_date_filter(
-                    cur_dt_filter=cur_dt_filter, lte_dt=last_job["creationDate"]
-                )
-            else:
-                new_dt_filter = self._update_creation_date_filter(
-                    cur_dt_filter=cur_dt_filter, gte_dt=last_job["creationDate"]
-                )
-            if not cur_dt_filter:
-                api_filter["creationDate"] = new_dt_filter
-            else:
-                self._merge_logical_filters(
-                    api_filter,
-                    {"and": [{"creationDate": new_dt_filter}, cur_dt_filter]},
-                )
-
-            if "id" not in api_filter:
-                api_filter["id"] = {"nin": [last_job["id"]]}
-            else:
-                new_id_filter = {
-                    "and": [
-                        {"id": {"nin": [last_job["id"]]}},
-                        {"id": api_filter.pop("id")},
-                    ]
-                }
-                self._merge_logical_filters(api_filter, new_id_filter)
-
-        return job_responses
+        return [
+            {"id": job.job_id(), "creationDate": job.creation_date().isoformat()}
+            for job in jobs
+        ]
 
     def _merge_logical_filters(self, cur_filter: Dict, new_filter: Dict) -> None:
         """Merge the logical operators in the input filters.

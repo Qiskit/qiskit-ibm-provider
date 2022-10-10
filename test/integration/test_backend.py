@@ -66,14 +66,6 @@ class TestIBMBackend(IBMTestCase):
         for i in qubits:
             self.assertIsInstance(qubit_properties[i], IBMQubitProperties)
 
-    def test_backend_job_limit(self):
-        """Check the backend job limits of a real backend."""
-        job_limit = self.backend.job_limit()
-        self.assertIsNotNone(job_limit)
-        self.assertIsNotNone(job_limit.active_jobs)
-        if job_limit.maximum_jobs:
-            self.assertGreater(job_limit.maximum_jobs, 0)
-
     def test_backend_pulse_defaults(self):
         """Check the backend pulse defaults of each backend."""
         provider = self.backend.provider

@@ -614,7 +614,6 @@ class IBMProvider(Provider):
         start_datetime: Optional[datetime] = None,
         end_datetime: Optional[datetime] = None,
         job_tags: Optional[List[str]] = None,
-        job_tags_operator: Optional[str] = "OR",
         descending: bool = True,
     ) -> List[IBMJob]:
         """Return a list of job IDs, subject to optional filtering.
@@ -636,13 +635,6 @@ class IBMProvider(Provider):
                 find jobs whose creation dates are before (less than or equal to) this
                 local date/time.
             job_tags: Filter by tags assigned to jobs.
-            job_tags_operator: Logical operator to use when filtering by job tags. Valid
-                values are "AND" and "OR":
-
-                    * If "AND" is specified, then a job must have all of the tags
-                        specified in ``job_tags`` to be included.
-                    * If "OR" is specified, then a job only needs to have any
-                        of the tags specified in ``job_tags`` to be included.
 
             descending: If ``True``, return the jobs in descending order of the job
                 creation date (i.e. newest first) until the limit is reached.
@@ -660,7 +652,6 @@ class IBMProvider(Provider):
             start_datetime=start_datetime,
             end_datetime=end_datetime,
             job_tags=job_tags,
-            job_tags_operator=job_tags_operator,
             descending=descending,
         )
 
