@@ -339,6 +339,7 @@ class TestIBMJob(IBMTestCase):
         self.assertTrue(result.results[0].success)
         self.assertFalse(result.results[1].success)
 
+    @skip("Find another way to imitate retired backend")
     def test_retrieve_from_retired_backend(self):
         """Test retrieving a job from a retired backend."""
         saved_backends = copy.copy(self.provider.backend._backends)
