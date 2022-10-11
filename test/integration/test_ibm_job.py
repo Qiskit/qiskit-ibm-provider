@@ -487,19 +487,16 @@ class TestIBMJob(IBMTestCase):
                     f"Job {job.job_id()} status is {job.status()} and not cancelled!",
                 )
 
-    @skip("not supported by api")
     def test_job_circuits(self):
         """Test job circuits."""
         self.assertEqual(str(self.bell), str(self.sim_job.circuits()[0]))
 
-    @skip("not supported by api")
     def test_job_backend_options(self):
         """Test job backend options."""
         run_config = {"shots": 2048, "memory": True}
         job = self.sim_backend.run(self.bell, **run_config)
         self.assertLessEqual(run_config.items(), job.backend_options().items())
 
-    @skip("not supported by api")
     def test_job_header(self):
         """Test job header."""
         custom_header = {"test": "test_job_header"}
