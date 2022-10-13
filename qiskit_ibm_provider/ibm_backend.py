@@ -639,22 +639,6 @@ class IBMBackend(Backend):
 
         return self._defaults
 
-    def active_jobs(self, limit: int = 10) -> List[IBMJob]:
-        """Return the unfinished jobs submitted to this backend.
-
-        Return the jobs submitted to this backend, with this provider, that are
-        currently in an unfinished job status state. The unfinished
-        :class:`JobStatus<qiskit.providers.jobstatus.JobStatus>` states
-        include: ``INITIALIZING``, ``VALIDATING``, ``QUEUED``, and ``RUNNING``.
-
-        Args:
-            limit: Number of jobs to retrieve.
-
-        Returns:
-            A list of the unfinished jobs for this backend on this provider.
-        """
-        return self.provider.backend.jobs(status="pending", limit=limit)
-
     def configuration(
         self,
     ) -> Union[QasmBackendConfiguration, PulseBackendConfiguration]:
@@ -842,14 +826,6 @@ class IBMRetiredBackend(IBMBackend):
     def status(self) -> BackendStatus:
         """Return the backend status."""
         return self._status
-
-    def remaining_jobs_count(self) -> None:
-        """Return the number of remaining jobs that could be submitted to the backend."""
-        return None
-
-    def active_jobs(self, limit: int = 10) -> None:
-        """Return the unfinished jobs submitted to this backend."""
-        return None
 
     def run(self, *args: Any, **kwargs: Any) -> None:  # type: ignore[override]
         """Run a Circuit."""

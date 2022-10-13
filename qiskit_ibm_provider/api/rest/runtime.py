@@ -19,9 +19,7 @@ import json
 
 from .backend import Backend
 from .base import RestAdapterBase
-from .program import Program
 from .program_job import ProgramJob
-from .runtime_session import RuntimeSession
 from ...utils import RuntimeEncoder
 from ...utils.converters import local_to_utc
 
@@ -48,17 +46,6 @@ class Runtime(RestAdapterBase):
         """
         return Backend(self.session, backend)
 
-    def program(self, program_id: str) -> "Program":
-        """Return an adapter for the program.
-
-        Args:
-            program_id: ID of the program.
-
-        Returns:
-            The program adapter.
-        """
-        return Program(self.session, program_id)
-
     def program_job(self, job_id: str) -> "ProgramJob":
         """Return an adapter for the job.
 
@@ -69,70 +56,6 @@ class Runtime(RestAdapterBase):
             The program job adapter.
         """
         return ProgramJob(self.session, job_id)
-
-    def runtime_session(self, session_id: str) -> "RuntimeSession":
-        """Return an adapter for the session.
-
-        Args:
-            session_id: Job ID of the first job in a session.
-
-        Returns:
-            The session adapter.
-        """
-        return RuntimeSession(self.session, session_id)
-
-    def list_programs(self, limit: int = None, skip: int = None) -> Dict[str, Any]:
-        """Return a list of runtime programs.
-
-        Args:
-            limit: The number of programs to return.
-            skip: The number of programs to skip.
-
-        Returns:
-            A list of runtime programs.
-        """
-        url = self.get_url("programs")
-        payload: Dict[str, int] = {}
-        if limit:
-            payload["limit"] = limit
-        if skip:
-            payload["offset"] = skip
-        return self.session.get(url, params=payload).json()
-
-    def create_program(
-        self,
-        program_data: str,
-        name: str,
-        description: str,
-        max_execution_time: int,
-        is_public: Optional[bool] = False,
-        spec: Optional[Dict] = None,
-    ) -> Dict:
-        """Upload a new program.
-
-        Args:
-            program_data: Program data (base64 encoded).
-            name: Name of the program.
-            description: Program description.
-            max_execution_time: Maximum execution time.
-            is_public: Whether the program should be public.
-            spec: Backend requirements, parameters, interim results, return values, etc.
-
-        Returns:
-            JSON response.
-        """
-        url = self.get_url("programs")
-        payload = {
-            "name": name,
-            "data": program_data,
-            "cost": max_execution_time,
-            "description": description,
-            "is_public": is_public,
-        }
-        if spec is not None:
-            payload["spec"] = spec
-        data = json.dumps(payload)
-        return self.session.post(url, data=data).json()
 
     def program_run(
         self,

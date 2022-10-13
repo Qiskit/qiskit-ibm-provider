@@ -17,7 +17,6 @@ from datetime import datetime
 
 from .base import RestAdapterBase
 from ..session import RetrySession
-from .utils.data_mapper import map_jobs_limit_response
 
 
 class Backend(RestAdapterBase):
@@ -27,8 +26,6 @@ class Backend(RestAdapterBase):
         "properties": "/properties",
         "pulse_defaults": "/defaults",
         "status": "/status",
-        "jobs_limit": "/jobsLimit",
-        "bookings": "/bookings/v2",
     }
 
     def __init__(
@@ -101,12 +98,3 @@ class Backend(RestAdapterBase):
             ret["pending_jobs"] = 0
 
         return ret
-
-    def job_limit(self) -> Dict[str, Any]:
-        """Return backend job limit.
-
-        Returns:
-            JSON response of job limit.
-        """
-        url = self.get_url("jobs_limit")
-        return map_jobs_limit_response(self.session.get(url).json())
