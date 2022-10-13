@@ -62,7 +62,11 @@ from .utils.backend_converter import (
     convert_to_target,
 )
 from .utils.converters import local_to_utc
-from .utils.json_decoder import defaults_from_server_data, properties_from_server_data
+from .utils.json_decoder import (
+    defaults_from_server_data,
+    properties_from_server_data,
+    target_from_server_data,
+)
 from .api.exceptions import RequestsApiError
 
 
@@ -324,9 +328,14 @@ class IBMBackend(Backend):
         Returns:
             Target
         """
-        self._get_properties()
-        self._get_defaults()
-        self._convert_to_target()
+        if not self._target:
+            api_pulse_defaults = self._api_client.backend_pulse_defaults(self.name)
+            api_properties = self._api_client.backend_properties(self.name)
+            self._target = target_from_server_data(
+                configuration=self._configuration,
+                pulse_defaults=api_pulse_defaults,
+                properties=api_properties,
+            )
         return self._target
 
     def target_history(self, datetime: Optional[python_datetime] = None) -> Target:
