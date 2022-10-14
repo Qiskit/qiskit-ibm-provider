@@ -25,7 +25,6 @@ from .config_widget import config_tab
 from .gates_widget import gates_tab
 from .jobs_widget import jobs_tab
 from .qubits_widget import qubits_tab
-from .live_data_widget import LiveDataVisualization
 from ..visualization.interactive import iplot_error_map
 from ..utils.hgp import to_instance_format
 
@@ -55,7 +54,6 @@ def backend_widget(backend: Union[IBMBackend, FakeBackend]) -> None:
     else:
         instance = backend._api_client._params.instance
     last_tab = vue.TabItem(children=[])
-    livedata = LiveDataVisualization()
     card = vue.Card(
         height=600,
         outlined=True,
@@ -65,7 +63,7 @@ def backend_widget(backend: Union[IBMBackend, FakeBackend]) -> None:
                 color="#002d9c",
                 children=[
                     vue.ToolbarTitle(
-                        children=["{} @ ({})".format(backend.name(), instance)],
+                        children=["{} @ ({})".format(backend, instance)],
                         style_="color:white",
                     )
                 ],
@@ -77,7 +75,6 @@ def backend_widget(backend: Union[IBMBackend, FakeBackend]) -> None:
                     vue.Tab(children=["Qubits"]),
                     vue.Tab(children=["Non-local Gates"]),
                     vue.Tab(children=["Error map"]),
-                    vue.Tab(children=["Live Data"]),
                     vue.Tab(children=["Job Summary"]),
                     vue.TabItem(children=[config_tab(backend)]),
                     vue.TabItem(children=[qubits_tab(backend)]),
@@ -86,20 +83,6 @@ def backend_widget(backend: Union[IBMBackend, FakeBackend]) -> None:
                         children=[
                             iplot_error_map(
                                 backend, figsize=(None, None), as_widget=True
-                            )
-                        ]
-                    ),
-                    vue.TabItem(
-                        children=[
-                            iplot_error_map(
-                                backend, figsize=(None, None), as_widget=True
-                            )
-                        ]
-                    ),
-                    vue.TabItem(
-                        children=[
-                            livedata.create_visualization(
-                                backend, figsize=(11, 9), show_title=False
                             )
                         ]
                     ),
