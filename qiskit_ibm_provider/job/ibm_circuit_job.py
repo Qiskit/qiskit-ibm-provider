@@ -598,7 +598,10 @@ class IBMCircuitJob(IBMJob):
             the job uses an old format that is no longer supported).
         """
         if self._params:
-            return [self._params["circuits"]]
+            circuits = self._params["circuits"]
+            if isinstance(circuits, list):
+                return circuits
+            return [circuits]
         return []
 
     def wait_for_final_state(  # pylint: disable=arguments-differ
