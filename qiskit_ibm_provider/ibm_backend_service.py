@@ -202,7 +202,9 @@ class IBMBackendService:
                 number of sub-jobs within a composite job count towards the limit.
             skip: Starting index for the job retrieval.
             backend_name: Name of the backend to retrieve jobs from.
-            status: Filter jobs with either "pending" or "completed" status.
+            status: Filter jobs with either "pending" or "completed" status. You can also specify by
+            exact status. For example, `status=JobStatus.RUNNING` or `status="RUNNING"`
+                or `status=["RUNNING", "ERROR"]`.
             start_datetime: Filter by the given start date, in local time. This is used to
                 find jobs whose creation dates are after (greater than or equal to) this
                 local date/time.
