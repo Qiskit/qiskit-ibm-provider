@@ -143,6 +143,20 @@ class TestIBMJob(IBMTestCase):
         for job in job_list:
             self.assertTrue(isinstance(job.job_id(), str))
 
+    def test_retrieve_jobs_with_status(self):
+        """Test retreiving jobs with status filter."""
+        statuses = [["DONE"], JobStatus.DONE, [JobStatus.DONE]]
+        job_list = self.provider.backend.jobs(
+            backend_name=self.sim_backend.name, limit=5, status="DONE"
+        )
+        for status in statuses:
+            new_list = self.provider.backend.jobs(
+                backend_name=self.sim_backend.name, limit=5, status=status
+            )
+            self.assertEqual(
+                [job.job_id() for job in job_list], [job.job_id() for job in new_list]
+            )
+
     def test_retrieve_job(self):
         """Test retrieving a single job."""
         retrieved_job = self.provider.backend.retrieve_job(self.sim_job.job_id())
