@@ -21,7 +21,6 @@ from typing import Dict, List, Optional, Any, Callable, Union
 from typing_extensions import Literal
 
 from qiskit.providers import ProviderV1 as Provider  # type: ignore[attr-defined]
-from qiskit.providers.jobstatus import JobStatus
 from qiskit.providers.backend import BackendV1 as Backend
 from qiskit.providers.exceptions import QiskitBackendNotFoundError
 
@@ -603,56 +602,6 @@ class IBMProvider(Provider):
             job_tags=job_tags,
             descending=descending,
             instance=instance,
-        )
-
-    def job_ids(
-        self,
-        limit: Optional[int] = 10,
-        skip: int = 0,
-        backend_name: Optional[str] = None,
-        status: Optional[Union[JobStatus, str, List[Union[JobStatus, str]]]] = None,
-        start_datetime: Optional[datetime] = None,
-        end_datetime: Optional[datetime] = None,
-        job_tags: Optional[List[str]] = None,
-        descending: bool = True,
-    ) -> List[IBMJob]:
-        """Return a list of job IDs, subject to optional filtering.
-        Retrieve jobs that match the given filters and paginate the results
-        if desired. Note that the server has a limit for the number of jobs
-        returned in a single call. As a result, this function might involve
-        making several calls to the server.
-
-        Args:
-            limit: Number of jobs to retrieve. ``None`` means no limit.
-            skip: Starting index for the job retrieval.
-            backend_name: Name of the backend to retrieve jobs from.
-            status: Only get jobs with this status or one of the statuses. For example, you can specify
-                `status=JobStatus.RUNNING` or `status="RUNNING"` or `status=["RUNNING", "ERROR"]`
-            start_datetime: Filter by the given start date, in local time. This is used to
-                find jobs whose creation dates are after (greater than or equal to) this
-                local date/time.
-            end_datetime: Filter by the given end date, in local time. This is used to
-                find jobs whose creation dates are before (less than or equal to) this
-                local date/time.
-            job_tags: Filter by tags assigned to jobs.
-
-            descending: If ``True``, return the jobs in descending order of the job
-                creation date (i.e. newest first) until the limit is reached.
-
-        Returns:
-            A list of ``IBMJob`` instances.
-
-        """
-
-        return self._backend.job_ids(
-            limit=limit,
-            skip=skip,
-            backend_name=backend_name,
-            status=status,
-            start_datetime=start_datetime,
-            end_datetime=end_datetime,
-            job_tags=job_tags,
-            descending=descending,
         )
 
     def retrieve_job(self, job_id: str) -> IBMJob:
