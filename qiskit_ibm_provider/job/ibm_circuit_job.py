@@ -601,7 +601,10 @@ class IBMCircuitJob(IBMJob):
         """
         self._get_params()
         if self._params:
-            return [self._params["circuits"]]
+            circuits = self._params["circuits"]
+            if isinstance(circuits, list):
+                return circuits
+            return [circuits]
         return []
 
     def _get_params(self) -> None:
