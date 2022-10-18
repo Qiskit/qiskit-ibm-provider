@@ -610,8 +610,9 @@ class IBMCircuitJob(IBMJob):
     def _get_params(self) -> None:
         """Retrieve job parameters"""
         if not self._params:
-            api_response = self._runtime_client.job_get(self.job_id())
-            self._params = api_response.get("params", {})
+            with api_to_job_error():
+                api_response = self._runtime_client.job_get(self.job_id())
+                self._params = api_response.get("params", {})
 
     def wait_for_final_state(  # pylint: disable=arguments-differ
         self,
