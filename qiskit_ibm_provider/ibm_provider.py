@@ -715,7 +715,6 @@ class IBMProvider(Provider):
             )
         if not backends:
             raise QiskitBackendNotFoundError("No backend matches the criteria")
-        backends[0].instance = instance
         return backends[0]
 
     def __repr__(self) -> str:

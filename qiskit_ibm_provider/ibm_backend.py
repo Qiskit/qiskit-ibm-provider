@@ -207,7 +207,7 @@ class IBMBackend(Backend):
             online_date=configuration.online_date,
             backend_version=configuration.backend_version,
         )
-        self.instance = None
+        self._instance = None
         self._api_client = api_client
         self._configuration = configuration
         self._properties = None
@@ -496,7 +496,7 @@ class IBMBackend(Backend):
         job_tags: Optional[List[str]] = None,
     ) -> IBMCircuitJob:
         """Runs the runtime program and returns the corresponding job object"""
-        hgp_name = self.instance or self.provider._get_hgp().name
+        hgp_name = self._instance or self.provider._get_hgp().name
         try:
             response = self.provider._runtime_client.program_run(
                 program_id=program_id,

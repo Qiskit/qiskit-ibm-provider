@@ -142,6 +142,8 @@ class IBMBackendService:
         if instance:
             hgp = self._provider._get_hgp(instance=instance)
             backends = list(hgp.backends.values())
+            for backend in backends:
+                backend._instance = instance  # type: ignore
         else:
             backends = list(self._backends.values())
         # Special handling of the `name` parameter, to support alias resolution.
