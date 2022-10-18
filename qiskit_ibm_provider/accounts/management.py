@@ -29,6 +29,7 @@ class AccountManager:
     _default_account_name = "default"
     _default_account_name_legacy = "default-legacy"
     _default_account_name_ibm_quantum = "default-ibm-quantum"
+    _default_channel_type = "ibm_quantum"
 
     @classmethod
     def save(
@@ -139,7 +140,7 @@ class AccountManager:
                 )
             return Account.from_saved_format(saved_account)
 
-        channel_ = channel or "ibm_quantum"
+        channel_ = channel or cls._default_channel_type
         env_account = cls._from_env_variables(channel_)
         if env_account is not None:
             return env_account
