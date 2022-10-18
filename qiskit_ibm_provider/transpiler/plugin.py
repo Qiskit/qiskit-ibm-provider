@@ -32,8 +32,7 @@ class IBMTranslationPlugin(PassManagerStagePlugin):
     ) -> PassManager:
         """Build IBMTranslationPlugin PassManager."""
 
-        output = PassManager([ConvertConditionsToIfOps()])
-        output += common.generate_translation_passmanager(
+        translator_pm = common.generate_translation_passmanager(
             target=pass_manager_config.target,
             basis_gates=pass_manager_config.basis_gates,
             approximation_degree=pass_manager_config.approximation_degree,
@@ -43,4 +42,13 @@ class IBMTranslationPlugin(PassManagerStagePlugin):
             unitary_synthesis_plugin_config=pass_manager_config.unitary_synthesis_plugin_config,
             hls_config=pass_manager_config.hls_config,
         )
-        return output
+        # Only inject conversion pass at level 0 and level 1. As of
+        # qiskit 0.22.x transpile() with level 2 and 3 does not support
+        # control flow instructions (including if_else). This can be
+        # removed when higher optimization levels support control flow
+        # instructions.
+        if optimization_level in {2, 3}:
+            return translator_pm
+        else:
+            output = PassManager([ConvertConditionsToIfOps()]) + translator_pm
+            return output
