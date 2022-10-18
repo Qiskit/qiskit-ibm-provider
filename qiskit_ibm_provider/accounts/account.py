@@ -24,7 +24,6 @@ from ..api.auth import QuantumAuth
 from ..proxies import ProxyConfiguration
 from ..utils.hgp import from_instance_format
 
-AccountType = Optional[Literal["legacy"]]
 ChannelType = Optional[Literal["ibm_quantum"]]
 
 IBM_QUANTUM_API_URL = "https://auth.quantum-computing.ibm.com/api"

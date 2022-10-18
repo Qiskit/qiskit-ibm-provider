@@ -26,10 +26,6 @@ from qiskit_ibm_provider.accounts import (
     InvalidAccountError,
 )
 from qiskit_ibm_provider.accounts.account import IBM_QUANTUM_API_URL
-from qiskit_ibm_provider.accounts.management import (
-    _DEFAULT_ACCOUNT_NAME_LEGACY,
-    _DEFAULT_ACCOUNT_NAME_IBM_QUANTUM,
-)
 from qiskit_ibm_provider.proxies import ProxyConfiguration
 from .mock.fake_provider import FakeProvider
 from ..account import (
@@ -38,6 +34,10 @@ from ..account import (
     no_envs,
 )
 from ..ibm_test_case import IBMTestCase
+
+_DEFAULT_ACCOUNT_NAME_LEGACY = "default-legacy"
+
+_DEFAULT_ACCOUNT_NAME_IBM_QUANTUM = "default-ibm-quantum"
 
 _TEST_IBM_QUANTUM_ACCOUNT = Account(
     channel="ibm_quantum",
