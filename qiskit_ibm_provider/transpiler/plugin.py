@@ -28,7 +28,7 @@ class IBMTranslationPlugin(PassManagerStagePlugin):
     def pass_manager(
         self,
         pass_manager_config: PassManagerConfig,
-        optimization_level: Optional[int] = None
+        optimization_level: Optional[int] = None,
     ) -> PassManager:
         """Build IBMTranslationPlugin PassManager."""
 
@@ -41,6 +41,6 @@ class IBMTranslationPlugin(PassManagerStagePlugin):
             backend_props=pass_manager_config.backend_properties,
             unitary_synthesis_method=pass_manager_config.unitary_synthesis_method,
             unitary_synthesis_plugin_config=pass_manager_config.unitary_synthesis_plugin_config,
-            hls_config=pass_manager_config.hls_config
+            hls_config=pass_manager_config.hls_config,
         )
         return output
