@@ -37,6 +37,7 @@ API_TO_JOB_STATUS = {
     ApiJobStatus.QUEUED: JobStatus.QUEUED,
     ApiJobStatus.COMPLETED: JobStatus.DONE,
     ApiJobStatus.CANCELLED: JobStatus.CANCELLED,
+    ApiJobStatus.CANCELLED_RAN_TOO_LONG: JobStatus.CANCELLED,
     ApiJobStatus.ERROR_CREATING_JOB: JobStatus.ERROR,
     ApiJobStatus.ERROR_VALIDATING_JOB: JobStatus.ERROR,
     ApiJobStatus.ERROR_RUNNING_JOB: JobStatus.ERROR,
