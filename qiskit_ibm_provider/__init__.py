@@ -86,6 +86,7 @@ from .backendjoblimit import BackendJobLimit
 from .exceptions import *
 from .ibm_backend_service import IBMBackendService
 from .utils.utils import setup_logger
+from .utils.options import DynamicCircuitOptions, StaticCircuitOptions
 from .version import __version__
 
 # Setup the logger for the IBM Quantum Provider package.

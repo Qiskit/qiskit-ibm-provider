@@ -21,7 +21,7 @@ from qiskit.qobj.utils import MeasLevel, MeasReturnType
 
 
 @dataclass
-class QASM3Options:
+class DynamicCircuitOptions:
     """Options for the QASM3 path."""
 
     circuits: Union[
@@ -40,7 +40,7 @@ class QASM3Options:
 
 
 @dataclass
-class QASM2Options:
+class StaticCircuitOptions:
     """Options for the QASM2 path."""
 
     circuits: Union[

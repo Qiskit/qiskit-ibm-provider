@@ -56,7 +56,7 @@ from .exceptions import (
 )
 from .job import IBMJob, IBMCircuitJob
 from .utils import validate_job_tags
-from .utils.options import QASM2Options, QASM3Options
+from .utils.options import StaticCircuitOptions, DynamicCircuitOptions
 from .utils.backend import convert_reservation_data
 from .utils.backend_converter import (
     convert_to_target,
@@ -345,6 +345,7 @@ class IBMBackend(Backend):
             QuantumCircuit, Schedule, List[Union[QuantumCircuit, Schedule]]
         ],
         dynamic: bool = False,
+        options: Optional[Union[StaticCircuitOptions, DynamicCircuitOptions]] = None,
         job_tags: Optional[List[str]] = None,
         header: Optional[Dict] = None,
         shots: Optional[Union[int, float]] = None,
@@ -455,35 +456,42 @@ class IBMBackend(Backend):
             shots = int(shots)
         if not self.configuration().simulator:
             circuits = self._deprecate_id_instruction(circuits)
-        options = {"backend": self.name}
+        backend_options = {"backend": self.name}
 
-        run_config_dict = self._get_run_config(
-            program_id=program_id,
-            header=header,
-            shots=shots,
-            memory=memory,
-            qubit_lo_freq=qubit_lo_freq,
-            meas_lo_freq=meas_lo_freq,
-            schedule_los=schedule_los,
-            meas_level=meas_level,
-            meas_return=meas_return,
-            memory_slots=memory_slots,
-            memory_slot_size=memory_slot_size,
-            rep_time=rep_time,
-            rep_delay=rep_delay,
-            init_qubits=init_qubits,
-            use_measure_esp=use_measure_esp,
-            noise_model=noise_model,
-            parameter_binds=parameter_binds,
-            **run_config,
-        )
+        if options:
+            options_dict = asdict(options)
+            run_config_dict = self._get_run_config(
+                program_id=program_id, **options_dict
+            )
+            job_tags = job_tags or options_dict.get("job_tags")
+        else:
+            run_config_dict = self._get_run_config(
+                program_id=program_id,
+                header=header,
+                shots=shots,
+                memory=memory,
+                qubit_lo_freq=qubit_lo_freq,
+                meas_lo_freq=meas_lo_freq,
+                schedule_los=schedule_los,
+                meas_level=meas_level,
+                meas_return=meas_return,
+                memory_slots=memory_slots,
+                memory_slot_size=memory_slot_size,
+                rep_time=rep_time,
+                rep_delay=rep_delay,
+                init_qubits=init_qubits,
+                use_measure_esp=use_measure_esp,
+                noise_model=noise_model,
+                parameter_binds=parameter_binds,
+                **run_config,
+            )
 
         run_config_dict["circuits"] = circuits
 
         return self._runtime_run(
             program_id=program_id,
             inputs=run_config_dict,
-            options=options,
+            options=backend_options,
             job_tags=job_tags,
         )
 
@@ -528,11 +536,11 @@ class IBMBackend(Backend):
     def _get_run_config(self, program_id: str, **kwargs: Any) -> Dict:
         """Return the consolidated runtime configuration."""
         if program_id == "qasm3-runner":
-            original_dict = asdict(QASM3Options())
-            run_config_dict = copy.copy(asdict(QASM3Options(**original_dict)))
+            original_dict = asdict(DynamicCircuitOptions())
+            run_config_dict = copy.copy(asdict(DynamicCircuitOptions(**original_dict)))
         else:
             original_dict = self.options.__dict__
-            run_config_dict = copy.copy(asdict(QASM2Options(**original_dict)))
+            run_config_dict = copy.copy(asdict(StaticCircuitOptions(**original_dict)))
         for key, val in kwargs.items():
             if val is not None:
                 run_config_dict[key] = val
