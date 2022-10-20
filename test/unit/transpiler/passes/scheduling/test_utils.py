@@ -31,7 +31,7 @@ class TestDynamicCircuitInstructionDurations(QiskitTestCase):
                 ("x", None, 200),
                 ("measure", None, 1000),
                 ("measure", (0, 1), 1200),
-                ("reset", None, 1000),
+                ("reset", None, 800),
             ]
         )
 

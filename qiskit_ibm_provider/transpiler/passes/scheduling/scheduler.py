@@ -24,7 +24,7 @@ from qiskit.transpiler.passes.scheduling.scheduling.base_scheduler import BaseSc
 from .utils import block_order_op_nodes
 
 
-class DynamicCircuitScheduleAnalysis(BaseScheduler):
+class ASAPScheduleAnalysis(BaseScheduler):
     """Dynamic circuits scheduling analysis pass.
 
     This is a scheduler designed to work for the unique scheduling constraints of the dynamic circuits
@@ -36,17 +36,13 @@ class DynamicCircuitScheduleAnalysis(BaseScheduler):
 
     The primary differences are that:
 
-    * Measurements currently trigger the end of a "quantum block". The period between the end
+    * Resets and control-flow currently trigger the end of a "quantum block". The period between the end
         of the block and the next is *nondeterministic*
         ie., we do not know when the next block will begin (as we could be evaluating a classical
         function of nondeterministic length) and therefore the
         next block starts at a *relative* t=0.
     * It is possible to apply gates during a measurement.
-    * Measurements on disjoint qubits happen simultaneously and are part of the same block.
-        Measurements that are not lexicographically neighbors in the generated QASM3 will
-        such as ``measure $0; x $1; measure $2;``
-        happen in separate blocks.
-
+    * Measurements and resets on disjoint qubits happen simultaneously and are part of the same block.
     """
 
     def __init__(
@@ -65,6 +61,7 @@ class DynamicCircuitScheduleAnalysis(BaseScheduler):
         self._node_start_time: Optional[Dict[DAGNode, Tuple[int, int]]] = None
         self._idle_after: Optional[Dict[Union[Qubit, Clbit], Tuple[int, int]]] = None
         self._current_block_measures: Set[DAGNode] = set()
+        self._current_block_measures_has_reset: bool = False
         self._bit_indices: Optional[Dict[Qubit, int]] = None
 
         super().__init__(durations)
@@ -97,6 +94,7 @@ class DynamicCircuitScheduleAnalysis(BaseScheduler):
         self._node_start_time = {}
         self._idle_after = {q: (0, 0) for q in dag.qubits + dag.clbits}
         self._current_block_measures = set()
+        self._current_block_measures_has_reset = False
         self._bit_indices = {q: index for index, q in enumerate(dag.qubits)}
 
     def _get_duration(self, node: DAGNode) -> int:
@@ -187,14 +185,14 @@ class DynamicCircuitScheduleAnalysis(BaseScheduler):
             # Fall through to generic case if not conditional
             self._visit_generic(node)
 
-    def _visit_measure(self, node: DAGNode) -> None:
+    def _visit_measure(self, node: DAGNode, includes_reset: bool = False) -> None:
         """Visit a measurement node.
 
         Measurement currently triggers the end of a deterministically scheduled block
         of instructions in IBM dynamic circuits hardware.
         This means that it is possible to schedule *up to* a measurement (and during its pulses)
         but the measurement will be followed by a period of indeterminism.
-        All measurements on disjoint qubits that lexicographically follow another
+        All measurements on disjoint qubits that topologically follow another
         measurement will be collected and performed in parallel. A measurement on a qubit
         intersecting with the set of qubits to be measured in parallel will trigger the
         end of a scheduling block with said measurement occurring in a following block
@@ -209,12 +207,18 @@ class DynamicCircuitScheduleAnalysis(BaseScheduler):
             self._idle_after[q][1] for q in measure_qargs
         )  # pylint: disable=invalid-name
 
-        # If the measurement qubits overlap, we need to start a new scheduling block.
+        # If the measurement qubits overlap, we need to flush measurements and start a
+        # new scheduling block.
         if current_block_measure_qargs & measure_qargs:
-            self._begin_new_circuit_block()
-            t0q = 0
-        # Otherwise we need to increment all measurements to start at the same time within the block.
+            if self._current_block_measures_has_reset:
+                # If a reset is included we must trigger the end of a block.
+                self._begin_new_circuit_block()
+                t0q = 0
+            else:
+                # Otherwise just trigger a measurement flush
+                self._flush_measures()
         else:
+            # Otherwise we need to increment all measurements to start at the same time within the block.
             t0q = max(  # pylint: disable=invalid-name
                 itertools.chain(
                     [t0q],
@@ -224,6 +228,9 @@ class DynamicCircuitScheduleAnalysis(BaseScheduler):
                     ),
                 )
             )
+
+        if includes_reset:
+            self._current_block_measures_has_reset = True
 
         # Insert this measure into the block
         self._current_block_measures.add(node)
@@ -245,14 +252,12 @@ class DynamicCircuitScheduleAnalysis(BaseScheduler):
         """Visit a reset node.
 
         Reset currently triggers the end of a pulse block in IBM dynamic circuits hardware
-        as conditional reset is performed internally using a c_if.
-        This means that it is possible to schedule *up to* a reset (and during its measurement pulses)
+        as conditional reset is performed internally using a c_if. This means that it is
+        possible to schedule *up to* a reset (and during its measurement pulses)
         but the reset will be followed by a period of conditional indeterminism.
         All resets on disjoint qubits will be collected on the same qubits to be run simultaneously.
-        This means that from the perspective of scheduling resets have the same behaviour and duration
-        as a measurement.
         """
-        self._visit_measure(node)
+        self._visit_measure(node, True)
 
     def _visit_generic(self, node: DAGNode) -> None:
         """Visit a generic node such as a gate or barrier."""
@@ -282,8 +287,13 @@ class DynamicCircuitScheduleAnalysis(BaseScheduler):
         """Create a new timed circuit block completing the previous block."""
         self._current_block_idx += 1
         self._conditional_block = False
-        self._current_block_measures = set()
         self._idle_after = {q: (0, 0) for q in self._dag.qubits + self._dag.clbits}
+        self._flush_measures()
+
+    def _flush_measures(self) -> None:
+        """Flush currently accumulated measurements by resetting block measures."""
+        self._current_block_measures = set()
+        self._current_block_measures_has_reset = False
 
     def _current_block_measure_qargs(self) -> Set[Qubit]:
         return set(

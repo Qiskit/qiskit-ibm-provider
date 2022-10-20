@@ -20,7 +20,7 @@ from qiskit.transpiler.exceptions import TranspilerError
 
 from qiskit_ibm_provider.transpiler.passes.scheduling.pad_delay import PadDelay
 from qiskit_ibm_provider.transpiler.passes.scheduling.scheduler import (
-    DynamicCircuitScheduleAnalysis,
+    ASAPScheduleAnalysis,
 )
 from qiskit_ibm_provider.transpiler.passes.scheduling.utils import (
     DynamicCircuitInstructionDurations,
@@ -42,7 +42,7 @@ class TestSchedulingAndPaddingPass(QiskitTestCase):
         durations = DynamicCircuitInstructionDurations(
             [("x", None, 200), ("measure", None, 840)]
         )
-        pm = PassManager([DynamicCircuitScheduleAnalysis(durations), PadDelay()])
+        pm = PassManager([ASAPScheduleAnalysis(durations), PadDelay()])
         scheduled = pm.run(qc)
 
         expected = QuantumCircuit(2, 1)
@@ -66,7 +66,7 @@ class TestSchedulingAndPaddingPass(QiskitTestCase):
         durations = DynamicCircuitInstructionDurations(
             [("x", None, 200), ("measure", None, 840)]
         )
-        pm = PassManager([DynamicCircuitScheduleAnalysis(durations), PadDelay()])
+        pm = PassManager([ASAPScheduleAnalysis(durations), PadDelay()])
         scheduled = pm.run(qc)
 
         expected = QuantumCircuit(2, 1)
@@ -77,9 +77,8 @@ class TestSchedulingAndPaddingPass(QiskitTestCase):
         expected.barrier()
         self.assertEqual(expected, scheduled)
 
-    def test_measure_block_end(self):
-        """Tests that measures trigger the end of a scheduling block and
-        that measurements are grouped by block."""
+    def test_measure_block_not_end(self):
+        """Tests that measures trigger do not trigger the end of a scheduling block."""
         qc = QuantumCircuit(3, 1)
         qc.x(0)
         qc.measure(0, 0)
@@ -91,7 +90,7 @@ class TestSchedulingAndPaddingPass(QiskitTestCase):
         durations = DynamicCircuitInstructionDurations(
             [("x", None, 200), ("measure", None, 840)]
         )
-        pm = PassManager([DynamicCircuitScheduleAnalysis(durations), PadDelay()])
+        pm = PassManager([ASAPScheduleAnalysis(durations), PadDelay()])
         scheduled = pm.run(qc)
 
         expected = QuantumCircuit(3, 1)
@@ -100,6 +99,36 @@ class TestSchedulingAndPaddingPass(QiskitTestCase):
         expected.x(2)
         expected.delay(1000, 2)
         expected.measure(0, 0)
+        expected.measure(1, 0)
+        expected.delay(1000, 0)
+        expected.measure(1, 0)
+        expected.measure(2, 0)
+        expected.barrier()
+
+        self.assertEqual(expected, scheduled)
+
+    def test_reset_block_end(self):
+        """Tests that measures trigger do trigger the end of a scheduling block."""
+        qc = QuantumCircuit(3, 1)
+        qc.x(0)
+        qc.reset(0)
+        qc.measure(1, 0)
+        qc.x(2)
+        qc.measure(1, 0)
+        qc.measure(2, 0)
+
+        durations = DynamicCircuitInstructionDurations(
+            [("x", None, 200), ("measure", None, 840), ("reset", None, 840)]
+        )
+        pm = PassManager([ASAPScheduleAnalysis(durations), PadDelay()])
+        scheduled = pm.run(qc)
+
+        expected = QuantumCircuit(3, 1)
+        expected.x(0)
+        expected.delay(200, 1)
+        expected.x(2)
+        expected.delay(1000, 2)
+        expected.reset(0)
         expected.measure(1, 0)
         expected.barrier()
         expected.delay(1000, 0)
@@ -119,7 +148,7 @@ class TestSchedulingAndPaddingPass(QiskitTestCase):
         durations = DynamicCircuitInstructionDurations(
             [("x", None, 200), ("measure", None, 840)]
         )
-        pm = PassManager([DynamicCircuitScheduleAnalysis(durations), PadDelay()])
+        pm = PassManager([ASAPScheduleAnalysis(durations), PadDelay()])
         scheduled = pm.run(qc)
 
         expected = QuantumCircuit(3, 1)
@@ -146,7 +175,7 @@ class TestSchedulingAndPaddingPass(QiskitTestCase):
         durations = DynamicCircuitInstructionDurations(
             [("measure", [0], 840), ("measure", [1], 540)]
         )
-        pm = PassManager([DynamicCircuitScheduleAnalysis(durations), PadDelay()])
+        pm = PassManager([ASAPScheduleAnalysis(durations), PadDelay()])
         scheduled = pm.run(qc)
 
         expected = QuantumCircuit(3, 1)
@@ -172,7 +201,7 @@ class TestSchedulingAndPaddingPass(QiskitTestCase):
         durations = DynamicCircuitInstructionDurations(
             [("x", None, 200), ("measure", None, 840)]
         )
-        pm = PassManager([DynamicCircuitScheduleAnalysis(durations), PadDelay()])
+        pm = PassManager([ASAPScheduleAnalysis(durations), PadDelay()])
         scheduled = pm.run(qc)
 
         expected = QuantumCircuit(3, 1)
@@ -203,7 +232,7 @@ class TestSchedulingAndPaddingPass(QiskitTestCase):
             [("x", [0], 200), ("x", [1], 400), ("measure", None, 840)]
         )
 
-        pm = PassManager([DynamicCircuitScheduleAnalysis(durations), PadDelay()])
+        pm = PassManager([ASAPScheduleAnalysis(durations), PadDelay()])
         scheduled = pm.run(qc)
 
         expected = QuantumCircuit(2, 2)
@@ -229,7 +258,7 @@ class TestSchedulingAndPaddingPass(QiskitTestCase):
             [("x", [0], 200), ("x", [1], 400), ("measure", None, 840)]
         )
 
-        pm = PassManager([DynamicCircuitScheduleAnalysis(durations), PadDelay()])
+        pm = PassManager([ASAPScheduleAnalysis(durations), PadDelay()])
         scheduled = pm.run(qc)
 
         expected = QuantumCircuit(2, 2)
@@ -260,7 +289,7 @@ class TestSchedulingAndPaddingPass(QiskitTestCase):
         # lock at the end edge
         scheduled = PassManager(
             [
-                DynamicCircuitScheduleAnalysis(durations),
+                ASAPScheduleAnalysis(durations),
                 PadDelay(),
             ]
         ).run(qc)
@@ -299,7 +328,7 @@ class TestSchedulingAndPaddingPass(QiskitTestCase):
 
         scheduled = PassManager(
             [
-                DynamicCircuitScheduleAnalysis(durations),
+                ASAPScheduleAnalysis(durations),
                 PadDelay(),
             ]
         ).run(qc)
@@ -334,7 +363,7 @@ class TestSchedulingAndPaddingPass(QiskitTestCase):
         qc.x(1).c_if(0, True)
 
         durations = DynamicCircuitInstructionDurations([("x", None, 160)])
-        pm = PassManager([DynamicCircuitScheduleAnalysis(durations), PadDelay()])
+        pm = PassManager([ASAPScheduleAnalysis(durations), PadDelay()])
         scheduled = pm.run(qc)
 
         expected = QuantumCircuit(2, 1)
@@ -361,7 +390,7 @@ class TestSchedulingAndPaddingPass(QiskitTestCase):
         durations = DynamicCircuitInstructionDurations(
             [("x", None, 160), ("cx", None, 600)]
         )
-        pm = PassManager([DynamicCircuitScheduleAnalysis(durations), PadDelay()])
+        pm = PassManager([ASAPScheduleAnalysis(durations), PadDelay()])
         scheduled = pm.run(qc)
 
         expected = QuantumCircuit(2)
@@ -401,7 +430,7 @@ class TestSchedulingAndPaddingPass(QiskitTestCase):
 
         scheduled = PassManager(
             [
-                DynamicCircuitScheduleAnalysis(durations),
+                ASAPScheduleAnalysis(durations),
                 PadDelay(fill_very_end=False),
             ]
         ).run(qc)
@@ -419,7 +448,8 @@ class TestSchedulingAndPaddingPass(QiskitTestCase):
         qc = QuantumCircuit(3, 1)
         qc.x(0)
         qc.reset(0)
-        qc.reset(1)
+        qc.measure(1, 0)
+        qc.x(0)
 
         durations = DynamicCircuitInstructionDurations(
             [
@@ -438,16 +468,20 @@ class TestSchedulingAndPaddingPass(QiskitTestCase):
                 ("measure", [1], 540),
             ]
         )
-        pm = PassManager([DynamicCircuitScheduleAnalysis(durations), PadDelay()])
+        pm = PassManager([ASAPScheduleAnalysis(durations), PadDelay()])
         scheduled = pm.run(qc)
 
         expected = QuantumCircuit(3, 1)
         expected.x(0)
         expected.delay(200, 1)
-        expected.delay(1200, 2)
+        expected.delay(900, 2)
         expected.reset(0)
-        expected.reset(1)
-        expected.delay(100, 1)
+        expected.measure(1, 0)
+        expected.delay(100, 0)
+        expected.barrier()
+        expected.x(0)
+        expected.delay(200, 1)
+        expected.delay(200, 2)
         expected.barrier()
 
         self.assertEqual(expected, scheduled)
@@ -460,7 +494,7 @@ class TestSchedulingAndPaddingPass(QiskitTestCase):
         qc = QuantumCircuit(3, 1)
         qc.x(0)
         qc.reset(0)
-        qc.reset(1)
+        qc.measure(1, 0)
 
         durations = DynamicCircuitInstructionDurations(
             [
@@ -479,16 +513,16 @@ class TestSchedulingAndPaddingPass(QiskitTestCase):
                 ("measure", [1], 540),
             ]
         )
-        pm = PassManager([DynamicCircuitScheduleAnalysis(durations), PadDelay()])
+        pm = PassManager([ASAPScheduleAnalysis(durations), PadDelay()])
         scheduled = pm.run(qc)
 
         expected = QuantumCircuit(3, 1)
         expected.x(0)
         expected.delay(200, 1)
-        expected.delay(1200, 2)
+        expected.delay(900, 2)
         expected.reset(0)
-        expected.reset(1)
-        expected.delay(100, 1)
+        expected.measure(1, 0)
+        expected.delay(100, 0)
         expected.barrier()
 
         self.assertEqual(expected, scheduled)
@@ -509,14 +543,14 @@ class TestSchedulingAndPaddingPass(QiskitTestCase):
 
         scheduled0 = PassManager(
             [
-                DynamicCircuitScheduleAnalysis(durations),
+                ASAPScheduleAnalysis(durations),
                 PadDelay(),
             ]
         ).run(qc)
 
         scheduled1 = PassManager(
             [
-                DynamicCircuitScheduleAnalysis(durations),
+                ASAPScheduleAnalysis(durations),
                 PadDelay(),
             ]
         ).run(scheduled0)
@@ -533,7 +567,7 @@ class TestSchedulingAndPaddingPass(QiskitTestCase):
         durations = DynamicCircuitInstructionDurations(
             [("x", None, 200), ("measure", None, 840)]
         )
-        pm = PassManager([DynamicCircuitScheduleAnalysis(durations), PadDelay()])
+        pm = PassManager([ASAPScheduleAnalysis(durations), PadDelay()])
         scheduled = pm.run(qc)
 
         expected = QuantumCircuit(2, 1)
@@ -559,7 +593,7 @@ class TestSchedulingAndPaddingPass(QiskitTestCase):
         durations = DynamicCircuitInstructionDurations(
             [("x", None, 200), ("measure", None, 840)]
         )
-        pm = PassManager([DynamicCircuitScheduleAnalysis(durations), PadDelay()])
+        pm = PassManager([ASAPScheduleAnalysis(durations), PadDelay()])
         scheduled = pm.run(qc)
 
         expected = QuantumCircuit(3, 3)

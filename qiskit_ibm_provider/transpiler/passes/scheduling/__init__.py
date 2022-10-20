@@ -33,7 +33,7 @@ for a dynamic circuit backend's execution model:
     from qiskit.transpiler.passmanager import PassManager
 
     from qiskit_ibm_provider.transpiler.passes.scheduling import DynamicCircuitInstructionDurations
-    from qiskit_ibm_provider.transpiler.passes.scheduling import DynamicCircuitScheduleAnalysis
+    from qiskit_ibm_provider.transpiler.passes.scheduling import ASAPScheduleAnalysis
     from qiskit_ibm_provider.transpiler.passes.scheduling import PadDelay
     from qiskit.providers.fake_provider.backends.jakarta.fake_jakarta import FakeJakarta
 
@@ -41,7 +41,7 @@ for a dynamic circuit backend's execution model:
     backend = FakeJakarta()
 
     durations = DynamicCircuitInstructionDurations.from_backend(backend)
-    pm = PassManager([DynamicCircuitScheduleAnalysis(durations), PadDelay()])
+    pm = PassManager([ASAPScheduleAnalysis(durations), PadDelay()])
 
     qr = QuantumRegister(3)
     crz = ClassicalRegister(1, name="crz")
@@ -81,7 +81,7 @@ using the :class:`PadDynamicalDecoupling` pass as shown below:
 
     pm = PassManager(
         [
-            DynamicCircuitScheduleAnalysis(durations),
+            ASAPScheduleAnalysis(durations),
             PadDynamicalDecoupling(durations, dd_sequence),
         ]
     )
@@ -97,7 +97,7 @@ Scheduling & Dynamical Decoupling
    :toctree: ../stubs/
 
     BlockBasePadder
-    DynamicCircuitScheduleAnalysis
+    ASAPScheduleAnalysis
     DynamicCircuitInstructionDurations
     PadDelay
     PadDynamicalDecoupling
@@ -109,5 +109,5 @@ Scheduling & Dynamical Decoupling
 from .block_base_padder import BlockBasePadder
 from .dynamical_decoupling import PadDynamicalDecoupling
 from .pad_delay import PadDelay
-from .scheduler import DynamicCircuitScheduleAnalysis
+from .scheduler import ASAPScheduleAnalysis
 from .utils import DynamicCircuitInstructionDurations

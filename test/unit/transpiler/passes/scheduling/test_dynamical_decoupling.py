@@ -28,7 +28,7 @@ from qiskit_ibm_provider.transpiler.passes.scheduling.dynamical_decoupling impor
     PadDynamicalDecoupling,
 )
 from qiskit_ibm_provider.transpiler.passes.scheduling.scheduler import (
-    DynamicCircuitScheduleAnalysis,
+    ASAPScheduleAnalysis,
 )
 from qiskit_ibm_provider.transpiler.passes.scheduling.utils import (
     DynamicCircuitInstructionDurations,
@@ -79,7 +79,7 @@ class TestPadDynamicalDecoupling(QiskitTestCase):
         dd_sequence = [XGate(), XGate()]
         pm = PassManager(
             [
-                DynamicCircuitScheduleAnalysis(self.durations),
+                ASAPScheduleAnalysis(self.durations),
                 PadDynamicalDecoupling(self.durations, dd_sequence),
             ]
         )
@@ -111,7 +111,7 @@ class TestPadDynamicalDecoupling(QiskitTestCase):
         dd_sequence = [XGate(), XGate()]
         pm = PassManager(
             [
-                DynamicCircuitScheduleAnalysis(self.durations),
+                ASAPScheduleAnalysis(self.durations),
                 PadDynamicalDecoupling(self.durations, dd_sequence, qubits=[0]),
             ]
         )
@@ -141,7 +141,7 @@ class TestPadDynamicalDecoupling(QiskitTestCase):
         dd_sequence = [YGate(), YGate()]
         pm = PassManager(
             [
-                DynamicCircuitScheduleAnalysis(self.durations),
+                ASAPScheduleAnalysis(self.durations),
                 PadDynamicalDecoupling(
                     self.durations, dd_sequence, skip_reset_qubits=False
                 ),
@@ -185,7 +185,7 @@ class TestPadDynamicalDecoupling(QiskitTestCase):
         dd_sequence = [XGate(), YGate(), XGate(), YGate()]
         pm = PassManager(
             [
-                DynamicCircuitScheduleAnalysis(self.durations),
+                ASAPScheduleAnalysis(self.durations),
                 PadDynamicalDecoupling(self.durations, dd_sequence),
             ]
         )
@@ -225,7 +225,7 @@ class TestPadDynamicalDecoupling(QiskitTestCase):
         dd_sequence = [RXGate(pi / 4)]
         pm = PassManager(
             [
-                DynamicCircuitScheduleAnalysis(self.durations),
+                ASAPScheduleAnalysis(self.durations),
                 PadDynamicalDecoupling(self.durations, dd_sequence),
             ]
         )
@@ -278,7 +278,7 @@ class TestPadDynamicalDecoupling(QiskitTestCase):
 
         pm = PassManager(
             [
-                DynamicCircuitScheduleAnalysis(self.durations),
+                ASAPScheduleAnalysis(self.durations),
                 PadDynamicalDecoupling(
                     self.durations, dd_sequence, qubits=[0], spacing=spacing
                 ),
@@ -321,7 +321,7 @@ class TestPadDynamicalDecoupling(QiskitTestCase):
         spacing = [0] + [1 / 4] * 4
         pm = PassManager(
             [
-                DynamicCircuitScheduleAnalysis(self.durations),
+                ASAPScheduleAnalysis(self.durations),
                 PadDynamicalDecoupling(self.durations, dd_sequence, spacing=spacing),
             ]
         )
@@ -357,7 +357,7 @@ class TestPadDynamicalDecoupling(QiskitTestCase):
         spacing = [0.1, 0.9]
         pm = PassManager(
             [
-                DynamicCircuitScheduleAnalysis(self.durations),
+                ASAPScheduleAnalysis(self.durations),
                 PadDynamicalDecoupling(
                     self.durations, dd_sequence, spacing=spacing, skip_reset_qubits=True
                 ),
@@ -395,7 +395,7 @@ class TestPadDynamicalDecoupling(QiskitTestCase):
         dd_sequence = [XGate(), YGate()]
         pm = PassManager(
             [
-                DynamicCircuitScheduleAnalysis(self.durations),
+                ASAPScheduleAnalysis(self.durations),
                 PadDynamicalDecoupling(self.durations, dd_sequence),
             ]
         )
@@ -429,7 +429,7 @@ class TestPadDynamicalDecoupling(QiskitTestCase):
         dd_sequence = [XGate(), XGate()]
         pm = PassManager(
             [
-                DynamicCircuitScheduleAnalysis(durations),
+                ASAPScheduleAnalysis(durations),
                 PadDynamicalDecoupling(durations, dd_sequence),
             ]
         )
@@ -444,7 +444,7 @@ class TestPadDynamicalDecoupling(QiskitTestCase):
         dd_sequence = [XGate(), YGate(), XGate(), YGate()]
         pm = PassManager(
             [
-                DynamicCircuitScheduleAnalysis(self.durations),
+                ASAPScheduleAnalysis(self.durations),
                 PadDynamicalDecoupling(
                     self.durations,
                     dd_sequence,
@@ -494,7 +494,7 @@ class TestPadDynamicalDecoupling(QiskitTestCase):
 
         pm1 = PassManager(
             [
-                DynamicCircuitScheduleAnalysis(self.durations),
+                ASAPScheduleAnalysis(self.durations),
                 PadDynamicalDecoupling(self.durations, dd_sequence, qubits=[0]),
                 PadDynamicalDecoupling(self.durations, dd_sequence, qubits=[1]),
             ]
@@ -503,7 +503,7 @@ class TestPadDynamicalDecoupling(QiskitTestCase):
 
         pm2 = PassManager(
             [
-                DynamicCircuitScheduleAnalysis(self.durations),
+                ASAPScheduleAnalysis(self.durations),
                 PadDynamicalDecoupling(self.durations, dd_sequence, qubits=[0, 1]),
             ]
         )
@@ -517,7 +517,7 @@ class TestPadDynamicalDecoupling(QiskitTestCase):
         dd_sequence = [XGate(), XGate()]
         pm = PassManager(
             [
-                DynamicCircuitScheduleAnalysis(self.durations),
+                ASAPScheduleAnalysis(self.durations),
                 PadDynamicalDecoupling(self.durations, dd_sequence),
             ]
         )
@@ -569,7 +569,7 @@ class TestPadDynamicalDecoupling(QiskitTestCase):
         dd_sequence = [XGate(), XGate()]
         pm = PassManager(
             [
-                DynamicCircuitScheduleAnalysis(self.durations),
+                ASAPScheduleAnalysis(self.durations),
                 PadDynamicalDecoupling(self.durations, dd_sequence),
             ]
         )
@@ -658,14 +658,14 @@ class TestPadDynamicalDecoupling(QiskitTestCase):
         dd_sequence = [XGate(), XGate()]
         pm0 = PassManager(
             [
-                DynamicCircuitScheduleAnalysis(self.durations),
+                ASAPScheduleAnalysis(self.durations),
                 PadDynamicalDecoupling(self.durations, dd_sequence),
             ]
         )
 
         pm1 = PassManager(
             [
-                DynamicCircuitScheduleAnalysis(self.durations),
+                ASAPScheduleAnalysis(self.durations),
                 PadDynamicalDecoupling(self.durations, dd_sequence),
             ]
         )
