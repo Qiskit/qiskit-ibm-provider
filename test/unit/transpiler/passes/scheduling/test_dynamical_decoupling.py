@@ -21,7 +21,6 @@ from qiskit.circuit import QuantumCircuit, Delay
 from qiskit.circuit.library import XGate, YGate, RXGate, UGate
 from qiskit.quantum_info import Operator
 from qiskit.test import QiskitTestCase
-from qiskit.transpiler.instruction_durations import InstructionDurations
 from qiskit.transpiler.passmanager import PassManager
 from qiskit.transpiler.exceptions import TranspilerError
 
@@ -30,6 +29,9 @@ from qiskit_ibm_provider.transpiler.passes.scheduling.dynamical_decoupling impor
 )
 from qiskit_ibm_provider.transpiler.passes.scheduling.scheduler import (
     DynamicCircuitScheduleAnalysis,
+)
+from qiskit_ibm_provider.transpiler.passes.scheduling.utils import (
+    DynamicCircuitInstructionDurations,
 )
 
 # pylint: disable=invalid-name
@@ -57,7 +59,7 @@ class TestPadDynamicalDecoupling(QiskitTestCase):
         self.midmeas.cx(1, 2)
         self.midmeas.cx(0, 1)
 
-        self.durations = InstructionDurations(
+        self.durations = DynamicCircuitInstructionDurations(
             [
                 ("h", 0, 50),
                 ("cx", [0, 1], 700),
@@ -67,8 +69,8 @@ class TestPadDynamicalDecoupling(QiskitTestCase):
                 ("y", None, 50),
                 ("u", None, 100),
                 ("rx", None, 100),
-                ("measure", None, 1000),
-                ("reset", None, 1500),
+                ("measure", None, 840),
+                ("reset", None, 1340),
             ]
         )
 
@@ -420,7 +422,9 @@ class TestPadDynamicalDecoupling(QiskitTestCase):
 
         circ.add_calibration("rx", (1,), rx, params=[param_value])
 
-        durations = InstructionDurations([("x", None, 100), ("cx", None, 300)])
+        durations = DynamicCircuitInstructionDurations(
+            [("x", None, 100), ("cx", None, 300)]
+        )
 
         dd_sequence = [XGate(), XGate()]
         pm = PassManager(

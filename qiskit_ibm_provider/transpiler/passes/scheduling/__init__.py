@@ -30,16 +30,17 @@ for a dynamic circuit backend's execution model:
 
     from qiskit import transpile
     from qiskit.circuit import ClassicalRegister, QuantumCircuit, QuantumRegister
-    from qiskit.transpiler.instruction_durations import InstructionDurations
     from qiskit.transpiler.passmanager import PassManager
 
-    from qiskit_ibm_provider.transpiler.passes.scheduling import DynamicCircuitScheduleAnalysis, PadDelay
+    from qiskit_ibm_provider.transpiler.passes.scheduling import DynamicCircuitInstructionDurations
+    from qiskit_ibm_provider.transpiler.passes.scheduling import DynamicCircuitScheduleAnalysis
+    from qiskit_ibm_provider.transpiler.passes.scheduling import PadDelay
     from qiskit.providers.fake_provider.backends.jakarta.fake_jakarta import FakeJakarta
 
 
     backend = FakeJakarta()
 
-    durations = InstructionDurations.from_backend(backend)
+    durations = DynamicCircuitInstructionDurations.from_backend(backend)
     pm = PassManager([DynamicCircuitScheduleAnalysis(durations), PadDelay()])
 
     qr = QuantumRegister(3)
@@ -97,6 +98,7 @@ Scheduling & Dynamical Decoupling
 
     BlockBasePadder
     DynamicCircuitScheduleAnalysis
+    DynamicCircuitInstructionDurations
     PadDelay
     PadDynamicalDecoupling
 
@@ -108,3 +110,4 @@ from .block_base_padder import BlockBasePadder
 from .dynamical_decoupling import PadDynamicalDecoupling
 from .pad_delay import PadDelay
 from .scheduler import DynamicCircuitScheduleAnalysis
+from .utils import DynamicCircuitInstructionDurations

@@ -313,6 +313,9 @@ class BlockBasePadder(TransformationPass):
             oper: New operation that is added to the DAG circuit.
             qubits: The list of qubits that the operation acts on.
             clbits: The list of clbits that the operation acts on.
+
+        Returns:
+            The DAGNode applied to.
         """
         if isinstance(qubits, Qubit):
             qubits = [qubits]

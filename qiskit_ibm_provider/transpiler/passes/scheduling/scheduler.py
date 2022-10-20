@@ -270,8 +270,8 @@ class DynamicCircuitScheduleAnalysis(BaseScheduler):
         t1 = t0 + op_duration  # pylint: disable=invalid-name
         self._update_idles(node, t0, t1)
 
-    def _update_idles(
-        self, node: DAGNode, t0: int, t1: int  # pylint: disable=invalid-name
+    def _update_idles(  # pylint: disable=invalid-name
+        self, node: DAGNode, t0: int, t1: int
     ) -> None:
         for bit in itertools.chain(node.qargs, node.cargs):
             self._idle_after[bit] = (self._current_block_idx, t1)

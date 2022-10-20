@@ -15,13 +15,15 @@
 from qiskit import QuantumCircuit
 from qiskit.pulse import Schedule, Play, Constant, DriveChannel
 from qiskit.test import QiskitTestCase
-from qiskit.transpiler.instruction_durations import InstructionDurations
 from qiskit.transpiler.passmanager import PassManager
 from qiskit.transpiler.exceptions import TranspilerError
 
 from qiskit_ibm_provider.transpiler.passes.scheduling.pad_delay import PadDelay
 from qiskit_ibm_provider.transpiler.passes.scheduling.scheduler import (
     DynamicCircuitScheduleAnalysis,
+)
+from qiskit_ibm_provider.transpiler.passes.scheduling.utils import (
+    DynamicCircuitInstructionDurations,
 )
 
 # pylint: disable=invalid-name
@@ -37,7 +39,9 @@ class TestSchedulingAndPaddingPass(QiskitTestCase):
         qc.measure(0, 0)
         qc.x(1).c_if(0, True)
 
-        durations = InstructionDurations([("x", None, 200), ("measure", None, 1000)])
+        durations = DynamicCircuitInstructionDurations(
+            [("x", None, 200), ("measure", None, 840)]
+        )
         pm = PassManager([DynamicCircuitScheduleAnalysis(durations), PadDelay()])
         scheduled = pm.run(qc)
 
@@ -59,7 +63,9 @@ class TestSchedulingAndPaddingPass(QiskitTestCase):
         qc.measure(0, 0)
         qc.measure(1, 0)
 
-        durations = InstructionDurations([("x", None, 200), ("measure", None, 1000)])
+        durations = DynamicCircuitInstructionDurations(
+            [("x", None, 200), ("measure", None, 840)]
+        )
         pm = PassManager([DynamicCircuitScheduleAnalysis(durations), PadDelay()])
         scheduled = pm.run(qc)
 
@@ -82,7 +88,9 @@ class TestSchedulingAndPaddingPass(QiskitTestCase):
         qc.measure(1, 0)
         qc.measure(2, 0)
 
-        durations = InstructionDurations([("x", None, 200), ("measure", None, 1000)])
+        durations = DynamicCircuitInstructionDurations(
+            [("x", None, 200), ("measure", None, 840)]
+        )
         pm = PassManager([DynamicCircuitScheduleAnalysis(durations), PadDelay()])
         scheduled = pm.run(qc)
 
@@ -108,7 +116,9 @@ class TestSchedulingAndPaddingPass(QiskitTestCase):
         qc.x(1).c_if(0, True)
         qc.x(2).c_if(0, True)
 
-        durations = InstructionDurations([("x", None, 200), ("measure", None, 1000)])
+        durations = DynamicCircuitInstructionDurations(
+            [("x", None, 200), ("measure", None, 840)]
+        )
         pm = PassManager([DynamicCircuitScheduleAnalysis(durations), PadDelay()])
         scheduled = pm.run(qc)
 
@@ -133,8 +143,8 @@ class TestSchedulingAndPaddingPass(QiskitTestCase):
         qc.measure(0, 0)
         qc.measure(1, 0)
 
-        durations = InstructionDurations(
-            [("measure", [0], 1000), ("measure", [1], 700)]
+        durations = DynamicCircuitInstructionDurations(
+            [("measure", [0], 840), ("measure", [1], 540)]
         )
         pm = PassManager([DynamicCircuitScheduleAnalysis(durations), PadDelay()])
         scheduled = pm.run(qc)
@@ -159,7 +169,9 @@ class TestSchedulingAndPaddingPass(QiskitTestCase):
         qc.x(1).c_if(0, 1)
         qc.measure(2, 0)
 
-        durations = InstructionDurations([("x", None, 200), ("measure", None, 1000)])
+        durations = DynamicCircuitInstructionDurations(
+            [("x", None, 200), ("measure", None, 840)]
+        )
         pm = PassManager([DynamicCircuitScheduleAnalysis(durations), PadDelay()])
         scheduled = pm.run(qc)
 
@@ -187,8 +199,8 @@ class TestSchedulingAndPaddingPass(QiskitTestCase):
         qc.measure(0, 0)
         qc.measure(1, 1)
 
-        durations = InstructionDurations(
-            [("x", [0], 200), ("x", [1], 400), ("measure", None, 1000)]
+        durations = DynamicCircuitInstructionDurations(
+            [("x", [0], 200), ("x", [1], 400), ("measure", None, 840)]
         )
 
         pm = PassManager([DynamicCircuitScheduleAnalysis(durations), PadDelay()])
@@ -213,8 +225,8 @@ class TestSchedulingAndPaddingPass(QiskitTestCase):
         qc.measure(0, 0)
         qc.measure(1, 1)
 
-        durations = InstructionDurations(
-            [("x", [0], 200), ("x", [1], 400), ("measure", None, 1000)]
+        durations = DynamicCircuitInstructionDurations(
+            [("x", [0], 200), ("x", [1], 400), ("measure", None, 840)]
         )
 
         pm = PassManager([DynamicCircuitScheduleAnalysis(durations), PadDelay()])
@@ -241,7 +253,9 @@ class TestSchedulingAndPaddingPass(QiskitTestCase):
         qc.x(1).c_if(0, 1)
         qc.measure(2, 0)
 
-        durations = InstructionDurations([("x", None, 200), ("measure", None, 1000)])
+        durations = DynamicCircuitInstructionDurations(
+            [("x", None, 200), ("measure", None, 840)]
+        )
 
         # lock at the end edge
         scheduled = PassManager(
@@ -279,7 +293,9 @@ class TestSchedulingAndPaddingPass(QiskitTestCase):
         qc.measure(0, 0)
         qc.x(0).c_if(0, 1)
 
-        durations = InstructionDurations([("x", None, 100), ("measure", None, 1000)])
+        durations = DynamicCircuitInstructionDurations(
+            [("x", None, 100), ("measure", None, 840)]
+        )
 
         scheduled = PassManager(
             [
@@ -317,7 +333,7 @@ class TestSchedulingAndPaddingPass(QiskitTestCase):
         qc.x(0).c_if(0, True)
         qc.x(1).c_if(0, True)
 
-        durations = InstructionDurations([("x", None, 160)])
+        durations = DynamicCircuitInstructionDurations([("x", None, 160)])
         pm = PassManager([DynamicCircuitScheduleAnalysis(durations), PadDelay()])
         scheduled = pm.run(qc)
 
@@ -342,7 +358,9 @@ class TestSchedulingAndPaddingPass(QiskitTestCase):
         xsched = Schedule(Play(Constant(300, 0.1), DriveChannel(0)))
         qc.add_calibration("x", (0,), xsched)
 
-        durations = InstructionDurations([("x", None, 160), ("cx", None, 600)])
+        durations = DynamicCircuitInstructionDurations(
+            [("x", None, 160), ("cx", None, 600)]
+        )
         pm = PassManager([DynamicCircuitScheduleAnalysis(durations), PadDelay()])
         scheduled = pm.run(qc)
 
@@ -377,7 +395,9 @@ class TestSchedulingAndPaddingPass(QiskitTestCase):
         qc.x(1)
         qc.measure(0, 0)
 
-        durations = InstructionDurations([("x", None, 160), ("measure", None, 1000)])
+        durations = DynamicCircuitInstructionDurations(
+            [("x", None, 160), ("measure", None, 840)]
+        )
 
         scheduled = PassManager(
             [
@@ -401,21 +421,21 @@ class TestSchedulingAndPaddingPass(QiskitTestCase):
         qc.reset(0)
         qc.reset(1)
 
-        durations = InstructionDurations(
+        durations = DynamicCircuitInstructionDurations(
             [
                 ("x", None, 200),
                 (
                     "reset",
                     [0],
-                    1000,
+                    840,
                 ),  # ignored as only the duration of the measurement is used for scheduling
                 (
                     "reset",
                     [1],
-                    900,
+                    740,
                 ),  # ignored as only the duration of the measurement is used for scheduling
-                ("measure", [0], 600),
-                ("measure", [1], 700),
+                ("measure", [0], 440),
+                ("measure", [1], 540),
             ]
         )
         pm = PassManager([DynamicCircuitScheduleAnalysis(durations), PadDelay()])
@@ -442,21 +462,21 @@ class TestSchedulingAndPaddingPass(QiskitTestCase):
         qc.reset(0)
         qc.reset(1)
 
-        durations = InstructionDurations(
+        durations = DynamicCircuitInstructionDurations(
             [
                 ("x", None, 200),
                 (
                     "reset",
                     [0],
-                    1000,
+                    840,
                 ),  # ignored as only the duration of the measurement is used for scheduling
                 (
                     "reset",
                     [1],
-                    900,
+                    740,
                 ),  # ignored as only the duration of the measurement is used for scheduling
-                ("measure", [0], 600),
-                ("measure", [1], 700),
+                ("measure", [0], 440),
+                ("measure", [1], 540),
             ]
         )
         pm = PassManager([DynamicCircuitScheduleAnalysis(durations), PadDelay()])
@@ -483,7 +503,9 @@ class TestSchedulingAndPaddingPass(QiskitTestCase):
         qc.measure(0, 0)
         qc.x(0).c_if(0, 1)
 
-        durations = InstructionDurations([("x", None, 100), ("measure", None, 1000)])
+        durations = DynamicCircuitInstructionDurations(
+            [("x", None, 100), ("measure", None, 840)]
+        )
 
         scheduled0 = PassManager(
             [
@@ -508,7 +530,9 @@ class TestSchedulingAndPaddingPass(QiskitTestCase):
         qc.x(0)
         qc.x(1)
 
-        durations = InstructionDurations([("x", None, 200), ("measure", None, 1000)])
+        durations = DynamicCircuitInstructionDurations(
+            [("x", None, 200), ("measure", None, 840)]
+        )
         pm = PassManager([DynamicCircuitScheduleAnalysis(durations), PadDelay()])
         scheduled = pm.run(qc)
 
@@ -532,7 +556,9 @@ class TestSchedulingAndPaddingPass(QiskitTestCase):
         qc.x(2).c_if(1, 1)
         qc.measure(2, 2)
 
-        durations = InstructionDurations([("x", None, 200), ("measure", None, 1000)])
+        durations = DynamicCircuitInstructionDurations(
+            [("x", None, 200), ("measure", None, 840)]
+        )
         pm = PassManager([DynamicCircuitScheduleAnalysis(durations), PadDelay()])
         scheduled = pm.run(qc)
 
