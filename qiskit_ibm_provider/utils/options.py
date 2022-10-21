@@ -27,16 +27,17 @@ class QASM3Options:
     circuits: Union[
         str, QuantumCircuit, Schedule, List[Union[QuantumCircuit, Schedule]]
     ] = None
-    exporter_config: Dict = None
+    merge_circuits: bool = True
+    shots: int = None
     init_circuit: List[Dict] = None
     init_delay: int = None
     init_num_resets: int = None
-    merge_circuits: bool = True
-    qasm3_args: Union[Dict, List] = None
-    run_config: Dict = None
-    skip_transpilation: bool = False
+    exporter_config: Dict = None
+    skip_transpilation: bool = True
     transpiler_config: Dict = None
     use_measurement_mitigation: bool = False
+    qasm3_args: Union[Dict, List] = None # Deprecated
+    run_config: Dict = None # Deprecated
 
 
 @dataclass

@@ -68,6 +68,9 @@ from .api.exceptions import RequestsApiError
 logger = logging.getLogger(__name__)
 
 
+QOBJRUNNERPROGRAMID = "circuit-runner"
+QASM3RUNNERPROGRAMID = "qasm3-runner"
+
 class IBMBackend(Backend):
     """Backend class interfacing with an IBM Quantum device.
 
@@ -367,6 +370,7 @@ class IBMBackend(Backend):
         parameter_binds: Optional[List[Dict[Parameter, float]]] = None,
         use_measure_esp: Optional[bool] = None,
         noise_model: Optional[Any] = None,
+        program_id: Optional[str] = None,
         **run_config: Dict,
     ) -> IBMJob:
         """Run on the backend.
@@ -424,6 +428,8 @@ class IBMBackend(Backend):
                 Default: ``True`` if backend supports ESP readout, else ``False``. Backend support
                 for ESP readout is determined by the flag ``measure_esp_enabled`` in
                 ``backend.configuration()``.
+            program_id: The program ID to use for the Qiskit Runtime. Defaults to ``circuit-runner``
+                if ``dynamic=False`` otherwise it is ``qasm3-runner``.
             noise_model: Noise model. (Simulators only)
             **run_config: Extra arguments used to configure the run.
 
@@ -447,9 +453,11 @@ class IBMBackend(Backend):
         if status.operational is True and status.status_msg != "active":
             warnings.warn(f"The backend {self.name} is currently paused.")
 
-        program_id = "circuit-runner"
-        if dynamic:
-            program_id = "qasm3-runner"
+        if program_id is None:
+            if dynamic:
+                program_id = QASM3RUNNERPROGRAMID
+            else:
+                program_id = QOBJRUNNERPROGRAMID
 
         if isinstance(shots, float):
             shots = int(shots)
@@ -527,7 +535,8 @@ class IBMBackend(Backend):
 
     def _get_run_config(self, program_id: str, **kwargs: Any) -> Dict:
         """Return the consolidated runtime configuration."""
-        if program_id == "qasm3-runner":
+        # Check if is a QASM3 like program id.
+        if program_id.startswith(QASM3RUNNERPROGRAMID):
             original_dict = asdict(QASM3Options())
             run_config_dict = copy.copy(asdict(QASM3Options(**original_dict)))
         else:
