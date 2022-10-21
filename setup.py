@@ -92,4 +92,9 @@ setuptools.setup(
         "Documentation": "https://qiskit.org/documentation/",
         "Source Code": "https://github.com/Qiskit/qiskit-ibm-provider",
     },
+    entry_points={
+        "qiskit.transpiler.translation": [
+            "ibm_dynamic_circuits = qiskit_ibm_provider.transpiler.plugin:IBMTranslationPlugin",
+        ]
+    },
 )
