@@ -15,7 +15,7 @@
 from datetime import datetime as python_datetime
 from typing import List, Dict, Any, Optional
 
-from qiskit.test.mock.backends import FakeLima
+from qiskit.providers.fake_provider.backends.lima.fake_lima import FakeLima
 
 
 class FakeApiBackend:

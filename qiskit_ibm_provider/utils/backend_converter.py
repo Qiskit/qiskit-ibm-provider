@@ -17,6 +17,7 @@ from typing import Any, Dict, List
 from qiskit.transpiler.target import Target, InstructionProperties
 from qiskit.utils.units import apply_prefix
 from qiskit.circuit.library.standard_gates import IGate, SXGate, XGate, CXGate, RZGate
+from qiskit.circuit import IfElseOp, WhileLoopOp, ForLoopOp
 from qiskit.circuit.parameter import Parameter
 from qiskit.circuit.gate import Gate
 from qiskit.circuit.delay import Delay
@@ -46,6 +47,11 @@ def convert_to_target(
         "cx": CXGate(),
         "rz": RZGate(Parameter("λ")),
         "reset": Reset(),
+    }
+    control_flow_map = {
+        "if_else": IfElseOp,
+        "while_loop": WhileLoopOp,
+        "for_loop": ForLoopOp,
     }
     custom_gates = {}
     target = None
@@ -136,6 +142,11 @@ def convert_to_target(
         target.add_instruction(
             Delay(Parameter("t")), {(bit,): None for bit in range(target.num_qubits)}
         )
+    # Handle control flow opeartions as globally support in the target
+    for control_flow_op_name, op_class in control_flow_map.items():
+        if control_flow_op_name in configuration.basis_gates:
+            target.add_instruction(op_class, name=control_flow_op_name)
+
     return target
 
 
@@ -147,13 +158,20 @@ def qubit_props_list_from_props(
     """
     qubit_props: List[IBMQubitProperties] = []
     for qubit, _ in enumerate(properties.qubits):
-        t_1 = properties.t1(qubit) * 1e-6  # microseconds to seconds
-        t_2 = properties.t2(qubit) * 1e-6  # microseconds to seconds
-        frequency = properties.frequency(qubit) * 1e9  # GHz to Hz
         try:
-            anharmonicity = (
-                properties.qubit_property(qubit, "anharmonicity")[0] * 1e9
-            )  # GHz to Hz
+            t_1 = properties.t1(qubit)
+        except Exception:  # pylint: disable=broad-except
+            t_1 = None
+        try:
+            t_2 = properties.t2(qubit)
+        except Exception:  # pylint: disable=broad-except
+            t_2 = None
+        try:
+            frequency = properties.frequency(qubit)
+        except Exception:  # pylint: disable=broad-except
+            t_2 = None
+        try:
+            anharmonicity = properties.qubit_property(qubit, "anharmonicity")[0]
         except Exception:  # pylint: disable=broad-except
             anharmonicity = None
         qubit_props.append(

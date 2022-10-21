@@ -25,8 +25,9 @@ REQUIREMENTS = [
     "numpy>=1.13",
     "urllib3>=1.21.1",
     "python-dateutil>=2.8.0",
-    "websocket-client>=1.0.1",
+    "websocket-client<=1.3.3",
     "websockets>=10.0",
+    "typing_extensions>=4.3",
 ]
 
 # Handle version.
@@ -76,7 +77,7 @@ setuptools.setup(
     extras_require={
         "visualization": [
             "matplotlib>=2.1",
-            "ipywidgets>=7.3.0",
+            "ipywidgets<8.0.0",
             "seaborn>=0.9.0",
             "plotly>=4.4",
             "ipyvuetify>=1.1",
