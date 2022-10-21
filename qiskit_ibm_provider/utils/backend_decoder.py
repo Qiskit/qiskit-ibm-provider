@@ -56,7 +56,7 @@ def configuration_from_server_data(
         except (KeyError, TypeError):
             return QasmBackendConfiguration.from_dict(raw_config)
     except Exception:  # pylint: disable=broad-except
-        logger.warning(
+        logger.debug(
             'Remote backend "%s" for service instance %s could not be instantiated due to an '
             "invalid config: %s",
             raw_config.get("backend_name", raw_config.get("name", "unknown")),

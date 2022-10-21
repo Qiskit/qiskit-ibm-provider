@@ -1,0 +1,6 @@
+---
+fixes:
+  - |
+    A warning log message when loading an invalid backend has been switched to
+    a log message as certain backends were causing issues for all users upon
+    loading the provider. Not just when loading the backend in question.
