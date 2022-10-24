@@ -22,7 +22,6 @@ from dateutil import tz
 from qiskit import ClassicalRegister, QuantumCircuit, QuantumRegister
 from qiskit.compiler import transpile
 from qiskit.providers.jobstatus import JobStatus, JOB_FINAL_STATES
-from qiskit.result import Result
 from qiskit.test.reference_circuits import ReferenceCircuits
 
 from qiskit_ibm_provider import IBMBackend
@@ -43,7 +42,6 @@ from ..utils import (
     most_busy_backend,
     cancel_job,
     submit_and_cancel,
-    submit_job_one_bad_instr,
 )
 
 
@@ -324,20 +322,6 @@ class TestIBMJob(IBMTestCase):
             start_datetime=self.last_month,
         )
         self.assertNotIn(job.job_id(), [rjob.job_id() for rjob in oldest_jobs])
-
-    # TODO: check why test case still fails
-    @skip(
-        "Ported from qiskit-ibmq-provider. Test case still skipped even though aer issue 1214 is fixed. "
-        "Needs further investigation"
-    )
-    def test_retrieve_failed_job_simulator_partial(self):
-        """Test retrieving partial results from a simulator backend."""
-        job = submit_job_one_bad_instr(self.sim_backend)
-        result = job.result(partial=True)
-
-        self.assertIsInstance(result, Result)
-        self.assertTrue(result.results[0].success)
-        self.assertFalse(result.results[1].success)
 
     def test_retrieve_from_retired_backend(self):
         """Test retrieving a job from a retired backend."""
