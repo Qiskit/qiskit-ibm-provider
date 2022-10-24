@@ -54,7 +54,6 @@ Classes
     :toctree: ../stubs/
 
     IBMProvider
-    BackendJobLimit
     IBMBackend
     IBMBackendService
 
@@ -82,7 +81,6 @@ from qiskit.providers import Backend  # type: ignore[attr-defined]
 from .ibm_provider import IBMProvider
 from .ibm_backend import IBMBackend
 from .job.ibm_job import IBMJob
-from .backendjoblimit import BackendJobLimit
 from .exceptions import *
 from .ibm_backend_service import IBMBackendService
 from .utils.utils import setup_logger
@@ -101,10 +99,7 @@ QISKIT_IBM_PROVIDER_LOG_FILE = "QISKIT_IBM_PROVIDER_LOG_FILE"
 """The environment variable name that is used to set the file for the IBM Quantum logger."""
 
 
-def least_busy(
-    backends: List[Backend],
-    reservation_lookahead: Optional[int] = 60,
-) -> Backend:
+def least_busy(backends: List[Backend]) -> Backend:
     """Return the least busy backend from a list.
 
     Return the least busy available backend for those that
@@ -113,10 +108,6 @@ def least_busy(
 
     Args:
         backends: The backends to choose from.
-        reservation_lookahead: A backend is considered unavailable if it
-            has reservations in the next ``n`` minutes, where ``n`` is
-            the value of ``reservation_lookahead``.
-            If ``None``, reservations are not taken into consideration.
 
     Returns:
         The backend with the fewest number of pending jobs.
@@ -132,22 +123,10 @@ def least_busy(
         ) from None
     try:
         candidates = []
-        now = datetime.now()
         for back in backends:
             backend_status = back.status()
             if not backend_status.operational or backend_status.status_msg != "active":
                 continue
-            if reservation_lookahead and isinstance(back, IBMBackend):
-                end_time = now + timedelta(minutes=reservation_lookahead)
-                try:
-                    if back.reservations(now, end_time):
-                        continue
-                except Exception as err:  # pylint: disable=broad-except
-                    logger.warning(
-                        "Unable to find backend reservation information. "
-                        "It will not be taken into consideration. %s",
-                        str(err),
-                    )
             candidates.append(back)
         if not candidates:
             raise IBMError("No backend matches the criteria.")

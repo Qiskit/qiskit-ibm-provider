@@ -27,11 +27,9 @@ from qiskit.test.reference_circuits import ReferenceCircuits
 from qiskit_ibm_provider import IBMBackend
 from qiskit_ibm_provider.api.exceptions import RequestsApiError
 from qiskit_ibm_provider.api.rest.job import Job as RestJob
-from qiskit_ibm_provider.apiconstants import ApiJobStatus, API_JOB_FINAL_STATES
 from qiskit_ibm_provider.exceptions import IBMBackendApiError
 from qiskit_ibm_provider.ibm_backend import IBMRetiredBackend
 from qiskit_ibm_provider.job.exceptions import IBMJobTimeoutError
-from qiskit_ibm_provider.utils.utils import api_status_to_job_status
 from ..decorators import (
     IntegrationTestDependencies,
     integration_test_setup_with_backend,
@@ -202,34 +200,6 @@ class TestIBMJob(IBMTestCase):
                     job.job_id(), job.status()
                 ),
             )
-
-    def test_retrieve_active_jobs(self):
-        """Test retrieving jobs that are currently unfinished."""
-        backend = most_busy_backend(self.provider, instance=self.dependencies.instance)
-        active_job_statuses = {
-            api_status_to_job_status(status)
-            for status in ApiJobStatus
-            if status not in API_JOB_FINAL_STATES
-        }
-
-        job = backend.run(transpile(ReferenceCircuits.bell(), backend))
-
-        active_jobs = backend.active_jobs()
-        if not job.in_final_state():  # Job is still active.
-            self.assertIn(
-                job.job_id(), [active_job.job_id() for active_job in active_jobs]
-            )
-
-        for active_job in active_jobs:
-            self.assertTrue(
-                active_job._status in active_job_statuses,
-                "status for job {} is '{}' but it should be '{}'.".format(
-                    active_job.job_id(), active_job._status, active_job_statuses
-                ),
-            )
-
-        # Cancel job so it doesn't consume more resources.
-        cancel_job(job)
 
     def test_retrieve_jobs_start_datetime(self):
         """Test retrieving jobs created after a specified datetime."""
