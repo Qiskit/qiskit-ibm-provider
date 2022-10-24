@@ -12,13 +12,11 @@
 
 """Backend REST adapter."""
 
-import json
-from typing import Dict, Optional, Any, List
+from typing import Dict, Optional, Any
 from datetime import datetime
 
 from .base import RestAdapterBase
 from ..session import RetrySession
-from .utils.data_mapper import map_jobs_limit_response
 
 
 class Backend(RestAdapterBase):
@@ -27,9 +25,7 @@ class Backend(RestAdapterBase):
     URL_MAP = {
         "properties": "/properties",
         "pulse_defaults": "/defaults",
-        "status": "/queue/status",
-        "jobs_limit": "/jobsLimit",
-        "bookings": "/bookings/v2",
+        "status": "/status",
     }
 
     def __init__(
@@ -43,7 +39,7 @@ class Backend(RestAdapterBase):
             url_prefix: Base URL.
         """
         self.backend_name = backend_name
-        super().__init__(session, "{}/devices/{}".format(url_prefix, backend_name))
+        super().__init__(session, "{}/backends/{}".format(url_prefix, backend_name))
 
     def properties(self, datetime: Optional[datetime] = None) -> Dict[str, Any]:
         """Return backend properties.
@@ -57,13 +53,9 @@ class Backend(RestAdapterBase):
         # pylint: disable=redefined-outer-name
         url = self.get_url("properties")
 
-        params = {"version": 1}
-
-        query = {}
+        params = {}
         if datetime:
-            extra_filter = {"last_update_date": {"lt": datetime.isoformat()}}
-            query["where"] = extra_filter
-            params["filter"] = json.dumps(query)  # type: ignore[assignment]
+            params["updated_before"] = datetime.isoformat()
 
         response = self.session.get(url, params=params).json()
 
@@ -106,34 +98,3 @@ class Backend(RestAdapterBase):
             ret["pending_jobs"] = 0
 
         return ret
-
-    def job_limit(self) -> Dict[str, Any]:
-        """Return backend job limit.
-
-        Returns:
-            JSON response of job limit.
-        """
-        url = self.get_url("jobs_limit")
-        return map_jobs_limit_response(self.session.get(url).json())
-
-    def reservations(
-        self,
-        start_datetime: Optional[datetime] = None,
-        end_datetime: Optional[datetime] = None,
-    ) -> List:
-        """Return backend reservation information.
-
-        Args:
-            start_datetime: Starting datetime in UTC.
-            end_datetime: Ending datetime in UTC.
-
-        Returns:
-            JSON response.
-        """
-        params = {}
-        if start_datetime:
-            params["initialDate"] = start_datetime.isoformat()
-        if end_datetime:
-            params["endDate"] = end_datetime.isoformat()
-        url = self.get_url("bookings")
-        return self.session.get(url, params=params).json()

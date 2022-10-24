@@ -19,9 +19,7 @@ import ipywidgets as wid
 from qiskit.providers.fake_provider.fake_backend import FakeBackendV2 as FakeBackend
 
 from qiskit_ibm_provider.ibm_backend import IBMBackend
-from qiskit_ibm_provider.utils.converters import duration_difference
 from qiskit_ibm_provider.visualization.interactive import iplot_gate_map
-from .utils import get_next_reservation
 
 
 def config_tab(backend: Union[IBMBackend, FakeBackend]) -> wid.GridBox:
@@ -35,13 +33,7 @@ def config_tab(backend: Union[IBMBackend, FakeBackend]) -> wid.GridBox:
     """
     status = backend.status().to_dict()
     config = backend.configuration().to_dict()
-    next_resrv = get_next_reservation(backend)
-    if next_resrv:
-        reservation_str = "in {} ({}m)".format(
-            duration_difference(next_resrv.start_datetime), next_resrv.duration
-        )
-    else:
-        reservation_str = "-"
+    reservation_str = "-"
 
     config_dict = {**status, **config}
     config_dict["reservation"] = reservation_str
