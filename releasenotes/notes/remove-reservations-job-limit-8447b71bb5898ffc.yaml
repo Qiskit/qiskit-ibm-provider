@@ -1,0 +1,6 @@
+---
+deprecations:
+  - |
+    The `reservations`, `job_limit`, and `remaining_jobs_count` methods have been removed
+    from :class:`~qiskit_ibm_provider.IBMBackend`. The `BackendJobLimit` and `BackendReservation`
+    classes have also been removed. 

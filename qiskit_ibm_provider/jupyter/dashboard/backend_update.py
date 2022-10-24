@@ -17,14 +17,11 @@ import time
 
 import ipywidgets as wid
 
-from qiskit_ibm_provider.utils.converters import duration_difference
 from .constants import (
-    RESERVATION_STR,
     RESERVATION_NONE,
     STAT_FONT_VALUE,
     STAT_FONT_VALUE_COLOR,
 )
-from ..utils import get_next_reservation
 
 
 def update_backend_info(device_list: wid.VBox, interval: int = 30) -> None:
@@ -60,19 +57,8 @@ def update_backend_info(device_list: wid.VBox, interval: int = 30) -> None:
 
                     if cur_rsvr_interval >= reservation_interval:
                         cur_rsvr_interval = 0
-                        next_resrv = get_next_reservation(backend_pane._backend)
                         reservation_wid = backend_pane._reservation_val_wid
-                        if next_resrv:
-                            start_dt_str = duration_difference(
-                                next_resrv.start_datetime
-                            )
-                            new_resrv_val = RESERVATION_STR.format(
-                                start_dt=start_dt_str, duration=next_resrv.duration
-                            )
-                            if stat_msg == "active":
-                                stat_msg += " [R]"
-                        else:
-                            new_resrv_val = RESERVATION_NONE
+                        new_resrv_val = RESERVATION_NONE
 
                         if reservation_wid.value != new_resrv_val:
                             reservation_wid.value = new_resrv_val
