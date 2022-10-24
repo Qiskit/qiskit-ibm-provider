@@ -325,20 +325,6 @@ class TestIBMJob(IBMTestCase):
         )
         self.assertNotIn(job.job_id(), [rjob.job_id() for rjob in oldest_jobs])
 
-    # TODO: check why test case still fails
-    @skip(
-        "Ported from qiskit-ibmq-provider. Test case still skipped even though aer issue 1214 is fixed. "
-        "Needs further investigation"
-    )
-    def test_retrieve_failed_job_simulator_partial(self):
-        """Test retrieving partial results from a simulator backend."""
-        job = submit_job_one_bad_instr(self.sim_backend)
-        result = job.result(partial=True)
-
-        self.assertIsInstance(result, Result)
-        self.assertTrue(result.results[0].success)
-        self.assertFalse(result.results[1].success)
-
     def test_retrieve_from_retired_backend(self):
         """Test retrieving a job from a retired backend."""
         saved_backends = copy.copy(self.provider.backend._backends)
