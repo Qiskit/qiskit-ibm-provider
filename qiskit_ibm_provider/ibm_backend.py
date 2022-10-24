@@ -12,7 +12,6 @@
 
 """Module for interfacing with an IBM Quantum Backend."""
 
-from cProfile import run
 import copy
 import logging
 import warnings
