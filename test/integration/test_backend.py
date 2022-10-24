@@ -12,7 +12,6 @@
 
 """IBMBackend Test."""
 
-from datetime import timedelta, datetime
 from unittest import SkipTest, mock
 from unittest.mock import patch
 
@@ -24,7 +23,6 @@ from qiskit_ibm_provider import IBMBackend, IBMProvider
 from qiskit_ibm_provider.ibm_qubit_properties import IBMQubitProperties
 from ..decorators import (
     IntegrationTestDependencies,
-    integration_test_setup,
     integration_test_setup_with_backend,
 )
 from ..ibm_test_case import IBMTestCase
@@ -68,14 +66,6 @@ class TestIBMBackend(IBMTestCase):
         for i in qubits:
             self.assertIsInstance(qubit_properties[i], IBMQubitProperties)
 
-    def test_backend_job_limit(self):
-        """Check the backend job limits of a real backend."""
-        job_limit = self.backend.job_limit()
-        self.assertIsNotNone(job_limit)
-        self.assertIsNotNone(job_limit.active_jobs)
-        if job_limit.maximum_jobs:
-            self.assertGreater(job_limit.maximum_jobs, 0)
-
     def test_backend_pulse_defaults(self):
         """Check the backend pulse defaults of each backend."""
         provider = self.backend.provider
@@ -84,60 +74,6 @@ class TestIBMBackend(IBMTestCase):
                 defaults = backend.defaults()
                 if backend.configuration().open_pulse:
                     self.assertIsNotNone(defaults)
-
-    def test_backend_reservations(self):
-        """Test backend reservations."""
-        provider: IBMProvider = self.backend.provider
-        backend = reservations = None
-        for backend in provider.backends(
-            simulator=False,
-            operational=True,
-            instance=self.dependencies.instance,
-        ):
-            reservations = backend.reservations()
-            if reservations:
-                break
-
-        if not reservations:
-            self.skipTest("Test case requires reservations.")
-
-        reserv = reservations[0]
-        self.assertGreater(reserv.duration, 0)
-        self.assertTrue(reserv.mode)
-        before_start = reserv.start_datetime - timedelta(seconds=30)
-        after_start = reserv.start_datetime + timedelta(seconds=30)
-        before_end = reserv.end_datetime - timedelta(seconds=30)
-        after_end = reserv.end_datetime + timedelta(seconds=30)
-
-        # Each tuple contains the start datetime, end datetime, whether a
-        # reservation should be found, and the description.
-        sub_tests = [
-            (before_start, after_end, True, "before start, after end"),
-            (before_start, before_end, True, "before start, before end"),
-            (after_start, before_end, True, "after start, before end"),
-            (before_start, None, True, "before start, None"),
-            (None, after_end, True, "None, after end"),
-            (before_start, before_start, False, "before start, before start"),
-            (after_end, after_end, False, "after end, after end"),
-        ]
-
-        for start_dt, end_dt, should_find, name in sub_tests:
-            with self.subTest(name=name):
-                f_reservs = backend.reservations(
-                    start_datetime=start_dt, end_datetime=end_dt
-                )
-                found = False
-                for f_reserv in f_reservs:
-                    if f_reserv == reserv:
-                        found = True
-                        break
-                self.assertEqual(
-                    found,
-                    should_find,
-                    "Reservation {} found={}, used start datetime {}, end datetime {}".format(
-                        reserv, found, start_dt, end_dt
-                    ),
-                )
 
     def test_backend_options(self):
         """Test backend options."""
@@ -219,26 +155,3 @@ class TestIBMBackend(IBMTestCase):
 
             self.assertEqual(mutated_circuit[0].count_ops(), {"delay": 3})
             self.assertEqual(circuit_with_id.count_ops(), {"id": 3})
-
-
-class TestIBMBackendService(IBMTestCase):
-    """Test ibm_backend_service module."""
-
-    @classmethod
-    @integration_test_setup()
-    def setUpClass(cls, dependencies: IntegrationTestDependencies) -> None:
-        """Initial class level setup."""
-        # pylint: disable=arguments-differ
-        super().setUpClass()
-        cls.dependencies = dependencies
-        cls.last_week = datetime.now() - timedelta(days=7)
-
-    def test_my_reservations(self):
-        """Test my_reservations method"""
-        reservations = self.dependencies.provider.backend.my_reservations()
-        for reservation in reservations:
-            for attr in reservation.__dict__:
-                self.assertIsNotNone(
-                    getattr(reservation, attr),
-                    "Reservation {} is missing attribute {}".format(reservation, attr),
-                )
