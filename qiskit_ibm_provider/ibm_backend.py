@@ -12,6 +12,7 @@
 
 """Module for interfacing with an IBM Quantum Backend."""
 
+from cProfile import run
 import copy
 import logging
 import warnings
@@ -70,6 +71,7 @@ logger = logging.getLogger(__name__)
 
 QOBJRUNNERPROGRAMID = "circuit-runner"
 QASM3RUNNERPROGRAMID = "qasm3-runner"
+
 
 class IBMBackend(Backend):
     """Backend class interfacing with an IBM Quantum device.
@@ -537,8 +539,10 @@ class IBMBackend(Backend):
         """Return the consolidated runtime configuration."""
         # Check if is a QASM3 like program id.
         if program_id.startswith(QASM3RUNNERPROGRAMID):
-            original_dict = asdict(QASM3Options())
-            run_config_dict = copy.copy(asdict(QASM3Options(**original_dict)))
+            original_dict = QASM3Options().to_transport_dict()
+            run_config_dict = copy.copy(
+                QASM3Options(**original_dict).to_transport_dict()
+            )
         else:
             original_dict = self.options.__dict__
             run_config_dict = copy.copy(asdict(QASM2Options(**original_dict)))

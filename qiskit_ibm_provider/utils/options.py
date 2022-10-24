@@ -12,8 +12,8 @@
 
 """Backend run options."""
 
-from dataclasses import dataclass
-from typing import Dict, List, Union, Any
+from dataclasses import asdict, dataclass
+from typing import Dict, List, Union, Any, Optional
 from qiskit.circuit import QuantumCircuit, Parameter
 from qiskit.pulse import Schedule, LoConfig
 from qiskit.pulse.channels import PulseChannel
@@ -24,20 +24,27 @@ from qiskit.qobj.utils import MeasLevel, MeasReturnType
 class QASM3Options:
     """Options for the QASM3 path."""
 
-    circuits: Union[
-        str, QuantumCircuit, Schedule, List[Union[QuantumCircuit, Schedule]]
-    ] = None
-    merge_circuits: bool = True
-    shots: int = None
-    init_circuit: List[Dict] = None
-    init_delay: int = None
-    init_num_resets: int = None
-    exporter_config: Dict = None
-    skip_transpilation: bool = True
-    transpiler_config: Dict = None
-    use_measurement_mitigation: bool = False
-    qasm3_args: Union[Dict, List] = None # Deprecated
-    run_config: Dict = None # Deprecated
+    circuits: Union[QuantumCircuit, List[QuantumCircuit]] = None
+    merge_circuits: Optional[bool] = None
+    shots: Optional[int] = None
+    meas_level: Optional[Union[int, MeasLevel]] = None
+    init_circuit: Optional[QuantumCircuit] = None
+    init_delay: Optional[int] = None
+    init_num_resets: Optional[int] = None
+    run_config: Optional[Dict] = None
+    exporter_config: Optional[Dict] = None
+    skip_transpilation: Optional[bool] = None
+    transpiler_config: Optional[Dict] = None
+    use_measurement_mitigation: Optional[bool] = None
+    qasm3_args: Optional[Union[Dict, List]] = None  # Deprecated
+
+    def to_transport_dict(self) -> Dict[str, Any]:
+        """Return None values so runtime defaults are used."""
+        dict_ = asdict(self)
+        for key in list(dict_.keys()):
+            if dict_[key] is None:
+                del dict_[key]
+        return dict_
 
 
 @dataclass

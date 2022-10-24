@@ -102,7 +102,7 @@ class TestRealDevices(IBMTestCase):
         job = self.real_device_backend.run(
             transpile(ReferenceCircuits.bell(), backend=self.real_device_backend),
             shots=shots,
-            program_id=QOBJRUNNERPROGRAMID
+            program_id=QOBJRUNNERPROGRAMID,
         )
 
         job.wait_for_final_state(wait=300, callback=self.simple_job_callback)
