@@ -146,12 +146,3 @@ class Api(RestAdapterBase):
         for job_data in items:
             map_job_response(job_data)
         return items
-
-    def reservations(self) -> List:
-        """Return reservation information.
-
-        Returns:
-            JSON response.
-        """
-        url = self.get_url("bookings")
-        return self.session.get(url).json()
