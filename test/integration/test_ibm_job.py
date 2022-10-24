@@ -22,7 +22,6 @@ from dateutil import tz
 from qiskit import ClassicalRegister, QuantumCircuit, QuantumRegister
 from qiskit.compiler import transpile
 from qiskit.providers.jobstatus import JobStatus, JOB_FINAL_STATES
-from qiskit.result import Result
 from qiskit.test.reference_circuits import ReferenceCircuits
 
 from qiskit_ibm_provider import IBMBackend
@@ -43,7 +42,6 @@ from ..utils import (
     most_busy_backend,
     cancel_job,
     submit_and_cancel,
-    submit_job_one_bad_instr,
 )
 
 
