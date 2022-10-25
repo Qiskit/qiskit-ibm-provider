@@ -104,11 +104,7 @@ class TestIBMIntegration(IBMTestCase):
         quantum_circuit.measure(qubit_reg, clbit_reg)
         qc_extra = QuantumCircuit(qubit_reg, clbit_reg, name="extra")
         qc_extra.measure(qubit_reg, clbit_reg)
-        circs = transpile(
-            [quantum_circuit, qc_extra],
-            backend=self.sim_backend,
-            seed_transpiler=self.seed,
-        )
+        circs = transpile([quantum_circuit, qc_extra], backend=self.sim_backend)
         job = self.sim_backend.run(circs)
         result = job.result()
         self.assertIsInstance(result, Result)
@@ -118,9 +114,7 @@ class TestIBMIntegration(IBMTestCase):
         quantum_circuit = ReferenceCircuits.bell()
         qc_extra = QuantumCircuit(2, 2)
         qc_extra.measure_all()
-        job = execute(
-            [quantum_circuit, qc_extra], self.sim_backend, seed_transpiler=self.seed
-        )
+        job = execute([quantum_circuit, qc_extra], self.sim_backend)
         results = job.result()
         self.assertIsInstance(results, Result)
 
