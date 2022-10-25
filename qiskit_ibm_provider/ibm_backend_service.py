@@ -34,7 +34,12 @@ from .ibm_backend import IBMBackend, IBMRetiredBackend
 from .job import IBMJob, IBMCircuitJob
 from .job.exceptions import IBMJobNotFoundError
 from .utils.converters import local_to_utc
-from .utils.utils import to_python_identifier, validate_job_tags, filter_data
+from .utils.utils import (
+    to_python_identifier,
+    validate_job_tags,
+    filter_data,
+    api_status_to_job_status,
+)
 from .utils.hgp import to_instance_format
 
 logger = logging.getLogger(__name__)
@@ -169,7 +174,12 @@ class IBMBackendService:
         skip: int = 0,
         backend_name: Optional[str] = None,
         status: Optional[
-            Union[Literal["pending", "completed"], List[Union[JobStatus, str]]]
+            Union[
+                Literal["pending", "completed"],
+                List[Union[JobStatus, str]],
+                JobStatus,
+                str,
+            ]
         ] = None,
         start_datetime: Optional[datetime] = None,
         end_datetime: Optional[datetime] = None,
@@ -189,7 +199,9 @@ class IBMBackendService:
                 number of sub-jobs within a composite job count towards the limit.
             skip: Starting index for the job retrieval.
             backend_name: Name of the backend to retrieve jobs from.
-            status: Filter jobs with either "pending" or "completed" status.
+            status: Filter jobs with either "pending" or "completed" status. You can also specify by
+            exact status. For example, `status=JobStatus.RUNNING` or `status="RUNNING"`
+                or `status=["RUNNING", "ERROR"]`.
             start_datetime: Filter by the given start date, in local time. This is used to
                 find jobs whose creation dates are after (greater than or equal to) this
                 local date/time.
@@ -212,18 +224,31 @@ class IBMBackendService:
         # Build the filter for the query.
 
         api_filter = {}  # type: Dict[str, Any]
+        all_job_statuses = [status.name for status in JobStatus]
+        if isinstance(status, JobStatus):
+            status = status.name
+        if isinstance(status, str):
+            status = status.upper()
         if isinstance(status, list):
+            status = [x.name if isinstance(x, JobStatus) else x.upper() for x in status]
             if status in (["INITIALIZING"], ["VALIDATING"]):
                 return []
             elif all(x in ["DONE", "CANCELLED", "ERROR"] for x in status):
                 api_filter["pending"] = False
             elif all(x in ["QUEUED", "RUNNING"] for x in status):
                 api_filter["pending"] = True
+        elif status in all_job_statuses:
+            if status in ["INITIALIZING", "VALIDATING"]:
+                return []
+            elif status in ["DONE", "CANCELLED", "ERROR"]:
+                api_filter["pending"] = False
+            elif status in ["QUEUED", "RUNNING"]:
+                api_filter["pending"] = True
         if backend_name:
             api_filter["backend"] = backend_name
-        if status == "pending":
+        if status == "PENDING":
             api_filter["pending"] = True
-        if status == "completed":
+        if status == "COMPLETED":
             api_filter["pending"] = False
         if start_datetime:
             api_filter["created_after"] = local_to_utc(start_datetime).isoformat()
@@ -235,20 +260,41 @@ class IBMBackendService:
         if instance:
             api_filter["provider"] = instance
         # Retrieve all requested jobs.
-        job_responses = self._get_jobs(
-            api_filter=api_filter, limit=limit, skip=skip, descending=descending
+        filter_by_status = (
+            status
+            and status not in ["PENDING", "COMPLETED"]
+            and (
+                status in all_job_statuses or all(x in all_job_statuses for x in status)
+            )
         )
         job_list = []
-        for job_info in job_responses:
-            # TODO filter by status
-            job = self._restore_circuit_job(job_info, raise_error=False)
-            if job is None:
-                logger.warning(
-                    'Discarding job "%s" because it contains invalid data.',
-                    job_info.get("job_id", ""),
-                )
-                continue
-            job_list.append(job)
+        original_limit = limit
+        while True:
+            job_responses = self._get_jobs(
+                api_filter=api_filter, limit=limit, skip=skip, descending=descending
+            )
+            if len(job_responses) == 0:
+                break
+            for job_info in job_responses:
+                if filter_by_status:
+                    job_status = api_status_to_job_status(
+                        job_info["state"]["status"].upper()
+                    ).name
+                    if (isinstance(status, str) and job_status != status) or (
+                        isinstance(status, list) and job_status not in status
+                    ):
+                        continue
+                job = self._restore_circuit_job(job_info, raise_error=False)
+                if job is None:
+                    logger.warning(
+                        'Discarding job "%s" because it contains invalid data.',
+                        job_info.get("job_id", ""),
+                    )
+                    continue
+                job_list.append(job)
+                if len(job_list) == original_limit:
+                    return job_list
+            skip += limit
         return job_list
 
     def _get_jobs(
