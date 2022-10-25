@@ -153,6 +153,36 @@ class TestIBMJob(IBMTestCase):
                 [job.job_id() for job in job_list], [job.job_id() for job in new_list]
             )
 
+        completed_job_list = self.provider.backend.jobs(
+            backend_name=self.sim_backend.name, limit=5, status="completed"
+        )
+        for job in completed_job_list:
+            self.assertTrue(
+                job.status() in [JobStatus.DONE, JobStatus.CANCELLED, JobStatus.ERROR]
+            )
+
+        pending_job_list = self.provider.backend.jobs(
+            backend_name=self.sim_backend.name, limit=5, status="pending"
+        )
+        for job in pending_job_list:
+            self.assertTrue(job.status() in [JobStatus.QUEUED, JobStatus.RUNNING])
+
+    def test_retrieve_jobs_client_filtering(self):
+        """Test client side filtering when retrieving jobs with status."""
+        statuses = ["RUNNING", JobStatus.ERROR]
+        job_list = self.provider.backend.jobs(
+            backend_name=self.sim_backend.name, limit=5, status=statuses
+        )
+        for job in job_list:
+            self.assertTrue(job.status() in [JobStatus.RUNNING, JobStatus.ERROR])
+
+        statuses = ["QUEUED", "CANCELLED"]
+        job_list = self.provider.backend.jobs(
+            backend_name=self.sim_backend.name, limit=3, status=statuses
+        )
+        for job in job_list:
+            self.assertTrue(job.status() in [JobStatus.QUEUED, JobStatus.CANCELLED])
+
     def test_retrieve_job(self):
         """Test retrieving a single job."""
         retrieved_job = self.provider.backend.retrieve_job(self.sim_job.job_id())
