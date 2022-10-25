@@ -12,7 +12,9 @@
 
 """Program Job REST adapter."""
 
+import json
 from typing import Dict
+from requests import Response
 
 from .base import RestAdapterBase
 from ..session import RetrySession
@@ -29,6 +31,7 @@ class ProgramJob(RestAdapterBase):
         "logs": "/logs",
         "interim_results": "/interim_results",
         "metrics": "/metrics",
+        "tags": "/tags",
     }
 
     def __init__(
@@ -92,3 +95,11 @@ class ProgramJob(RestAdapterBase):
             Job Metadata.
         """
         return self.session.get(self.get_url("metrics")).json()
+
+    def update_tags(self, tags: list) -> Response:
+        """Update job tags.
+
+        Returns:
+            API Response.
+        """
+        return self.session.put(self.get_url("tags"), data=json.dumps({"tags": tags}))
