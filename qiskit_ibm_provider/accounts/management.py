@@ -19,20 +19,17 @@ from .account import Account, ChannelType
 from ..proxies import ProxyConfiguration
 from .storage import save_config, read_config, delete_config
 
-_DEFAULT_ACCOUNT_CONFIG_JSON_FILE = os.path.join(
-    os.path.expanduser("~"), ".qiskit", "qiskit-ibm.json"
-)
-_DEFAULT_ACCOUNT_NAME = "default"
-_DEFAULT_ACCOUNT_NAME_LEGACY = "default-legacy"
-_DEFAULT_ACCOUNT_NAME_CLOUD = "default-cloud"
-_DEFAULT_ACCOUNT_NAME_IBM_QUANTUM = "default-ibm-quantum"
-_DEFAULT_ACCOUNT_NAME_IBM_CLOUD = "default-ibm-cloud"
-_DEFAULT_CHANNEL_TYPE: ChannelType = "ibm_cloud"
-_CHANNEL_TYPES = [_DEFAULT_CHANNEL_TYPE, "ibm_quantum"]
-
 
 class AccountManager:
     """Class that bundles account management related functionality."""
+
+    _default_account_config_json_file = os.path.join(
+        os.path.expanduser("~"), ".qiskit", "qiskit-ibm.json"
+    )
+    _default_account_name = "default"
+    _default_account_name_legacy = "default-legacy"
+    _default_account_name_ibm_quantum = "default-ibm-quantum"
+    _default_channel_type = "ibm_quantum"
 
     @classmethod
     def save(
@@ -41,16 +38,16 @@ class AccountManager:
         url: Optional[str] = None,
         instance: Optional[str] = None,
         channel: Optional[ChannelType] = None,
-        name: Optional[str] = _DEFAULT_ACCOUNT_NAME,
+        name: Optional[str] = None,
         proxies: Optional[ProxyConfiguration] = None,
         verify: Optional[bool] = None,
         overwrite: Optional[bool] = False,
     ) -> None:
         """Save account on disk."""
         cls.migrate()
-        name = name or cls._get_default_account_name(channel)
+        name = name or cls._default_account_name_ibm_quantum
         return save_config(
-            filename=_DEFAULT_ACCOUNT_CONFIG_JSON_FILE,
+            filename=cls._default_account_config_json_file,
             name=name,
             overwrite=overwrite,
             config=Account(
@@ -65,8 +62,9 @@ class AccountManager:
             .validate().to_saved_format(),
         )
 
-    @staticmethod
+    @classmethod
     def list(
+        cls,
         default: Optional[bool] = None,
         channel: Optional[ChannelType] = None,
         name: Optional[str] = None,
@@ -82,9 +80,8 @@ class AccountManager:
 
         def _matching_default(account_name: str) -> bool:
             default_accounts = [
-                _DEFAULT_ACCOUNT_NAME,
-                _DEFAULT_ACCOUNT_NAME_IBM_QUANTUM,
-                _DEFAULT_ACCOUNT_NAME_IBM_CLOUD,
+                cls._default_account_name,
+                cls._default_account_name_ibm_quantum,
             ]
             if default is None:
                 return True
@@ -99,7 +96,7 @@ class AccountManager:
                 kv[0],
                 Account.from_saved_format(kv[1]),
             ),
-            read_config(filename=_DEFAULT_ACCOUNT_CONFIG_JSON_FILE).items(),
+            read_config(filename=cls._default_account_config_json_file).items(),
         )
 
         # filter based on input parameters
@@ -135,7 +132,7 @@ class AccountManager:
         cls.migrate()
         if name:
             saved_account = read_config(
-                filename=_DEFAULT_ACCOUNT_CONFIG_JSON_FILE, name=name
+                filename=cls._default_account_config_json_file, name=name
             )
             if not saved_account:
                 raise AccountNotFoundError(
@@ -143,25 +140,24 @@ class AccountManager:
                 )
             return Account.from_saved_format(saved_account)
 
-        channel_ = channel or _DEFAULT_CHANNEL_TYPE
+        channel_ = channel or cls._default_channel_type
         env_account = cls._from_env_variables(channel_)
         if env_account is not None:
             return env_account
 
         if channel:
             saved_account = read_config(
-                filename=_DEFAULT_ACCOUNT_CONFIG_JSON_FILE,
-                name=cls._get_default_account_name(channel=channel),
+                filename=cls._default_account_config_json_file,
+                name=cls._default_account_name_ibm_quantum,
             )
             if saved_account is None:
                 raise AccountNotFoundError(f"No default {channel} account saved.")
             return Account.from_saved_format(saved_account)
 
-        all_config = read_config(filename=_DEFAULT_ACCOUNT_CONFIG_JSON_FILE)
-        for channel_type in _CHANNEL_TYPES:
-            account_name = cls._get_default_account_name(channel_type)
-            if account_name in all_config:
-                return Account.from_saved_format(all_config[account_name])
+        all_config = read_config(filename=cls._default_account_config_json_file)
+        account_name = cls._default_account_name_ibm_quantum
+        if account_name in all_config:
+            return Account.from_saved_format(all_config[account_name])
 
         raise AccountNotFoundError("Unable to find account.")
 
@@ -169,47 +165,34 @@ class AccountManager:
     def delete(
         cls,
         name: Optional[str] = None,
-        channel: Optional[ChannelType] = None,
     ) -> bool:
         """Delete account from disk."""
         cls.migrate()
-        name = name or cls._get_default_account_name(channel)
-        return delete_config(name=name, filename=_DEFAULT_ACCOUNT_CONFIG_JSON_FILE)
+        name = name or cls._default_account_name_ibm_quantum
+        return delete_config(name=name, filename=cls._default_account_config_json_file)
 
     @classmethod
     def migrate(cls) -> None:
         """Migrate accounts on disk by removing `auth` and adding `channel`."""
-        data = read_config(filename=_DEFAULT_ACCOUNT_CONFIG_JSON_FILE)
+        data = read_config(filename=cls._default_account_config_json_file)
         for key, value in data.items():
-            if key == _DEFAULT_ACCOUNT_NAME_CLOUD:
-                value.pop("auth", None)
-                value.update(channel="ibm_cloud")
-                delete_config(filename=_DEFAULT_ACCOUNT_CONFIG_JSON_FILE, name=key)
-                save_config(
-                    filename=_DEFAULT_ACCOUNT_CONFIG_JSON_FILE,
-                    name=_DEFAULT_ACCOUNT_NAME_IBM_CLOUD,
-                    config=value,
-                    overwrite=False,
-                )
-            elif key == _DEFAULT_ACCOUNT_NAME_LEGACY:
+            if key == cls._default_account_name_legacy:
                 value.pop("auth", None)
                 value.update(channel="ibm_quantum")
-                delete_config(filename=_DEFAULT_ACCOUNT_CONFIG_JSON_FILE, name=key)
+                delete_config(filename=cls._default_account_config_json_file, name=key)
                 save_config(
-                    filename=_DEFAULT_ACCOUNT_CONFIG_JSON_FILE,
-                    name=_DEFAULT_ACCOUNT_NAME_IBM_QUANTUM,
+                    filename=cls._default_account_config_json_file,
+                    name=cls._default_account_name_ibm_quantum,
                     config=value,
                     overwrite=False,
                 )
             else:
                 if hasattr(value, "auth"):
-                    if value["auth"] == "cloud":
-                        value.update(channel="ibm_cloud")
-                    elif value["auth"] == "legacy":
+                    if value["auth"] == "legacy":
                         value.update(channel="ibm_quantum")
                     value.pop("auth", None)
                     save_config(
-                        filename=_DEFAULT_ACCOUNT_CONFIG_JSON_FILE,
+                        filename=cls._default_account_config_json_file,
                         name=key,
                         config=value,
                         overwrite=True,
@@ -227,12 +210,4 @@ class AccountManager:
             url=url,
             instance=os.getenv("QISKIT_IBM_INSTANCE"),
             channel=channel,
-        )
-
-    @classmethod
-    def _get_default_account_name(cls, channel: ChannelType) -> str:
-        return (
-            _DEFAULT_ACCOUNT_NAME_IBM_QUANTUM
-            if channel == "ibm_quantum"
-            else _DEFAULT_ACCOUNT_NAME_IBM_CLOUD
         )
