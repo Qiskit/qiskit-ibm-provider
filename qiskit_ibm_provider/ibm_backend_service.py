@@ -224,17 +224,20 @@ class IBMBackendService:
         # Build the filter for the query.
 
         api_filter = {}  # type: Dict[str, Any]
+        all_job_statuses = [status.name for status in JobStatus]
         if isinstance(status, JobStatus):
             status = status.name
+        if isinstance(status, str):
+            status = status.upper()
         if isinstance(status, list):
-            status = [x.name if isinstance(x, JobStatus) else x for x in status]
+            status = [x.name if isinstance(x, JobStatus) else x.upper() for x in status]
             if status in (["INITIALIZING"], ["VALIDATING"]):
                 return []
             elif all(x in ["DONE", "CANCELLED", "ERROR"] for x in status):
                 api_filter["pending"] = False
             elif all(x in ["QUEUED", "RUNNING"] for x in status):
                 api_filter["pending"] = True
-        elif status in [x.name for x in JobStatus]:
+        elif status in all_job_statuses:
             if status in ["INITIALIZING", "VALIDATING"]:
                 return []
             elif status in ["DONE", "CANCELLED", "ERROR"]:
@@ -243,9 +246,9 @@ class IBMBackendService:
                 api_filter["pending"] = True
         if backend_name:
             api_filter["backend"] = backend_name
-        if status == "pending":
+        if status == "PENDING":
             api_filter["pending"] = True
-        if status == "completed":
+        if status == "COMPLETED":
             api_filter["pending"] = False
         if start_datetime:
             api_filter["created_after"] = local_to_utc(start_datetime).isoformat()
@@ -259,8 +262,10 @@ class IBMBackendService:
         # Retrieve all requested jobs.
         filter_by_status = (
             status
-            and status not in ["pending", "completed"]
-            and status in [status.name for status in JobStatus]
+            and status not in ["PENDING", "COMPLETED"]
+            and (
+                status in all_job_statuses or all(x in all_job_statuses for x in status)
+            )
         )
         job_list = []
         original_limit = limit
@@ -270,7 +275,6 @@ class IBMBackendService:
             )
             if len(job_responses) == 0:
                 break
-            different_status_jobs = 0
             for job_info in job_responses:
                 if filter_by_status:
                     job_status = api_status_to_job_status(
@@ -280,7 +284,6 @@ class IBMBackendService:
                         isinstance(status, list) and job_status not in status
                     ):
                         continue
-                    different_status_jobs += 1
                 job = self._restore_circuit_job(job_info, raise_error=False)
                 if job is None:
                     logger.warning(
@@ -289,12 +292,8 @@ class IBMBackendService:
                     )
                     continue
                 job_list.append(job)
-                if (
-                    len(job_list) == original_limit
-                    or different_status_jobs == original_limit
-                ):
+                if len(job_list) == original_limit:
                     return job_list
-            limit += limit
             skip += limit
         return job_list
 
