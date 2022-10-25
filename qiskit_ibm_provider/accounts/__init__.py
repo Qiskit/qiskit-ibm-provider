@@ -14,7 +14,7 @@
 Account management functionality.
 """
 
-from .account import Account, AccountType, ChannelType
+from .account import Account, ChannelType
 from .management import AccountManager
 from .exceptions import (
     AccountNotFoundError,

@@ -24,8 +24,7 @@ from ..api.auth import QuantumAuth
 from ..proxies import ProxyConfiguration
 from ..utils.hgp import from_instance_format
 
-AccountType = Optional[Literal["cloud", "legacy"]]
-ChannelType = Optional[Literal["ibm_cloud", "ibm_quantum"]]
+ChannelType = Optional[Literal["ibm_quantum"]]
 
 IBM_QUANTUM_API_URL = "https://auth.quantum-computing.ibm.com/api"
 logger = logging.getLogger(__name__)
@@ -46,7 +45,7 @@ class Account:
         """Account constructor.
 
         Args:
-            channel: Channel type, ``ibm_cloud`` or ``ibm_quantum``.
+            channel: Channel type, ``ibm_quantum``.
             token: Account token to use.
             url: Authentication URL.
             instance: Service instance to use.
@@ -113,17 +112,17 @@ class Account:
         self._assert_valid_channel(self.channel)
         self._assert_valid_token(self.token)
         self._assert_valid_url(self.url)
-        self._assert_valid_instance(self.channel, self.instance)
+        self._assert_valid_instance(self.instance)
         self._assert_valid_proxies(self.proxies)
         return self
 
     @staticmethod
     def _assert_valid_channel(channel: ChannelType) -> None:
         """Assert that the channel parameter is valid."""
-        if not (channel in ["ibm_cloud", "ibm_quantum"]):
+        if channel != "ibm_quantum":
             raise InvalidAccountError(
-                f"Invalid `channel` value. Expected one of "
-                f"{['ibm_cloud', 'ibm_quantum']}, got '{channel}'."
+                f"Invalid `channel` value. Expected "
+                f"{'ibm_quantum'}, got '{channel}'."
             )
 
     @staticmethod
@@ -151,18 +150,12 @@ class Account:
             config.validate()
 
     @staticmethod
-    def _assert_valid_instance(channel: ChannelType, instance: str) -> None:
+    def _assert_valid_instance(instance: str) -> None:
         """Assert that the instance name is valid for the given account type."""
-        if channel == "ibm_cloud":
-            if not (isinstance(instance, str) and len(instance) > 0):
+        if instance is not None:
+            try:
+                from_instance_format(instance)
+            except:
                 raise InvalidAccountError(
-                    f"Invalid `instance` value. Expected a non-empty string, got '{instance}'."
+                    f"Invalid `instance` value. Expected hub/group/project format, got {instance}"
                 )
-        if channel == "ibm_quantum":
-            if instance is not None:
-                try:
-                    from_instance_format(instance)
-                except:
-                    raise InvalidAccountError(
-                        f"Invalid `instance` value. Expected hub/group/project format, got {instance}"
-                    )
