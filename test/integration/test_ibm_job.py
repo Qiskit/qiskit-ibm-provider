@@ -143,7 +143,7 @@ class TestIBMJob(IBMTestCase):
         """Test retreiving jobs with status filter."""
         statuses = [["DONE"], JobStatus.DONE, [JobStatus.DONE]]
         job_list = self.provider.backend.jobs(
-            backend_name=self.sim_backend.name, limit=5, status="DONE"
+            backend_name=self.sim_backend.name, limit=3, status="DONE"
         )
         for status in statuses:
             new_list = self.provider.backend.jobs(
