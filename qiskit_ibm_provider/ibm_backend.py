@@ -184,6 +184,7 @@ class IBMBackend(Backend):
         configuration: Union[QasmBackendConfiguration, PulseBackendConfiguration],
         provider: "ibm_provider.IBMProvider",
         api_client: AccountClient,
+        instance: Optional[str] = None,
     ) -> None:
         """IBMBackend constructor.
 
@@ -198,7 +199,7 @@ class IBMBackend(Backend):
             online_date=configuration.online_date,
             backend_version=configuration.backend_version,
         )
-        self._instance = None
+        self._instance = instance
         self._api_client = api_client
         self._configuration = configuration
         self._properties = None
