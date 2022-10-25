@@ -147,35 +147,41 @@ class TestIBMJob(IBMTestCase):
         )
         for status in statuses:
             new_list = self.provider.backend.jobs(
-                backend_name=self.sim_backend.name, limit=5, status=status
+                backend_name=self.sim_backend.name, limit=3, status=status
             )
             self.assertEqual(
                 [job.job_id() for job in job_list], [job.job_id() for job in new_list]
             )
 
+    def test_retrieve_completed_jobs(self):
+        """Test retrieving jobs with the completed filter."""
         completed_job_list = self.provider.backend.jobs(
-            backend_name=self.sim_backend.name, limit=5, status="completed"
+            backend_name=self.sim_backend.name, limit=3, status="completed"
         )
         for job in completed_job_list:
             self.assertTrue(
                 job.status() in [JobStatus.DONE, JobStatus.CANCELLED, JobStatus.ERROR]
             )
 
+    def test_retrieve_pending_jobs(self):
+        """Test retrieving jobs with the pending filter."""
         pending_job_list = self.provider.backend.jobs(
-            backend_name=self.sim_backend.name, limit=5, status="pending"
+            backend_name=self.sim_backend.name, limit=3, status="pending"
         )
         for job in pending_job_list:
             self.assertTrue(job.status() in [JobStatus.QUEUED, JobStatus.RUNNING])
 
-    def test_retrieve_jobs_client_filtering(self):
-        """Test client side filtering when retrieving jobs with status."""
+    def test_retrieve_running_error_jobs(self):
+        """Test client side filtering with running and error jobs."""
         statuses = ["RUNNING", JobStatus.ERROR]
         job_list = self.provider.backend.jobs(
-            backend_name=self.sim_backend.name, limit=5, status=statuses
+            backend_name=self.sim_backend.name, limit=3, status=statuses
         )
         for job in job_list:
             self.assertTrue(job.status() in [JobStatus.RUNNING, JobStatus.ERROR])
 
+    def test_retrieve_queued_cancelled_jobs(self):
+        """Test client side filtering with queued and cancelled jobs."""
         statuses = ["QUEUED", "CANCELLED"]
         job_list = self.provider.backend.jobs(
             backend_name=self.sim_backend.name, limit=3, status=statuses
