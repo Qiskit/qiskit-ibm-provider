@@ -46,7 +46,6 @@ VALID_RESULT_RESPONSE = {
 VALID_RESULT = {
     "header": {
         "name": "Bell state",
-        "memory_slots": 2,
         "creg_sizes": [["c", 2]],
         "clbit_labels": [["c", 0], ["c", 1]],
         "qubit_labels": [["q", 0], ["q", 1]],

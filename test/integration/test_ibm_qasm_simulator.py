@@ -55,9 +55,7 @@ class TestIBMQasmSimulator(IBMTestCase):
         )
         quantum_circuit.h(quantum_register[0])
         quantum_circuit.measure(quantum_register[0], classical_register[0])
-        circs = transpile(
-            quantum_circuit, backend=self.sim_backend, seed_transpiler=73846087
-        )
+        circs = transpile(quantum_circuit, backend=self.sim_backend)
         shots = 1024
         job = self.sim_backend.run(circs, shots=shots)
         result = job.result()
@@ -80,9 +78,7 @@ class TestIBMQasmSimulator(IBMTestCase):
         qcr2.measure(quantum_register[0], classical_register[0])
         qcr2.measure(quantum_register[1], classical_register[1])
         shots = 1024
-        circs = transpile(
-            [qcr1, qcr2], backend=self.sim_backend, seed_transpiler=73846087
-        )
+        circs = transpile([qcr1, qcr2], backend=self.sim_backend)
         job = self.sim_backend.run(circs, shots=shots)
         result = job.result()
         counts1 = result.get_counts(qcr1)
@@ -111,7 +107,7 @@ class TestIBMQasmSimulator(IBMTestCase):
         qcr2.measure(qr1[1], cr1[1])
         qcr2.measure(qr2[0], cr2[0])
         qcr2.measure(qr2[1], cr2[1])
-        circs = transpile([qcr1, qcr2], self.sim_backend, seed_transpiler=8458)
+        circs = transpile([qcr1, qcr2], self.sim_backend)
         job = self.sim_backend.run(circs, shots=1024)
         result = job.result()
         result1 = result.get_counts(qcr1)
