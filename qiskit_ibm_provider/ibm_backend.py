@@ -290,9 +290,6 @@ class IBMBackend(Backend):
             schedule_los=None,
             meas_level=MeasLevel.CLASSIFIED,
             meas_return=MeasReturnType.AVERAGE,
-            memory_slots=None,
-            memory_slot_size=100,
-            rep_time=None,
             rep_delay=None,
             init_qubits=True,
             use_measure_esp=None,
@@ -358,9 +355,6 @@ class IBMBackend(Backend):
         ] = None,
         meas_level: Optional[Union[int, MeasLevel]] = None,
         meas_return: Optional[Union[str, MeasReturnType]] = None,
-        memory_slots: Optional[int] = None,
-        memory_slot_size: Optional[int] = None,
-        rep_time: Optional[int] = None,
         rep_delay: Optional[float] = None,
         init_qubits: Optional[bool] = None,
         parameter_binds: Optional[List[Dict[Parameter, float]]] = None,
@@ -398,15 +392,9 @@ class IBMBackend(Backend):
                 For ``meas_level`` 0 and 1:
                 * ``single`` returns information from every shot.
                 * ``avg`` returns average measurement output (averaged over number of shots).
-            memory_slots: Number of classical memory slots to use.
-            memory_slot_size: Size of each memory slot if the output is Level 0.
-            rep_time: Time per program execution in seconds. Must be from the list provided
-                by the backend (``backend.configuration().rep_times``).
-                Defaults to the first entry.
             rep_delay: Delay between programs in seconds. Only supported on certain
                 backends (if ``backend.configuration().dynamic_reprate_enabled=True``).
-                If supported, ``rep_delay`` will be used instead of ``rep_time`` and must be
-                from the range supplied
+                If supported, ``rep_delay`` must be from the range supplied
                 by the backend (``backend.configuration().rep_delay_range``). Default is given by
                 ``backend.configuration().default_rep_delay``.
             init_qubits: Whether to reset the qubits to the ground state for each shot.
@@ -471,9 +459,6 @@ class IBMBackend(Backend):
             schedule_los=schedule_los,
             meas_level=meas_level,
             meas_return=meas_return,
-            memory_slots=memory_slots,
-            memory_slot_size=memory_slot_size,
-            rep_time=rep_time,
             rep_delay=rep_delay,
             init_qubits=init_qubits,
             use_measure_esp=use_measure_esp,

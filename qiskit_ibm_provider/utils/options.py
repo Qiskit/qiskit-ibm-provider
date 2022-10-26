@@ -25,18 +25,14 @@ class QASM3Options:
     """Options for the QASM3 path."""
 
     circuits: Union[QuantumCircuit, List[QuantumCircuit]] = None
-    merge_circuits: Optional[bool] = None
     shots: Optional[int] = None
     meas_level: Optional[Union[int, MeasLevel]] = None
     init_circuit: Optional[QuantumCircuit] = None
-    init_delay: Optional[int] = None
     init_num_resets: Optional[int] = None
     run_config: Optional[Dict] = None
-    exporter_config: Optional[Dict] = None
-    skip_transpilation: Optional[bool] = None
-    transpiler_config: Optional[Dict] = None
-    use_measurement_mitigation: Optional[bool] = None
-    qasm3_args: Optional[Union[Dict, List]] = None  # Deprecated
+    exporter_config: Optional[Dict] = None  # Deprecated
+    rep_delay: Optional[float] = None
+    init_qubits: Optional[bool] = None
 
     def to_transport_dict(self) -> Dict[str, Any]:
         """Return None values so runtime defaults are used."""
@@ -66,9 +62,6 @@ class QASM2Options:
     ] = None
     meas_level: Union[int, MeasLevel] = None
     meas_return: Union[str, MeasReturnType] = None
-    memory_slots: int = None
-    memory_slot_size: int = None
-    rep_time: int = None
     rep_delay: float = None
     init_qubits: bool = None
     parameter_binds: List[Dict[Parameter, float]] = None
