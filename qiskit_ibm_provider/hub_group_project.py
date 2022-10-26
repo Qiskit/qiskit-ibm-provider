@@ -86,6 +86,7 @@ class HubGroupProject:
             if not config:
                 continue
             ret[config.backend_name] = ibm_backend.IBMBackend(
+                instance=self.name,
                 configuration=config,
                 api_client=self._api_client,
                 provider=self._provider,

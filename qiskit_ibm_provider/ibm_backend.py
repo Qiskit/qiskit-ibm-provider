@@ -65,6 +65,10 @@ from .api.exceptions import RequestsApiError
 logger = logging.getLogger(__name__)
 
 
+QOBJRUNNERPROGRAMID = "circuit-runner"
+QASM3RUNNERPROGRAMID = "qasm3-runner"
+
+
 class IBMBackend(Backend):
     """Backend class interfacing with an IBM Quantum device.
 
@@ -184,6 +188,7 @@ class IBMBackend(Backend):
         configuration: Union[QasmBackendConfiguration, PulseBackendConfiguration],
         provider: "ibm_provider.IBMProvider",
         api_client: AccountClient,
+        instance: Optional[str] = None,
     ) -> None:
         """IBMBackend constructor.
 
@@ -198,6 +203,7 @@ class IBMBackend(Backend):
             online_date=configuration.online_date,
             backend_version=configuration.backend_version,
         )
+        self._instance = instance
         self._api_client = api_client
         self._configuration = configuration
         self._properties = None
@@ -284,9 +290,6 @@ class IBMBackend(Backend):
             schedule_los=None,
             meas_level=MeasLevel.CLASSIFIED,
             meas_return=MeasReturnType.AVERAGE,
-            memory_slots=None,
-            memory_slot_size=100,
-            rep_time=None,
             rep_delay=None,
             init_qubits=True,
             use_measure_esp=None,
@@ -352,9 +355,6 @@ class IBMBackend(Backend):
         ] = None,
         meas_level: Optional[Union[int, MeasLevel]] = None,
         meas_return: Optional[Union[str, MeasReturnType]] = None,
-        memory_slots: Optional[int] = None,
-        memory_slot_size: Optional[int] = None,
-        rep_time: Optional[int] = None,
         rep_delay: Optional[float] = None,
         init_qubits: Optional[bool] = None,
         parameter_binds: Optional[List[Dict[Parameter, float]]] = None,
@@ -391,15 +391,9 @@ class IBMBackend(Backend):
                 For ``meas_level`` 0 and 1:
                 * ``single`` returns information from every shot.
                 * ``avg`` returns average measurement output (averaged over number of shots).
-            memory_slots: Number of classical memory slots to use.
-            memory_slot_size: Size of each memory slot if the output is Level 0.
-            rep_time: Time per program execution in seconds. Must be from the list provided
-                by the backend (``backend.configuration().rep_times``).
-                Defaults to the first entry.
             rep_delay: Delay between programs in seconds. Only supported on certain
                 backends (if ``backend.configuration().dynamic_reprate_enabled=True``).
-                If supported, ``rep_delay`` will be used instead of ``rep_time`` and must be
-                from the range supplied
+                If supported, ``rep_delay`` must be from the range supplied
                 by the backend (``backend.configuration().rep_delay_range``). Default is given by
                 ``backend.configuration().default_rep_delay``.
             init_qubits: Whether to reset the qubits to the ground state for each shot.
@@ -440,9 +434,14 @@ class IBMBackend(Backend):
         if status.operational is True and status.status_msg != "active":
             warnings.warn(f"The backend {self.name} is currently paused.")
 
-        program_id = "circuit-runner"
-        if dynamic:
-            program_id = "qasm3-runner"
+        program_id = str(run_config.get("program_id", ""))
+        if not program_id:
+            if dynamic:
+                program_id = QASM3RUNNERPROGRAMID
+            else:
+                program_id = QOBJRUNNERPROGRAMID
+        else:
+            run_config.pop("program_id", None)
 
         if isinstance(shots, float):
             shots = int(shots)
@@ -460,9 +459,6 @@ class IBMBackend(Backend):
             schedule_los=schedule_los,
             meas_level=meas_level,
             meas_return=meas_return,
-            memory_slots=memory_slots,
-            memory_slot_size=memory_slot_size,
-            rep_time=rep_time,
             rep_delay=rep_delay,
             init_qubits=init_qubits,
             use_measure_esp=use_measure_esp,
@@ -488,8 +484,7 @@ class IBMBackend(Backend):
         job_tags: Optional[List[str]] = None,
     ) -> IBMCircuitJob:
         """Runs the runtime program and returns the corresponding job object"""
-        hgp = self.provider._get_hgps()[0]
-        hgp_name = hgp.name
+        hgp_name = self._instance or self.provider._get_hgp().name
         try:
             response = self.provider._runtime_client.program_run(
                 program_id=program_id,
@@ -520,9 +515,12 @@ class IBMBackend(Backend):
 
     def _get_run_config(self, program_id: str, **kwargs: Any) -> Dict:
         """Return the consolidated runtime configuration."""
-        if program_id == "qasm3-runner":
-            original_dict = asdict(QASM3Options())
-            run_config_dict = copy.copy(asdict(QASM3Options(**original_dict)))
+        # Check if is a QASM3 like program id.
+        if program_id.startswith(QASM3RUNNERPROGRAMID):
+            original_dict = QASM3Options().to_transport_dict()
+            run_config_dict = copy.copy(
+                QASM3Options(**original_dict).to_transport_dict()
+            )
         else:
             original_dict = self.options.__dict__
             run_config_dict = copy.copy(asdict(QASM2Options(**original_dict)))

@@ -31,8 +31,6 @@ from ..ibm_test_case import IBMTestCase
 class TestIBMIntegration(IBMTestCase):
     """Integration tests."""
 
-    seed = 42
-
     @classmethod
     @integration_test_setup_with_backend(simulator=False, min_num_qubits=2)
     def setUpClass(
@@ -107,7 +105,6 @@ class TestIBMIntegration(IBMTestCase):
         circs = transpile(
             [quantum_circuit, qc_extra],
             backend=self.sim_backend,
-            seed_transpiler=self.seed,
         )
         job = self.sim_backend.run(circs)
         result = job.result()
@@ -118,9 +115,7 @@ class TestIBMIntegration(IBMTestCase):
         quantum_circuit = ReferenceCircuits.bell()
         qc_extra = QuantumCircuit(2, 2)
         qc_extra.measure_all()
-        job = execute(
-            [quantum_circuit, qc_extra], self.sim_backend, seed_transpiler=self.seed
-        )
+        job = execute([quantum_circuit, qc_extra], self.sim_backend)
         results = job.result()
         self.assertIsInstance(results, Result)
 

@@ -27,7 +27,7 @@ from qiskit.providers.jobstatus import JobStatus
 from qiskit_ibm_provider import least_busy
 from qiskit_ibm_provider.job.exceptions import IBMJobFailureError
 
-from qiskit_ibm_provider.ibm_backend import IBMBackend
+from qiskit_ibm_provider.ibm_backend import IBMBackend, QOBJRUNNERPROGRAMID
 
 from ..ibm_test_case import IBMTestCase
 from ..utils import (
@@ -102,6 +102,7 @@ class TestRealDevices(IBMTestCase):
         job = self.real_device_backend.run(
             transpile(ReferenceCircuits.bell(), backend=self.real_device_backend),
             shots=shots,
+            program_id=QOBJRUNNERPROGRAMID,
         )
 
         job.wait_for_final_state(wait=300, callback=self.simple_job_callback)
