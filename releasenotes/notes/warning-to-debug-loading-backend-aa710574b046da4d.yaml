@@ -1,0 +1,7 @@
+---
+fixes:
+  - |
+    A warning log message when loading an invalid backend has had the core message
+    switched to a debug log message as certain backends were causing issues
+    for all users upon loading the provider. Now a much less verbose message is
+    emitted.
