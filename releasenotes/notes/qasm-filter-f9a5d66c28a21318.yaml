@@ -1,0 +1,6 @@
+---
+features:
+  - |
+    You can now use the ``dynamic_circuits`` parameter in
+    :meth:`qiskit_ibm_provider.ibm_backend_service.IBMBackendService.backends`
+    to find backends that support dynamic circuits.
