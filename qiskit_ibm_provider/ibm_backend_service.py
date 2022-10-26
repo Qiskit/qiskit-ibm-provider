@@ -169,7 +169,15 @@ class IBMBackendService:
                 )
             )
         if dynamic_circuits is not None:
-            backends = list(filter(lambda b: ("qasm3" in getattr(b.configuration(), "supported_features", [])) == dynamic_circuits, backends))
+            backends = list(
+                filter(
+                    lambda b: (
+                        "qasm3" in getattr(b.configuration(), "supported_features", [])
+                    )
+                    == dynamic_circuits,
+                    backends,
+                )
+            )
 
         return filter_backends(backends, filters=filters, **kwargs)
 
