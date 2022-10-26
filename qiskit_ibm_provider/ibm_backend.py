@@ -360,7 +360,6 @@ class IBMBackend(Backend):
         parameter_binds: Optional[List[Dict[Parameter, float]]] = None,
         use_measure_esp: Optional[bool] = None,
         noise_model: Optional[Any] = None,
-        program_id: Optional[str] = None,
         **run_config: Dict,
     ) -> IBMJob:
         """Run on the backend.
@@ -412,8 +411,6 @@ class IBMBackend(Backend):
                 Default: ``True`` if backend supports ESP readout, else ``False``. Backend support
                 for ESP readout is determined by the flag ``measure_esp_enabled`` in
                 ``backend.configuration()``.
-            program_id: The program ID to use for the Qiskit Runtime. Defaults to ``circuit-runner``
-                if ``dynamic=False`` otherwise it is ``qasm3-runner``.
             noise_model: Noise model. (Simulators only)
             **run_config: Extra arguments used to configure the run.
 
@@ -437,11 +434,14 @@ class IBMBackend(Backend):
         if status.operational is True and status.status_msg != "active":
             warnings.warn(f"The backend {self.name} is currently paused.")
 
-        if program_id is None:
+        program_id = str(run_config.get("program_id", ""))
+        if not program_id:
             if dynamic:
                 program_id = QASM3RUNNERPROGRAMID
             else:
                 program_id = QOBJRUNNERPROGRAMID
+        else:
+            run_config.pop("program_id", None)
 
         if isinstance(shots, float):
             shots = int(shots)
