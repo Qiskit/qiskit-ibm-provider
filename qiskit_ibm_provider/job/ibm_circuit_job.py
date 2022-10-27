@@ -568,6 +568,7 @@ class IBMCircuitJob(IBMJob):
             Backend options used for this job. An empty dictionary
             is returned if the options cannot be retrieved.
         """
+        self._get_params()
         if self._params:
             return {
                 k: v
@@ -583,6 +584,7 @@ class IBMCircuitJob(IBMJob):
             User header specified for this job. An empty dictionary
             is returned if the header cannot be retrieved.
         """
+        self._get_params()
         if self._params:
             return self._params.get("header")
         return {}
@@ -595,12 +597,20 @@ class IBMCircuitJob(IBMJob):
             is returned if the circuits cannot be retrieved (for example, if
             the job uses an old format that is no longer supported).
         """
+        self._get_params()
         if self._params:
             circuits = self._params["circuits"]
             if isinstance(circuits, list):
                 return circuits
             return [circuits]
         return []
+
+    def _get_params(self) -> None:
+        """Retrieve job parameters"""
+        if not self._params:
+            with api_to_job_error():
+                api_response = self._runtime_client.job_get(self.job_id())
+                self._params = api_response.get("params", {})
 
     def wait_for_final_state(  # pylint: disable=arguments-differ
         self,

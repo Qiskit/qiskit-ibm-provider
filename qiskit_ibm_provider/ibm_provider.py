@@ -441,7 +441,7 @@ class IBMProvider(Provider):
             True if the account was deleted.
             False if no account was found.
         """
-        return AccountManager.delete(name=name, channel="ibm_quantum")
+        return AccountManager.delete(name=name)
 
     @staticmethod
     def save_account(
@@ -456,7 +456,7 @@ class IBMProvider(Provider):
         """Save the account to disk for future use.
 
         Args:
-            token: IBM Cloud API key or IBM Quantum API token.
+            token: IBM Quantum API token.
             url: The API URL.
                 Defaults to https://auth.quantum-computing.ibm.com/api
             instance: The hub/group/project.
@@ -638,11 +638,6 @@ class IBMProvider(Provider):
                 `project` are specified.
         """
         # pylint: disable=arguments-differ
-        if instance:
-            self._hgps.move_to_end(instance, last=False)  # type: ignore[attr-defined]
-        else:
-            self._hgps = self._initialize_hgps(self._auth_client)
-
         backends = self.backends(name, instance=instance, **kwargs)
         if len(backends) > 1:
             raise QiskitBackendNotFoundError(

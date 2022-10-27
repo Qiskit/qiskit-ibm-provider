@@ -139,3 +139,9 @@ class TestBackendFilters(IBMTestCase):
                     self.assertTrue(
                         set(input_type) <= set(backend.configuration().input_allowed)
                     )
+
+    def test_filter_dynamic_circuits(self):
+        """Test filtering by dynamic ciruits."""
+        filtered = self.dependencies.provider.backends(dynamic_circuits=True)
+        for backend in filtered:
+            self.assertTrue("qasm3" in backend.configuration().supported_features)

@@ -109,6 +109,7 @@ class IBMBackendService:
         min_num_qubits: Optional[int] = None,
         input_allowed: Optional[Union[str, List[str]]] = None,
         instance: Optional[str] = None,
+        dynamic_circuits: Optional[bool] = None,
         **kwargs: Any,
     ) -> List[IBMBackend]:
         """Return all backends accessible via this account, subject to optional filtering.
@@ -127,6 +128,7 @@ class IBMBackendService:
                 that support Qiskit Runtime. If a list is given, the backend must
                 support all types specified in the list.
             instance: The provider in the hub/group/project format.
+            dynamic_circuits: Filter by whether the backend supports dynamic circuits.
             **kwargs: Simple filters that specify a ``True``/``False`` criteria in the
                 backend configuration, backends status, or provider credentials.
                 An example to get the operational backends with 5 qubits::
@@ -166,6 +168,17 @@ class IBMBackendService:
                     backends,
                 )
             )
+        if dynamic_circuits is not None:
+            backends = list(
+                filter(
+                    lambda b: (
+                        "qasm3" in getattr(b.configuration(), "supported_features", [])
+                    )
+                    == dynamic_circuits,
+                    backends,
+                )
+            )
+
         return filter_backends(backends, filters=filters, **kwargs)
 
     def jobs(
