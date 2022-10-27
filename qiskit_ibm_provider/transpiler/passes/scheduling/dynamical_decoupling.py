@@ -53,7 +53,7 @@ class PadDynamicalDecoupling(BlockBasePadder):
         from qiskit.transpiler import PassManager, InstructionDurations
         from qiskit.visualization import timeline_drawer
 
-        from qiskit_ibm_provider.transpiler.passes.scheduling import ASAPScheduleAnalysis
+        from qiskit_ibm_provider.transpiler.passes.scheduling import ALAPScheduleAnalysis
         from qiskit_ibm_provider.transpiler.passes.scheduling import PadDynamicalDecoupling
 
         circ = QuantumCircuit(4)
@@ -72,7 +72,7 @@ class PadDynamicalDecoupling(BlockBasePadder):
 
         # balanced X-X sequence on all qubits
         dd_sequence = [XGate(), XGate()]
-        pm = PassManager([ASAPScheduleAnalysis(durations),
+        pm = PassManager([ALAPScheduleAnalysis(durations),
                           PadDynamicalDecoupling(durations, dd_sequence)])
         circ_dd = pm.run(circ)
         circ_dd.draw()
@@ -90,7 +90,7 @@ class PadDynamicalDecoupling(BlockBasePadder):
         spacing.append(1 - sum(spacing))
         pm = PassManager(
             [
-                ASAPScheduleAnalysis(durations),
+                ALAPScheduleAnalysis(durations),
                 PadDynamicalDecoupling(durations, dd_sequence, qubits=[0], spacing=spacing),
             ]
         )
@@ -100,7 +100,7 @@ class PadDynamicalDecoupling(BlockBasePadder):
     .. note::
 
         You need to call
-        :class:`~qiskit_ibm_provider.transpiler.passes.scheduling.ASAPScheduleAnalysis`
+        :class:`~qiskit_ibm_provider.transpiler.passes.scheduling.ALAPScheduleAnalysis`
         before running dynamical decoupling to guarantee your circuit satisfies acquisition
         alignment constraints for dynamic circuit backends.
     """

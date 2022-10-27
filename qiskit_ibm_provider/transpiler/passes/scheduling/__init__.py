@@ -100,6 +100,7 @@ Scheduling & Dynamical Decoupling
    :toctree: ../stubs/
 
     BlockBasePadder
+    ALAPScheduleAnalysis
     ASAPScheduleAnalysis
     DynamicCircuitInstructionDurations
     PadDelay
