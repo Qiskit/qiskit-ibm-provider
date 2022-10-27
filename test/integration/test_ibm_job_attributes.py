@@ -322,17 +322,16 @@ class TestIBMJobAttributes(IBMTestCase):
                 # TODO check why this sometimes fails
                 # self.assertEqual(set(rjobs[0].tags()), set(job_tags))
 
-    @skip("Skip this test since it is not supported by the API.")
     def test_job_tags_replace(self):
         """Test updating job tags by replacing a job's existing tags."""
-        initial_job_tags = [uuid.uuid4().hex]
+        initial_job_tags = [uuid.uuid4().hex[:16]]
         job = self.sim_backend.run(self.bell, job_tags=initial_job_tags)
 
         tags_to_replace_subtests = [
             [],  # empty tags.
-            [
-                "{}_new_tag_{}".format(uuid.uuid4().hex, i) for i in range(2)
-            ],  # unique tags.
+            list(
+                "{}_new_tag_{}".format(uuid.uuid4().hex[:5], i) for i in range(2)
+            ),  # unique tags.
             initial_job_tags + ["foo"],
         ]
         for tags_to_replace in tags_to_replace_subtests:
