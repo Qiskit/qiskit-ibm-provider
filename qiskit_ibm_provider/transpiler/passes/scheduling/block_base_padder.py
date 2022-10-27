@@ -33,7 +33,6 @@ class BlockBasePadder(TransformationPass):
     Once a scheduling analysis pass is run, ``node_start_time`` is generated
     in the :attr:`property_set`.  This information is represented by a python dictionary of
     the expected instruction execution times keyed on the node instances.
-    Entries in the dictionary are only created for non-delay nodes.
     The padding pass expects all ``DAGOpNode`` in the circuit to be scheduled.
 
     This base class doesn't define any sequence to interleave, but it manages

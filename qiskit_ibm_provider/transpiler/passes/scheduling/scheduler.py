@@ -544,13 +544,40 @@ class ALAPScheduleAnalysis(BaseDynamicCircuitAnalysis):
 
     def _push_block_durations(self) -> None:
         """After scheduling of each block, pass over and push the times of all nodes."""
+
+        # Store the next available time to push to for the block by bit
+        block_bit_times = {}
+
+        # Iterated nodes starting at the first, from the node with the
+        # last time, preferring barriers over non-barriers
+        iterate_nodes = sorted(
+            self._node_stop_time.items(),
+            key=lambda item: (item[1][0], -item[1][1], self._get_duration(item[0])),
+        )
+
         for node, (
             block,
-            t0,  # pylint: disable=invalid-name
-        ) in self._node_start_time.items():  # pylint: disable=invalid-name
-            max_block_time = max(
-                self._bit_stop_times[block][bit]
-                for bit in itertools.chain(node.qargs, node.cargs)
+            t1,  # pylint: disable=invalid-name
+        ) in iterate_nodes:  # pylint: disable=invalid-name
+            # Start with last time as the time to push to
+            if block not in block_bit_times:
+                block_bit_times[block] = {
+                    q: self._max_block_t1[block]
+                    for q in self._dag.qubits + self._dag.clbits
+                }
+
+            # Calculate the latest available time to push to
+            max_block_time = min(
+                block_bit_times[block][bit] for bit in itertools.chain(node.qargs)
             )
-            node_offset = self._max_block_t1[block] - max_block_time
-            self._node_start_time[node] = (block, t0 + node_offset)
+            t0 = self._node_start_time[node][1] # pylint: disable=invalid-name
+            # Determine how much to shift by
+            node_offset = max_block_time - t1
+            new_t0 = t0 + node_offset
+            new_t1 = t1 + node_offset
+            # Shift the time by pushing forward
+            self._node_start_time[node] = (block, new_t0)
+            self._node_stop_time[node] = (block, new_t1)
+            # Update available times by bit
+            for bit in node.qargs:
+                block_bit_times[block][bit] = new_t0

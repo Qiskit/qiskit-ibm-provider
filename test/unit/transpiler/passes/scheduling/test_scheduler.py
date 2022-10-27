@@ -530,7 +530,10 @@ class TestASAPSchedulingAndPaddingPass(QiskitTestCase):
 
     def test_scheduling_is_idempotent(self):
         """Test that padding can be applied back to back without changing the circuit."""
-        qc = QuantumCircuit(1, 1)
+        qc = QuantumCircuit(3, 2)
+        qc.x(2)
+        qc.cx(0, 1)
+        qc.barrier()
         qc.measure(0, 0)
         qc.x(0).c_if(0, 1)
         qc.measure(0, 0)
@@ -539,7 +542,7 @@ class TestASAPSchedulingAndPaddingPass(QiskitTestCase):
         qc.x(0).c_if(0, 1)
 
         durations = DynamicCircuitInstructionDurations(
-            [("x", None, 100), ("measure", None, 840)]
+            [("x", None, 100), ("measure", None, 840), ("cx", None, 500)]
         )
 
         scheduled0 = PassManager(
@@ -702,10 +705,9 @@ class TestALAPSchedulingAndPaddingPass(QiskitTestCase):
         expected.delay(1000, 0)
         expected.x(0)
         expected.delay(200, 1)
-        expected.x(2)
         expected.delay(1000, 2)
+        expected.x(2)
         expected.measure(0, 0)
-        expected.delay(1000, 0)
         expected.measure(1, 0)
         expected.measure(1, 0)
         expected.measure(2, 0)
@@ -844,9 +846,9 @@ class TestALAPSchedulingAndPaddingPass(QiskitTestCase):
         scheduled = pm.run(qc)
 
         expected = QuantumCircuit(2, 2)
+        expected.delay(200, 0)
         expected.x(0)
         expected.x(1)
-        expected.delay(200, 0)
         expected.measure(0, 0)  # immediately start after X gate
         expected.measure(1, 1)
         expected.barrier()
@@ -870,8 +872,8 @@ class TestALAPSchedulingAndPaddingPass(QiskitTestCase):
         scheduled = pm.run(qc)
 
         expected = QuantumCircuit(2, 2)
-        expected.x(0)
         expected.delay(200, 0)
+        expected.x(0)
         expected.x(1)
         expected.barrier()
         expected.measure(0, 0)
@@ -1139,18 +1141,49 @@ class TestALAPSchedulingAndPaddingPass(QiskitTestCase):
 
         self.assertEqual(expected, scheduled)
 
-    def test_scheduling_is_idempotent(self):
-        """Test that padding can be applied back to back without changing the circuit."""
-        qc = QuantumCircuit(1, 1)
+    def test_already_scheduled(self):
+        """Test no changes to pre-scheduled"""
+        qc = QuantumCircuit(3, 2)
+        qc.cx(0, 1)
+        qc.delay(400, 2)
+        qc.x(2)
+        qc.barrier()
         qc.measure(0, 0)
+        qc.delay(1000, 1)
+        qc.delay(1000, 2)
+        qc.barrier()
         qc.x(0).c_if(0, 1)
+        qc.barrier()
         qc.measure(0, 0)
-        qc.x(0).c_if(0, 1)
-        qc.measure(0, 0)
-        qc.x(0).c_if(0, 1)
+        qc.delay(1000, 1)
+        qc.delay(1000, 2)
+        qc.barrier()
 
         durations = DynamicCircuitInstructionDurations(
-            [("x", None, 100), ("measure", None, 840)]
+            [("x", None, 100), ("measure", None, 840), ("cx", None, 500)]
+        )
+
+        scheduled = PassManager(
+            [
+                ALAPScheduleAnalysis(durations),
+                PadDelay(),
+            ]
+        ).run(qc)
+
+        self.assertEqual(qc, scheduled)
+
+    def test_scheduling_is_idempotent(self):
+        """Test that padding can be applied back to back without changing the circuit."""
+        qc = QuantumCircuit(3, 2)
+        qc.x(2)
+        qc.cx(0, 1)
+        qc.barrier()
+        qc.measure(0, 0)
+        qc.x(0).c_if(0, 1)
+        qc.measure(0, 0)
+
+        durations = DynamicCircuitInstructionDurations(
+            [("x", None, 100), ("measure", None, 840), ("cx", None, 500)]
         )
 
         scheduled0 = PassManager(
@@ -1159,7 +1192,6 @@ class TestALAPSchedulingAndPaddingPass(QiskitTestCase):
                 PadDelay(),
             ]
         ).run(qc)
-
         scheduled1 = PassManager(
             [
                 ALAPScheduleAnalysis(durations),
