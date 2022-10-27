@@ -13,7 +13,7 @@
 """Test serializing and deserializing data sent to the server."""
 
 from typing import Set, Any, Dict, Optional
-from unittest import SkipTest, skipIf, skip
+from unittest import SkipTest, skipIf
 
 import dateutil.parser
 from qiskit import transpile, schedule, QuantumCircuit
@@ -42,16 +42,6 @@ class TestSerialization(IBMTestCase):
             "ibmq_qasm_simulator",
         )
         cls.bell = transpile(ReferenceCircuits.bell(), backend=cls.sim_backend)
-
-    @skip("need to support retrieving job qobj")
-    def test_qasm_qobj(self):
-        """Test serializing qasm qobj data."""
-        job = self.sim_backend.run(self.bell)
-        rqobj = self.dependencies.provider.backend.retrieve_job(
-            job.job_id()
-        )._get_qobj()
-
-        self.assertEqual(_array_to_list(job._get_qobj().to_dict()), rqobj.to_dict())
 
     def test_pulse_qobj(self):
         """Test serializing pulse qobj data."""

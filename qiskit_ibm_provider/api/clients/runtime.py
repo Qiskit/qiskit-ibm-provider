@@ -15,6 +15,7 @@
 import logging
 from typing import Any, Dict, List, Optional
 from datetime import datetime as python_datetime
+from requests import Response
 
 from .base import BaseClient
 from ..rest.runtime import Runtime
@@ -264,3 +265,14 @@ class RuntimeClient(BaseClient):
             Job status.
         """
         return self.job_get(job_id)["state"]
+
+    def update_tags(self, job_id: str, tags: list) -> Response:
+        """Update the tags of the job.
+
+        Args:
+            job_id: The ID of the job.
+
+        Returns:
+            API Response.
+        """
+        return self._api.program_job(job_id).update_tags(tags)
