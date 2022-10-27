@@ -143,7 +143,7 @@ class TestIBMJob(IBMTestCase):
         """Test retreiving jobs with status filter."""
         statuses = [["DONE"], JobStatus.DONE, [JobStatus.DONE]]
         job_list = self.provider.backend.jobs(
-            backend_name=self.sim_backend.name, limit=5, status="DONE"
+            backend_name=self.sim_backend.name, limit=3, status="DONE"
         )
         for status in statuses:
             new_list = self.provider.backend.jobs(
@@ -491,19 +491,16 @@ class TestIBMJob(IBMTestCase):
                     f"Job {job.job_id()} status is {job.status()} and not cancelled!",
                 )
 
-    @skip("not supported by api")
     def test_job_circuits(self):
         """Test job circuits."""
         self.assertEqual(str(self.bell), str(self.sim_job.circuits()[0]))
 
-    @skip("not supported by api")
     def test_job_backend_options(self):
         """Test job backend options."""
         run_config = {"shots": 2048, "memory": True}
         job = self.sim_backend.run(self.bell, **run_config)
         self.assertLessEqual(run_config.items(), job.backend_options().items())
 
-    @skip("not supported by api")
     def test_job_header(self):
         """Test job header."""
         custom_header = {"test": "test_job_header"}
