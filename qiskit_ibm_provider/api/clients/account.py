@@ -13,23 +13,14 @@
 """Client for accessing an individual IBM Quantum account."""
 
 import logging
-import time
 from datetime import datetime
 from threading import Timer
-from typing import List, Dict, Any, Optional, Union
+from typing import List, Dict, Any, Optional
 
-from qiskit_ibm_provider.apiconstants import API_JOB_FINAL_STATES, ApiJobStatus
 from qiskit_ibm_provider.utils.utils import RefreshQueue
 from .base import BaseClient
 from .websocket import WebsocketClient, WebsocketClientCloseCode
 from ..client_parameters import ClientParameters
-from ..exceptions import ApiIBMProtocolError
-from ..exceptions import (
-    RequestsApiError,
-    WebsocketError,
-    WebsocketTimeoutError,
-    UserTimeoutExceededError,
-)
 from ..rest import Api, Account
 from ..session import RetrySession
 from ...utils.hgp import from_instance_format
@@ -158,143 +149,6 @@ class AccountClient(BaseClient):
             limit=limit, skip=skip, descending=descending, extra_filter=extra_filter
         )
 
-    def job_submit(
-        self,
-        backend_name: str,
-        qobj_dict: Dict[str, Any],
-        job_name: Optional[str] = None,
-        job_tags: Optional[List[str]] = None,
-        experiment_id: Optional[str] = None,
-        live_data_enabled: Optional[bool] = None,
-    ) -> Dict[str, Any]:
-        """Submit a ``Qobj`` to the backend.
-
-        Args:
-            backend_name: The name of the backend.
-            qobj_dict: The ``Qobj`` to be executed, as a dictionary.
-            job_name: Custom name to be assigned to the job.
-            job_tags: Tags to be assigned to the job.
-            experiment_id: Used to add a job to an experiment.
-            live_data_enabled: Used to activate/deactivate live data on the backend.
-
-        Returns:
-            Job data.
-
-        Raises:
-            RequestsApiError: If an error occurred communicating with the server.
-        """
-        # pylint: disable=missing-raises-doc
-
-        # Create a remote job instance on the server.
-        job_info = self.account_api.create_remote_job(
-            backend_name,
-            job_name=job_name,
-            job_tags=job_tags,
-            experiment_id=experiment_id,
-            live_data_enabled=live_data_enabled,
-        )
-
-        # Get the upload URL.
-        job_id = job_info["id"]
-        upload_url = job_info["objectStorageInfo"]["uploadUrl"]
-        job_api = self.base_api.job(job_id)
-
-        try:
-            # Upload the Qobj to object storage.
-            _ = job_api.put_object_storage(upload_url, qobj_dict)
-            # Notify the API via the callback.
-            response = job_api.callback_upload()
-            return response["job"]
-        except Exception:  # pylint: disable=broad-except
-            try:
-                job_api.cancel()  # Cancel the job so it doesn't become a phantom job.
-            except Exception:  # pylint: disable=broad-except
-                pass
-            raise
-
-    def job_download_qobj(self, job_id: str, use_object_storage: bool) -> Dict:
-        """Retrieve and return a ``Qobj``.
-
-        Args:
-            job_id: The ID of the job.
-            use_object_storage: ``True`` if object storage should be used.
-
-        Returns:
-            ``Qobj`` in dictionary form.
-        """
-        if use_object_storage:
-            return self._job_download_qobj_object_storage(job_id)
-        else:
-            return self.job_get(job_id).get("qObject", {})
-
-    def _job_download_qobj_object_storage(self, job_id: str) -> Dict:
-        """Retrieve and return a ``Qobj`` using object storage.
-
-        Args:
-            job_id: The ID of the job.
-
-        Returns:
-            ``Qobj`` in dictionary form.
-        """
-        job_api = self.base_api.job(job_id)
-
-        # Get the download URL.
-        download_url = job_api.download_url()["url"]
-
-        # Download the result from object storage.
-        return job_api.get_object_storage(download_url)
-
-    def job_result(self, job_id: str, use_object_storage: bool) -> Dict:
-        """Retrieve and return the job result.
-
-        Args:
-            job_id: The ID of the job.
-            use_object_storage: ``True`` if object storage should be used.
-
-        Returns:
-            Job result.
-
-        Raises:
-            ApiIBMProtocolError: If unexpected data is received from the server.
-        """
-        if use_object_storage:
-            return self._job_result_object_storage(job_id)
-
-        try:
-            return self.job_get(job_id)["qObjectResult"]
-        except KeyError as err:
-            raise ApiIBMProtocolError(
-                "Unexpected return value received from the server: {}".format(str(err))
-            ) from err
-
-    def _job_result_object_storage(self, job_id: str) -> Dict:
-        """Retrieve and return the job result using object storage.
-
-        Args:
-            job_id: The ID of the job.
-
-        Returns:
-            Job result.
-        """
-        job_api = self.base_api.job(job_id)
-
-        # Get the download URL.
-        download_url = job_api.result_url()["url"]
-
-        # Download the result from object storage.
-        result_response = job_api.get_object_storage(download_url)
-
-        # Notify the API via the callback
-        try:
-            _ = job_api.callback_download()
-        except (RequestsApiError, ValueError) as ex:
-            logger.warning(
-                "An error occurred while sending download completion acknowledgement: "
-                "%s",
-                ex,
-            )
-        return result_response
-
     def job_get(self, job_id: str) -> Dict[str, Any]:
         """Return information about the job.
 
@@ -319,60 +173,6 @@ class AccountClient(BaseClient):
             ApiIBMProtocolError: If unexpected data is received from the server.
         """
         return self.base_api.job(job_id).status()
-
-    def job_final_status(
-        self,
-        job_id: str,
-        timeout: Optional[float] = None,
-        wait: float = 5,
-        status_queue: Optional[RefreshQueue] = None,
-    ) -> Dict[str, Any]:
-        """Wait until the job progresses to a final state.
-
-        Args:
-            job_id: The ID of the job.
-            timeout: Time to wait for job, in seconds. If ``None``, wait indefinitely.
-            wait: Seconds between queries.
-            status_queue: Queue used to share the latest status.
-
-        Returns:
-            Job status.
-
-        Raises:
-            UserTimeoutExceededError: If the job does not return results
-                before the specified timeout.
-            ApiIBMProtocolError: If unexpected data is received from the server.
-        """
-        status_response = None
-        # Attempt to use websocket if available.
-        start_time = time.time()
-        try:
-            status_response = self._job_final_status_websocket(
-                job_id=job_id, timeout=timeout, status_queue=status_queue
-            )
-        except WebsocketTimeoutError as ex:
-            logger.info(
-                "Timeout checking job status using websocket, "
-                "retrying using HTTP: %s",
-                ex,
-            )
-        except (RuntimeError, WebsocketError) as ex:
-            logger.info(
-                "Error checking job status using websocket, " "retrying using HTTP: %s",
-                ex,
-            )
-
-        # Adjust timeout for HTTP retry.
-        if timeout is not None:
-            timeout -= time.time() - start_time
-
-        if not status_response:
-            # Use traditional http requests if websocket not available or failed.
-            status_response = self._job_final_status_polling(
-                job_id, timeout, wait, status_queue
-            )
-
-        return status_response
 
     def _job_final_status_websocket(
         self,
@@ -415,52 +215,6 @@ class AccountClient(BaseClient):
             if timer:
                 timer.cancel()
 
-    def _job_final_status_polling(
-        self,
-        job_id: str,
-        timeout: Optional[float] = None,
-        wait: float = 5,
-        status_queue: Optional[RefreshQueue] = None,
-    ) -> Dict[str, Any]:
-        """Return the final status of the job via polling.
-
-        Args:
-            job_id: The ID of the job.
-            timeout: Time to wait for job, in seconds. If ``None``, wait indefinitely.
-            wait: Seconds between queries.
-            status_queue: Queue used to share the latest status.
-
-        Returns:
-            Job status.
-
-        Raises:
-            UserTimeoutExceededError: If the user specified timeout has been exceeded.
-        """
-        start_time = time.time()
-        status_response = self.job_status(job_id)
-        while (
-            ApiJobStatus(status_response["status"].upper()) not in API_JOB_FINAL_STATES
-        ):
-            # Share the new status.
-            if status_queue is not None:
-                status_queue.put(status_response)
-
-            elapsed_time = time.time() - start_time
-            if timeout is not None and elapsed_time >= timeout:
-                raise UserTimeoutExceededError(
-                    "Timeout while waiting for job {}.".format(job_id)
-                )
-
-            logger.info(
-                "API job status = %s (%d seconds)",
-                status_response["status"],
-                elapsed_time,
-            )
-            time.sleep(wait)
-            status_response = self.job_status(job_id)
-
-        return status_response
-
     def job_properties(self, job_id: str) -> Dict:
         """Return the backend properties of the job.
 
@@ -482,26 +236,6 @@ class AccountClient(BaseClient):
             Job cancellation response.
         """
         return self.base_api.job(job_id).cancel()
-
-    def job_update_attribute(
-        self, job_id: str, attr_name: str, attr_value: Union[str, List[str]]
-    ) -> Dict[str, Any]:
-        """Update the specified job attribute with the given value.
-
-        Note:
-            The current job attributes that could be edited are ``name``
-            and ``tags``.
-
-        Args:
-            job_id: The ID of the job to update.
-            attr_name: The name of the attribute to update.
-            attr_value: The new value to associate the job attribute with.
-
-        Returns:
-            A dictionary containing the name of the updated attribute and the new value
-            it is associated with.
-        """
-        return self.base_api.job(job_id).update_attribute({attr_name: attr_value})
 
     def job_delete(self, job_id: str) -> None:
         """Mark the job for deletion.

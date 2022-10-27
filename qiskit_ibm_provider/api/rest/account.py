@@ -121,45 +121,6 @@ class Account(RestAdapterBase):
 
         return data
 
-    def create_remote_job(
-        self,
-        backend_name: str,
-        job_name: Optional[str] = None,
-        job_tags: Optional[List[str]] = None,
-        experiment_id: Optional[str] = None,
-        live_data_enabled: Optional[bool] = None,
-    ) -> Dict[str, Any]:
-        """Create a job instance on the remote server.
-
-        Args:
-            backend_name: The name of the backend.
-            job_name: Custom name to be assigned to the job.
-            job_tags: Tags to be assigned to the job.
-            experiment_id: Used to add a job to an experiment.
-            live_data_enabled: Used to activate/deactivate live data on the backend.
-
-        Returns:
-            JSON response.
-        """
-        url = self.get_url("jobs")
-
-        payload = {
-            "backend": {"name": backend_name},
-            "allowObjectStorage": True,
-            "liveDataEnabled": live_data_enabled,
-        }
-
-        if job_name:
-            payload["name"] = job_name
-
-        if job_tags:
-            payload["tags"] = job_tags
-
-        if experiment_id:
-            payload["experimentTag"] = experiment_id
-
-        return self.session.post(url, json=payload).json()
-
     def circuit(self, name: str, **kwargs: Any) -> Dict[str, Any]:
         """Execute a Circuit.
 

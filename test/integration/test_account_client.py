@@ -15,18 +15,13 @@
 import re
 
 from qiskit.circuit import ClassicalRegister, QuantumCircuit, QuantumRegister
-from qiskit.compiler import assemble, transpile
 
-from qiskit_ibm_provider import IBMBackend
 from qiskit_ibm_provider.api.client_parameters import ClientParameters
 from qiskit_ibm_provider.api.clients import AccountClient, AuthClient
 from qiskit_ibm_provider.api.exceptions import ApiError, RequestsApiError
-from qiskit_ibm_provider.apiconstants import ApiJobStatus
-from qiskit_ibm_provider.utils.utils import RefreshQueue
 from ..contextmanagers import custom_envs, no_envs
 from ..decorators import (
     integration_test_setup,
-    integration_test_setup_with_backend,
     IntegrationTestDependencies,
 )
 from ..http_server import SimpleServer, ServerErrorOnceHandler, ClientErrorHandler
@@ -146,73 +141,6 @@ class TestAccountClient(IBMTestCase):
                     client.backend_status("ibmq_qasm_simulator")
                 if err_resp:
                     self.assertIn("Bad client input", str(err_cm.exception))
-
-
-class TestAccountClientJobs(IBMTestCase):
-    """Tests for AccountClient methods related to jobs.
-
-    This TestCase submits a Job during class invocation, available at
-    ``cls.job``. Tests should inspect that job according to their needs.
-    """
-
-    @classmethod
-    @integration_test_setup_with_backend()
-    def setUpClass(
-        cls, dependencies: IntegrationTestDependencies, backend: IBMBackend
-    ) -> None:
-        # pylint: disable=arguments-differ
-        super().setUpClass()
-        cls.dependencies = dependencies
-        cls.access_token = cls.dependencies.provider._auth_client.current_access_token()
-
-        cls.client = backend._api_client
-        cls.job = cls.client.job_submit(
-            "ibmq_qasm_simulator", cls._get_qobj(backend).to_dict()
-        )
-        cls.job_id = cls.job["job_id"]
-
-    @staticmethod
-    def _get_qobj(backend):
-        """Return a Qobj."""
-        # Create a circuit.
-        quantum_register = QuantumRegister(2)
-        classical_register = ClassicalRegister(2)
-        qc1 = QuantumCircuit(quantum_register, classical_register, name="qc1")
-
-        # Assemble the Qobj.
-        qobj = assemble(
-            transpile([qc1], backend=backend),
-            backend=backend,
-            shots=1,
-        )
-
-        return qobj
-
-    def test_job_get(self):
-        """Test job_get."""
-        response = self.client.job_get(self.job_id)
-        self.assertIn("status", response)
-
-    def test_job_final_status_polling(self):
-        """Test getting a job's final status via polling."""
-        status_queue = RefreshQueue(maxsize=1)
-        response = self.client._job_final_status_polling(
-            self.job_id, status_queue=status_queue
-        )
-        self.assertEqual(response.pop("status", None), ApiJobStatus.COMPLETED.value)
-        self.assertNotEqual(status_queue.qsize(), 0)
-
-    def test_list_jobs_skip(self):
-        """Test listing jobs with an offset."""
-        jobs_raw = self.client.list_jobs(
-            limit=1,
-            skip=1,
-            extra_filter={"createdBefore": self.job["creation_date"]},
-        )
-
-        # Ensure our job is skipped
-        for job in jobs_raw:
-            self.assertNotEqual(job["job_id"], self.job_id)
 
 
 class TestAuthClient(IBMTestCase):
