@@ -65,6 +65,8 @@ class BaseDynamicCircuitAnalysis(BaseScheduler):
         # in the block and its value being the final time of the bit within the block.
         self._current_block_measures: Set[DAGNode] = set()
         self._current_block_measures_has_reset: bool = False
+        self._node_tied_to: Optional[Dict[DAGNode, Set[DAGNode]]] = None
+        # Nodes that the scheduling of this node is tied to.
         self._bit_indices: Optional[Dict[Qubit, int]] = None
 
         super().__init__(durations)
@@ -93,6 +95,7 @@ class BaseDynamicCircuitAnalysis(BaseScheduler):
         self._bit_stop_times = {0: {q: 0 for q in dag.qubits + dag.clbits}}
         self._current_block_measures = set()
         self._current_block_measures_has_reset = False
+        self._node_tied_to = {}
         self._bit_indices = {q: index for index, q in enumerate(dag.qubits)}
 
     def _get_duration(self, node: DAGNode) -> int:
@@ -125,6 +128,9 @@ class BaseDynamicCircuitAnalysis(BaseScheduler):
 
     def _flush_measures(self) -> None:
         """Flush currently accumulated measurements by resetting block measures."""
+        for node in self._current_block_measures:
+            self._node_tied_to[node] = self._current_block_measures.copy()
+
         self._current_block_measures = set()
         self._current_block_measures_has_reset = False
 
@@ -168,6 +174,8 @@ class ASAPScheduleAnalysis(BaseDynamicCircuitAnalysis):
         for node in block_order_op_nodes(dag):
             self._visit_node(node)
 
+        # Final flush
+        self._flush_measures()
         self.property_set["node_start_time"] = self._node_start_time
 
     def _visit_node(self, node: DAGNode) -> None:
@@ -221,9 +229,7 @@ class ASAPScheduleAnalysis(BaseDynamicCircuitAnalysis):
 
         t0q = max(self._current_block_bit_times[q] for q in node.qargs)
         # conditional is bit tricky due to conditional_latency
-        t0c = max(
-            self._current_block_bit_times[bit] for bit in node.op.condition_bits
-        )
+        t0c = max(self._current_block_bit_times[bit] for bit in node.op.condition_bits)
         if t0q > t0c:
             # This is situation something like below
             #
@@ -309,7 +315,7 @@ class ASAPScheduleAnalysis(BaseDynamicCircuitAnalysis):
             t0 = t0q  # pylint: disable=invalid-name
             bit_indices = {bit: index for index, bit in enumerate(self._dag.qubits)}
             measure_duration = self.durations.get(
-                Measure(), [bit_indices[qarg] for qarg in node.qargs], unit="dt"
+                Measure(), [bit_indices[qarg] for qarg in measure.qargs], unit="dt"
             )
             t1 = t0 + measure_duration  # pylint: disable=invalid-name
             self._update_bit_times(measure, t0, t1)
@@ -375,7 +381,8 @@ class ALAPScheduleAnalysis(BaseDynamicCircuitAnalysis):
 
         for node in block_order_op_nodes(dag):
             self._visit_node(node)
-
+        # Final flush
+        self._flush_measures()
         # Inverse schedule after determining durations of each block
         self._push_block_durations()
         self.property_set["node_start_time"] = self._node_start_time
@@ -431,15 +438,12 @@ class ALAPScheduleAnalysis(BaseDynamicCircuitAnalysis):
 
         t0q = max(self._current_block_bit_times[q] for q in node.qargs)
         # conditional is bit tricky due to conditional_latency
-        t0c = max(
-            self._current_block_bit_times[bit] for bit in node.op.condition_bits
-        )
+        t0c = max(self._current_block_bit_times[bit] for bit in node.op.condition_bits)
 
         t0 = max(t0q, t0c)  # pylint: disable=invalid-name
         t1 = t0 + op_duration  # pylint: disable=invalid-name
 
         self._update_bit_times(node, t0, t1, update_cargs=False)
-
 
     def _visit_measure(self, node: DAGNode, includes_reset: bool = False) -> None:
         """Visit a measurement node.
@@ -499,7 +503,7 @@ class ALAPScheduleAnalysis(BaseDynamicCircuitAnalysis):
             t0 = t0q  # pylint: disable=invalid-name
             bit_indices = {bit: index for index, bit in enumerate(self._dag.qubits)}
             measure_duration = self.durations.get(
-                Measure(), [bit_indices[qarg] for qarg in node.qargs], unit="dt"
+                Measure(), [bit_indices[qarg] for qarg in measure.qargs], unit="dt"
             )
             t1 = t0 + measure_duration  # pylint: disable=invalid-name
             self._update_bit_times(measure, t0, t1)
@@ -536,7 +540,6 @@ class ALAPScheduleAnalysis(BaseDynamicCircuitAnalysis):
 
         # Store the next available time to push to for the block by bit
         block_bit_times = {}
-
         # Iterated nodes starting at the first, from the node with the
         # last time, preferring barriers over non-barriers
         iterate_nodes = sorted(
@@ -544,10 +547,45 @@ class ALAPScheduleAnalysis(BaseDynamicCircuitAnalysis):
             key=lambda item: (item[1][0], -item[1][1], self._get_duration(item[0])),
         )
 
+        new_node_start_time = {}
+        new_node_stop_time = {}
+
+        def _calculate_new_times(
+            block: int, node: DAGNode, block_bit_times: Dict[int, Dict[Qubit, int]]
+        ) -> int:
+            max_block_time = min(block_bit_times[block][bit] for bit in node.qargs)
+
+            t0 = self._node_start_time[node][1]  # pylint: disable=invalid-name
+            t1 = self._node_stop_time[node][1]  # pylint: disable=invalid-name
+            # Determine how much to shift by
+            node_offset = max_block_time - t1
+            new_t0 = t0 + node_offset
+            return new_t0
+
+        scheduled = set()
+
+        def _update_time(
+            block: int,
+            node: DAGNode,
+            new_time: int,
+            block_bit_times: Dict[int, Dict[Qubit, int]],
+        ) -> None:
+            scheduled.add(node)
+
+            new_node_start_time[node] = (block, new_time)
+            new_node_stop_time[node] = (block, new_time + self._get_duration(node))
+
+            # Update available times by bit
+            for bit in node.qargs:
+                block_bit_times[block][bit] = new_time
+
         for node, (
             block,
-            t1,  # pylint: disable=invalid-name
+            _,
         ) in iterate_nodes:  # pylint: disable=invalid-name
+            # skip already scheduled
+            if node in scheduled:
+                continue
             # Start with last time as the time to push to
             if block not in block_bit_times:
                 block_bit_times[block] = {
@@ -555,18 +593,21 @@ class ALAPScheduleAnalysis(BaseDynamicCircuitAnalysis):
                     for q in self._dag.qubits + self._dag.clbits
                 }
 
-            # Calculate the latest available time to push to
-            max_block_time = min(
-                block_bit_times[block][bit] for bit in itertools.chain(node.qargs)
-            )
-            t0 = self._node_start_time[node][1] # pylint: disable=invalid-name
-            # Determine how much to shift by
-            node_offset = max_block_time - t1
-            new_t0 = t0 + node_offset
-            new_t1 = t1 + node_offset
-            # Shift the time by pushing forward
-            self._node_start_time[node] = (block, new_t0)
-            self._node_stop_time[node] = (block, new_t1)
-            # Update available times by bit
-            for bit in node.qargs:
-                block_bit_times[block][bit] = new_t0
+            # Calculate the latest available time to push to collectively for tied nodes
+            tied_nodes = self._node_tied_to.get(node, None)
+            if tied_nodes is not None:
+                # Take the minimum time that will be schedulable
+                new_times = [
+                    _calculate_new_times(block, tied_node, block_bit_times)
+                    for tied_node in self._node_tied_to[node]
+                ]
+                new_time = min(new_times)
+                for tied_node in tied_nodes:
+                    _update_time(block, tied_node, new_time, block_bit_times)
+
+            else:
+                new_t0 = _calculate_new_times(block, node, block_bit_times)
+                _update_time(block, node, new_t0, block_bit_times)
+
+        self._node_start_time = new_node_start_time
+        self._node_stop_time = new_node_stop_time
