@@ -16,16 +16,14 @@ import importlib
 import sys
 import threading
 
-from qiskit_ibm_provider.api.clients.account import AccountClient
 from qiskit_ibm_provider.api.client_parameters import ClientParameters
 from qiskit_ibm_provider.api.clients.websocket import WebsocketClient
-from qiskit_ibm_provider.api.exceptions import WebsocketError, WebsocketTimeoutError
+from qiskit_ibm_provider.api.exceptions import WebsocketError
 from qiskit_ibm_provider.utils.utils import RefreshQueue
 from .utils.ws_handler import (
     TOKEN_JOB_COMPLETED,
     TOKEN_JOB_TRANSITION,
     TOKEN_WRONG_FORMAT,
-    TOKEN_TIMEOUT,
     TOKEN_WEBSOCKET_RETRY_SUCCESS,
     TOKEN_WEBSOCKET_RETRY_FAILURE,
     TOKEN_WEBSOCKET_JOB_NOT_FOUND,
