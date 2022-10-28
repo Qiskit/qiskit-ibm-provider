@@ -13,15 +13,11 @@
 """Client for accessing an individual IBM Quantum account."""
 
 import logging
-from datetime import datetime
-from threading import Timer
 from typing import List, Dict, Any, Optional
 
-from qiskit_ibm_provider.utils.utils import RefreshQueue
 from .base import BaseClient
-from .websocket import WebsocketClient, WebsocketClientCloseCode
 from ..client_parameters import ClientParameters
-from ..rest import Api, Account
+from ..rest import Account
 from ..session import RetrySession
 from ...utils.hgp import from_instance_format
 
@@ -44,7 +40,6 @@ class AccountClient(BaseClient):
         hub, group, project = from_instance_format(params.instance)
         # base_api is used to handle endpoints that don't include h/g/p.
         # account_api is for h/g/p.
-        self.base_api = Api(self._session)
         self.account_api = Account(
             session=self._session,
             hub=hub,
@@ -64,183 +59,3 @@ class AccountClient(BaseClient):
             Backends available for this provider.
         """
         return self.account_api.backends(timeout=timeout)
-
-    def backend_status(self, backend_name: str) -> Dict[str, Any]:
-        """Return the status of the backend.
-
-        Args:
-            backend_name: The name of the backend.
-
-        Returns:
-            Backend status.
-        """
-        return self.account_api.backend(backend_name).status()
-
-    def backend_properties(
-        self, backend_name: str, datetime: Optional[datetime] = None
-    ) -> Dict[str, Any]:
-        """Return the properties of the backend.
-
-        Args:
-            backend_name: The name of the backend.
-            datetime: Date and time for additional filtering of backend properties.
-
-        Returns:
-            Backend properties.
-        """
-        # pylint: disable=redefined-outer-name
-        return self.account_api.backend(backend_name).properties(datetime=datetime)
-
-    def backend_pulse_defaults(self, backend_name: str) -> Dict:
-        """Return the pulse defaults of the backend.
-
-        Args:
-            backend_name: The name of the backend.
-
-        Returns:
-            Backend pulse defaults.
-        """
-        return self.account_api.backend(backend_name).pulse_defaults()
-
-    # Jobs-related public functions.
-
-    def list_jobs(
-        self,
-        limit: int = 10,
-        skip: int = 0,
-        descending: bool = True,
-        extra_filter: Optional[Dict[str, Any]] = None,
-    ) -> List[Dict[str, Any]]:
-        """Return a list of job data, with filtering and pagination.
-
-        In order to reduce the amount of data transferred, the server only
-        sends back a subset of the total information for each job.
-
-        Args:
-            limit: Maximum number of items to return.
-            skip: Offset for the items to return.
-            descending: Whether the jobs should be in descending order.
-            extra_filter: Additional filtering passed to the query.
-
-        Returns:
-            A list of job data.
-        """
-        return self.base_api.jobs(
-            limit=limit, skip=skip, descending=descending, extra_filter=extra_filter
-        )
-
-    def list_jobs_ids(
-        self,
-        limit: int = 10,
-        skip: int = 0,
-        descending: bool = True,
-        extra_filter: Optional[Dict[str, Any]] = None,
-    ) -> List[Dict[str, Any]]:
-        """Return a list including job ids and other information, with filtering and pagination.
-        Args:
-            limit: Maximum number of items to return.
-            skip: Offset for the items to return.
-            descending: Whether the jobs should be in descending order.
-            extra_filter: Additional filtering passed to the query.
-        Returns:
-            A list of job data.
-        """
-        return self.account_api.jobs_ids(
-            limit=limit, skip=skip, descending=descending, extra_filter=extra_filter
-        )
-
-    def job_get(self, job_id: str) -> Dict[str, Any]:
-        """Return information about the job.
-
-        Args:
-            job_id: The ID of the job.
-
-        Returns:
-            Job information.
-        """
-        return self.base_api.job(job_id).get()
-
-    def job_status(self, job_id: str) -> Dict[str, Any]:
-        """Return the status of the job.
-
-        Args:
-            job_id: The ID of the job.
-
-        Returns:
-            Job status.
-
-        Raises:
-            ApiIBMProtocolError: If unexpected data is received from the server.
-        """
-        return self.base_api.job(job_id).status()
-
-    def _job_final_status_websocket(
-        self,
-        job_id: str,
-        timeout: Optional[float] = None,
-        status_queue: Optional[RefreshQueue] = None,
-    ) -> Dict[str, Any]:
-        """Return the final status of the job via websocket.
-
-        Args:
-            job_id: The ID of the job.
-            timeout: Time to wait for job, in seconds. If ``None``, wait indefinitely.
-            status_queue: Queue used to share the latest status.
-
-        Returns:
-            Job status.
-
-        Raises:
-            WebsocketError: If the websocket connection ended unexpectedly.
-            WebsocketTimeoutError: If the timeout has been reached.
-        """
-        ws_client = WebsocketClient(
-            websocket_url=self._params.url.replace("https", "wss").rstrip("/"),
-            client_params=self._params,
-            job_id=job_id,
-            message_queue=status_queue,
-        )
-        timer = None
-        if timeout:
-            timer = Timer(
-                timeout,
-                ws_client.disconnect,
-                kwargs={"close_code": WebsocketClientCloseCode.TIMEOUT},
-            )
-            timer.start()
-
-        try:
-            return ws_client.get_job_status()
-        finally:
-            if timer:
-                timer.cancel()
-
-    def job_properties(self, job_id: str) -> Dict:
-        """Return the backend properties of the job.
-
-        Args:
-            job_id: The ID of the job.
-
-        Returns:
-            Backend properties.
-        """
-        return self.base_api.job(job_id).properties()
-
-    def job_cancel(self, job_id: str) -> Dict[str, Any]:
-        """Submit a request for cancelling the job.
-
-        Args:
-            job_id: The ID of the job.
-
-        Returns:
-            Job cancellation response.
-        """
-        return self.base_api.job(job_id).cancel()
-
-    def job_delete(self, job_id: str) -> None:
-        """Mark the job for deletion.
-
-        Args:
-            job_id: ID of the job to be deleted.
-        """
-        self.base_api.job(job_id).delete()
