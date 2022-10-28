@@ -204,58 +204,52 @@ class ASAPScheduleAnalysis(BaseDynamicCircuitAnalysis):
 
         TODO: Update for support of general control-flow, not just single conditional operations.
         """
-        # Special processing required to resolve conditional scheduling dependencies
-        if node.op.condition_bits:
-            # We group conditional operations within
-            # a conditional block to allow the backend
-            # a chance to optimize them. If we did
-            # not do this barriers would be inserted
-            # between conditional operations.
-            # Therefore only trigger the start of a conditional
-            # block if we are not already within one.
-            if not self._conditional_block:
-                self._begin_new_circuit_block()
+        # We group conditional operations within
+        # a conditional block to allow the backend
+        # a chance to optimize them. If we did
+        # not do this barriers would be inserted
+        # between conditional operations.
+        # Therefore only trigger the start of a conditional
+        # block if we are not already within one.
+        if not self._conditional_block:
+            self._begin_new_circuit_block()
 
-            # This block is now by definition a "conditional_block".
-            self._conditional_block = True
+        # This block is now by definition a "conditional_block".
+        self._conditional_block = True
 
-            op_duration = self._get_duration(node)
+        op_duration = self._get_duration(node)
 
-            t0q = max(self._current_block_bit_times[q] for q in node.qargs)
-            # conditional is bit tricky due to conditional_latency
-            t0c = max(
-                self._current_block_bit_times[bit] for bit in node.op.condition_bits
-            )
-            if t0q > t0c:
-                # This is situation something like below
-                #
-                #           |t0q
-                # Q ▒▒▒▒▒▒▒▒▒░░
-                # C ▒▒▒░░░░░░░░
-                #     |t0c
-                #
-                # In this case, you can insert readout access before tq0
-                #
-                #           |t0q
-                # Q ▒▒▒▒▒▒▒▒▒▒▒
-                # C ▒▒▒░░░▒▒░░░
-                #         |t0c
-                #
-                t0c = t0q
-            t1c = t0c
-            for bit in node.op.condition_bits:
-                # Lock clbit until state is read
-                self._current_block_bit_times[bit] = t1c
+        t0q = max(self._current_block_bit_times[q] for q in node.qargs)
+        # conditional is bit tricky due to conditional_latency
+        t0c = max(
+            self._current_block_bit_times[bit] for bit in node.op.condition_bits
+        )
+        if t0q > t0c:
+            # This is situation something like below
+            #
+            #           |t0q
+            # Q ▒▒▒▒▒▒▒▒▒░░
+            # C ▒▒▒░░░░░░░░
+            #     |t0c
+            #
+            # In this case, you can insert readout access before tq0
+            #
+            #           |t0q
+            # Q ▒▒▒▒▒▒▒▒▒▒▒
+            # C ▒▒▒░░░▒▒░░░
+            #         |t0c
+            #
+            t0c = t0q
+        t1c = t0c
+        for bit in node.op.condition_bits:
+            # Lock clbit until state is read
+            self._current_block_bit_times[bit] = t1c
 
-            # It starts after register read access
-            t0 = max(t0q, t1c)  # pylint: disable=invalid-name
+        # It starts after register read access
+        t0 = max(t0q, t1c)  # pylint: disable=invalid-name
 
-            t1 = t0 + op_duration  # pylint: disable=invalid-name
-            self._update_bit_times(node, t0, t1)
-
-        else:
-            # Fall through to generic case if not conditional
-            self._visit_generic(node)
+        t1 = t0 + op_duration  # pylint: disable=invalid-name
+        self._update_bit_times(node, t0, t1)
 
     def _visit_measure(self, node: DAGNode, includes_reset: bool = False) -> None:
         """Visit a measurement node.
@@ -420,37 +414,32 @@ class ALAPScheduleAnalysis(BaseDynamicCircuitAnalysis):
 
         TODO: Update for support of general control-flow, not just single conditional operations.
         """
-        # Special processing required to resolve conditional scheduling dependencies
-        if node.op.condition_bits:
-            # We group conditional operations within
-            # a conditional block to allow the backend
-            # a chance to optimize them. If we did
-            # not do this barriers would be inserted
-            # between conditional operations.
-            # Therefore only trigger the start of a conditional
-            # block if we are not already within one.
-            if not self._conditional_block:
-                self._begin_new_circuit_block()
+        # We group conditional operations within
+        # a conditional block to allow the backend
+        # a chance to optimize them. If we did
+        # not do this barriers would be inserted
+        # between conditional operations.
+        # Therefore only trigger the start of a conditional
+        # block if we are not already within one.
+        if not self._conditional_block:
+            self._begin_new_circuit_block()
 
-            # This block is now by definition a "conditional_block".
-            self._conditional_block = True
+        # This block is now by definition a "conditional_block".
+        self._conditional_block = True
 
-            op_duration = self._get_duration(node)
+        op_duration = self._get_duration(node)
 
-            t0q = max(self._current_block_bit_times[q] for q in node.qargs)
-            # conditional is bit tricky due to conditional_latency
-            t0c = max(
-                self._current_block_bit_times[bit] for bit in node.op.condition_bits
-            )
+        t0q = max(self._current_block_bit_times[q] for q in node.qargs)
+        # conditional is bit tricky due to conditional_latency
+        t0c = max(
+            self._current_block_bit_times[bit] for bit in node.op.condition_bits
+        )
 
-            t0 = max(t0q, t0c)  # pylint: disable=invalid-name
-            t1 = t0 + op_duration  # pylint: disable=invalid-name
+        t0 = max(t0q, t0c)  # pylint: disable=invalid-name
+        t1 = t0 + op_duration  # pylint: disable=invalid-name
 
-            self._update_bit_times(node, t0, t1, update_cargs=False)
+        self._update_bit_times(node, t0, t1, update_cargs=False)
 
-        else:
-            # Fall through to generic case if not conditional
-            self._visit_generic(node)
 
     def _visit_measure(self, node: DAGNode, includes_reset: bool = False) -> None:
         """Visit a measurement node.
