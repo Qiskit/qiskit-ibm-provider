@@ -100,15 +100,6 @@ class TestWebsocketClientMock(IBMTestCase):
         self.assertIn("status", response)
         self.assertEqual(response["status"], "COMPLETED")
 
-    def test_timeout(self):
-        """Test timeout during retrieving a job status."""
-        cred = ClientParameters(
-            token=TOKEN_TIMEOUT, url=MockWsServer.VALID_WS_URL, instance="h/g/p"
-        )
-        account_client = AccountClient(cred)
-        with self.assertRaises(WebsocketTimeoutError):
-            account_client._job_final_status_websocket("job_id", timeout=2)
-
     def test_invalid_response(self):
         """Test unparseable response from the server."""
         client = self._get_ws_client(TOKEN_WRONG_FORMAT)
