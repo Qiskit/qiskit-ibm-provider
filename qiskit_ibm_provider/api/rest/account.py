@@ -12,11 +12,8 @@
 
 """Account REST adapter."""
 
-import json
 import logging
 from typing import Dict, Optional, Any, List
-
-from qiskit_ibm_provider.utils.utils import filter_data
 
 from .base import RestAdapterBase
 from .backend import Backend
@@ -80,59 +77,3 @@ class Account(RestAdapterBase):
         """
         url = self.get_url("backends")
         return self.session.get(url, timeout=timeout).json()
-
-    def jobs_ids(
-        self,
-        limit: int = 10,
-        skip: int = 0,
-        descending: bool = True,
-        extra_filter: Dict[str, Any] = None,
-    ) -> List[Dict[str, Any]]:
-        """Return a list of job ids plus their liveDataEnabled flag and their creationDate field.
-        Args:
-            limit: Maximum number of items to return.
-            skip: Offset for the items to return.
-            descending: Whether the jobs should be in descending order.
-            extra_filter: Additional filtering passed to the query.
-        Returns:
-            JSON response.
-        """
-        url = self.get_url("jobs_id")
-
-        order = "DESC" if descending else "ASC"
-
-        query = {
-            "order": "creationDate " + order,
-            "limit": limit,
-            "skip": skip,
-            "fields": {"id": True, "liveDataEnabled": True, "creationDate": True},
-        }
-        if extra_filter:
-            query["where"] = extra_filter
-
-        if logger.getEffectiveLevel() is logging.DEBUG:
-            logger.debug(
-                "Endpoint: %s. Method: GET. Request Data: {'filter': %s}",
-                url,
-                filter_data(query),
-            )
-
-        data = self.session.get(url, params={"filter": json.dumps(query)}).json()
-
-        return data
-
-    def circuit(self, name: str, **kwargs: Any) -> Dict[str, Any]:
-        """Execute a Circuit.
-
-        Args:
-            name: Name of the Circuit.
-            **kwargs: Arguments for the Circuit.
-
-        Returns:
-            JSON response.
-        """
-        url = self.get_url("circuit")
-
-        payload = {"name": name, "params": kwargs}
-
-        return self.session.post(url, json=payload).json()
