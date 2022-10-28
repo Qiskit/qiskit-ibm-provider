@@ -356,7 +356,7 @@ class ALAPScheduleAnalysis(BaseDynamicCircuitAnalysis):
     dynamic circuit backends also change.
 
     In its current form this is similar to Qiskit's ALAP scheduler in which instructions
-    start as early as possible.
+    start as late as possible.
 
     The primary differences are that:
 
