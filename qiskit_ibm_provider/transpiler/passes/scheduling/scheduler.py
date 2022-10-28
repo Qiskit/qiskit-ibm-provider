@@ -151,7 +151,7 @@ class ASAPScheduleAnalysis(BaseDynamicCircuitAnalysis):
         ie., we do not know when the next block will begin (as we could be evaluating a classical
         function of nondeterministic length) and therefore the
         next block starts at a *relative* t=0.
-    * It is possible to apply gates during a measurement.
+    * During a measurement it is possible to apply gates in parallel on disjoint qubits.
     * Measurements and resets on disjoint qubits happen simultaneously and are part of the same block.
     """
 
