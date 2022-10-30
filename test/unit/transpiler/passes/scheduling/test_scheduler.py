@@ -336,15 +336,12 @@ class TestASAPSchedulingAndPaddingPass(QiskitTestCase):
 
         expected = QuantumCircuit(1, 1)
         expected.measure(0, 0)
-        expected.barrier()
         expected.x(0).c_if(0, 1)
         expected.barrier()
         expected.measure(0, 0)
-        expected.barrier()
         expected.x(0).c_if(0, 1)
         expected.barrier()
         expected.measure(0, 0)
-        expected.barrier()
         expected.x(0).c_if(0, 1)
         expected.barrier()
 
@@ -576,11 +573,9 @@ class TestASAPSchedulingAndPaddingPass(QiskitTestCase):
 
         expected = QuantumCircuit(2, 1)
         expected.x(1)
-        expected.delay(800, 1)
+        expected.delay(1000, 1)
         expected.measure(0, 0)
-        expected.barrier()
         expected.x(0)
-        expected.delay(200, 1)
         expected.barrier()
 
         self.assertEqual(expected, scheduled)
@@ -611,6 +606,38 @@ class TestASAPSchedulingAndPaddingPass(QiskitTestCase):
         expected.delay(1000, 0)
         expected.delay(1000, 1)
         expected.measure(2, 2)
+        expected.barrier()
+
+        self.assertEqual(expected, scheduled)
+
+    def test_back_to_back_c_if(self):
+        """Test back to back c_if scheduling"""
+
+        qc = QuantumCircuit(3, 1)
+        qc.delay(800, 1)
+        qc.x(1).c_if(0, True)
+        qc.x(2).c_if(0, True)
+        qc.delay(1000, 2)
+        qc.x(1)
+
+        durations = DynamicCircuitInstructionDurations(
+            [("x", None, 200), ("measure", None, 840)]
+        )
+        pm = PassManager([ASAPScheduleAnalysis(durations), PadDelay()])
+        scheduled = pm.run(qc)
+
+        expected = QuantumCircuit(3, 1)
+        expected.delay(800, 0)
+        expected.delay(800, 1)
+        expected.delay(800, 2)
+        expected.barrier()
+        expected.x(1).c_if(0, True)
+        expected.x(2).c_if(0, True)
+        expected.barrier()
+        expected.delay(1000, 0)
+        expected.x(1)
+        expected.delay(800, 1)
+        expected.delay(1000, 2)
         expected.barrier()
 
         self.assertEqual(expected, scheduled)
@@ -1291,6 +1318,38 @@ class TestALAPSchedulingAndPaddingPass(QiskitTestCase):
         expected.x(1)
         expected.delay(200, 2)
         expected.x(2)
+        expected.barrier()
+
+        self.assertEqual(expected, scheduled)
+
+    def test_back_to_back_c_if(self):
+        """Test back to back c_if scheduling"""
+
+        qc = QuantumCircuit(3, 1)
+        qc.delay(800, 1)
+        qc.x(1).c_if(0, True)
+        qc.x(2).c_if(0, True)
+        qc.delay(1000, 2)
+        qc.x(1)
+
+        durations = DynamicCircuitInstructionDurations(
+            [("x", None, 200), ("measure", None, 840)]
+        )
+        pm = PassManager([ALAPScheduleAnalysis(durations), PadDelay()])
+        scheduled = pm.run(qc)
+
+        expected = QuantumCircuit(3, 1)
+        expected.delay(800, 0)
+        expected.delay(800, 1)
+        expected.delay(800, 2)
+        expected.barrier()
+        expected.x(1).c_if(0, True)
+        expected.x(2).c_if(0, True)
+        expected.barrier()
+        expected.delay(1000, 0)
+        expected.delay(800, 1)
+        expected.x(1)
+        expected.delay(1000, 2)
         expected.barrier()
 
         self.assertEqual(expected, scheduled)

@@ -222,11 +222,6 @@ class ASAPScheduleAnalysis(BaseDynamicCircuitAnalysis):
                     f"Conditional instruction {node.op.name} is not supported in ASAP scheduler."
                 )
 
-            # If True we are coming from a conditional block.
-            # start a new block for the unconditional operations.
-            if self._conditional_block:
-                self._begin_new_circuit_block()
-
             if isinstance(node.op, Measure):
                 self._visit_measure(node)
             elif isinstance(node.op, Reset):
@@ -244,15 +239,26 @@ class ASAPScheduleAnalysis(BaseDynamicCircuitAnalysis):
 
         TODO: Update for support of general control-flow, not just single conditional operations.
         """
-        # We group conditional operations within
-        # a conditional block to allow the backend
-        # a chance to optimize them. If we did
-        # not do this barriers would be inserted
-        # between conditional operations.
-        # Therefore only trigger the start of a conditional
-        # block if we are not already within one.
-        if not self._conditional_block:
+        # Don't trigger if we're using the fast-path as these will be parallelized
+        # and inserting a barrier would interrupt this.
+        if not self._will_use_fast_path(node) and not self._conditional_block:
+            # We group conditional operations within
+            # a conditional block to allow the backend
+            # a chance to optimize them. If we did
+            # not do this barriers would be inserted
+            # between conditional operations.
+            # Therefore only trigger the start of a conditional
+            # block if we are not already within one.
             self._begin_new_circuit_block()
+
+        self._last_node_to_touch.update(
+            {
+                bit: node
+                for bit in itertools.chain(
+                    node.qargs, node.cargs, node.op.condition_bits
+                )
+            }
+        )
 
         # This block is now by definition a "conditional_block".
         self._conditional_block = True
@@ -302,6 +308,13 @@ class ASAPScheduleAnalysis(BaseDynamicCircuitAnalysis):
         end of a scheduling block with said measurement occurring in a following block
         which begins another grouping sequence. This behavior will change in future
         backend software updates."""
+        # If True we are coming from a conditional block.
+        # start a new block for the unconditional operations.
+        if self._conditional_block and self._last_node_to_touch_was_conditional(node):
+            self._begin_new_circuit_block()
+
+        self._last_node_to_touch.update({bit: node for bit in node.qargs + node.cargs})
+
         current_block_measure_qargs = self._current_block_measure_qargs()
         # We handle a set of qubits here as _visit_reset currently calls
         # this method and a reset may have multiple qubits.
@@ -357,10 +370,18 @@ class ASAPScheduleAnalysis(BaseDynamicCircuitAnalysis):
         but the reset will be followed by a period of conditional indeterminism.
         All resets on disjoint qubits will be collected on the same qubits to be run simultaneously.
         """
+        # Process as measurement
         self._visit_measure(node, True)
+        # Then set that we are now a conditional node.
+        self._conditional_block = True
 
     def _visit_generic(self, node: DAGNode) -> None:
         """Visit a generic node such as a gate or barrier."""
+        # If True we are coming from a conditional block.
+        # start a new block for the unconditional operations.
+        if self._conditional_block:
+            self._begin_new_circuit_block()
+
         op_duration = self._get_duration(node)
 
         # If the measurement qubits overlap, we need to flush the measurement group
@@ -574,6 +595,7 @@ class ALAPScheduleAnalysis(BaseDynamicCircuitAnalysis):
         # If the measurement qubits overlap, we need to flush the measurement group
         if self._current_block_measure_qargs() & set(node.qargs):
             self._flush_measures()
+
         t0 = max(  # pylint: disable=invalid-name
             self._current_block_bit_times[bit] for bit in node.qargs + node.cargs
         )
