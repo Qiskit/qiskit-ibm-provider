@@ -91,17 +91,11 @@ class TestPadDynamicalDecoupling(QiskitTestCase):
         expected = expected.compose(Delay(750), [2], front=True)
         expected = expected.compose(Delay(950), [3], front=True)
 
-        expected = expected.compose(Delay(100), [0])
-        expected = expected.compose(XGate(), [0])
-        expected = expected.compose(Delay(200), [0])
+        expected = expected.compose(Delay(50), [0])
         expected = expected.compose(XGate(), [0])
         expected = expected.compose(Delay(100), [0])
+        expected = expected.compose(XGate(), [0])
 
-        expected = expected.compose(Delay(50), [1])
-        expected = expected.compose(XGate(), [1])
-        expected = expected.compose(Delay(100), [1])
-        expected = expected.compose(XGate(), [1])
-        expected = expected.compose(Delay(50), [1])
         expected.barrier()
 
         self.assertEqual(ghz4_dd, expected)
@@ -143,7 +137,7 @@ class TestPadDynamicalDecoupling(QiskitTestCase):
             [
                 ASAPScheduleAnalysis(self.durations),
                 PadDynamicalDecoupling(
-                    self.durations, dd_sequence, skip_reset_qubits=False
+                    self.durations, dd_sequence, skip_reset_qubits=False, sequence_min_length_ratios = [0.]
                 ),
             ]
         )
