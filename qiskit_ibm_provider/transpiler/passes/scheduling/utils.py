@@ -32,32 +32,80 @@ def block_order_op_nodes(dag: DAGCircuit) -> Generator[DAGOpNode, None, None]:
     TODO: The need for this should be mitigated when Qiskit adds better support for
     blocks and walking them in its program representation.
     """
-    # Dictionary is used as an ordered set of nodes to process
+
+    def _is_grouped_measure(node: DAGOpNode) -> bool:
+        """Does this node need to be grouped?"""
+        return isinstance(node.op, (Reset, Measure))
+
+    def _is_block_trigger(node: DAGOpNode) -> bool:
+        """Does this node trigger the end of a block?"""
+        return node.op.condition_bits
+
+    def _emit(node: DAGOpNode) -> bool:
+        """Should we emit this node?"""
+        return _is_grouped_measure(node) or _is_block_trigger(node)
+
+    # Begin processing nodes in order
     next_nodes = dag.topological_op_nodes()
     while next_nodes:
-        curr_nodes = next_nodes
-        next_nodes_set = set()
-        next_nodes = []
+        curr_nodes = next_nodes  # Setup the next iteration nodes
+        next_nodes_set = set()  # Nodes that will make it into the next iteration
+        next_nodes = []  # Nodes to process in order in the next iteration
+        to_push = []  # Do we push this to the very last block?
+        yield_measures = []  # Measures/resets we will yield first
+        yield_block_triggers = []  # Followed by block triggers (conditionals)
+        block_break = False  # Did we encounter a block trigger in this iteration?
         for node in curr_nodes:
             # If we have added this node to the next set of nodes
             # skip for now.
             if node in next_nodes_set:
                 next_nodes.append(node)
                 continue
-            # If we encounter one of these nodes we wish
-            # to only process descendants after processing
-            # all non-descendants first. This ensures
-            # maximize the size of our "basic blocks"
-            # and correspondingly minimize the total
-            # number of blocks
-            if isinstance(node.op, (Reset, Measure)):
-                next_nodes_set |= set(
-                    node
-                    for node in dag.descendants(node)
-                    if isinstance(node, DAGOpNode)
-                )
 
+            # To emit nodes in the proper order
+            # Fetch the descendants
+            node_descendants = dag.descendants(node)
+            # If this nodes is a measurement
+            # push on the measurements to process
+            if _is_grouped_measure(node):
+                block_break = True
+                next_nodes_set |= set(node_descendants)
+                yield_measures.append(node)
+            # If this node is a block push this onto
+            # the block trigger list.
+            elif _is_block_trigger(node):
+                block_break = True
+                next_nodes_set |= set(node_descendants)
+                yield_block_triggers.append(node)
+            # If this node has a descendant that is either a measurement or a block trigger
+            # we will need to emit as part of this block.
+            elif any(
+                _emit(descendant)
+                for descendant in node_descendants
+                if isinstance(descendant, DAGOpNode)
+            ):
+                yield node
+            # Otherwise we push onto the final list of blocks to emit
+            # as part of the final block.
+            else:
+                to_push.append(node)
+
+        # First emit the measurements which will feed
+        for node in yield_measures:
             yield node
+        # Into the block triggers we will emit.
+        for node in yield_block_triggers:
+            yield node
+
+        # We're at the last block and emit the final nodes
+        if not block_break:
+            for node in to_push:
+                yield node
+            break
+        # Otherwise emit the final nodes
+        # Add to the front of the list to be processed next
+        to_push.extend(next_nodes)
+        next_nodes = to_push
 
 
 InstrKey = Union[
