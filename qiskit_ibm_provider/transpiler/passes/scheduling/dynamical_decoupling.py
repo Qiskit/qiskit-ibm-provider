@@ -115,6 +115,7 @@ class PadDynamicalDecoupling(BlockBasePadder):
         pulse_alignment: int = 1,
         extra_slack_distribution: str = "middle",
         sequence_min_length_ratios: Optional[Union[int, List[int]]] = None,
+        insert_multiple_cycles: bool = False,
     ):
         """Dynamical decoupling initializer.
 
@@ -153,6 +154,9 @@ class PadDynamicalDecoupling(BlockBasePadder):
                       intervals at beginning and end of the sequence.
             sequence_min_length_ratios: List of minimum delay length to DD sequence ratio to satisfy
                 in order to insert the DD sequence.
+            insert_multiple_cycles: If the available duration exceeds
+                2*sequence_min_length_ratio*duration(dd_sequence) enable the insertion of multiple
+                rounds of the dynamical decoupling sequence in that delay.
         Raises:
             TranspilerError: When invalid DD sequence is specified.
             TranspilerError: When pulse gate with the duration which is
@@ -192,6 +196,8 @@ class PadDynamicalDecoupling(BlockBasePadder):
             except TypeError:
                 sequence_min_length_ratios = [sequence_min_length_ratios]  # type: ignore
             self._sequence_min_length_ratios = sequence_min_length_ratios  # type: ignore
+
+        self._insert_multiple_cycles = insert_multiple_cycles
 
     def _pre_runhook(self, dag: DAGCircuit) -> None:
         super()._pre_runhook(dag)
@@ -332,15 +338,28 @@ class PadDynamicalDecoupling(BlockBasePadder):
 
         for sequence_idx in range(len(self._dd_sequences)):
             dd_sequence = self._dd_sequences[sequence_idx]
-            seq_length = np.sum(self._dd_sequence_lengths[qubit][sequence_idx])
+            seq_lengths = self._dd_sequence_lengths[qubit][sequence_idx]
+            seq_length = np.sum(seq_lengths)
+            seq_ratio = self._sequence_min_length_ratios[sequence_idx]
+            spacings = self._spacings[sequence_idx]
 
             # Verify the delay duration exceeds the minimum time to insert
-            if (
-                time_interval / seq_length
-                <= self._sequence_min_length_ratios[sequence_idx]
-            ):
+            if time_interval / seq_length <= seq_ratio:
                 continue
 
+            if self._insert_multiple_cycles:
+                num_sequences = max(int(time_interval // (seq_length * seq_ratio)), 1)
+            else:
+                num_sequences = 1
+
+            # multiple dd sequences may be inserted
+            if num_sequences > 1:
+                dd_sequence = dd_sequence * num_sequences
+                spacings = spacings * num_sequences
+                seq_lengths = seq_lengths * num_sequences
+                seq_length = np.sum(seq_lengths)
+
+            spacings = np.asarray(spacings) / num_sequences
             slack = time_interval - seq_length
             sequence_gphase = self._sequence_phase
 
@@ -386,9 +405,8 @@ class PadDynamicalDecoupling(BlockBasePadder):
                 return self._alignment * np.floor(values / self._alignment)
 
             # (1) Compute DD intervals satisfying the constraint
-            taus = _constrained_length(slack * np.asarray(self._spacings[sequence_idx]))
+            taus = _constrained_length(slack * spacings)
             extra_slack = slack - np.sum(taus)
-
             # (2) Distribute extra slack
             if self._extra_slack_distribution == "middle":
                 mid_ind = int((len(taus) - 1) / 2)
@@ -396,7 +414,7 @@ class PadDynamicalDecoupling(BlockBasePadder):
                 taus[mid_ind] += to_middle
                 if extra_slack - to_middle:
                     # If to_middle is not a multiple value of the pulse alignment,
-                    # it is truncated to the nearlest multiple value and
+                    # it is truncated to the nearest multiple value and
                     # the rest of slack is added to the end.
                     taus[-1] += extra_slack - to_middle
             elif self._extra_slack_distribution == "edges":
@@ -421,7 +439,7 @@ class PadDynamicalDecoupling(BlockBasePadder):
                         idle_after += tau
                 if dd_ind < len(dd_sequence):
                     gate = dd_sequence[dd_ind]
-                    gate_length = self._dd_sequence_lengths[qubit][sequence_idx][dd_ind]
+                    gate_length = seq_lengths[dd_ind]
                     self._apply_scheduled_op(block_idx, idle_after, gate, qubit)
                     idle_after += gate_length
 

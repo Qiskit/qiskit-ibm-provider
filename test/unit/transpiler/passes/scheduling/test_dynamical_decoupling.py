@@ -673,7 +673,7 @@ class TestPadDynamicalDecoupling(QiskitTestCase):
         """Test multiple DD sequence can be submitted"""
 
         qc = QuantumCircuit(2, 0)
-        qc.x(0)
+        qc.x(0)  # First delay so qubits are touched
         qc.x(1)
         qc.delay(500, 0)
         qc.barrier()
@@ -745,4 +745,45 @@ class TestPadDynamicalDecoupling(QiskitTestCase):
         expected.delay(100, 1)
         expected.barrier()
 
+        self.assertEqual(qc_dd, expected)
+
+    def test_multiple_dd_sequence_cycles(self):
+        """Test a single DD sequence can be inserted for multiple cycles in a single delay."""
+
+        qc = QuantumCircuit(1, 0)
+        qc.x(0)  # First delay so qubit is touched
+        qc.delay(2000, 0)
+
+        dd_sequence = [
+            [XGate(), XGate()],
+        ]  # cycle has length of 100 cycles
+
+        pm = PassManager(
+            [
+                ASAPScheduleAnalysis(self.durations),
+                PadDynamicalDecoupling(
+                    self.durations,
+                    dd_sequence,
+                    extra_slack_distribution="edges",
+                    sequence_min_length_ratios=[10.0],
+                    insert_multiple_cycles=True,
+                ),
+            ]
+        )
+
+        qc_dd = pm.run(qc)
+
+        expected = QuantumCircuit(1, 0)
+        expected.x(0)
+        expected.delay(225, 0)
+        expected.x(0)
+        expected.delay(450, 0)
+        expected.x(0)
+        expected.delay(225, 0)
+        expected.x(0)
+        expected.delay(225, 0)
+        expected.x(0)
+        expected.delay(450, 0)
+        expected.delay(225, 0)
+        expected.barrier()
         self.assertEqual(qc_dd, expected)
