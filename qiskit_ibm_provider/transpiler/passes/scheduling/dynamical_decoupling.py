@@ -189,7 +189,8 @@ class PadDynamicalDecoupling(BlockBasePadder):
         self._sequence_phase = 0
 
         if sequence_min_length_ratios is None:
-            self._sequence_min_length_ratios = [1.0 for _ in self._dd_sequences]
+            # Use 2.0 as a sane default
+            self._sequence_min_length_ratios = [2.0 for _ in self._dd_sequences]
         else:
             try:
                 iter(sequence_min_length_ratios)  # type: ignore
