@@ -73,88 +73,6 @@ class TestIBMJobAttributes(IBMTestCase):
         """Test getting a backend name."""
         self.assertTrue(self.sim_job.backend().name == self.sim_backend.name)
 
-    @skip("Skip this test since job names are not supported yet")
-    def test_job_name(self):
-        """Test using job names on a simulator."""
-        # Use a unique job name
-        job_name = str(time.time()).replace(".", "")
-        job = self.sim_backend.run(self.bell, job_name=job_name)
-        job_id = job.job_id()
-        rjob = self.dependencies.provider.backend.retrieve_job(job_id)
-        self.assertEqual(rjob.name(), job_name)
-
-        # Check using partial matching.
-        job_name_partial = job_name[8:]
-        retrieved_jobs = self.dependencies.provider.backend.jobs(
-            backend_name=self.sim_backend.name,
-            job_name=job_name_partial,
-            start_datetime=self.last_week,
-        )
-        self.assertGreaterEqual(len(retrieved_jobs), 1)
-        retrieved_job_ids = {job.job_id() for job in retrieved_jobs}
-        self.assertIn(job_id, retrieved_job_ids)
-
-        # Check using regular expressions.
-        job_name_regex = "^{}$".format(job_name)
-        retrieved_jobs = self.dependencies.provider.backend.jobs(
-            backend_name=self.sim_backend.name,
-            job_name=job_name_regex,
-            start_datetime=self.last_week,
-        )
-        self.assertEqual(len(retrieved_jobs), 1)
-        self.assertEqual(job_id, retrieved_jobs[0].job_id())
-
-    @skip("Skip this test since job names are not supported yet")
-    def test_job_name_update(self):
-        """Test changing the name associated with a job."""
-        # Use a unique job name
-        initial_job_name = str(time.time()).replace(".", "")
-        job = self.sim_backend.run(self.bell, job_name=initial_job_name)
-
-        new_names_to_test = [
-            "",  # empty string as name.
-            "{}_new".format(str(time.time()).replace(".", "")),  # unique name.
-        ]
-        for new_name in new_names_to_test:
-            with self.subTest(new_name=new_name):
-                _ = job.update_name(new_name)  # Update the job name.
-                # Cached results may be returned if updating too quickly.
-                # Wait before updating again.
-                time.sleep(2)
-                job.refresh()
-                self.assertEqual(
-                    job.name(),
-                    new_name,
-                    'Updating the name for job {} from "{}" to "{}" '
-                    "was unsuccessful.".format(job.job_id(), job.name(), new_name),
-                )
-
-    @skip("Skip this test since job names are not supported yet")
-    def test_duplicate_job_name(self):
-        """Test multiple jobs with the same custom job name using a simulator."""
-        # Use a unique job name
-        job_name = str(time.time()).replace(".", "")
-        job_ids = set()
-        for _ in range(2):
-            job = self.sim_backend.run(self.bell, job_name=job_name)
-            job_ids.add(job.job_id())
-
-        retrieved_jobs = self.dependencies.provider.backend.jobs(
-            backend_name=self.sim_backend.name,
-            job_name=job_name,
-            start_datetime=self.last_week,
-        )
-
-        self.assertEqual(
-            len(retrieved_jobs),
-            2,
-            "More than 2 jobs retrieved: {}".format(retrieved_jobs),
-        )
-        retrieved_job_ids = {job.job_id() for job in retrieved_jobs}
-        self.assertEqual(job_ids, retrieved_job_ids)
-        for job in retrieved_jobs:
-            self.assertEqual(job.name(), job_name)
-
     @skip("Skip until aer issue 1214 is fixed")
     def test_error_message_simulator(self):
         """Test retrieving job error messages from a simulator backend."""
@@ -219,7 +137,6 @@ class TestIBMJobAttributes(IBMTestCase):
             ),
         )
 
-    @skip("time_per_step not supported by api")
     def test_time_per_step(self):
         """Test retrieving time per step, while ensuring the date times are in local time."""
         # datetime, before running the job, in local time.
@@ -405,17 +322,16 @@ class TestIBMJobAttributes(IBMTestCase):
                 # TODO check why this sometimes fails
                 # self.assertEqual(set(rjobs[0].tags()), set(job_tags))
 
-    @skip("Skip this test since it is not supported by the API.")
     def test_job_tags_replace(self):
         """Test updating job tags by replacing a job's existing tags."""
-        initial_job_tags = [uuid.uuid4().hex]
+        initial_job_tags = [uuid.uuid4().hex[:16]]
         job = self.sim_backend.run(self.bell, job_tags=initial_job_tags)
 
         tags_to_replace_subtests = [
             [],  # empty tags.
-            [
-                "{}_new_tag_{}".format(uuid.uuid4().hex, i) for i in range(2)
-            ],  # unique tags.
+            list(
+                "{}_new_tag_{}".format(uuid.uuid4().hex[:5], i) for i in range(2)
+            ),  # unique tags.
             initial_job_tags + ["foo"],
         ]
         for tags_to_replace in tags_to_replace_subtests:

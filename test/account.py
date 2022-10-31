@@ -19,7 +19,7 @@ from contextlib import ContextDecorator
 from tempfile import NamedTemporaryFile
 from unittest.mock import patch
 
-from qiskit_ibm_provider.accounts import management
+from qiskit_ibm_provider.accounts import AccountManager
 from qiskit_ibm_provider.accounts.account import IBM_QUANTUM_API_URL
 
 
@@ -112,17 +112,21 @@ class temporary_account_config_file(ContextDecorator):
         self.tmp_file = NamedTemporaryFile(mode="w+")
         json.dump(contents, self.tmp_file)
         self.tmp_file.flush()
-        self.account_config_json_backup = management._DEFAULT_ACCOUNT_CONFIG_JSON_FILE
+        self.account_config_json_backup = (
+            AccountManager._default_account_config_json_file
+        )
 
     def __enter__(self):
         # Temporarily modify the default location of the configuration file.
-        management._DEFAULT_ACCOUNT_CONFIG_JSON_FILE = self.tmp_file.name
+        AccountManager._default_account_config_json_file = self.tmp_file.name
         return self
 
     def __exit__(self, *exc):
         # Delete the temporary file and restore the default location.
         self.tmp_file.close()
-        management._DEFAULT_ACCOUNT_CONFIG_JSON_FILE = self.account_config_json_backup
+        AccountManager._default_account_config_json_file = (
+            self.account_config_json_backup
+        )
 
 
 def get_account_config_contents(
@@ -136,14 +140,10 @@ def get_account_config_contents(
 ):
     """Generate qiskitrc content"""
     if instance is None:
-        instance = "some_instance" if channel == "ibm_cloud" else "hub/group/project"
+        instance = "hub/group/project"
     token = token or uuid.uuid4().hex
     if name is None:
-        name = (
-            management._DEFAULT_ACCOUNT_NAME_IBM_CLOUD
-            if channel == "ibm_cloud"
-            else management._DEFAULT_ACCOUNT_NAME_IBM_QUANTUM
-        )
+        name = AccountManager._default_account_name_ibm_quantum
     if url is None:
         url = IBM_QUANTUM_API_URL
     out = {

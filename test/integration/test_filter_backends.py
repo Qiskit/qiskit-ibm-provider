@@ -12,12 +12,8 @@
 
 """Backends Filtering Test."""
 
-from datetime import datetime
 from unittest import mock
 
-from dateutil import tz
-
-from qiskit_ibm_provider import IBMError
 from qiskit_ibm_provider import least_busy
 from qiskit_ibm_provider.ibm_backend import IBMBackend
 from ..decorators import (
@@ -94,43 +90,6 @@ class TestBackendFilters(IBMTestCase):
         least_busy_backend = least_busy(backends)
         self.assertTrue(least_busy_backend)
 
-    def test_filter_least_busy_reservation(self):
-        """Test filtering by least busy function, with reservations."""
-        backend = reservations = None
-        for backend in self.dependencies.provider.backends(
-            simulator=False,
-            operational=True,
-            status_msg="active",
-            instance=self.dependencies.instance,
-        ):
-            reservations = backend.reservations()
-            if reservations:
-                break
-
-        if not reservations:
-            self.skipTest("Test case requires reservations.")
-
-        reserv = reservations[0]
-        now = datetime.now(tz=tz.tzlocal())
-        window = 60
-        if reserv.start_datetime > now:
-            window = (reserv.start_datetime - now).seconds * 60
-        self.assertRaises(IBMError, least_busy, [backend], window)
-
-        self.assertEqual(least_busy([backend], None), backend)
-
-        backs = [backend]
-        for back in self.dependencies.provider.backends(
-            simulator=False,
-            operational=True,
-            status_msg="active",
-            instance=self.dependencies.instance,
-        ):
-            if back.name != backend.name:
-                backs.append(back)
-                break
-        self.assertTrue(least_busy(backs, window))
-
     def test_filter_least_busy_paused(self):
         """Test filtering by least busy function, with paused backend."""
         backends = self.dependencies.provider.backends(
@@ -180,3 +139,9 @@ class TestBackendFilters(IBMTestCase):
                     self.assertTrue(
                         set(input_type) <= set(backend.configuration().input_allowed)
                     )
+
+    def test_filter_dynamic_circuits(self):
+        """Test filtering by dynamic ciruits."""
+        filtered = self.dependencies.provider.backends(dynamic_circuits=True)
+        for backend in filtered:
+            self.assertTrue("qasm3" in backend.configuration().supported_features)

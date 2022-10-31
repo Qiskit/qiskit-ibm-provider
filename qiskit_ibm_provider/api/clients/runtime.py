@@ -15,6 +15,7 @@
 import logging
 from typing import Any, Dict, List, Optional
 from datetime import datetime as python_datetime
+from requests import Response
 
 from .base import BaseClient
 from ..rest.runtime import Runtime
@@ -42,73 +43,40 @@ class RuntimeClient(BaseClient):
         )
         self._api = Runtime(self._session)
 
-    def list_programs(self, limit: int = None, skip: int = None) -> Dict[str, Any]:
-        """Return a list of runtime programs.
+    def backend_properties(
+        self, backend: str, datetime: Optional[python_datetime] = None
+    ) -> Dict[str, Any]:
+        """Return the properties of the backend.
 
         Args:
-            limit: The number of programs to return.
-            skip: The number of programs to skip.
+            backend: The name of the backend.
 
         Returns:
-            A list of runtime programs.
+            Backend properties.
         """
-        return self._api.list_programs(limit, skip)
+        return self._api.backend(backend).properties(datetime=datetime)
 
-    def program_create(
-        self,
-        program_data: str,
-        name: str,
-        description: str,
-        max_execution_time: int,
-        is_public: Optional[bool] = False,
-        spec: Optional[Dict] = None,
-    ) -> Dict:
-        """Create a new program.
+    def backend_pulse_defaults(self, backend: str) -> Dict:
+        """Return the pulse defaults of the backend.
 
         Args:
-            name: Name of the program.
-            program_data: Program data (base64 encoded).
-            description: Program description.
-            max_execution_time: Maximum execution time.
-            is_public: Whether the program should be public.
-            spec: Backend requirements, parameters, interim results, return values, etc.
+            backend: The name of the backend.
 
         Returns:
-            Server response.
+            Backend pulse defaults.
         """
-        return self._api.create_program(
-            program_data=program_data,
-            name=name,
-            description=description,
-            max_execution_time=max_execution_time,
-            is_public=is_public,
-            spec=spec,
-        )
+        return self._api.backend(backend).pulse_defaults()
 
-    def program_get(self, program_id: str) -> Dict:
-        """Return a specific program.
+    def backend_status(self, backend: str) -> Dict[str, Any]:
+        """Return the status of the backend.
 
         Args:
-            program_id: Program ID.
+            backend: The name of the backend.
 
         Returns:
-            Program information.
+            Backend status.
         """
-        return self._api.program(program_id).get()
-
-    def set_program_visibility(self, program_id: str, public: bool) -> None:
-        """Sets a program's visibility.
-
-        Args:
-            program_id: Program ID.
-            public: If ``True``, make the program visible to all.
-                If ``False``, make the program visible to just your account.
-
-        """
-        if public:
-            self._api.program(program_id).make_public()
-        else:
-            self._api.program(program_id).make_private()
+        return self._api.backend(backend).status()
 
     def program_run(
         self,
@@ -156,44 +124,6 @@ class RuntimeClient(BaseClient):
             start_session=start_session,
             **hgp_dict
         )
-
-    def program_delete(self, program_id: str) -> None:
-        """Delete the specified program.
-
-        Args:
-            program_id: Program ID.
-        """
-        self._api.program(program_id).delete()
-
-    def program_update(
-        self,
-        program_id: str,
-        program_data: str = None,
-        name: str = None,
-        description: str = None,
-        max_execution_time: int = None,
-        spec: Optional[Dict] = None,
-    ) -> None:
-        """Update a program.
-
-        Args:
-            program_id: Program ID.
-            program_data: Program data (base64 encoded).
-            name: Name of the program.
-            description: Program description.
-            max_execution_time: Maximum execution time.
-            spec: Backend requirements, parameters, interim results, return values, etc.
-        """
-        if program_data:
-            self._api.program(program_id).update_data(program_data)
-
-        if any([name, description, max_execution_time, spec]):
-            self._api.program(program_id).update_metadata(
-                name=name,
-                description=description,
-                max_execution_time=max_execution_time,
-                spec=spec,
-            )
 
     def job_get(self, job_id: str) -> Dict:
         """Get job data.
@@ -336,10 +266,13 @@ class RuntimeClient(BaseClient):
         """
         return self.job_get(job_id)["state"]
 
-    def close_session(self, session_id: str) -> None:
-        """Close the runtime session.
+    def update_tags(self, job_id: str, tags: list) -> Response:
+        """Update the tags of the job.
 
         Args:
-            session_id: Session ID.
+            job_id: The ID of the job.
+
+        Returns:
+            API Response.
         """
-        self._api.runtime_session(session_id=session_id).close()
+        return self._api.program_job(job_id).update_tags(tags)

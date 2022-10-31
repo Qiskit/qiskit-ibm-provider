@@ -59,7 +59,6 @@ class TestAccountClient(IBMTestCase):
         self.qc1.measure(quantum_register[1], classical_register[1])
         self.qc2.measure(quantum_register[0], classical_register[0])
         self.qc2.measure(quantum_register[1], classical_register[1])
-        self.seed = 73846087
 
         self.fake_server = None
 
@@ -179,11 +178,10 @@ class TestAccountClientJobs(IBMTestCase):
         quantum_register = QuantumRegister(2)
         classical_register = ClassicalRegister(2)
         qc1 = QuantumCircuit(quantum_register, classical_register, name="qc1")
-        seed = 73846087
 
         # Assemble the Qobj.
         qobj = assemble(
-            transpile([qc1], backend=backend, seed_transpiler=seed),
+            transpile([qc1], backend=backend),
             backend=backend,
             shots=1,
         )
