@@ -336,7 +336,7 @@ class PadDynamicalDecoupling(BlockBasePadder):
             )
             return
 
-        for sequence_idx in range(len(self._dd_sequences)):
+        for sequence_idx, _ in enumerate(self._dd_sequences):
             dd_sequence = self._dd_sequences[sequence_idx]
             seq_lengths = self._dd_sequence_lengths[qubit][sequence_idx]
             seq_length = np.sum(seq_lengths)
