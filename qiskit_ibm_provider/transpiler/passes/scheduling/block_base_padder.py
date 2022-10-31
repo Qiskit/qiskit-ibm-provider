@@ -182,6 +182,14 @@ class BlockBasePadder(TransformationPass):
         """
         raise NotImplementedError
 
+    def _get_node_duration(self, node: DAGNode) -> int:
+        """Get the duration of a node."""
+        if node.op.condition_bits:
+            # As we cannot currently schedule through conditionals model
+            # as zero duration to avoid padding.
+            return 0
+        return node.op.duration
+
     def _visit_delay(self, node: DAGNode) -> None:
         """The padding class considers a delay instruction as idle time
         rather than instruction. Delay node is not added so that
@@ -196,7 +204,7 @@ class BlockBasePadder(TransformationPass):
 
         self._current_block_idx = block_idx
 
-        t1 = t0 + node.op.duration  # pylint: disable=invalid-name
+        t1 = t0 + self._get_node_duration(node)  # pylint: disable=invalid-name
         self._block_duration = max(self._block_duration, t1)
 
     def _visit_generic(self, node: DAGNode) -> None:
@@ -216,7 +224,7 @@ class BlockBasePadder(TransformationPass):
         # Now set the current block index.
         self._current_block_idx = block_idx
 
-        t1 = t0 + node.op.duration  # pylint: disable=invalid-name
+        t1 = t0 + self._get_node_duration(node)  # pylint: disable=invalid-name
         self._block_duration = max(self._block_duration, t1)
 
         for bit in node.qargs:
@@ -248,8 +256,7 @@ class BlockBasePadder(TransformationPass):
         # TODO: This should be reworked to instead apply a transformation
         # pass to rewrite all ``c_if`` operations as ``if_else``
         # blocks that are in turn scheduled.
-        if not self._conditional_block:
-            self._pad_until_block_end(block_duration, block_idx)
+        self._pad_until_block_end(block_duration, block_idx)
 
         def _is_terminating_barrier(node: Optional[DAGNode]) -> bool:
             return (

@@ -104,6 +104,10 @@ class BaseDynamicCircuitAnalysis(BaseScheduler):
         self._last_node_to_touch = {}
 
     def _get_duration(self, node: DAGNode) -> int:
+        if node.op.condition_bits:
+            # As we cannot currently schedule through conditionals model
+            # as zero duration to avoid padding.
+            return 0
         return super()._get_node_duration(node, self._bit_indices, self._dag)
 
     def _update_bit_times(  # pylint: disable=invalid-name

@@ -556,6 +556,7 @@ class TestASAPSchedulingAndPaddingPass(QiskitTestCase):
             ]
         ).run(scheduled0)
 
+        import pdb;pdb.set_trace()
         self.assertEqual(scheduled0, scheduled1)
 
     def test_gate_on_measured_qubit(self):
@@ -1282,13 +1283,14 @@ class TestALAPSchedulingAndPaddingPass(QiskitTestCase):
         """Test scheduling of the fast-path eligible blocks.
         Verify that no barrier is inserted between measurements and fast-path conditionals.
         """
-        qc = QuantumCircuit(3, 3)
+        qc = QuantumCircuit(4, 3)
         qc.x(0)
-        qc.x(1)
-        qc.x(2)
+        qc.delay(1500, 1)
+        qc.delay(1500, 2)
+        qc.x(3)
+        qc.barrier(1, 2, 3)
         qc.measure(0, 0)
         qc.measure(1, 1)
-        qc.measure(2, 2)
         qc.x(0).c_if(0, 1)
         qc.x(1).c_if(1, 1)
         qc.x(0)
@@ -1302,13 +1304,18 @@ class TestALAPSchedulingAndPaddingPass(QiskitTestCase):
         pm = PassManager([ALAPScheduleAnalysis(durations), PadDelay()])
         scheduled = pm.run(qc)
 
-        expected = QuantumCircuit(3, 3)
+        expected = QuantumCircuit(4, 3)
+        expected.delay(1300, 0)
         expected.x(0)
-        expected.x(1)
-        expected.x(2)
+        expected.delay(1500, 1)
+        expected.delay(1500, 2)
+        expected.delay(1300, 3)
+        expected.x(3)
+        expected.barrier(1, 2, 3)
         expected.measure(0, 0)
         expected.measure(1, 1)
-        expected.measure(2, 2)
+        expected.delay(1000, 2)
+        expected.delay(1000, 3)
         expected.x(0).c_if(0, 1)
         expected.x(1).c_if(1, 1)
         expected.barrier()
@@ -1318,6 +1325,7 @@ class TestALAPSchedulingAndPaddingPass(QiskitTestCase):
         expected.x(1)
         expected.delay(200, 2)
         expected.x(2)
+        expected.delay(400, 3)
         expected.barrier()
 
         self.assertEqual(expected, scheduled)
