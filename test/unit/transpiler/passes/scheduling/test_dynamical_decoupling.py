@@ -91,10 +91,17 @@ class TestPadDynamicalDecoupling(QiskitTestCase):
         expected = expected.compose(Delay(750), [2], front=True)
         expected = expected.compose(Delay(950), [3], front=True)
 
-        expected = expected.compose(Delay(50), [0])
-        expected = expected.compose(XGate(), [0])
         expected = expected.compose(Delay(100), [0])
         expected = expected.compose(XGate(), [0])
+        expected = expected.compose(Delay(200), [0])
+        expected = expected.compose(XGate(), [0])
+        expected = expected.compose(Delay(100), [0])
+
+        expected = expected.compose(Delay(50), [1])
+        expected = expected.compose(XGate(), [1])
+        expected = expected.compose(Delay(100), [1])
+        expected = expected.compose(XGate(), [1])
+        expected = expected.compose(Delay(50), [1])
 
         expected.barrier()
 
@@ -137,7 +144,10 @@ class TestPadDynamicalDecoupling(QiskitTestCase):
             [
                 ASAPScheduleAnalysis(self.durations),
                 PadDynamicalDecoupling(
-                    self.durations, dd_sequence, skip_reset_qubits=False, sequence_min_length_ratios = [0.]
+                    self.durations,
+                    dd_sequence,
+                    skip_reset_qubits=False,
+                    sequence_min_length_ratios=[0.0],
                 ),
             ]
         )
@@ -272,7 +282,11 @@ class TestPadDynamicalDecoupling(QiskitTestCase):
             [
                 ASAPScheduleAnalysis(self.durations),
                 PadDynamicalDecoupling(
-                    self.durations, dd_sequence, qubits=[0], spacing=spacing
+                    self.durations,
+                    dd_sequence,
+                    qubits=[0],
+                    spacings=spacing,
+                    sequence_min_length_ratios=[0.0],
                 ),
             ]
         )
@@ -314,7 +328,7 @@ class TestPadDynamicalDecoupling(QiskitTestCase):
         pm = PassManager(
             [
                 ASAPScheduleAnalysis(self.durations),
-                PadDynamicalDecoupling(self.durations, dd_sequence, spacing=spacing),
+                PadDynamicalDecoupling(self.durations, dd_sequence, spacings=spacing),
             ]
         )
 
@@ -351,7 +365,11 @@ class TestPadDynamicalDecoupling(QiskitTestCase):
             [
                 ASAPScheduleAnalysis(self.durations),
                 PadDynamicalDecoupling(
-                    self.durations, dd_sequence, spacing=spacing, skip_reset_qubits=True
+                    self.durations,
+                    dd_sequence,
+                    spacings=spacing,
+                    skip_reset_qubits=True,
+                    sequence_min_length_ratios=[0.0],
                 ),
             ]
         )
@@ -510,7 +528,9 @@ class TestPadDynamicalDecoupling(QiskitTestCase):
         pm = PassManager(
             [
                 ASAPScheduleAnalysis(self.durations),
-                PadDynamicalDecoupling(self.durations, dd_sequence),
+                PadDynamicalDecoupling(
+                    self.durations, dd_sequence, sequence_min_length_ratios=[0.0]
+                ),
             ]
         )
 
@@ -558,7 +578,9 @@ class TestPadDynamicalDecoupling(QiskitTestCase):
         pm = PassManager(
             [
                 ASAPScheduleAnalysis(self.durations),
-                PadDynamicalDecoupling(self.durations, dd_sequence),
+                PadDynamicalDecoupling(
+                    self.durations, dd_sequence, sequence_min_length_ratios=[0.0]
+                ),
             ]
         )
 
@@ -646,3 +668,81 @@ class TestPadDynamicalDecoupling(QiskitTestCase):
         qc_dd1 = pm1.run(qc)
 
         self.assertEqual(qc_dd0, qc_dd1)
+
+    def test_multiple_dd_sequences(self):
+        """Test multiple DD sequence can be submitted"""
+
+        qc = QuantumCircuit(2, 0)
+        qc.x(0)
+        qc.x(1)
+        qc.delay(500, 0)
+        qc.barrier()
+        qc.delay(2000, 1)
+
+        dd_sequence = [
+            [XGate(), XGate(), XGate(), XGate(), XGate(), XGate(), XGate(), XGate()],
+            [XGate(), XGate()],
+        ]
+
+        pm = PassManager(
+            [
+                ASAPScheduleAnalysis(self.durations),
+                PadDynamicalDecoupling(
+                    self.durations, dd_sequence, sequence_min_length_ratios=[1.5, 0.0]
+                ),
+            ]
+        )
+
+        qc_dd = pm.run(qc)
+
+        expected = QuantumCircuit(2, 0)
+        expected.x(0)
+        expected.delay(100, 0)
+        expected.x(0)
+        expected.delay(200, 0)
+        expected.x(0)
+        expected.delay(100, 0)
+        expected.x(1)
+        expected.delay(100, 1)
+        expected.x(1)
+        expected.delay(200, 1)
+        expected.x(1)
+        expected.delay(100, 1)
+        expected.barrier()
+        expected.delay(100, 0)
+        expected.x(0)
+        expected.delay(200, 0)
+        expected.x(0)
+        expected.delay(200, 0)
+        expected.x(0)
+        expected.delay(200, 0)
+        expected.x(0)
+        expected.delay(200, 0)
+        expected.x(0)
+        expected.delay(200, 0)
+        expected.x(0)
+        expected.delay(200, 0)
+        expected.x(0)
+        expected.delay(200, 0)
+        expected.x(0)
+        expected.delay(100, 0)
+        expected.delay(100, 1)
+        expected.x(1)
+        expected.delay(200, 1)
+        expected.x(1)
+        expected.delay(200, 1)
+        expected.x(1)
+        expected.delay(200, 1)
+        expected.x(1)
+        expected.delay(200, 1)
+        expected.x(1)
+        expected.delay(200, 1)
+        expected.x(1)
+        expected.delay(200, 1)
+        expected.x(1)
+        expected.delay(200, 1)
+        expected.x(1)
+        expected.delay(100, 1)
+        expected.barrier()
+
+        self.assertEqual(qc_dd, expected)

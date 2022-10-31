@@ -114,7 +114,7 @@ class PadDynamicalDecoupling(BlockBasePadder):
         skip_reset_qubits: bool = True,
         pulse_alignment: int = 1,
         extra_slack_distribution: str = "middle",
-        sequence_min_length_ratios: Optional[Union[int, List[int]]] = None
+        sequence_min_length_ratios: Optional[Union[int, List[int]]] = None,
     ):
         """Dynamical decoupling initializer.
 
@@ -174,9 +174,9 @@ class PadDynamicalDecoupling(BlockBasePadder):
 
         if spacings is not None:
             try:
-                iter(spacings[0])
+                iter(spacings[0])  # type: ignore
             except TypeError:
-                spacings = [spacings]
+                spacings = [spacings]  # type: ignore
         self._spacings = spacings
 
         self._extra_slack_distribution = extra_slack_distribution
@@ -185,26 +185,23 @@ class PadDynamicalDecoupling(BlockBasePadder):
         self._sequence_phase = 0
 
         if sequence_min_length_ratios is None:
-            self._sequence_min_length_ratios = [1.]
+            self._sequence_min_length_ratios = [1.0]
         else:
             try:
-                iter(sequence_min_length_ratios)
+                iter(sequence_min_length_ratios)  # type: ignore
             except TypeError:
-                sequence_min_length_ratios = [sequence_min_length_ratios]
-            self._sequence_min_length_ratios = sequence_min_length_ratios
-
-
-
+                sequence_min_length_ratios = [sequence_min_length_ratios]  # type: ignore
+            self._sequence_min_length_ratios = sequence_min_length_ratios  # type: ignore
 
     def _pre_runhook(self, dag: DAGCircuit) -> None:
         super()._pre_runhook(dag)
 
         spacings_required = self._spacings is None
-        self._spacings = []
+        if spacings_required:
+            self._spacings = []  # type: ignore
 
-        sequence_lengths = []
         for seq_idx, seq in enumerate(self._dd_sequences):
-            num_pulses = len(self._dd_sequences)
+            num_pulses = len(self._dd_sequences[seq_idx])
 
             # Check if physical circuit is given
             if len(dag.qregs) != 1 or dag.qregs.get("q", None) is None:
@@ -214,9 +211,11 @@ class PadDynamicalDecoupling(BlockBasePadder):
             if spacings_required:
                 mid = 1 / num_pulses
                 end = mid / 2
-                self._spacings.append([end] + [mid] * (num_pulses - 1) + [end])
+                self._spacings.append([end] + [mid] * (num_pulses - 1) + [end])  # type: ignore
             else:
-                if sum(self._spacings[seq_idx]) != 1 or any(a < 0 for a in self._spacings[seq_idx]):
+                if sum(self._spacings[seq_idx]) != 1 or any(  # type: ignore
+                    a < 0 for a in self._spacings[seq_idx]  # type: ignore
+                ):
                     raise TranspilerError(
                         "The spacings must be given in terms of fractions "
                         "of the slack period and sum to 1."
@@ -230,7 +229,7 @@ class PadDynamicalDecoupling(BlockBasePadder):
                     )
                 # TODO: this check should use the quantum info package in Qiskit.
                 noop = np.eye(2)
-                for gate in self._dd_sequence:
+                for gate in self._dd_sequences[seq_idx]:
                     noop = noop.dot(gate.to_matrix())
                 if not matrix_equal(noop, IGate().to_matrix(), ignore_phase=True):
                     raise TranspilerError(
@@ -240,6 +239,7 @@ class PadDynamicalDecoupling(BlockBasePadder):
 
             # Precompute qubit-wise DD sequence length for performance
             for qubit in dag.qubits:
+                seq_length_ = []
                 if qubit not in self._dd_sequence_lengths:
                     self._dd_sequence_lengths[qubit] = []
 
@@ -268,10 +268,11 @@ class PadDynamicalDecoupling(BlockBasePadder):
                             )
                     except KeyError:
                         gate_length = self._durations.get(gate, physical_index)
-                    sequence_lengths.append(gate_length)
-                    # Update gate duration. This is necessary for current timeline drawer, i.e. scheduled.
+                    seq_length_.append(gate_length)
+                    # Update gate duration.
+                    # This is necessary for current timeline drawer, i.e. scheduled.
                     gate.duration = gate_length
-                self._dd_sequence_lengths[qubit].append(sequence_lengths)
+                self._dd_sequence_lengths[qubit].append(seq_length_)
 
     def _pad(
         self,
@@ -332,8 +333,12 @@ class PadDynamicalDecoupling(BlockBasePadder):
         for sequence_idx in range(len(self._dd_sequences)):
             dd_sequence = self._dd_sequences[sequence_idx]
             seq_length = np.sum(self._dd_sequence_lengths[qubit][sequence_idx])
+
             # Verify the delay duration exceeds the minimum time to insert
-            if time_interval / seq_length <= self._sequence_min_length_ratios[sequence_idx]:
+            if (
+                time_interval / seq_length
+                <= self._sequence_min_length_ratios[sequence_idx]
+            ):
                 continue
 
             slack = time_interval - seq_length
@@ -348,8 +353,10 @@ class PadDynamicalDecoupling(BlockBasePadder):
 
             if len(dd_sequence) == 1:
                 # Special case of using a single gate for DD
-                u_inv = dd_sequence.inverse().to_matrix()
-                theta, phi, lam, phase = OneQubitEulerDecomposer().angles_and_phase(u_inv)
+                u_inv = dd_sequence[0].inverse().to_matrix()
+                theta, phi, lam, phase = OneQubitEulerDecomposer().angles_and_phase(
+                    u_inv
+                )
                 if isinstance(next_node, DAGOpNode) and isinstance(
                     next_node.op, (UGate, U3Gate)
                 ):
@@ -418,7 +425,10 @@ class PadDynamicalDecoupling(BlockBasePadder):
                     self._apply_scheduled_op(block_idx, idle_after, gate, qubit)
                     idle_after += gate_length
 
-            self._dag.global_phase = self._mod_2pi(self._dag.global_phase + sequence_gphase)
+            self._dag.global_phase = self._mod_2pi(
+                self._dag.global_phase + sequence_gphase
+            )
+            return
 
     @staticmethod
     def _mod_2pi(angle: float, atol: float = 0) -> float:
