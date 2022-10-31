@@ -123,7 +123,7 @@ def _job_summary(
     """
     now = datetime.datetime.now()
     past_year_date = now - datetime.timedelta(days=365)
-    limit = kwargs.pop("limit", None)
+    limit = kwargs.pop("limit", 10)
     start_datetime = kwargs.pop("start_datetime", past_year_date)
     provider = backend.provider
     if not provider:
