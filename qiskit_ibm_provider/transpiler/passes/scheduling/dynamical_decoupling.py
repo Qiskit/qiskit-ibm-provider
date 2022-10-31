@@ -153,7 +153,7 @@ class PadDynamicalDecoupling(BlockBasePadder):
                     * "edges": Divide the extra slack as evenly as possible into
                       intervals at beginning and end of the sequence.
             sequence_min_length_ratios: List of minimum delay length to DD sequence ratio to satisfy
-                in order to insert the DD sequence.
+                in order to insert the DD sequence. Defaults to a value of 2.0.
             insert_multiple_cycles: If the available duration exceeds
                 2*sequence_min_length_ratio*duration(dd_sequence) enable the insertion of multiple
                 rounds of the dynamical decoupling sequence in that delay.
