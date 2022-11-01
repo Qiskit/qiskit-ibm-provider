@@ -106,8 +106,7 @@ class TestIBMBackend(IBMTestCase):
         provider: IBMProvider = self.backend.provider
         backend = provider.get_backend("ibmq_qasm_simulator")
         backend.options.shots = 2048
-        backend.set_options(memory=True)
-        job = backend.run(ReferenceCircuits.bell(), shots=1024, foo="foo")
+        job = backend.run(ReferenceCircuits.bell(), shots=1024, memory=True, foo="foo")
         backend_options = provider.backend.retrieve_job(job.job_id()).backend_options()
         self.assertEqual(backend_options["shots"], 1024)
         self.assertTrue(backend_options["memory"])
