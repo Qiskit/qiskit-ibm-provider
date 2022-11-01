@@ -16,12 +16,10 @@ import inspect
 import logging
 import os
 import time
-from functools import partialmethod
 from typing import List, Any
 from qiskit.test.base import BaseQiskitTestCase
 
 from qiskit_ibm_provider import QISKIT_IBM_PROVIDER_LOGGER_NAME
-from qiskit_ibm_provider.api.clients.account import AccountClient
 from qiskit_ibm_provider.apiconstants import ApiJobStatus, API_JOB_FINAL_STATES
 from qiskit_ibm_provider.job.exceptions import IBMJobNotFoundError
 from .utils import setup_test_logging
@@ -75,8 +73,6 @@ class IBMTestCase(BaseQiskitTestCase):
         super().setUp()
         # Record submitted jobs.
         self._jobs: List[Any] = []
-        self._saved_submit = AccountClient.job_submit
-        AccountClient.job_submit = partialmethod(self._recorded_submit)  # type: ignore
 
     def tearDown(self) -> None:
         """Test level tear down."""
@@ -105,9 +101,3 @@ class IBMTestCase(BaseQiskitTestCase):
                             retry = 0
                 except Exception:  # pylint: disable=broad-except
                     pass
-
-    def _recorded_submit(self, client, *args, **kwargs):
-        """Record submitted jobs."""
-        submit_info = self._saved_submit(client, *args, **kwargs)
-        self._jobs.append((client, submit_info["job_id"]))
-        return submit_info
