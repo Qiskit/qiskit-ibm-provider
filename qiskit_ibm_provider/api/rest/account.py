@@ -16,7 +16,6 @@ import logging
 from typing import Dict, Optional, Any, List
 
 from .base import RestAdapterBase
-from .backend import Backend
 from ..session import RetrySession
 
 logger = logging.getLogger(__name__)
@@ -27,8 +26,6 @@ class Account(RestAdapterBase):
 
     URL_MAP = {
         "backends": "/devices/v/1",
-        "jobs": "/Jobs",
-        "jobs_id": "/Jobs/v/1",
     }
 
     TEMPLATE_IBM_HUBS = "/Network/{hub}/Groups/{group}/Projects/{project}"
@@ -50,19 +47,6 @@ class Account(RestAdapterBase):
             hub=hub, group=group, project=project
         )
         super().__init__(session, self.url_prefix)
-
-    # Function-specific rest adapters.
-
-    def backend(self, backend_name: str) -> Backend:
-        """Return an adapter for the backend.
-
-        Args:
-            backend_name: Name of the backend.
-
-        Returns:
-            The backend adapter.
-        """
-        return Backend(self.session, backend_name, self.url_prefix)
 
     # Client functions.
 
