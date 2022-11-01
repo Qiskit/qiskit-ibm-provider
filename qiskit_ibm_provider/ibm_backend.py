@@ -19,7 +19,7 @@ from dataclasses import asdict
 from datetime import datetime as python_datetime
 from typing import Iterable, Dict, List, Union, Optional, Any
 
-from qiskit.circuit import QuantumCircuit, Parameter, Delay
+from qiskit.circuit import QuantumCircuit, Delay
 from qiskit.circuit.duration import duration_in_dt
 from qiskit.providers.backend import BackendV2 as Backend
 from qiskit.providers.models import (
@@ -282,21 +282,7 @@ class IBMBackend(Backend):
     @classmethod
     def _default_options(cls) -> Options:
         """Default runtime options."""
-        return Options(
-            shots=4000,
-            memory=False,
-            qubit_lo_freq=None,
-            meas_lo_freq=None,
-            schedule_los=None,
-            meas_level=MeasLevel.CLASSIFIED,
-            meas_return=MeasReturnType.AVERAGE,
-            rep_delay=None,
-            init_qubits=True,
-            use_measure_esp=None,
-            # Simulator only
-            noise_model=None,
-            seed_simulator=None,
-        )
+        return Options(**{**asdict(QASM3Options()), **asdict(QASM2Options())})
 
     @property
     def dtm(self) -> float:
@@ -342,6 +328,8 @@ class IBMBackend(Backend):
         ],
         dynamic: bool = False,
         job_tags: Optional[List[str]] = None,
+        init_circuit: Optional[QuantumCircuit] = None,
+        init_num_resets: Optional[int] = None,
         header: Optional[Dict] = None,
         shots: Optional[Union[int, float]] = None,
         memory: Optional[bool] = None,
@@ -357,9 +345,9 @@ class IBMBackend(Backend):
         meas_return: Optional[Union[str, MeasReturnType]] = None,
         rep_delay: Optional[float] = None,
         init_qubits: Optional[bool] = None,
-        parameter_binds: Optional[List[Dict[Parameter, float]]] = None,
         use_measure_esp: Optional[bool] = None,
         noise_model: Optional[Any] = None,
+        seed_simulator: Optional[int] = None,
         **run_config: Dict,
     ) -> IBMJob:
         """Run on the backend.
@@ -373,6 +361,14 @@ class IBMBackend(Backend):
             dynamic: Whether the circuit is dynamic (uses in-circuit conditionals)
             job_tags: Tags to be assigned to the job. The tags can subsequently be used
                 as a filter in the :meth:`jobs()` function call.
+            init_circuit: A quantum circuit to execute for initializing qubits before each circuit.
+                If specified, ``init_num_resets`` is ignored. Applicable only if ``dynamic=True``
+                is specified.
+            init_num_resets: The number of qubit resets to insert before each circuit execution.
+
+            The following parameters are applicable only if ``dynamic=False`` is specified or
+            defaulted to.
+
             header: User input that will be attached to the job and will be
                 copied to the corresponding result header. Headers do not affect the run.
                 This replaces the old ``Qobj`` header.
@@ -388,6 +384,7 @@ class IBMBackend(Backend):
             schedule_los: Experiment LO configurations, frequencies are given in Hz.
             meas_level: Set the appropriate level of the measurement output for pulse experiments.
             meas_return: Level of measurement data for the backend to return.
+
                 For ``meas_level`` 0 and 1:
                 * ``single`` returns information from every shot.
                 * ``avg`` returns average measurement output (averaged over number of shots).
@@ -398,12 +395,6 @@ class IBMBackend(Backend):
                 ``backend.configuration().default_rep_delay``.
             init_qubits: Whether to reset the qubits to the ground state for each shot.
                 Default: ``True``.
-            parameter_binds: List of Parameter bindings over which the set of experiments will be
-                executed. Each list element (bind) should be of the form
-                {Parameter1: value1, Parameter2: value2, ...}. All binds will be
-                executed across all experiments; e.g., if parameter_binds is a
-                length-n list, and there are m experiments, a total of m x n
-                experiments will be run (one for each experiment/bind pair).
             use_measure_esp: Whether to use excited state promoted (ESP) readout for measurements
                 which are the terminal instruction to a qubit. ESP readout can offer higher fidelity
                 than standard measurement sequences. See
@@ -412,6 +403,7 @@ class IBMBackend(Backend):
                 for ESP readout is determined by the flag ``measure_esp_enabled`` in
                 ``backend.configuration()``.
             noise_model: Noise model. (Simulators only)
+            seed_simulator: Random seed to control sampling. (Simulators only)
             **run_config: Extra arguments used to configure the run.
 
         Returns:
@@ -451,6 +443,8 @@ class IBMBackend(Backend):
 
         run_config_dict = self._get_run_config(
             program_id=program_id,
+            init_circuit=init_circuit,
+            init_num_resets=init_num_resets,
             header=header,
             shots=shots,
             memory=memory,
@@ -463,7 +457,7 @@ class IBMBackend(Backend):
             init_qubits=init_qubits,
             use_measure_esp=use_measure_esp,
             noise_model=noise_model,
-            parameter_binds=parameter_binds,
+            seed_simulator=seed_simulator,
             **run_config,
         )
 
@@ -520,17 +514,16 @@ class IBMBackend(Backend):
         """Return the consolidated runtime configuration."""
         # Check if is a QASM3 like program id.
         if program_id.startswith(QASM3RUNNERPROGRAMID):
-            original_dict = QASM3Options().to_transport_dict()
-            run_config_dict = copy.copy(
-                QASM3Options(**original_dict).to_transport_dict()
-            )
+            fields = asdict(QASM3Options()).keys()
+            run_config_dict = QASM3Options().to_transport_dict()
         else:
-            original_dict = self.options.__dict__
-            run_config_dict = copy.copy(asdict(QASM2Options(**original_dict)))
+            fields = asdict(QASM2Options()).keys()
+            run_config_dict = QASM2Options().to_transport_dict()
+
         for key, val in kwargs.items():
             if val is not None:
                 run_config_dict[key] = val
-                if key not in original_dict and not self.configuration().simulator:
+                if key not in fields and not self.configuration().simulator:
                     warnings.warn(  # type: ignore[unreachable]
                         f"{key} is not a recognized runtime option and may be ignored by the backend.",
                         stacklevel=4,
