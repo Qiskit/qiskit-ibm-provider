@@ -56,6 +56,8 @@ def api_status_to_job_status(api_status: Union[str, ApiJobStatus]) -> JobStatus:
         Job status.
     """
     if isinstance(api_status, str):
+        if api_status.upper() == "CANCELLED - RAN TOO LONG":
+            api_status = "CANCELLED"
         api_status = ApiJobStatus(api_status.upper())
     return API_TO_JOB_STATUS[api_status]
 
