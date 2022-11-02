@@ -112,7 +112,7 @@ class PadDynamicalDecoupling(BlockBasePadder):
         qubits: Optional[List[int]] = None,
         spacings: Optional[Union[List[List[float]], List[float]]] = None,
         skip_reset_qubits: bool = True,
-        pulse_alignment: int = 1,
+        pulse_alignment: int = 16,
         extra_slack_distribution: str = "middle",
         sequence_min_length_ratios: Optional[Union[int, List[int]]] = None,
         insert_multiple_cycles: bool = False,

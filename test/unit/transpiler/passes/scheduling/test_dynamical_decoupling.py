@@ -81,7 +81,10 @@ class TestPadDynamicalDecoupling(QiskitTestCase):
             [
                 ASAPScheduleAnalysis(self.durations),
                 PadDynamicalDecoupling(
-                    self.durations, dd_sequence, sequence_min_length_ratios=[1.0]
+                    self.durations,
+                    dd_sequence,
+                    pulse_alignment=1,
+                    sequence_min_length_ratios=[1.0],
                 ),
             ]
         )
@@ -115,7 +118,9 @@ class TestPadDynamicalDecoupling(QiskitTestCase):
         pm = PassManager(
             [
                 ASAPScheduleAnalysis(self.durations),
-                PadDynamicalDecoupling(self.durations, dd_sequence, qubits=[0]),
+                PadDynamicalDecoupling(
+                    self.durations, dd_sequence, qubits=[0], pulse_alignment=1
+                ),
             ]
         )
 
@@ -149,6 +154,7 @@ class TestPadDynamicalDecoupling(QiskitTestCase):
                     self.durations,
                     dd_sequence,
                     skip_reset_qubits=False,
+                    pulse_alignment=1,
                     sequence_min_length_ratios=[0.0],
                 ),
             ]
@@ -193,7 +199,10 @@ class TestPadDynamicalDecoupling(QiskitTestCase):
             [
                 ASAPScheduleAnalysis(self.durations),
                 PadDynamicalDecoupling(
-                    self.durations, dd_sequence, sequence_min_length_ratios=[1.0]
+                    self.durations,
+                    dd_sequence,
+                    pulse_alignment=1,
+                    sequence_min_length_ratios=[1.0],
                 ),
             ]
         )
@@ -234,7 +243,7 @@ class TestPadDynamicalDecoupling(QiskitTestCase):
         pm = PassManager(
             [
                 ASAPScheduleAnalysis(self.durations),
-                PadDynamicalDecoupling(self.durations, dd_sequence),
+                PadDynamicalDecoupling(self.durations, dd_sequence, pulse_alignment=1),
             ]
         )
 
@@ -291,6 +300,7 @@ class TestPadDynamicalDecoupling(QiskitTestCase):
                     qubits=[0],
                     spacings=spacing,
                     sequence_min_length_ratios=[0.0],
+                    pulse_alignment=1,
                 ),
             ]
         )
@@ -332,7 +342,9 @@ class TestPadDynamicalDecoupling(QiskitTestCase):
         pm = PassManager(
             [
                 ASAPScheduleAnalysis(self.durations),
-                PadDynamicalDecoupling(self.durations, dd_sequence, spacings=spacing),
+                PadDynamicalDecoupling(
+                    self.durations, dd_sequence, pulse_alignment=1, spacings=spacing
+                ),
             ]
         )
 
@@ -373,6 +385,7 @@ class TestPadDynamicalDecoupling(QiskitTestCase):
                     dd_sequence,
                     spacings=spacing,
                     skip_reset_qubits=True,
+                    pulse_alignment=1,
                     sequence_min_length_ratios=[0.0],
                 ),
             ]
@@ -534,7 +547,10 @@ class TestPadDynamicalDecoupling(QiskitTestCase):
             [
                 ASAPScheduleAnalysis(self.durations),
                 PadDynamicalDecoupling(
-                    self.durations, dd_sequence, sequence_min_length_ratios=[0.0]
+                    self.durations,
+                    dd_sequence,
+                    pulse_alignment=1,
+                    sequence_min_length_ratios=[0.0],
                 ),
             ]
         )
@@ -584,7 +600,10 @@ class TestPadDynamicalDecoupling(QiskitTestCase):
             [
                 ASAPScheduleAnalysis(self.durations),
                 PadDynamicalDecoupling(
-                    self.durations, dd_sequence, sequence_min_length_ratios=[0.0]
+                    self.durations,
+                    dd_sequence,
+                    pulse_alignment=1,
+                    sequence_min_length_ratios=[0.0],
                 ),
             ]
         )
@@ -693,7 +712,10 @@ class TestPadDynamicalDecoupling(QiskitTestCase):
             [
                 ASAPScheduleAnalysis(self.durations),
                 PadDynamicalDecoupling(
-                    self.durations, dd_sequence, sequence_min_length_ratios=[1.5, 0.0]
+                    self.durations,
+                    dd_sequence,
+                    pulse_alignment=1,
+                    sequence_min_length_ratios=[1.5, 0.0],
                 ),
             ]
         )
@@ -770,6 +792,7 @@ class TestPadDynamicalDecoupling(QiskitTestCase):
                     self.durations,
                     dd_sequence,
                     extra_slack_distribution="edges",
+                    pulse_alignment=1,
                     sequence_min_length_ratios=[10.0],
                     insert_multiple_cycles=True,
                 ),
