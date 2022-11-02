@@ -12,7 +12,7 @@
 
 """Utility functions for scheduling passes."""
 
-from typing import Generator, Optional, Tuple, Union
+from typing import List, Generator, Optional, Tuple, Union
 
 from qiskit.circuit import Measure, Reset, Parameter
 from qiskit.dagcircuit import DAGCircuit, DAGOpNode
@@ -41,8 +41,18 @@ def block_order_op_nodes(dag: DAGCircuit) -> Generator[DAGOpNode, None, None]:
         """Does this node trigger the end of a block?"""
         return node.op.condition_bits
 
-    def _emit(node: DAGOpNode) -> bool:
+    def _emit(
+        node: DAGOpNode,
+        grouped_measure: List[DAGOpNode],
+        block_triggers: List[DAGOpNode],
+    ) -> bool:
         """Should we emit this node?"""
+        for measure in grouped_measure:
+            if dag.is_predecessor(node, measure):
+                return True
+        for block_trigger in block_triggers:
+            if dag.is_predecessor(node, block_trigger):
+                return True
         return _is_grouped_measure(node) or _is_block_trigger(node)
 
     # Begin processing nodes in order
@@ -62,33 +72,38 @@ def block_order_op_nodes(dag: DAGCircuit) -> Generator[DAGOpNode, None, None]:
                 next_nodes.append(node)
                 continue
 
-            # To emit nodes in the proper order
-            # Fetch the descendants
-            node_descendants = dag.descendants(node)
             # If this nodes is a measurement
             # push on the measurements to process
             if _is_grouped_measure(node):
                 block_break = True
+                node_descendants = dag.descendants(node)
                 next_nodes_set |= set(node_descendants)
                 yield_measures.append(node)
             # If this node is a block push this onto
             # the block trigger list.
             elif _is_block_trigger(node):
                 block_break = True
+                node_descendants = dag.descendants(node)
                 next_nodes_set |= set(node_descendants)
                 yield_block_triggers.append(node)
-            # If this node has a descendant that is either a measurement or a block trigger
-            # we will need to emit as part of this block.
-            elif any(
-                _emit(descendant)
-                for descendant in node_descendants
-                if isinstance(descendant, DAGOpNode)
-            ):
-                yield node
             # Otherwise we push onto the final list of blocks to emit
             # as part of the final block.
             else:
                 to_push.append(node)
+
+        new_to_push = []
+        for node in to_push:
+            node_descendants = dag.descendants(node)
+            if any(
+                _emit(descendant, yield_measures, yield_block_triggers)
+                for descendant in node_descendants
+                if isinstance(descendant, DAGOpNode)
+            ):
+                yield node
+            else:
+                new_to_push.append(node)
+
+        to_push = new_to_push
 
         # First emit the measurements which will feed
         for node in yield_measures:

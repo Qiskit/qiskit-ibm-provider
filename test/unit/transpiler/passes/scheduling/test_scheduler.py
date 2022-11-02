@@ -556,7 +556,6 @@ class TestASAPSchedulingAndPaddingPass(QiskitTestCase):
             ]
         ).run(scheduled0)
 
-        import pdb;pdb.set_trace()
         self.assertEqual(scheduled0, scheduled1)
 
     def test_gate_on_measured_qubit(self):
