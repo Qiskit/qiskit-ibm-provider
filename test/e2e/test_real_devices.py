@@ -14,22 +14,25 @@
 
 import time
 import re
-from unittest import skip
+from unittest import SkipTest
 
 from qiskit import (
+    transpile,
     ClassicalRegister,
     QuantumCircuit,
     QuantumRegister,
 )
 from qiskit.test.reference_circuits import ReferenceCircuits
 from qiskit.providers.jobstatus import JobStatus
+from qiskit_ibm_provider import least_busy
 from qiskit_ibm_provider.job.exceptions import IBMJobFailureError
 
-from qiskit_ibm_provider.ibm_backend import IBMBackend
+from qiskit_ibm_provider.ibm_backend import IBMBackend, QOBJRUNNERPROGRAMID
 
 from ..ibm_test_case import IBMTestCase
 from ..utils import (
     cancel_job,
+    get_large_circuit,
     submit_job_one_bad_instr,
 )
 from ..decorators import (
@@ -97,9 +100,12 @@ class TestRealDevices(IBMTestCase):
         """Test running in a real device."""
         shots = 8192
         job = self.real_device_backend.run(
-            ReferenceCircuits.bell(),
+            transpile(ReferenceCircuits.bell(), backend=self.real_device_backend),
             shots=shots,
+            program_id=QOBJRUNNERPROGRAMID,
         )
+
+        job.wait_for_final_state(wait=300, callback=self.simple_job_callback)
         result = job.result()
         counts_qx = result.get_counts(0)
         counts_ex = {"00": shots / 2, "11": shots / 2}
@@ -121,7 +127,10 @@ class TestRealDevices(IBMTestCase):
             quantum_circuit.cx(quantum_register[i], quantum_register[i + 1])
         quantum_circuit.measure(quantum_register, classical_register)
         num_jobs = 3
-        job_array = [backend.run(quantum_circuit) for _ in range(num_jobs)]
+        job_array = [
+            backend.run(transpile(quantum_circuit, backend=backend))
+            for _ in range(num_jobs)
+        ]
         time.sleep(3)  # give time for jobs to start (better way?)
         job_status = [job.status() for job in job_array]
         num_init = sum([status is JobStatus.INITIALIZING for status in job_status])
@@ -140,7 +149,7 @@ class TestRealDevices(IBMTestCase):
 
         # Wait for all the results.
         for job in job_array:
-            job.wait_for_final_state()
+            job.wait_for_final_state(wait=300, callback=self.simple_job_callback)
         result_array = [job.result() for job in job_array]
 
         # Ensure all jobs have finished.
@@ -151,12 +160,55 @@ class TestRealDevices(IBMTestCase):
         job_ids = [job.job_id() for job in job_array]
         self.assertEqual(sorted(job_ids), sorted(list(set(job_ids))))
 
-    @skip("TODO refactor to not depend on using bad instruction")
+    def test_pulse_job(self):
+        """Test running a pulse job."""
+        backends = self.dependencies.provider.backends(
+            open_pulse=True, operational=True
+        )
+        if not backends:
+            raise SkipTest("Skipping pulse test since no pulse backend found.")
+
+        backend = least_busy(backends)
+        config = backend.configuration()
+        defaults = backend.defaults()
+        inst_map = defaults.instruction_schedule_map
+
+        # Run 2 experiments - 1 with x pulse and 1 without
+        x_pulse = inst_map.get("x", 0)
+        measure = inst_map.get("measure", range(config.n_qubits)) << x_pulse.duration
+        ground_sched = measure
+        excited_sched = x_pulse | measure
+        schedules = [ground_sched, excited_sched]
+
+        job = backend.run(schedules, meas_level=1, shots=256)
+        job.wait_for_final_state(wait=300, callback=self.simple_job_callback)
+        self.assertTrue(
+            job.done(), "Job {} didn't complete successfully.".format(job.job_id())
+        )
+        self.assertIsNotNone(job.result(), "Job {} has no result.".format(job.job_id()))
+
+    def test_running_job_properties(self):
+        """Test fetching properties of a running job."""
+
+        backend = self.real_device_backend
+
+        def _job_callback(job_id, job_status, cjob, **kwargs):
+            self.simple_job_callback(job_id, job_status, cjob, **kwargs)
+            if job_status is JobStatus.RUNNING:
+                job_properties[0] = cjob.properties()
+                cancel_job(cjob)
+
+        job_properties = [None]
+        large_qx = get_large_circuit(backend=backend)
+        job = backend.run(transpile(large_qx, backend=backend))
+        job.wait_for_final_state(wait=None, callback=_job_callback)
+        self.assertIsNotNone(job_properties[0])
+
     def test_error_message_device(self):
         """Test retrieving job error messages from a device backend."""
         backend = self.real_device_backend
         job = submit_job_one_bad_instr(backend)
-        job.wait_for_final_state()
+        job.wait_for_final_state(wait=300, callback=self.simple_job_callback)
 
         rjob = self.dependencies.provider.backend.retrieve_job(job.job_id())
 
@@ -174,23 +226,33 @@ class TestRealDevices(IBMTestCase):
         """Test that the qobj headers are passed onto the results for devices."""
         custom_header = {"x": 1, "y": [1, 2, 3], "z": {"a": 4}}
 
+        # TODO Use circuit metadata for individual header when terra PR-5270 is released.
+        # qobj.experiments[0].header.some_field = 'extra info'
+
         quantum_register = QuantumRegister(1)
         classical_register = ClassicalRegister(1)
 
         qc1 = QuantumCircuit(quantum_register, classical_register, name="circuit0")
         qc1.h(quantum_register[0])
         qc1.measure(quantum_register, classical_register)
-        job = self.real_device_backend.run(qc1, header=custom_header)
-        job.wait_for_final_state()
+        job = self.real_device_backend.run(
+            transpile(qc1, backend=self.real_device_backend), header=custom_header
+        )
+        job.wait_for_final_state(wait=300, callback=self.simple_job_callback)
+        result = job.result()
         self.assertTrue(custom_header.items() <= job.header().items())
+        self.assertTrue(custom_header.items() <= result.header.to_dict().items())
+        # self.assertEqual(result.results[0].header.some_field, 'extra info')
 
     def test_websockets_device(self):
         """Test checking status of a job via websockets for a device."""
-        job = self.real_device_backend.run(ReferenceCircuits.bell(), shots=1)
+        job = self.real_device_backend.run(
+            transpile(ReferenceCircuits.bell(), self.real_device_backend), shots=1
+        )
 
         # Manually disable the non-websocket polling.
         # job._api_client._job_final_status_polling = self._job_final_status_polling
-        job.wait_for_final_state()
+        job.wait_for_final_state(wait=300, callback=self.simple_job_callback)
         result = job.result()
 
         self.assertTrue(result.success)
