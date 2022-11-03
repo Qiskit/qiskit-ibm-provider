@@ -299,7 +299,7 @@ class ASAPScheduleAnalysis(BaseDynamicCircuitAnalysis):
         t1 = t0 + op_duration  # pylint: disable=invalid-name
         self._update_bit_times(node, t0, t1)
 
-    def _visit_measure(self, node: DAGNode, includes_reset: bool = False) -> None:
+    def _visit_measure(self, node: DAGNode) -> None:
         """Visit a measurement node.
 
         Measurement currently triggers the end of a deterministically scheduled block
@@ -350,9 +350,6 @@ class ASAPScheduleAnalysis(BaseDynamicCircuitAnalysis):
                 )
             )
 
-        if includes_reset:
-            self._current_block_measures_has_reset = True
-
         # Insert this measure into the block
         self._current_block_measures.add(node)
 
@@ -375,7 +372,8 @@ class ASAPScheduleAnalysis(BaseDynamicCircuitAnalysis):
         All resets on disjoint qubits will be collected on the same qubits to be run simultaneously.
         """
         # Process as measurement
-        self._visit_measure(node, True)
+        self._current_block_measures_has_reset = True
+        self._visit_measure(node)
         # Then set that we are now a conditional node.
         self._conditional_block = True
 
@@ -503,7 +501,7 @@ class ALAPScheduleAnalysis(BaseDynamicCircuitAnalysis):
 
         self._update_bit_times(node, t0, t1, update_cargs=False)
 
-    def _visit_measure(self, node: DAGNode, includes_reset: bool = False) -> None:
+    def _visit_measure(self, node: DAGNode) -> None:
         """Visit a measurement node.
 
         Measurement currently triggers the end of a deterministically scheduled block
@@ -555,9 +553,6 @@ class ALAPScheduleAnalysis(BaseDynamicCircuitAnalysis):
                 )
             )
 
-        if includes_reset:
-            self._current_block_measures_has_reset = True
-
         # Insert this measure into the block
         self._current_block_measures.add(node)
 
@@ -580,7 +575,8 @@ class ALAPScheduleAnalysis(BaseDynamicCircuitAnalysis):
         All resets on disjoint qubits will be collected on the same qubits to be run simultaneously.
         """
         # Process as measurement
-        self._visit_measure(node, True)
+        self._current_block_measures_has_reset = True
+        self._visit_measure(node)
         # Then set that we are now a conditional node.
         self._conditional_block = True
 
