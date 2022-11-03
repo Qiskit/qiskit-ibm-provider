@@ -182,9 +182,7 @@ class TestIBMJob(IBMTestCase):
     def test_retrieve_queued_cancelled_jobs(self):
         """Test client side filtering with queued and cancelled jobs."""
         statuses = ["QUEUED", "CANCELLED"]
-        job_list = self.provider.backend.jobs(
-            backend_name=self.sim_backend.name, limit=3, status=statuses
-        )
+        job_list = self.provider.backend.jobs(limit=3, status=statuses)
         for job in job_list:
             self.assertTrue(job.status() in [JobStatus.QUEUED, JobStatus.CANCELLED])
 
