@@ -12,7 +12,8 @@
 
 """Dynamical decoupling insertion pass for IBM (dynamic circuit) backends."""
 
-from typing import Dict, List, Optional
+import warnings
+from typing import Dict, List, Optional, Union
 
 import numpy as np
 from qiskit.circuit import Qubit, Gate
@@ -53,7 +54,7 @@ class PadDynamicalDecoupling(BlockBasePadder):
         from qiskit.transpiler import PassManager, InstructionDurations
         from qiskit.visualization import timeline_drawer
 
-        from qiskit_ibm_provider.transpiler.passes.scheduling import DynamicCircuitScheduleAnalysis
+        from qiskit_ibm_provider.transpiler.passes.scheduling import ALAPScheduleAnalysis
         from qiskit_ibm_provider.transpiler.passes.scheduling import PadDynamicalDecoupling
 
         circ = QuantumCircuit(4)
@@ -72,7 +73,7 @@ class PadDynamicalDecoupling(BlockBasePadder):
 
         # balanced X-X sequence on all qubits
         dd_sequence = [XGate(), XGate()]
-        pm = PassManager([DynamicCircuitScheduleAnalysis(durations),
+        pm = PassManager([ALAPScheduleAnalysis(durations),
                           PadDynamicalDecoupling(durations, dd_sequence)])
         circ_dd = pm.run(circ)
         circ_dd.draw()
@@ -84,14 +85,14 @@ class PadDynamicalDecoupling(BlockBasePadder):
         dd_sequence = [XGate()] * n
         def uhrig_pulse_location(k):
             return np.sin(np.pi * (k + 1) / (2 * n + 2)) ** 2
-        spacing = []
+        spacings = []
         for k in range(n):
-            spacing.append(uhrig_pulse_location(k) - sum(spacing))
-        spacing.append(1 - sum(spacing))
+            spacings.append(uhrig_pulse_location(k) - sum(spacings))
+        spacings.append(1 - sum(spacings))
         pm = PassManager(
             [
-                DynamicCircuitScheduleAnalysis(durations),
-                PadDynamicalDecoupling(durations, dd_sequence, qubits=[0], spacing=spacing),
+                ALAPScheduleAnalysis(durations),
+                PadDynamicalDecoupling(durations, dd_sequence, qubits=[0], spacings=spacings),
             ]
         )
         circ_dd = pm.run(circ)
@@ -100,7 +101,7 @@ class PadDynamicalDecoupling(BlockBasePadder):
     .. note::
 
         You need to call
-        :class:`~qiskit_ibm_provider.transpiler.passes.scheduling.DynamicCircuitScheduleAnalysis`
+        :class:`~qiskit_ibm_provider.transpiler.passes.scheduling.ALAPScheduleAnalysis`
         before running dynamical decoupling to guarantee your circuit satisfies acquisition
         alignment constraints for dynamic circuit backends.
     """
@@ -108,21 +109,27 @@ class PadDynamicalDecoupling(BlockBasePadder):
     def __init__(
         self,
         durations: InstructionDurations,
-        dd_sequence: List[Gate],
+        dd_sequences: Union[List[Gate], List[List[Gate]]],
         qubits: Optional[List[int]] = None,
-        spacing: Optional[List[float]] = None,
+        spacings: Optional[Union[List[List[float]], List[float]]] = None,
         skip_reset_qubits: bool = True,
-        pulse_alignment: int = 1,
+        pulse_alignment: int = 16,
         extra_slack_distribution: str = "middle",
+        sequence_min_length_ratios: Optional[Union[int, List[int]]] = None,
+        insert_multiple_cycles: bool = False,
     ):
         """Dynamical decoupling initializer.
 
         Args:
             durations: Durations of instructions to be used in scheduling.
-            dd_sequence: Sequence of gates to apply in idle spots.
+            dd_sequences: Sequence of gates to apply in idle spots.
+                Alternatively a list of gate sequences may be supplied that
+                will preferentially be inserted if there is a delay of sufficient
+                duration. This may be tuned by the optionally supplied
+                ``sequence_min_length_ratios``.
             qubits: Physical qubits on which to apply DD.
                 If None, all qubits will undergo DD (when possible).
-            spacing: A list of spacings between the DD gates.
+            spacings: A list of lists of spacings between the DD gates.
                 The available slack will be divided according to this.
                 The list length must be one more than the length of dd_sequence,
                 and the elements must sum to 1. If None, a balanced spacing
@@ -146,6 +153,11 @@ class PadDynamicalDecoupling(BlockBasePadder):
                     * "middle": Put the extra slack to the interval at the middle of the sequence.
                     * "edges": Divide the extra slack as evenly as possible into
                       intervals at beginning and end of the sequence.
+            sequence_min_length_ratios: List of minimum delay length to DD sequence ratio to satisfy
+                in order to insert the DD sequence. Defaults to a value of 2.0.
+            insert_multiple_cycles: If the available duration exceeds
+                2*sequence_min_length_ratio*duration(dd_sequence) enable the insertion of multiple
+                rounds of the dynamical decoupling sequence in that delay.
         Raises:
             TranspilerError: When invalid DD sequence is specified.
             TranspilerError: When pulse gate with the duration which is
@@ -154,85 +166,131 @@ class PadDynamicalDecoupling(BlockBasePadder):
 
         super().__init__()
         self._durations = durations
-        self._dd_sequence = dd_sequence
+        # Enforce list of DD sequences
+        if dd_sequences:
+            try:
+                iter(dd_sequences[0])
+            except TypeError:
+                dd_sequences = [dd_sequences]
+        self._dd_sequences = dd_sequences
         self._qubits = qubits
         self._skip_reset_qubits = skip_reset_qubits
         self._alignment = pulse_alignment
-        self._spacing = spacing
+
+        if spacings is not None:
+            try:
+                iter(spacings[0])  # type: ignore
+            except TypeError:
+                spacings = [spacings]  # type: ignore
+        self._spacings = spacings
+
+        if self._spacings and len(self._spacings) != len(self._dd_sequences):
+            raise TranspilerError(
+                "Number of sequence spacings must equal number of DD sequences."
+            )
+
         self._extra_slack_distribution = extra_slack_distribution
 
-        self._dd_sequence_lengths: Dict[Qubit, list] = {}
+        self._dd_sequence_lengths: Dict[Qubit, List[List[Gate]]] = {}
         self._sequence_phase = 0
+
+        if sequence_min_length_ratios is None:
+            # Use 2.0 as a sane default
+            self._sequence_min_length_ratios = [2.0 for _ in self._dd_sequences]
+        else:
+            try:
+                iter(sequence_min_length_ratios)  # type: ignore
+            except TypeError:
+                sequence_min_length_ratios = [sequence_min_length_ratios]  # type: ignore
+            self._sequence_min_length_ratios = sequence_min_length_ratios  # type: ignore
+
+        if len(self._sequence_min_length_ratios) != len(self._dd_sequences):
+            raise TranspilerError(
+                "Number of sequence lengths must equal number of DD sequences."
+            )
+
+        self._insert_multiple_cycles = insert_multiple_cycles
 
     def _pre_runhook(self, dag: DAGCircuit) -> None:
         super()._pre_runhook(dag)
 
-        num_pulses = len(self._dd_sequence)
+        spacings_required = self._spacings is None
+        if spacings_required:
+            self._spacings = []  # type: ignore
 
-        # Check if physical circuit is given
-        if len(dag.qregs) != 1 or dag.qregs.get("q", None) is None:
-            raise TranspilerError("DD runs on physical circuits only.")
+        for seq_idx, seq in enumerate(self._dd_sequences):
+            num_pulses = len(self._dd_sequences[seq_idx])
 
-        # Set default spacing otherwise validate user input
-        if self._spacing is None:
-            mid = 1 / num_pulses
-            end = mid / 2
-            self._spacing = [end] + [mid] * (num_pulses - 1) + [end]
-        else:
-            if sum(self._spacing) != 1 or any(a < 0 for a in self._spacing):
-                raise TranspilerError(
-                    "The spacings must be given in terms of fractions "
-                    "of the slack period and sum to 1."
-                )
+            # Check if physical circuit is given
+            if len(dag.qregs) != 1 or dag.qregs.get("q", None) is None:
+                raise TranspilerError("DD runs on physical circuits only.")
 
-        # Check if DD sequence is identity
-        if num_pulses != 1:
-            if num_pulses % 2 != 0:
-                raise TranspilerError(
-                    "DD sequence must contain an even number of gates (or 1)."
-                )
-            # TODO: this check should use the quantum info package in Qiskit.
-            noop = np.eye(2)
-            for gate in self._dd_sequence:
-                noop = noop.dot(gate.to_matrix())
-            if not matrix_equal(noop, IGate().to_matrix(), ignore_phase=True):
-                raise TranspilerError(
-                    "The DD sequence does not make an identity operation."
-                )
-            self._sequence_phase = np.angle(noop[0][0])
+            # Set default spacing otherwise validate user input
+            if spacings_required:
+                mid = 1 / num_pulses
+                end = mid / 2
+                self._spacings.append([end] + [mid] * (num_pulses - 1) + [end])  # type: ignore
+            else:
+                if sum(self._spacings[seq_idx]) != 1 or any(  # type: ignore
+                    a < 0 for a in self._spacings[seq_idx]  # type: ignore
+                ):
+                    raise TranspilerError(
+                        "The spacings must be given in terms of fractions "
+                        "of the slack period and sum to 1."
+                    )
 
-        # Precompute qubit-wise DD sequence length for performance
-        for qubit in dag.qubits:
-            physical_index = dag.qubits.index(qubit)
-            if self._qubits and physical_index not in self._qubits:
-                continue
+            # Check if DD sequence is identity
+            if num_pulses != 1:
+                if num_pulses % 2 != 0:
+                    raise TranspilerError(
+                        "DD sequence must contain an even number of gates (or 1)."
+                    )
+                # TODO: this check should use the quantum info package in Qiskit.
+                noop = np.eye(2)
+                for gate in self._dd_sequences[seq_idx]:
+                    noop = noop.dot(gate.to_matrix())
+                if not matrix_equal(noop, IGate().to_matrix(), ignore_phase=True):
+                    raise TranspilerError(
+                        "The DD sequence does not make an identity operation."
+                    )
+                self._sequence_phase = np.angle(noop[0][0])
 
-            sequence_lengths = []
-            for gate in self._dd_sequence:
-                try:
-                    # Check calibration.
-                    gate_length = dag.calibrations[gate.name][
-                        (physical_index, gate.params)
-                    ]
-                    if gate_length % self._alignment != 0:
-                        # This is necessary to implement lightweight scheduling logic for this pass.
-                        # Usually the pulse alignment constraint and pulse data chunk size take
-                        # the same value, however, we can intentionally violate this pattern
-                        # at the gate level. For example, we can create a schedule consisting of
-                        # a pi-pulse of 32 dt followed by a post buffer, i.e. delay, of 4 dt
-                        # on the device with 16 dt constraint. Note that the pi-pulse length
-                        # is multiple of 16 dt but the gate length of 36 is not multiple of it.
-                        # Such pulse gate should be excluded.
-                        raise TranspilerError(
-                            f"Pulse gate {gate.name} with length non-multiple of {self._alignment} "
-                            f"is not acceptable in {self.__class__.__name__} pass."
-                        )
-                except KeyError:
-                    gate_length = self._durations.get(gate, physical_index)
-                sequence_lengths.append(gate_length)
-                # Update gate duration. This is necessary for current timeline drawer, i.e. scheduled.
-                gate.duration = gate_length
-            self._dd_sequence_lengths[qubit] = sequence_lengths
+            # Precompute qubit-wise DD sequence length for performance
+            for qubit in dag.qubits:
+                seq_length_ = []
+                if qubit not in self._dd_sequence_lengths:
+                    self._dd_sequence_lengths[qubit] = []
+
+                physical_index = dag.qubits.index(qubit)
+                if self._qubits and physical_index not in self._qubits:
+                    continue
+
+                for gate in seq:
+                    try:
+                        # Check calibration.
+                        gate_length = dag.calibrations[gate.name][
+                            (physical_index, gate.params)
+                        ]
+                        if gate_length % self._alignment != 0:
+                            # This is necessary to implement lightweight scheduling logic for this pass.
+                            # Usually the pulse alignment constraint and pulse data chunk size take
+                            # the same value, however, we can intentionally violate this pattern
+                            # at the gate level. For example, we can create a schedule consisting of
+                            # a pi-pulse of 32 dt followed by a post buffer, i.e. delay, of 4 dt
+                            # on the device with 16 dt constraint. Note that the pi-pulse length
+                            # is multiple of 16 dt but the gate length of 36 is not multiple of it.
+                            # Such pulse gate should be excluded.
+                            raise TranspilerError(
+                                f"Pulse gate {gate.name} with length non-multiple of {self._alignment} "
+                                f"is not acceptable in {self.__class__.__name__} pass."
+                            )
+                    except KeyError:
+                        gate_length = self._durations.get(gate, physical_index)
+                    seq_length_.append(gate_length)
+                    # Update gate duration.
+                    # This is necessary for current timeline drawer, i.e. scheduled.
+                    gate.duration = gate_length
+                self._dd_sequence_lengths[qubit].append(seq_length_)
 
     def _pad(
         self,
@@ -290,89 +348,126 @@ class PadDynamicalDecoupling(BlockBasePadder):
             )
             return
 
-        slack = time_interval - np.sum(self._dd_sequence_lengths[qubit])
-        sequence_gphase = self._sequence_phase
+        for sequence_idx, _ in enumerate(self._dd_sequences):
+            dd_sequence = self._dd_sequences[sequence_idx]
+            seq_lengths = self._dd_sequence_lengths[qubit][sequence_idx]
+            seq_length = np.sum(seq_lengths)
+            seq_ratio = self._sequence_min_length_ratios[sequence_idx]
+            spacings = self._spacings[sequence_idx]
 
-        if slack <= 0:
-            # Interval too short.
-            self._apply_scheduled_op(
-                block_idx, t_start, Delay(time_interval, self._dag.unit), qubit
+            # Verify the delay duration exceeds the minimum time to insert
+            if time_interval / seq_length <= seq_ratio:
+                continue
+
+            if self._insert_multiple_cycles:
+                num_sequences = max(int(time_interval // (seq_length * seq_ratio)), 1)
+                if (num_sequences % 2 == 1) and len(dd_sequence) == 1:
+                    warnings.warn(
+                        "Sequence would result in an odd number of DD cycles with original DD "
+                        "sequence of length 1. This may result in non-identity sequence insertion "
+                        "and so are defaulting to 1 cycle insertion."
+                    )
+                    num_sequences = 1
+            else:
+                num_sequences = 1
+
+            # multiple dd sequences may be inserted
+            if num_sequences > 1:
+                dd_sequence = list(dd_sequence) * num_sequences
+                spacings = spacings * num_sequences
+                seq_lengths = seq_lengths * num_sequences
+                seq_length = np.sum(seq_lengths)
+
+            spacings = np.asarray(spacings) / num_sequences
+            slack = time_interval - seq_length
+            sequence_gphase = self._sequence_phase
+
+            if slack <= 0:
+                continue
+
+            if len(dd_sequence) == 1:
+                # Special case of using a single gate for DD
+                u_inv = dd_sequence[0].inverse().to_matrix()
+                theta, phi, lam, phase = OneQubitEulerDecomposer().angles_and_phase(
+                    u_inv
+                )
+                if isinstance(next_node, DAGOpNode) and isinstance(
+                    next_node.op, (UGate, U3Gate)
+                ):
+                    # Absorb the inverse into the successor (from left in circuit)
+                    theta_r, phi_r, lam_r = next_node.op.params
+                    next_node.op.params = Optimize1qGates.compose_u3(
+                        theta_r, phi_r, lam_r, theta, phi, lam
+                    )
+                    sequence_gphase += phase
+                elif isinstance(prev_node, DAGOpNode) and isinstance(
+                    prev_node.op, (UGate, U3Gate)
+                ):
+                    # Absorb the inverse into the predecessor (from right in circuit)
+                    theta_l, phi_l, lam_l = prev_node.op.params
+                    prev_node.op.params = Optimize1qGates.compose_u3(
+                        theta, phi, lam, theta_l, phi_l, lam_l
+                    )
+                    sequence_gphase += phase
+                else:
+                    # Don't do anything if there's no single-qubit gate to absorb the inverse
+                    self._apply_scheduled_op(
+                        block_idx, t_start, Delay(time_interval, self._dag.unit), qubit
+                    )
+                    return
+
+            def _constrained_length(values: np.array) -> np.array:
+                return self._alignment * np.floor(values / self._alignment)
+
+            # (1) Compute DD intervals satisfying the constraint
+            taus = _constrained_length(slack * spacings)
+            extra_slack = slack - np.sum(taus)
+            # (2) Distribute extra slack
+            if self._extra_slack_distribution == "middle":
+                mid_ind = int((len(taus) - 1) / 2)
+                to_middle = _constrained_length(extra_slack)
+                taus[mid_ind] += to_middle
+                if extra_slack - to_middle:
+                    # If to_middle is not a multiple value of the pulse alignment,
+                    # it is truncated to the nearest multiple value and
+                    # the rest of slack is added to the end.
+                    taus[-1] += extra_slack - to_middle
+            elif self._extra_slack_distribution == "edges":
+                to_begin_edge = _constrained_length(extra_slack / 2)
+                taus[0] += to_begin_edge
+                taus[-1] += extra_slack - to_begin_edge
+            else:
+                raise TranspilerError(
+                    f"Option extra_slack_distribution = {self._extra_slack_distribution} is invalid."
+                )
+
+            # (3) Construct DD sequence with delays
+            num_elements = max(len(dd_sequence), len(taus))
+            idle_after = t_start
+            for dd_ind in range(num_elements):
+                if dd_ind < len(taus):
+                    tau = taus[dd_ind]
+                    if tau > 0:
+                        self._apply_scheduled_op(
+                            block_idx, idle_after, Delay(tau, self._dag.unit), qubit
+                        )
+                        idle_after += tau
+                if dd_ind < len(dd_sequence):
+                    gate = dd_sequence[dd_ind]
+                    gate_length = seq_lengths[dd_ind]
+                    self._apply_scheduled_op(block_idx, idle_after, gate, qubit)
+                    idle_after += gate_length
+
+            self._dag.global_phase = self._mod_2pi(
+                self._dag.global_phase + sequence_gphase
             )
             return
 
-        if len(self._dd_sequence) == 1:
-            # Special case of using a single gate for DD
-            u_inv = self._dd_sequence[0].inverse().to_matrix()
-            theta, phi, lam, phase = OneQubitEulerDecomposer().angles_and_phase(u_inv)
-            if isinstance(next_node, DAGOpNode) and isinstance(
-                next_node.op, (UGate, U3Gate)
-            ):
-                # Absorb the inverse into the successor (from left in circuit)
-                theta_r, phi_r, lam_r = next_node.op.params
-                next_node.op.params = Optimize1qGates.compose_u3(
-                    theta_r, phi_r, lam_r, theta, phi, lam
-                )
-                sequence_gphase += phase
-            elif isinstance(prev_node, DAGOpNode) and isinstance(
-                prev_node.op, (UGate, U3Gate)
-            ):
-                # Absorb the inverse into the predecessor (from right in circuit)
-                theta_l, phi_l, lam_l = prev_node.op.params
-                prev_node.op.params = Optimize1qGates.compose_u3(
-                    theta, phi, lam, theta_l, phi_l, lam_l
-                )
-                sequence_gphase += phase
-            else:
-                # Don't do anything if there's no single-qubit gate to absorb the inverse
-                self._apply_scheduled_op(
-                    block_idx, t_start, Delay(time_interval, self._dag.unit), qubit
-                )
-                return
-
-        def _constrained_length(values: np.array) -> np.array:
-            return self._alignment * np.floor(values / self._alignment)
-
-        # (1) Compute DD intervals satisfying the constraint
-        taus = _constrained_length(slack * np.asarray(self._spacing))
-        extra_slack = slack - np.sum(taus)
-
-        # (2) Distribute extra slack
-        if self._extra_slack_distribution == "middle":
-            mid_ind = int((len(taus) - 1) / 2)
-            to_middle = _constrained_length(extra_slack)
-            taus[mid_ind] += to_middle
-            if extra_slack - to_middle:
-                # If to_middle is not a multiple value of the pulse alignment,
-                # it is truncated to the nearlest multiple value and
-                # the rest of slack is added to the end.
-                taus[-1] += extra_slack - to_middle
-        elif self._extra_slack_distribution == "edges":
-            to_begin_edge = _constrained_length(extra_slack / 2)
-            taus[0] += to_begin_edge
-            taus[-1] += extra_slack - to_begin_edge
-        else:
-            raise TranspilerError(
-                f"Option extra_slack_distribution = {self._extra_slack_distribution} is invalid."
-            )
-
-        # (3) Construct DD sequence with delays
-        num_elements = max(len(self._dd_sequence), len(taus))
-        idle_after = t_start
-        for dd_ind in range(num_elements):
-            if dd_ind < len(taus):
-                tau = taus[dd_ind]
-                if tau > 0:
-                    self._apply_scheduled_op(
-                        block_idx, idle_after, Delay(tau, self._dag.unit), qubit
-                    )
-                    idle_after += tau
-            if dd_ind < len(self._dd_sequence):
-                gate = self._dd_sequence[dd_ind]
-                gate_length = self._dd_sequence_lengths[qubit][dd_ind]
-                self._apply_scheduled_op(block_idx, idle_after, gate, qubit)
-                idle_after += gate_length
-
-        self._dag.global_phase = self._mod_2pi(self._dag.global_phase + sequence_gphase)
+        # DD could not be applied, delay instead
+        self._apply_scheduled_op(
+            block_idx, t_start, Delay(time_interval, self._dag.unit), qubit
+        )
+        return
 
     @staticmethod
     def _mod_2pi(angle: float, atol: float = 0) -> float:
