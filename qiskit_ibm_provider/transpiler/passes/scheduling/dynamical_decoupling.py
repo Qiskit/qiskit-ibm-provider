@@ -363,7 +363,9 @@ class PadDynamicalDecoupling(BlockBasePadder):
                 num_sequences = max(int(time_interval // (seq_length * seq_ratio)), 1)
                 if (num_sequences % 2 == 1) and len(dd_sequence) == 1:
                     warnings.warn(
-                        "Sequence would result in an odd number of DD cycles with original DD sequence of length 1. This may result in non-identity sequence insertion and so are defaulting to 1 cycle insertion."
+                        "Sequence would result in an odd number of DD cycles with original DD "
+                        "sequence of length 1. This may result in non-identity sequence insertion "
+                        "and so are defaulting to 1 cycle insertion."
                     )
                     num_sequences = 1
             else:
