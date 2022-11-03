@@ -371,11 +371,7 @@ class PadDynamicalDecoupling(BlockBasePadder):
             sequence_gphase = self._sequence_phase
 
             if slack <= 0:
-                # Interval too short.
-                self._apply_scheduled_op(
-                    block_idx, t_start, Delay(time_interval, self._dag.unit), qubit
-                )
-                return
+                continue
 
             if len(dd_sequence) == 1:
                 # Special case of using a single gate for DD
@@ -454,6 +450,12 @@ class PadDynamicalDecoupling(BlockBasePadder):
                 self._dag.global_phase + sequence_gphase
             )
             return
+
+        # DD could not be applied, delay instead
+        self._apply_scheduled_op(
+            block_idx, t_start, Delay(time_interval, self._dag.unit), qubit
+        )
+        return
 
     @staticmethod
     def _mod_2pi(angle: float, atol: float = 0) -> float:
