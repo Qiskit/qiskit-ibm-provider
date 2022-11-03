@@ -12,6 +12,10 @@
 This project contains a provider that allows accessing the **[IBM Quantum]**
 systems and simulators.
 
+## Migrating from qiskit-ibmq-provider
+
+If you are familiar with the `qiskit-ibmq-provider` repository, check out the [migration guide].
+
 ## Installation
 
 You can install the provider using pip:
@@ -111,3 +115,4 @@ project at different levels. If you use Qiskit, please cite as per the included
 [Qiskit]: https://github.com/Qiskit/qiskit-tutorial
 [BibTeX file]: https://github.com/Qiskit/qiskit/blob/master/Qiskit.bib
 [Apache License 2.0]: https://github.com/Qiskit/qiskit-ibm-provider/blob/main/LICENSE.txt
+[migration guide]: https://github.com/Qiskit/qiskit-ibm-provider/blob/main/docs/tutorials/Migration_Guide_from_qiskit-ibmq-provider.ipynb
