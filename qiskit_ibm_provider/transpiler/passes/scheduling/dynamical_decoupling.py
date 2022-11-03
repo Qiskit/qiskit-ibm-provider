@@ -12,6 +12,7 @@
 
 """Dynamical decoupling insertion pass for IBM (dynamic circuit) backends."""
 
+import warnings
 from typing import Dict, List, Optional, Union
 
 import numpy as np
@@ -184,7 +185,9 @@ class PadDynamicalDecoupling(BlockBasePadder):
         self._spacings = spacings
 
         if self._spacings and len(self._spacings) != len(self._dd_sequences):
-            raise TranspilerError("Number of sequence spacings must equal number of DD sequences.")
+            raise TranspilerError(
+                "Number of sequence spacings must equal number of DD sequences."
+            )
 
         self._extra_slack_distribution = extra_slack_distribution
 
@@ -202,7 +205,9 @@ class PadDynamicalDecoupling(BlockBasePadder):
             self._sequence_min_length_ratios = sequence_min_length_ratios  # type: ignore
 
         if len(self._sequence_min_length_ratios) != len(self._dd_sequences):
-            raise TranspilerError("Number of sequence lengths must equal number of DD sequences.")
+            raise TranspilerError(
+                "Number of sequence lengths must equal number of DD sequences."
+            )
 
         self._insert_multiple_cycles = insert_multiple_cycles
 
@@ -356,6 +361,11 @@ class PadDynamicalDecoupling(BlockBasePadder):
 
             if self._insert_multiple_cycles:
                 num_sequences = max(int(time_interval // (seq_length * seq_ratio)), 1)
+                if (num_sequences % 2 == 1) and len(dd_sequence) == 1:
+                    warnings.warn(
+                        "Sequence would result in an odd number of DD cycles with original DD sequence of length 1. This may result in non-identity sequence insertion and so are defaulting to 1 cycle insertion."
+                    )
+                    num_sequences = 1
             else:
                 num_sequences = 1
 
