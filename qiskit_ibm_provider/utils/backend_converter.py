@@ -145,7 +145,7 @@ def convert_to_target(
     # Handle control flow opeartions as globally support in the target
     for control_flow_op_name, op_class in control_flow_map.items():
         if (
-            control_flow_op_name in configuration.supported_instructions
+            control_flow_op_name in getattr(configuration, "supported_instructions", {})
             or control_flow_op_name in configuration.basis_gates
         ):
             target.add_instruction(op_class, name=control_flow_op_name)
