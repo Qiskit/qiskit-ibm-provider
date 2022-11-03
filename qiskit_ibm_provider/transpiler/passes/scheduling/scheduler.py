@@ -665,6 +665,7 @@ class ALAPScheduleAnalysis(BaseDynamicCircuitAnalysis):
             tied_nodes = self._node_tied_to.get(node, None)
             if tied_nodes is not None:
                 # Take the minimum time that will be schedulable
+                # self._node_tied_to includes the node itself.
                 new_times = [
                     _calculate_new_times(block, tied_node, block_bit_times)
                     for tied_node in self._node_tied_to[node]
