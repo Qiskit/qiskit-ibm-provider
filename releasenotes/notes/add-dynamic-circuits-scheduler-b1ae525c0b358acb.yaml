@@ -1,7 +1,7 @@
 ---
 features:
   - |
-    A scheduling analysis pass, :class:`~qiskit_ibm_provider.transpiler.passes.scheduling.DynamicCircuitScheduleAnalysis`
+    A scheduling analysis pass, :class:`~qiskit_ibm_provider.transpiler.passes.scheduling.ASAPScheduleAnalysis`
     has been added for Qiskit dynamic circuit (OpenQASM 3) backends. This is capable of handling
     scheduling for deterministic regions of a quantum circuit and may combined with a padding pass such as
     :class:`~qiskit_ibm_provider.transpiler.passes.scheduling.PadDelay` to pad schedulable sections of a
