@@ -522,15 +522,15 @@ class IBMBackend(Backend):
 
         backend_options = self._options.__dict__
         for key, val in kwargs.items():
-            if val is None and backend_options.get(key) is not None and key in fields:
-                run_config_dict[key] = backend_options[key]
-            elif val is not None:
+            if val is not None:
                 run_config_dict[key] = val
                 if key not in fields and not self.configuration().simulator:
                     warnings.warn(  # type: ignore[unreachable]
                         f"{key} is not a recognized runtime option and may be ignored by the backend.",
                         stacklevel=4,
                     )
+            elif backend_options.get(key) is not None and key in fields:
+                run_config_dict[key] = backend_options[key]
         return run_config_dict
 
     def properties(
