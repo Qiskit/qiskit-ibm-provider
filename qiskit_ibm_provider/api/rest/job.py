@@ -13,12 +13,9 @@
 """Job REST adapter."""
 
 import logging
-import json
 from json.decoder import JSONDecodeError
 
-from typing import Union, Dict, List, Any
-
-from qiskit_ibm_provider.utils import json_encoder
+from typing import Dict, Any
 
 from .base import RestAdapterBase
 from ..session import RetrySession
@@ -32,16 +29,10 @@ class Job(RestAdapterBase):
     """Rest adapter for job related endpoints."""
 
     URL_MAP = {
-        "callback_upload": "/jobDataUploaded",
-        "callback_download": "/resultDownloaded",
         "cancel": "/cancel",
-        "download_url": "/jobDownloadUrl",
         "self": "/v/1",
-        "self_update": "",
         "status": "/status",
         "properties": "/properties",
-        "result_url": "/resultDownloadUrl",
-        "upload_url": "/jobUploadUrl",
         "delete": "",
     }
 
@@ -74,47 +65,6 @@ class Job(RestAdapterBase):
 
         return response
 
-    def update_attribute(
-        self, job_attribute_info: Dict[str, Union[str, List[str]]]
-    ) -> Dict[str, Any]:
-        """Edit the specified attribute for the job.
-
-        Args:
-            job_attribute_info: A dictionary containing the name of the attribute to
-                update and the new value it should be associated with. The format is
-                {`attribute_name_to_update`: `new_attribute_value`}.
-
-        Returns:
-            JSON response containing the name of the updated attribute and its
-            corresponding value.
-        """
-        url = self.get_url("self_update")
-        return self.session.put(
-            url,
-            data=json.dumps(job_attribute_info),
-            headers={"Content-Type": "application/json"},
-        ).json()
-
-    def callback_upload(self) -> Dict[str, Any]:
-        """Notify the API after uploading a ``Qobj`` via object storage.
-
-        Returns:
-            JSON response.
-        """
-        url = self.get_url("callback_upload")
-        data = self.session.post(url).json()
-        mapped_response = {"job": map_job_response(data["job"])}
-        return mapped_response
-
-    def callback_download(self) -> Dict[str, Any]:
-        """Notify the API after downloading a ``Qobj`` via object storage.
-
-        Returns:
-            JSON response.
-        """
-        url = self.get_url("callback_download")
-        return self.session.post(url).json()
-
     def cancel(self) -> Dict[str, Any]:
         """Cancel a job.
 
@@ -124,15 +74,6 @@ class Job(RestAdapterBase):
         url = self.get_url("cancel")
         return self.session.post(url).json()
 
-    def download_url(self) -> Dict[str, Any]:
-        """Return an object storage URL for downloading the ``Qobj``.
-
-        Returns:
-            JSON response.
-        """
-        url = self.get_url("download_url")
-        return self.session.get(url).json()
-
     def properties(self) -> Dict[str, Any]:
         """Return the backend properties of a job.
 
@@ -140,15 +81,6 @@ class Job(RestAdapterBase):
             JSON response.
         """
         url = self.get_url("properties")
-        return self.session.get(url).json()
-
-    def result_url(self) -> Dict[str, Any]:
-        """Return an object storage URL for downloading results.
-
-        Returns:
-            JSON response.
-        """
-        url = self.get_url("result_url")
         return self.session.get(url).json()
 
     def status(self) -> Dict[str, Any]:
@@ -170,49 +102,6 @@ class Job(RestAdapterBase):
                 " by too many requests.".format(raw_response.content)
             ) from err
         return map_job_status_response(api_response)
-
-    def upload_url(self) -> Dict[str, Any]:
-        """Return an object storage URL for uploading the ``Qobj``.
-
-        Returns:
-            JSON response.
-        """
-        url = self.get_url("upload_url")
-        return self.session.get(url).json()
-
-    def put_object_storage(self, url: str, qobj_dict: Dict[str, Any]) -> str:
-        """Upload a ``Qobj`` via object storage.
-
-        Args:
-            url: Object storage URL.
-            qobj_dict: The ``Qobj`` to be uploaded, in dictionary form.
-
-        Returns:
-            Text response, which is empty if the request was successful.
-        """
-        data = json.dumps(qobj_dict, cls=json_encoder.IBMJsonEncoder)
-        logger.debug("Uploading to object storage.")
-        response = self.session.put(
-            url,
-            data=data,
-            bare=True,
-            timeout=600,
-            headers={"Content-Type": "application/json"},
-        )
-        return response.text
-
-    def get_object_storage(self, url: str) -> Dict[str, Any]:
-        """Get via object_storage.
-
-        Args:
-            url: Object storage URL.
-
-        Returns:
-            JSON response.
-        """
-        logger.debug("Downloading from object storage.")
-        response = self.session.get(url, bare=True, timeout=600).json()
-        return response
 
     def delete(self) -> None:
         """Mark job for deletion."""
