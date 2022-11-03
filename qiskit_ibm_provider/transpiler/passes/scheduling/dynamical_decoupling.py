@@ -183,6 +183,9 @@ class PadDynamicalDecoupling(BlockBasePadder):
                 spacings = [spacings]  # type: ignore
         self._spacings = spacings
 
+        if self._spacings and len(self._spacings) != len(self._dd_sequences):
+            raise TranspilerError("Number of sequence spacings must equal number of DD sequences.")
+
         self._extra_slack_distribution = extra_slack_distribution
 
         self._dd_sequence_lengths: Dict[Qubit, List[List[Gate]]] = {}
@@ -197,6 +200,9 @@ class PadDynamicalDecoupling(BlockBasePadder):
             except TypeError:
                 sequence_min_length_ratios = [sequence_min_length_ratios]  # type: ignore
             self._sequence_min_length_ratios = sequence_min_length_ratios  # type: ignore
+
+        if len(self._sequence_min_length_ratios) != len(self._dd_sequences):
+            raise TranspilerError("Number of sequence lengths must equal number of DD sequences.")
 
         self._insert_multiple_cycles = insert_multiple_cycles
 
