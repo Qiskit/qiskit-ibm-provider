@@ -361,7 +361,7 @@ class PadDynamicalDecoupling(BlockBasePadder):
 
             # multiple dd sequences may be inserted
             if num_sequences > 1:
-                dd_sequence = dd_sequence * num_sequences
+                dd_sequence = list(dd_sequence) * num_sequences
                 spacings = spacings * num_sequences
                 seq_lengths = seq_lengths * num_sequences
                 seq_length = np.sum(seq_lengths)
