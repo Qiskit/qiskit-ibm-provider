@@ -1,11 +1,12 @@
 ---
 prelude: >
-    `qiskit-ibm-provider` is a new Python API client for accessing the quantum
-    systems and simulators at IBM Quantum.
+  `qiskit-ibm-provider` is a new Python API client for accessing the quantum
+  systems and simulators at IBM Quantum.
 
-    This new package is built upon the work already done in `qiskit.providers.ibmq.backend`
-    module in the `qiskit-ibmq-provider` package and replaces it going forward. The `backend`
-    module in `qiskit-ibmq-provider` package is now deprecated.
+  This new package is built upon the work already done in `qiskit.providers.ibmq.backend`
+  module in the `qiskit-ibmq-provider` package and replaces it going forward. The `backend`
+  module in `qiskit-ibmq-provider` package is now deprecated. Please take a look at the mirgraion guide
+  `here <https://github.com/Qiskit/qiskit-ibm-provider/blob/main/docs/tutorials/Migration_Guide_from_qiskit-ibmq-provider.ipynb>`_.
 
-    `qiskit-ibm-provider` is not included as part of `Qiskit` meta package and thereby you have to
-    install it separately using ``pip install qiskit-ibm-provider``.
+  `qiskit-ibm-provider` is not included as part of `Qiskit` meta package and thereby you have to
+  install it separately using ``pip install qiskit-ibm-provider``.
