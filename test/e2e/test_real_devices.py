@@ -193,8 +193,9 @@ class TestRealDevices(IBMTestCase):
         job = self.real_device_backend.run(
             transpile(qc1, backend=self.real_device_backend), header=custom_header
         )
-        job.wait_for_final_state()
+        result = job.result()
         self.assertTrue(custom_header.items() <= job.header().items())
+        self.assertTrue(custom_header.items() <= result.header.to_dict().items())
         # self.assertEqual(result.results[0].header.some_field, 'extra info')
 
     def test_websockets_device(self):
