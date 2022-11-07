@@ -1,0 +1,24 @@
+---
+upgrade:
+  - |
+    The dynamic circuits scheduling class (``DynamicCircuitScheduleAnalysis``)
+    has been renamed to
+    :class:`~qiskit_ibm_provider.transpiler.passes.scheduling.ASAPScheduleAnalysis`.
+features:
+  - |
+    A dynamical decoupling pass has been added for IBM Quantum dynamic circuit backends
+    :class:`~qiskit_ibm_provider.transpiler.passes.scheduling.PadDynamicalDecoupling`
+    to pad schedulable sections of a circuit with dynamical decoupling sequences.
+    It relies on having run the
+    :class:`~qiskit_ibm_provider.transpiler.passes.scheduling.ASAPScheduleAnalysis`
+    or
+    :class:`~qiskit_ibm_provider.transpiler.passes.scheduling.ALAPScheduleAnalysis`
+    analysis prior to the padding sequence.
+
+    For an example see the :mod:`~qiskit_ibm_provider.transpiler.passes.scheduling` module's documentation.
+  - |
+    Measurements no longer interrupt scheduling regions on dynamic circuit backends using the
+    :class:`~qiskit_ibm_provider.transpiler.passes.scheduling.ASAPScheduleAnalysis`
+  - |
+    Measurements and resets now merged topologically when scheduling
+    :class:`~qiskit_ibm_provider.transpiler.passes.scheduling.ASAPScheduleAnalysis`

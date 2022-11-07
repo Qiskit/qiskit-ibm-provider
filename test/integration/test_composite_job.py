@@ -853,6 +853,7 @@ class TestIBMCompositeJobIntegration(IBMTestCase):
                 for job_circ, rjob_circ in zip(job_circuits, rjob_circuits):
                     self.assertEqual(job_circ.data, rjob_circ.data)
 
+    @skip("Skip this test since it is not supported by the API.")
     def test_jobs(self):
         """Test retrieving a composite job using jobs."""
         job_tags = [uuid.uuid4().hex]
@@ -877,6 +878,7 @@ class TestIBMCompositeJobIntegration(IBMTestCase):
             else:
                 self.assertEqual(job.job_id(), circ_job.job_id())
 
+    @skip("Skip this test since it is not supported by the API.")
     def test_job_missing_subjobs(self):
         """Test retrieving a composite job with missing subjob."""
         job_tags = [uuid.uuid4().hex]

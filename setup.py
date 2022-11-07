@@ -27,6 +27,7 @@ REQUIREMENTS = [
     "python-dateutil>=2.8.0",
     "websocket-client<=1.3.3",
     "websockets>=10.0",
+    "typing_extensions>=4.3",
 ]
 
 # Handle version.
@@ -65,6 +66,7 @@ setuptools.setup(
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
         "Topic :: Scientific/Engineering",
     ],
     keywords="qiskit sdk quantum api ibmq",
@@ -90,5 +92,10 @@ setuptools.setup(
         "Bug Tracker": "https://github.com/Qiskit/qiskit-ibm-provider/issues",
         "Documentation": "https://qiskit.org/documentation/",
         "Source Code": "https://github.com/Qiskit/qiskit-ibm-provider",
+    },
+    entry_points={
+        "qiskit.transpiler.translation": [
+            "ibm_dynamic_circuits = qiskit_ibm_provider.transpiler.plugin:IBMTranslationPlugin",
+        ]
     },
 )

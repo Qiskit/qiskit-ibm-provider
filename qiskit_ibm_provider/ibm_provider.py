@@ -21,13 +21,12 @@ from typing import Dict, List, Optional, Any, Callable, Union
 from typing_extensions import Literal
 
 from qiskit.providers import ProviderV1 as Provider  # type: ignore[attr-defined]
-from qiskit.providers.jobstatus import JobStatus
 from qiskit.providers.backend import BackendV1 as Backend
 from qiskit.providers.exceptions import QiskitBackendNotFoundError
 
 from .accounts import AccountManager, Account
 from .api.client_parameters import ClientParameters
-from .api.clients import AuthClient, VersionClient
+from .api.clients import AuthClient, VersionClient, RuntimeClient
 from .apiconstants import QISKIT_IBM_API_URL
 from .exceptions import IBMAccountError
 from .exceptions import (
@@ -38,7 +37,6 @@ from .hub_group_project import HubGroupProject  # pylint: disable=cyclic-import
 from .ibm_backend import IBMBackend  # pylint: disable=cyclic-import
 from .ibm_backend_service import IBMBackendService  # pylint: disable=cyclic-import
 from .job import IBMJob  # pylint: disable=cyclic-import
-from .backendreservation import BackendReservation  # pylint: disable=cyclic-import
 from .proxies.configuration import ProxyConfiguration
 from .utils.hgp import to_instance_format, from_instance_format
 
@@ -174,6 +172,11 @@ class IBMProvider(Provider):
             verify=self._account.verify,
         )
         self._auth_client = self._authenticate_ibm_quantum_account(self._client_params)
+        self._client_params.url = self._auth_client.current_service_urls()["services"][
+            "runtime"
+        ]
+        self._client_params.token = self._auth_client.current_access_token()
+        self._runtime_client = RuntimeClient(self._client_params)
 
         self._hgps = self._initialize_hgps(self._auth_client)
         self._initialize_services()
@@ -438,7 +441,7 @@ class IBMProvider(Provider):
             True if the account was deleted.
             False if no account was found.
         """
-        return AccountManager.delete(name=name, channel="ibm_quantum")
+        return AccountManager.delete(name=name)
 
     @staticmethod
     def save_account(
@@ -453,7 +456,7 @@ class IBMProvider(Provider):
         """Save the account to disk for future use.
 
         Args:
-            token: IBM Cloud API key or IBM Quantum API token.
+            token: IBM Quantum API token.
             url: The API URL.
                 Defaults to https://auth.quantum-computing.ibm.com/api
             instance: The hub/group/project.
@@ -554,12 +557,10 @@ class IBMProvider(Provider):
         skip: int = 0,
         backend_name: Optional[str] = None,
         status: Optional[Literal["pending", "completed"]] = None,
-        job_name: Optional[str] = None,
         start_datetime: Optional[datetime] = None,
         end_datetime: Optional[datetime] = None,
         job_tags: Optional[List[str]] = None,
         descending: bool = True,
-        ignore_composite_jobs: bool = False,
         instance: Optional[str] = None,
     ) -> List[IBMJob]:
         """Return a list of jobs, subject to optional filtering.
@@ -575,10 +576,6 @@ class IBMProvider(Provider):
             skip: Starting index for the job retrieval.
             backend_name: Name of the backend to retrieve jobs from.
             status: Filter jobs with either "pending" or "completed" status.
-            job_name: Filter by job name. The `job_name` is matched partially
-                and `regular expressions
-                <https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions>`_
-                can be used.
             start_datetime: Filter by the given start date, in local time. This is used to
                 find jobs whose creation dates are after (greater than or equal to) this
                 local date/time.
@@ -588,9 +585,6 @@ class IBMProvider(Provider):
             job_tags: Filter by tags assigned to jobs. Matched jobs are associated with all tags.
             descending: If ``True``, return the jobs in descending order of the job
                 creation date (i.e. newest first) until the limit is reached.
-            ignore_composite_jobs: If ``True``, sub-jobs of a single
-                :class:`~qiskit_ibm_provider.job.IBMCompositeJob` will be
-                returned as individual jobs instead of merged together.
             instance: The provider in the hub/group/project format.
 
         Returns:
@@ -603,81 +597,14 @@ class IBMProvider(Provider):
             skip=skip,
             backend_name=backend_name,
             status=status,
-            job_name=job_name,
             start_datetime=start_datetime,
             end_datetime=end_datetime,
             job_tags=job_tags,
             descending=descending,
-            ignore_composite_jobs=ignore_composite_jobs,
             instance=instance,
         )
 
-    def job_ids(
-        self,
-        limit: Optional[int] = 10,
-        skip: int = 0,
-        backend_name: Optional[str] = None,
-        status: Optional[Union[JobStatus, str, List[Union[JobStatus, str]]]] = None,
-        job_name: Optional[str] = None,
-        start_datetime: Optional[datetime] = None,
-        end_datetime: Optional[datetime] = None,
-        job_tags: Optional[List[str]] = None,
-        job_tags_operator: Optional[str] = "OR",
-        descending: bool = True,
-    ) -> List[IBMJob]:
-        """Return a list of job IDs, subject to optional filtering.
-        Retrieve jobs that match the given filters and paginate the results
-        if desired. Note that the server has a limit for the number of jobs
-        returned in a single call. As a result, this function might involve
-        making several calls to the server.
-
-        Args:
-            limit: Number of jobs to retrieve. ``None`` means no limit.
-            skip: Starting index for the job retrieval.
-            backend_name: Name of the backend to retrieve jobs from.
-            status: Only get jobs with this status or one of the statuses. For example, you can specify
-                `status=JobStatus.RUNNING` or `status="RUNNING"` or `status=["RUNNING", "ERROR"]`
-            job_name: Filter by job name. The `job_name` is matched partially
-                and `regular expressions
-                <https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions>`_
-                can be used.
-            start_datetime: Filter by the given start date, in local time. This is used to
-                find jobs whose creation dates are after (greater than or equal to) this
-                local date/time.
-            end_datetime: Filter by the given end date, in local time. This is used to
-                find jobs whose creation dates are before (less than or equal to) this
-                local date/time.
-            job_tags: Filter by tags assigned to jobs.
-            job_tags_operator: Logical operator to use when filtering by job tags. Valid
-                values are "AND" and "OR":
-
-                    * If "AND" is specified, then a job must have all of the tags
-                        specified in ``job_tags`` to be included.
-                    * If "OR" is specified, then a job only needs to have any
-                        of the tags specified in ``job_tags`` to be included.
-
-            descending: If ``True``, return the jobs in descending order of the job
-                creation date (i.e. newest first) until the limit is reached.
-
-        Returns:
-            A list of ``IBMJob`` instances.
-
-        """
-
-        return self._backend.job_ids(
-            limit=limit,
-            skip=skip,
-            backend_name=backend_name,
-            status=status,
-            job_name=job_name,
-            start_datetime=start_datetime,
-            end_datetime=end_datetime,
-            job_tags=job_tags,
-            job_tags_operator=job_tags_operator,
-            descending=descending,
-        )
-
-    def job(self, job_id: str) -> IBMJob:
+    def retrieve_job(self, job_id: str) -> IBMJob:
         """Return a single job.
 
         Args:
@@ -686,16 +613,7 @@ class IBMProvider(Provider):
         Returns:
             The job with the given id.
         """
-        return self._backend.job(job_id=job_id)
-
-    def my_reservations(self) -> List[BackendReservation]:
-        """Return your upcoming reservations.
-
-        Returns:
-            A list of your upcoming reservations.
-        """
-
-        return self._backend.my_reservations()
+        return self._backend.retrieve_job(job_id=job_id)
 
     def get_backend(
         self,

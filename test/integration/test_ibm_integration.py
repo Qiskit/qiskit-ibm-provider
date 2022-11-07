@@ -31,8 +31,6 @@ from ..ibm_test_case import IBMTestCase
 class TestIBMIntegration(IBMTestCase):
     """Integration tests."""
 
-    seed = 42
-
     @classmethod
     @integration_test_setup_with_backend(simulator=False, min_num_qubits=2)
     def setUpClass(
@@ -61,7 +59,9 @@ class TestIBMIntegration(IBMTestCase):
         """Test components of a result from a remote simulator."""
         remote_result = execute(self._qc1, self.sim_backend).result()
         self.assertIsInstance(remote_result, Result)
-        self.assertEqual(remote_result.backend_name, self.sim_backend.name)
+        self.assertIn(
+            remote_result.backend_name, [self.sim_backend.name, "qasm_simulator"]
+        )
         self.assertIsInstance(remote_result.job_id, str)
         self.assertEqual(remote_result.status, "COMPLETED")
         self.assertEqual(remote_result.results[0].status, "DONE")
@@ -105,7 +105,6 @@ class TestIBMIntegration(IBMTestCase):
         circs = transpile(
             [quantum_circuit, qc_extra],
             backend=self.sim_backend,
-            seed_transpiler=self.seed,
         )
         job = self.sim_backend.run(circs)
         result = job.result()
@@ -116,9 +115,7 @@ class TestIBMIntegration(IBMTestCase):
         quantum_circuit = ReferenceCircuits.bell()
         qc_extra = QuantumCircuit(2, 2)
         qc_extra.measure_all()
-        job = execute(
-            [quantum_circuit, qc_extra], self.sim_backend, seed_transpiler=self.seed
-        )
+        job = execute([quantum_circuit, qc_extra], self.sim_backend)
         results = job.result()
         self.assertIsInstance(results, Result)
 
@@ -137,7 +134,7 @@ class TestIBMIntegration(IBMTestCase):
 
         # Wait a bit for databases to update.
         time.sleep(2)
-        rjob = self.dependencies.provider.backend.job(job.job_id())
+        rjob = self.dependencies.provider.backend.retrieve_job(job.job_id())
 
         with self.assertRaises(IBMJobApiError) as err_cm:
             rjob.circuits()

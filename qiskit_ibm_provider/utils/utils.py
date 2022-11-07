@@ -37,10 +37,12 @@ API_TO_JOB_STATUS = {
     ApiJobStatus.QUEUED: JobStatus.QUEUED,
     ApiJobStatus.COMPLETED: JobStatus.DONE,
     ApiJobStatus.CANCELLED: JobStatus.CANCELLED,
+    ApiJobStatus.CANCELLED_RAN_TOO_LONG: JobStatus.CANCELLED,
     ApiJobStatus.ERROR_CREATING_JOB: JobStatus.ERROR,
     ApiJobStatus.ERROR_VALIDATING_JOB: JobStatus.ERROR,
     ApiJobStatus.ERROR_RUNNING_JOB: JobStatus.ERROR,
     ApiJobStatus.ERROR_TRANSPILING_JOB: JobStatus.ERROR,
+    ApiJobStatus.FAILED: JobStatus.ERROR,
 }
 
 
@@ -54,6 +56,8 @@ def api_status_to_job_status(api_status: Union[str, ApiJobStatus]) -> JobStatus:
         Job status.
     """
     if isinstance(api_status, str):
+        if api_status.upper() == "CANCELLED - RAN TOO LONG":
+            api_status = "CANCELLED"
         api_status = ApiJobStatus(api_status.upper())
     return API_TO_JOB_STATUS[api_status]
 

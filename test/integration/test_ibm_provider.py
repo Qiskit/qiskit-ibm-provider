@@ -19,6 +19,7 @@ from qiskit import ClassicalRegister, QuantumCircuit, QuantumRegister
 from qiskit.compiler import transpile
 from qiskit.providers.exceptions import QiskitBackendNotFoundError
 from qiskit.providers.models.backendproperties import BackendProperties
+from qiskit.test.reference_circuits import ReferenceCircuits
 
 from qiskit_ibm_provider import hub_group_project
 from qiskit_ibm_provider.api.clients import AccountClient
@@ -63,7 +64,7 @@ class TestIBMProviderEnableAccount(IBMTestCase):
                 token=self.dependencies.token, url=self.dependencies.url
             )
         self.assertIsInstance(provider, IBMProvider)
-        self.assertEqual(provider._client_params.token, self.dependencies.token)
+        self.assertEqual(provider._account.token, self.dependencies.token)
 
     def test_pass_unreachable_proxy(self):
         """Test using an unreachable proxy while enabling an account."""
@@ -175,24 +176,27 @@ class TestIBMProviderServices(IBMTestCase):
     def test_jobs(self):
         """Test accessing jobs directly from the provider."""
         jobs = self.dependencies.provider.jobs()
-        job = self.dependencies.provider.job(jobs[0].job_id())
+        job = self.dependencies.provider.retrieve_job(jobs[0].job_id())
         self.assertIsInstance(job, IBMJob)
         self.assertTrue(len(jobs) > 0)
-
-    def test_job_ids(self):
-        """Test job_ids from the provider."""
-        job_ids = self.dependencies.provider.job_ids()
-        self.assertTrue(len(job_ids) > 0)
-
-    def test_reservations(self):
-        """Test my_reservations from the provider."""
-        reservations = self.dependencies.provider.my_reservations()
-        self.assertTrue(len(reservations) > 0)
 
     def test_get_backend(self):
         """Test getting a backend from the provider."""
         backend = self.dependencies.provider.get_backend(name=self.backend_name)
         self.assertEqual(backend.name, self.backend_name)
+
+    def test_backend_instance(self):
+        """Test that the instance is saved correctly."""
+        backend = self.dependencies.provider.get_backend(
+            name=self.backend_name, instance=self.instance
+        )
+        backends = self.dependencies.provider.backends(instance=self.instance)
+        job = backend.run(ReferenceCircuits.bell())
+        job2 = backends[0].run(ReferenceCircuits.bell())
+        self.assertEqual(self.instance, backend._instance)
+        self.assertEqual(self.instance, backends[0]._instance)
+        self.assertEqual(self.instance, job._backend._instance)
+        self.assertEqual(self.instance, job2._backend._instance)
 
     def test_remote_backends_exist_real_device(self):
         """Test if there are remote backends that are devices."""

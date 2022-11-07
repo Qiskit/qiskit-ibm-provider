@@ -14,9 +14,7 @@
 
 import ipywidgets as wid
 
-from qiskit_ibm_provider.utils.converters import duration_difference
 from .constants import (
-    RESERVATION_STR,
     RESERVATION_NONE,
     STAT_FONT_TITLE,
     STAT_FONT_VALUE,
@@ -24,7 +22,6 @@ from .constants import (
 )
 from .provider_buttons import provider_buttons
 from .utils import BackendWithProviders
-from ..utils import get_next_reservation
 from ...visualization.interactive import iplot_gate_map
 
 
@@ -44,7 +41,6 @@ def make_backend_widget(backend_item: BackendWithProviders) -> wid.HBox:
     status = backend.status()
     config = backend.configuration()
     props = backend.properties().to_dict()
-    next_resrv = get_next_reservation(backend)
 
     name_str = "<font size='5' face='monospace'>%s</font>"
     backend_name = wid.HTML(value=name_str % backend.name)
@@ -58,8 +54,6 @@ def make_backend_widget(backend_item: BackendWithProviders) -> wid.HBox:
     status_msg = status.status_msg
     if status_msg == "active":
         color = "#34BC6E"
-        if next_resrv:
-            status_msg += " [R]"
     if status_msg in ["maintenance", "internal"]:
         color = "#FFB000"
 
@@ -101,13 +95,7 @@ def make_backend_widget(backend_item: BackendWithProviders) -> wid.HBox:
 
     # Backend reservation.
     reservation_title = wid.HTML(value=STAT_FONT_TITLE.format("Reservation:"))
-    if next_resrv:
-        start_dt_str = duration_difference(next_resrv.start_datetime)
-        reservation_val = RESERVATION_STR.format(
-            start_dt=start_dt_str, duration=next_resrv.duration
-        )
-    else:
-        reservation_val = RESERVATION_NONE
+    reservation_val = RESERVATION_NONE
     reservation_val_wid = wid.HTML(value=reservation_val)
     reservation_wid = wid.HBox(children=[reservation_title, reservation_val_wid])
 

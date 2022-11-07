@@ -15,12 +15,12 @@
 import copy
 import logging
 import warnings
+from dataclasses import asdict
 from datetime import datetime as python_datetime
 from typing import Iterable, Dict, List, Union, Optional, Any
 
-from qiskit.circuit import QuantumCircuit, Parameter, Delay
+from qiskit.circuit import QuantumCircuit, Delay
 from qiskit.circuit.duration import duration_in_dt
-from qiskit.compiler import assemble
 from qiskit.providers.backend import BackendV2 as Backend
 from qiskit.providers.models import (
     BackendStatus,
@@ -39,33 +39,34 @@ from qiskit.pulse.channels import (
     DriveChannel,
     MeasureChannel,
 )
-from qiskit.qobj import QasmQobj, PulseQobj
+
 from qiskit.qobj.utils import MeasLevel, MeasReturnType
 from qiskit.tools.events.pubsub import Publisher
 from qiskit.transpiler.target import Target
 
 from qiskit_ibm_provider import ibm_provider  # pylint: disable=unused-import
 from .api.clients import AccountClient
-from .api.exceptions import ApiError
-from .backendjoblimit import BackendJobLimit
-from .backendreservation import BackendReservation
 from .exceptions import (
     IBMBackendError,
     IBMBackendValueError,
-    IBMBackendJobLimitError,
     IBMBackendApiError,
     IBMBackendApiProtocolError,
 )
-from .job import IBMJob, IBMCircuitJob, IBMCompositeJob
+from .job import IBMJob, IBMCircuitJob
 from .utils import validate_job_tags
-from .utils.backend import convert_reservation_data
+from .utils.options import QASM2Options, QASM3Options
 from .utils.backend_converter import (
     convert_to_target,
 )
 from .utils.converters import local_to_utc
 from .utils.json_decoder import defaults_from_server_data, properties_from_server_data
+from .api.exceptions import RequestsApiError
 
 logger = logging.getLogger(__name__)
+
+
+QOBJRUNNERPROGRAMID = "circuit-runner"
+QASM3RUNNERPROGRAMID = "qasm3-runner"
 
 
 class IBMBackend(Backend):
@@ -87,7 +88,7 @@ class IBMBackend(Backend):
         qx = random_circuit(n_qubits=5, depth=4)
         transpiled = transpile(qx, backend=backend)
         job = backend.run(transpiled)
-        retrieved_job = provider.backend.job(job.job_id())
+        retrieved_job = provider.backend.retrieve_job(job.job_id())
 
     Note:
 
@@ -107,12 +108,6 @@ class IBMBackend(Backend):
         status = backend.status()
         is_operational = status.operational
         jobs_in_queue = status.pending_jobs
-
-    It is also possible to see the number of remaining jobs you are able to submit to the
-    backend with the :meth:`job_limit()` method, which returns a
-    :class:`BackendJobLimit<qiskit_ibm_provider.BackendJobLimit>` instance::
-
-        job_limit = backend.job_limit()
 
     Here is list of attributes available on the ``IBMBackend`` class:
         * name: backend name.
@@ -193,6 +188,7 @@ class IBMBackend(Backend):
         configuration: Union[QasmBackendConfiguration, PulseBackendConfiguration],
         provider: "ibm_provider.IBMProvider",
         api_client: AccountClient,
+        instance: Optional[str] = None,
     ) -> None:
         """IBMBackend constructor.
 
@@ -207,6 +203,7 @@ class IBMBackend(Backend):
             online_date=configuration.online_date,
             backend_version=configuration.backend_version,
         )
+        self._instance = instance
         self._api_client = api_client
         self._configuration = configuration
         self._properties = None
@@ -259,7 +256,7 @@ class IBMBackend(Backend):
     def _get_properties(self) -> None:
         """Gets backend properties and decodes it"""
         if not self._properties:
-            api_properties = self._api_client.backend_properties(self.name)
+            api_properties = self.provider._runtime_client.backend_properties(self.name)
             if api_properties:
                 backend_properties = properties_from_server_data(api_properties)
                 self._properties = backend_properties
@@ -267,7 +264,9 @@ class IBMBackend(Backend):
     def _get_defaults(self) -> None:
         """Gets defaults if pulse backend and decodes it"""
         if not self._defaults:
-            api_defaults = self._api_client.backend_pulse_defaults(self.name)
+            api_defaults = self.provider._runtime_client.backend_pulse_defaults(
+                self.name
+            )
             if api_defaults:
                 self._defaults = defaults_from_server_data(api_defaults)
 
@@ -283,25 +282,7 @@ class IBMBackend(Backend):
     @classmethod
     def _default_options(cls) -> Options:
         """Default runtime options."""
-        return Options(
-            shots=4000,
-            memory=False,
-            qubit_lo_freq=None,
-            meas_lo_freq=None,
-            schedule_los=None,
-            meas_level=MeasLevel.CLASSIFIED,
-            meas_return=MeasReturnType.AVERAGE,
-            memory_slots=None,
-            memory_slot_size=100,
-            rep_time=None,
-            rep_delay=None,
-            init_qubits=True,
-            use_measure_esp=None,
-            live_data_enabled=None,
-            # Simulator only
-            noise_model=None,
-            seed_simulator=None,
-        )
+        return Options(**{**asdict(QASM3Options()), **asdict(QASM2Options())})
 
     @property
     def dtm(self) -> float:
@@ -345,9 +326,10 @@ class IBMBackend(Backend):
         circuits: Union[
             QuantumCircuit, Schedule, List[Union[QuantumCircuit, Schedule]]
         ],
-        job_name: Optional[str] = None,
+        dynamic: bool = False,
         job_tags: Optional[List[str]] = None,
-        max_circuits_per_job: Optional[int] = None,
+        init_circuit: Optional[QuantumCircuit] = None,
+        init_num_resets: Optional[int] = None,
         header: Optional[Dict] = None,
         shots: Optional[Union[int, float]] = None,
         memory: Optional[bool] = None,
@@ -361,38 +343,31 @@ class IBMBackend(Backend):
         ] = None,
         meas_level: Optional[Union[int, MeasLevel]] = None,
         meas_return: Optional[Union[str, MeasReturnType]] = None,
-        memory_slots: Optional[int] = None,
-        memory_slot_size: Optional[int] = None,
-        rep_time: Optional[int] = None,
         rep_delay: Optional[float] = None,
         init_qubits: Optional[bool] = None,
-        parameter_binds: Optional[List[Dict[Parameter, float]]] = None,
         use_measure_esp: Optional[bool] = None,
-        live_data_enabled: Optional[bool] = None,
         noise_model: Optional[Any] = None,
+        seed_simulator: Optional[int] = None,
         **run_config: Dict,
     ) -> IBMJob:
         """Run on the backend.
-
         If a keyword specified here is also present in the ``options`` attribute/object,
         the value specified here will be used for this run.
-
-        If the length of the input circuits exceeds the maximum allowed by
-        the backend, or if `max_circuits_per_job` is not ``None``, then the
-        input circuits will be divided into multiple jobs, and an
-        :class:`~qiskit_ibm_provider.job.IBMCompositeJob` instance is
-        returned.
 
         Args:
             circuits: An individual or a
                 list of :class:`~qiskit.circuits.QuantumCircuit` or
-                :class:`~qiskit.pulse.Schedule` objects to run on the backend.
-            job_name: Custom name to be assigned to the job. This job
-                name can subsequently be used as a filter in the
-                :meth:`jobs()` method. Job names do not need to be unique.
+                :class:`~qiskit.pulse.Schedule` object to run on the backend.
+            dynamic: Whether the circuit is dynamic (uses in-circuit conditionals)
             job_tags: Tags to be assigned to the job. The tags can subsequently be used
                 as a filter in the :meth:`jobs()` function call.
-            max_circuits_per_job: Maximum number of circuits to have in a single job.
+            init_circuit: A quantum circuit to execute for initializing qubits before each circuit.
+                If specified, ``init_num_resets`` is ignored. Applicable only if ``dynamic=True``
+                is specified.
+            init_num_resets: The number of qubit resets to insert before each circuit execution.
+
+            The following parameters are applicable only if ``dynamic=False`` is specified or
+            defaulted to.
 
             header: User input that will be attached to the job and will be
                 copied to the corresponding result header. Headers do not affect the run.
@@ -411,27 +386,15 @@ class IBMBackend(Backend):
             meas_return: Level of measurement data for the backend to return.
 
                 For ``meas_level`` 0 and 1:
-                    * ``single`` returns information from every shot.
-                    * ``avg`` returns average measurement output (averaged over number of shots).
-            memory_slots: Number of classical memory slots to use.
-            memory_slot_size: Size of each memory slot if the output is Level 0.
-            rep_time: Time per program execution in seconds. Must be from the list provided
-                by the backend (``backend.configuration().rep_times``).
-                Defaults to the first entry.
+                * ``single`` returns information from every shot.
+                * ``avg`` returns average measurement output (averaged over number of shots).
             rep_delay: Delay between programs in seconds. Only supported on certain
                 backends (if ``backend.configuration().dynamic_reprate_enabled=True``).
-                If supported, ``rep_delay`` will be used instead of ``rep_time`` and must be
-                from the range supplied
+                If supported, ``rep_delay`` must be from the range supplied
                 by the backend (``backend.configuration().rep_delay_range``). Default is given by
                 ``backend.configuration().default_rep_delay``.
             init_qubits: Whether to reset the qubits to the ground state for each shot.
                 Default: ``True``.
-            parameter_binds: List of Parameter bindings over which the set of experiments will be
-                executed. Each list element (bind) should be of the form
-                {Parameter1: value1, Parameter2: value2, ...}. All binds will be
-                executed across all experiments; e.g., if parameter_binds is a
-                length-n list, and there are m experiments, a total of m x n
-                experiments will be run (one for each experiment/bind pair).
             use_measure_esp: Whether to use excited state promoted (ESP) readout for measurements
                 which are the terminal instruction to a qubit. ESP readout can offer higher fidelity
                 than standard measurement sequences. See
@@ -439,9 +402,8 @@ class IBMBackend(Backend):
                 Default: ``True`` if backend supports ESP readout, else ``False``. Backend support
                 for ESP readout is determined by the flag ``measure_esp_enabled`` in
                 ``backend.configuration()``.
-            live_data_enabled (bool): Activate the live data in the backend, to receive data
-                from the instruments.
             noise_model: Noise model. (Simulators only)
+            seed_simulator: Random seed to control sampling. (Simulators only)
             **run_config: Extra arguments used to configure the run.
 
         Returns:
@@ -457,40 +419,33 @@ class IBMBackend(Backend):
                 - If ESP readout is used and the backend does not support this.
         """
         # pylint: disable=arguments-differ
+
         validate_job_tags(job_tags, IBMBackendValueError)
 
         status = self.status()
         if status.operational is True and status.status_msg != "active":
             warnings.warn(f"The backend {self.name} is currently paused.")
 
-        sim_method = None
-        if self.configuration().simulator:
-            sim_method = getattr(self.configuration(), "simulation_method", None)
-        if noise_model:
-            try:
-                noise_model = noise_model.to_dict()
-            except AttributeError:
-                pass
-        measure_esp_enabled = getattr(
-            self.configuration(), "measure_esp_enabled", False
-        )
-        # set ``use_measure_esp`` to backend value if not set by user
-        if use_measure_esp is None:
-            use_measure_esp = measure_esp_enabled
-        if use_measure_esp and not measure_esp_enabled:
-            raise IBMBackendValueError(
-                "ESP readout not supported on this device. Please make sure the flag "
-                "'use_measure_esp' is unset or set to 'False'."
-            )
+        program_id = str(run_config.get("program_id", ""))
+        if not program_id:
+            if dynamic:
+                program_id = QASM3RUNNERPROGRAMID
+            else:
+                program_id = QOBJRUNNERPROGRAMID
+        else:
+            run_config.pop("program_id", None)
 
         if isinstance(shots, float):
             shots = int(shots)
-
         if not self.configuration().simulator:
             circuits = self._deprecate_id_instruction(circuits)
+        options = {"backend": self.name}
 
         run_config_dict = self._get_run_config(
-            qobj_header=header,
+            program_id=program_id,
+            init_circuit=init_circuit,
+            init_num_resets=init_num_resets,
+            header=header,
             shots=shots,
             memory=memory,
             qubit_lo_freq=qubit_lo_freq,
@@ -498,140 +453,85 @@ class IBMBackend(Backend):
             schedule_los=schedule_los,
             meas_level=meas_level,
             meas_return=meas_return,
-            memory_slots=memory_slots,
-            memory_slot_size=memory_slot_size,
-            rep_time=rep_time,
             rep_delay=rep_delay,
             init_qubits=init_qubits,
             use_measure_esp=use_measure_esp,
             noise_model=noise_model,
+            seed_simulator=seed_simulator,
             **run_config,
         )
-        if parameter_binds:
-            run_config_dict["parameter_binds"] = parameter_binds
-        if sim_method and "method" not in run_config_dict:
-            run_config_dict["method"] = sim_method
 
-        if isinstance(circuits, list):
-            chunk_size = None
-            if hasattr(self.configuration(), "max_experiments"):
-                backend_max = self.configuration().max_experiments
-                chunk_size = (
-                    backend_max
-                    if max_circuits_per_job is None
-                    else min(backend_max, max_circuits_per_job)
-                )
-            elif max_circuits_per_job:
-                chunk_size = max_circuits_per_job
+        run_config_dict["circuits"] = circuits
+        if not program_id.startswith(QASM3RUNNERPROGRAMID):
+            # Transpiling in circuit-runner is deprecated.
+            run_config_dict["skip_transpilation"] = True
 
-            if chunk_size and len(circuits) > chunk_size:
-                circuits_list = [
-                    circuits[x : x + chunk_size]
-                    for x in range(0, len(circuits), chunk_size)
-                ]
-                return IBMCompositeJob(
-                    backend=self,
-                    api_client=self._api_client,
-                    circuits_list=circuits_list,
-                    run_config=run_config_dict,
-                    name=job_name,
-                    tags=job_tags,
-                )
+        return self._runtime_run(
+            program_id=program_id,
+            inputs=run_config_dict,
+            options=options,
+            job_tags=job_tags,
+        )
 
-        qobj = assemble(circuits, self, **run_config_dict)
-
-        return self._submit_job(qobj, job_name, job_tags, live_data_enabled)
-
-    def _get_run_config(self, **kwargs: Any) -> Dict:
-        """Return the consolidated runtime configuration."""
-        run_config_dict = copy.copy(self.options.__dict__)
-        for key, val in kwargs.items():
-            if val is not None:
-                run_config_dict[key] = val
-                if (
-                    key not in self.options.__dict__
-                    and not self.configuration().simulator
-                ):
-                    warnings.warn(  # type: ignore[unreachable]
-                        f"{key} is not a recognized runtime option and may be ignored by the backend.",
-                        stacklevel=4,
-                    )
-        return run_config_dict
-
-    def _submit_job(
+    def _runtime_run(
         self,
-        qobj: Union[QasmQobj, PulseQobj],
-        job_name: Optional[str] = None,
+        program_id: str,
+        inputs: Dict,
+        options: Dict,
         job_tags: Optional[List[str]] = None,
-        composite_job_id: Optional[str] = None,
-        live_data_enabled: Optional[bool] = None,
-    ) -> IBMJob:
-        """Submit the Qobj to the backend.
-
-        Args:
-            qobj: The Qobj to be executed.
-            job_name: Custom name to be assigned to the job. This job
-                name can subsequently be used as a filter in the
-                ``jobs()``method.
-                Job names do not need to be unique.
-            job_tags: Tags to be assigned to the job.
-            composite_job_id: Composite job ID, if this Qobj belongs to a composite job.
-            live_data_enabled: Used to activate/deactivate live data on the backend.
-
-        Returns:
-            The job to be executed.
-
-        Events:
-            ibm.job.start: The job has started.
-
-        Raises:
-            IBMBackendApiError: If an unexpected error occurred while submitting
-                the job.
-            IBMBackendError: If an unexpected error occurred after submitting
-                the job.
-            IBMBackendApiProtocolError: If an unexpected value is received from
-                 the server.
-            IBMBackendJobLimitError: If the job could not be submitted because
-                the job limit has been reached.
-        """
+    ) -> IBMCircuitJob:
+        """Runs the runtime program and returns the corresponding job object"""
+        hgp_name = self._instance or self.provider._get_hgp().name
         try:
-            qobj_dict = qobj.to_dict()
-            submit_info = self._api_client.job_submit(
-                backend_name=self.name,
-                qobj_dict=qobj_dict,
-                job_name=job_name,
+            response = self.provider._runtime_client.program_run(
+                program_id=program_id,
+                backend_name=options["backend"],
+                params=inputs,
+                hgp=hgp_name,
                 job_tags=job_tags,
-                experiment_id=composite_job_id,
-                live_data_enabled=live_data_enabled,
             )
-        except ApiError as ex:
-            if "Error code: 3458" in str(ex):
-                raise IBMBackendJobLimitError(
-                    "Error submitting job: {}".format(str(ex))
-                ) from ex
+        except RequestsApiError as ex:
             raise IBMBackendApiError("Error submitting job: {}".format(str(ex))) from ex
-
-        # Error in the job after submission:
-        # Transition to the `ERROR` final state.
-        if "error" in submit_info:
-            raise IBMBackendError(
-                "Error submitting job: {}".format(str(submit_info["error"]))
-            )
-
-        # Submission success.
         try:
+            job_id = response["id"]
             job = IBMCircuitJob(
-                backend=self, api_client=self._api_client, qobj=qobj, **submit_info
+                backend=self,
+                api_client=self._api_client,
+                runtime_client=self.provider._runtime_client,
+                job_id=job_id,
             )
             logger.debug("Job %s was successfully submitted.", job.job_id())
         except TypeError as err:
-            logger.debug("Invalid job data received: %s", submit_info)
+            logger.debug("Invalid job data received: %s", response)
             raise IBMBackendApiProtocolError(
                 "Unexpected return value received from the server "
                 "when submitting job: {}".format(str(err))
             ) from err
         Publisher().publish("ibm.job.start", job)
         return job
+
+    def _get_run_config(self, program_id: str, **kwargs: Any) -> Dict:
+        """Return the consolidated runtime configuration."""
+        # Check if is a QASM3 like program id.
+        if program_id.startswith(QASM3RUNNERPROGRAMID):
+            fields = asdict(QASM3Options()).keys()
+            run_config_dict = QASM3Options().to_transport_dict()
+        else:
+            fields = asdict(QASM2Options()).keys()
+            run_config_dict = QASM2Options().to_transport_dict()
+
+        backend_options = self._options.__dict__
+        for key, val in kwargs.items():
+            if val is not None:
+                run_config_dict[key] = val
+                if key not in fields and not self.configuration().simulator:
+                    warnings.warn(  # type: ignore[unreachable]
+                        f"{key} is not a recognized runtime option and may be ignored by the backend.",
+                        stacklevel=4,
+                    )
+            elif backend_options.get(key) is not None and key in fields:
+                run_config_dict[key] = backend_options[key]
+        return run_config_dict
 
     def properties(
         self, refresh: bool = False, datetime: Optional[python_datetime] = None
@@ -676,7 +576,7 @@ class IBMBackend(Backend):
             datetime = local_to_utc(datetime)
 
         if datetime or refresh or self._properties is None:
-            api_properties = self._api_client.backend_properties(
+            api_properties = self.provider._runtime_client.backend_properties(
                 self.name, datetime=datetime
             )
             if not api_properties:
@@ -701,7 +601,7 @@ class IBMBackend(Backend):
         Raises:
             IBMBackendApiProtocolError: If the status for the backend cannot be formatted properly.
         """
-        api_status = self._api_client.backend_status(self.name)
+        api_status = self.provider._runtime_client.backend_status(self.name)
 
         try:
             return BackendStatus.from_dict(api_status)
@@ -726,128 +626,15 @@ class IBMBackend(Backend):
             The backend pulse defaults or ``None`` if the backend does not support pulse.
         """
         if refresh or self._defaults is None:
-            api_defaults = self._api_client.backend_pulse_defaults(self.name)
+            api_defaults = self.provider._runtime_client.backend_pulse_defaults(
+                self.name
+            )
             if api_defaults:
                 self._defaults = defaults_from_server_data(api_defaults)
             else:
                 self._defaults = None
 
         return self._defaults
-
-    def job_limit(self) -> BackendJobLimit:
-        """Return the job limit for the backend.
-
-        The job limit information includes the current number of active jobs
-        you have on the backend and the maximum number of active jobs you can have
-        on it.
-
-        Note:
-            Job limit information for a backend is provider specific.
-            For example, if you have access to the same backend via
-            different providers, the job limit information might be
-            different for each provider.
-
-        If the method call was successful, you can inspect the job limit for
-        the backend by accessing the ``maximum_jobs`` and ``active_jobs`` attributes
-        of the :class:`BackendJobLimit<BackendJobLimit>` instance returned. For example::
-
-            backend_job_limit = backend.job_limit()
-            maximum_jobs = backend_job_limit.maximum_jobs
-            active_jobs = backend_job_limit.active_jobs
-
-        If ``maximum_jobs`` is equal to ``None``, then there is
-        no limit to the maximum number of active jobs you could
-        have on the backend.
-
-        Returns:
-            The job limit for the backend, with this provider.
-
-        Raises:
-            IBMBackendApiProtocolError: If an unexpected value is received from the server.
-        """
-        api_job_limit = self._api_client.backend_job_limit(self.name)
-
-        try:
-            job_limit = BackendJobLimit(**api_job_limit)
-            if job_limit.maximum_jobs == -1:
-                # Manually set `maximum` to `None` if backend has no job limit.
-                job_limit.maximum_jobs = None
-            return job_limit
-        except TypeError as ex:
-            raise IBMBackendApiProtocolError(
-                "Unexpected return value received from the server when "
-                "querying job limit data for the backend: {}.".format(ex)
-            ) from ex
-
-    def remaining_jobs_count(self) -> Optional[int]:
-        """Return the number of remaining jobs that could be submitted to the backend.
-
-        Note:
-            The number of remaining jobs for a backend is provider
-            specific. For example, if you have access to the same backend
-            via different providers, the number of remaining jobs might
-            be different for each. See :class:`BackendJobLimit<BackendJobLimit>`
-            for the job limit information of a backend.
-
-        If ``None`` is returned, there are no limits to the maximum
-        number of active jobs you could have on the backend.
-
-        Returns:
-            The remaining number of jobs a user could submit to the backend, with
-            this provider, before the maximum limit on active jobs is reached.
-
-        Raises:
-            IBMBackendApiProtocolError: If an unexpected value is received from the server.
-        """
-        job_limit = self.job_limit()
-
-        if job_limit.maximum_jobs is None:
-            return None
-
-        return job_limit.maximum_jobs - job_limit.active_jobs
-
-    def active_jobs(self, limit: int = 10) -> List[IBMJob]:
-        """Return the unfinished jobs submitted to this backend.
-
-        Return the jobs submitted to this backend, with this provider, that are
-        currently in an unfinished job status state. The unfinished
-        :class:`JobStatus<qiskit.providers.jobstatus.JobStatus>` states
-        include: ``INITIALIZING``, ``VALIDATING``, ``QUEUED``, and ``RUNNING``.
-
-        Args:
-            limit: Number of jobs to retrieve.
-
-        Returns:
-            A list of the unfinished jobs for this backend on this provider.
-        """
-        return self.provider.backend.jobs(status="pending", limit=limit)
-
-    def reservations(
-        self,
-        start_datetime: Optional[python_datetime] = None,
-        end_datetime: Optional[python_datetime] = None,
-    ) -> List[BackendReservation]:
-        """Return backend reservations.
-
-        If start_datetime and/or end_datetime is specified, reservations with
-        time slots that overlap with the specified time window will be returned.
-
-        Some of the reservation information is only available if you are the
-        owner of the reservation.
-
-        Args:
-            start_datetime: Filter by the given start date/time, in local timezone.
-            end_datetime: Filter by the given end date/time, in local timezone.
-
-        Returns:
-            A list of reservations that match the criteria.
-        """
-        start_datetime = local_to_utc(start_datetime) if start_datetime else None
-        end_datetime = local_to_utc(end_datetime) if end_datetime else None
-        raw_response = self._api_client.backend_reservations(
-            self.name, start_datetime, end_datetime
-        )
-        return convert_reservation_data(raw_response, self.name)
 
     def configuration(
         self,
@@ -1036,25 +823,6 @@ class IBMRetiredBackend(IBMBackend):
     def status(self) -> BackendStatus:
         """Return the backend status."""
         return self._status
-
-    def job_limit(self) -> None:
-        """Return the job limits for the backend."""
-        return None
-
-    def remaining_jobs_count(self) -> None:
-        """Return the number of remaining jobs that could be submitted to the backend."""
-        return None
-
-    def active_jobs(self, limit: int = 10) -> None:
-        """Return the unfinished jobs submitted to this backend."""
-        return None
-
-    def reservations(
-        self,
-        start_datetime: Optional[python_datetime] = None,
-        end_datetime: Optional[python_datetime] = None,
-    ) -> List[BackendReservation]:
-        return []
 
     def run(self, *args: Any, **kwargs: Any) -> None:  # type: ignore[override]
         """Run a Circuit."""

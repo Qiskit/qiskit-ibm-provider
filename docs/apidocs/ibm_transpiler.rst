@@ -1,4 +1,4 @@
-.. _qiskit_ibm_provider-utils:
+.. _qiskit_ibm_provider-transpiler:
 
 .. automodule:: qiskit_ibm_provider.transpiler
    :no-members:

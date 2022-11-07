@@ -1,0 +1,15 @@
+---
+upgrade:
+  - Scheduling has been updated to reflect dynamic circuit backends. Measurements no longer interrupt
+    scheduling. ALAP scheduling has now been implemented in
+    :class:`~qiskit_ibm_provider.transpiler.passes.scheduling.ALAPScheduleAnalysis`
+    and should be the standard scheduling policy that is used.
+  - |
+    A custom instruction durations class has been added for dynamic circuit backends
+    :class:`~qiskit_ibm_provider.transpiler.passes.scheduling.DynamicCircuitInstructionDurations`.
+
+    Currently it only patches the durations of measurement instructions.
+
+    This should be used temporarily while we port legacy backends to dynamic circuit backends.
+
+

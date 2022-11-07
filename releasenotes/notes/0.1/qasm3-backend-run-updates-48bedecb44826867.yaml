@@ -1,0 +1,12 @@
+---
+
+features:
+  - |
+    It is now possible to select the Qiskit runtime program ID to use for
+    :meth:`~qiskit_ibm_provider.IBMBackend.run` through the input argument
+    ``program_id``.
+fixes:
+  - |
+    When ``dynamic=True``, :meth:`~qiskit_ibm_provider.IBMBackend.run` now
+    submits the ``shots`` argument correctly.
+

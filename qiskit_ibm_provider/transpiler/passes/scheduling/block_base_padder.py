@@ -21,6 +21,8 @@ from qiskit.dagcircuit import DAGCircuit, DAGNode
 from qiskit.transpiler.basepasses import TransformationPass
 from qiskit.transpiler.exceptions import TranspilerError
 
+from .utils import block_order_op_nodes
+
 
 class BlockBasePadder(TransformationPass):
     """The base class of padding pass.
@@ -31,7 +33,6 @@ class BlockBasePadder(TransformationPass):
     Once a scheduling analysis pass is run, ``node_start_time`` is generated
     in the :attr:`property_set`.  This information is represented by a python dictionary of
     the expected instruction execution times keyed on the node instances.
-    Entries in the dictionary are only created for non-delay nodes.
     The padding pass expects all ``DAGOpNode`` in the circuit to be scheduled.
 
     This base class doesn't define any sequence to interleave, but it manages
@@ -82,7 +83,7 @@ class BlockBasePadder(TransformationPass):
         # Note that pre-scheduled duration may change within the alignment passes, i.e.
         # if some instruction time t0 violating the hardware alignment constraint,
         # the alignment pass may delay t0 and accordingly the circuit duration changes.
-        for node in dag.topological_op_nodes():
+        for node in block_order_op_nodes(dag):
             if node in self._node_start_time:
                 if isinstance(node.op, Delay):
                     self._visit_delay(node)
@@ -181,12 +182,30 @@ class BlockBasePadder(TransformationPass):
         """
         raise NotImplementedError
 
+    def _get_node_duration(self, node: DAGNode) -> int:
+        """Get the duration of a node."""
+        if node.op.condition_bits:
+            # As we cannot currently schedule through conditionals model
+            # as zero duration to avoid padding.
+            return 0
+        return node.op.duration
+
     def _visit_delay(self, node: DAGNode) -> None:
         """The padding class considers a delay instruction as idle time
         rather than instruction. Delay node is not added so that
         we can extract non-delay predecessors.
         """
-        pass
+        block_idx, t0 = self._node_start_time[node]  # pylint: disable=invalid-name
+        # Trigger the end of a block
+        if block_idx > self._current_block_idx:
+            self._terminate_block(self._block_duration, self._current_block_idx, node)
+
+        self._conditional_block = bool(node.op.condition_bits)
+
+        self._current_block_idx = block_idx
+
+        t1 = t0 + self._get_node_duration(node)  # pylint: disable=invalid-name
+        self._block_duration = max(self._block_duration, t1)
 
     def _visit_generic(self, node: DAGNode) -> None:
         """Visit a generic node to pad."""
@@ -205,7 +224,7 @@ class BlockBasePadder(TransformationPass):
         # Now set the current block index.
         self._current_block_idx = block_idx
 
-        t1 = t0 + node.op.duration  # pylint: disable=invalid-name
+        t1 = t0 + self._get_node_duration(node)  # pylint: disable=invalid-name
         self._block_duration = max(self._block_duration, t1)
 
         for bit in node.qargs:
@@ -237,8 +256,7 @@ class BlockBasePadder(TransformationPass):
         # TODO: This should be reworked to instead apply a transformation
         # pass to rewrite all ``c_if`` operations as ``if_else``
         # blocks that are in turn scheduled.
-        if not self._conditional_block:
-            self._pad_until_block_end(block_duration, block_idx)
+        self._pad_until_block_end(block_duration, block_idx)
 
         def _is_terminating_barrier(node: Optional[DAGNode]) -> bool:
             return (
@@ -301,6 +319,9 @@ class BlockBasePadder(TransformationPass):
             oper: New operation that is added to the DAG circuit.
             qubits: The list of qubits that the operation acts on.
             clbits: The list of clbits that the operation acts on.
+
+        Returns:
+            The DAGNode applied to.
         """
         if isinstance(qubits, Qubit):
             qubits = [qubits]
