@@ -27,7 +27,6 @@ Classes
     :toctree: ../stubs/
 
     IBMCircuitJob
-    IBMCompositeJob
     QueueInfo
 
 Functions
@@ -52,7 +51,6 @@ Exception
 
 from .ibm_job import IBMJob
 from .ibm_circuit_job import IBMCircuitJob
-from .ibm_composite_job import IBMCompositeJob
 from .queueinfo import QueueInfo
 from .exceptions import (
     IBMJobError,
