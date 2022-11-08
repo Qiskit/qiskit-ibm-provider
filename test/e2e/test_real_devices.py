@@ -109,10 +109,6 @@ class TestRealDevices(IBMTestCase):
         counts_ex = {"00": shots / 2, "11": shots / 2}
         self.assertDictAlmostEqual(counts_qx, counts_ex, shots * 0.2)
 
-        # Test fetching the job properties, as this is a real backend and is
-        # guaranteed to have them.
-        self.assertIsNotNone(job.properties())
-
     def test_run_multiple_device(self):
         """Test running multiple jobs in a real device."""
 
