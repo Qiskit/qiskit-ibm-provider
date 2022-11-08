@@ -28,7 +28,6 @@ from qiskit.result import Result
 from qiskit.pulse import Schedule
 
 from qiskit_ibm_provider import ibm_backend  # pylint: disable=unused-import
-from .constants import IBM_COMPOSITE_JOB_TAG_PREFIX, IBM_MANAGED_JOB_ID_PREFIX
 from .exceptions import (
     IBMJobError,
     IBMJobApiError,
@@ -303,13 +302,9 @@ class IBMCircuitJob(IBMJob):
             IBMJobInvalidStateError: If none of the input parameters are specified or
                 if any of the input parameters are invalid.
         """
-        # Tags prefix that denotes a job belongs to a jobset or composite job.
-        filter_tags = (IBM_MANAGED_JOB_ID_PREFIX, IBM_COMPOSITE_JOB_TAG_PREFIX)
-        tags_to_keep = set(filter(lambda x: x.startswith(filter_tags), self._tags))
 
         tags_to_update = set(new_tags)
         validate_job_tags(new_tags, IBMJobInvalidStateError)
-        tags_to_update = tags_to_update.union(tags_to_keep)
 
         with api_to_job_error():
             response = self._runtime_client.update_tags(

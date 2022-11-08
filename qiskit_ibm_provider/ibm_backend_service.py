@@ -208,8 +208,7 @@ class IBMBackendService:
         making several calls to the server.
 
         Args:
-            limit: Number of jobs to retrieve. ``None`` means no limit. Note that the
-                number of sub-jobs within a composite job count towards the limit.
+            limit: Number of jobs to retrieve.
             skip: Starting index for the job retrieval.
             backend_name: Name of the backend to retrieve jobs from.
             status: Filter jobs with either "pending" or "completed" status. You can also specify by
