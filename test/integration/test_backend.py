@@ -12,7 +12,7 @@
 
 """IBMBackend Test."""
 
-from unittest import SkipTest, mock
+from unittest import SkipTest, mock, skip
 from unittest.mock import patch
 
 from qiskit import QuantumCircuit
@@ -66,6 +66,7 @@ class TestIBMBackend(IBMTestCase):
         for i in qubits:
             self.assertIsInstance(qubit_properties[i], IBMQubitProperties)
 
+    @skip("until terra #9092 is resolved")
     def test_backend_pulse_defaults(self):
         """Check the backend pulse defaults of each backend."""
         provider = self.backend.provider
