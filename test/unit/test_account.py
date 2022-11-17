@@ -32,6 +32,7 @@ from ..account import (
     temporary_account_config_file,
     custom_envs,
     no_envs,
+    custom_qiskitrc,
 )
 from ..ibm_test_case import IBMTestCase
 
@@ -483,6 +484,24 @@ class TestEnableAccount(IBMTestCase):
             service = FakeProvider(instance=instance)
         self.assertTrue(service._account)
         self.assertEqual(service._account.instance, instance)
+
+    def test_enable_account_by_qiskitrc(self):
+        """Test initializing account by a qiskitrc file."""
+        token = "token-x"
+        proxies = {"urls": {"https": "localhost:8080"}}
+        str_contents = f"""
+        [ibmq] 
+        token = {token}
+        url = https://auth.quantum-computing.ibm.com/api 
+        verify = True
+        default_provider = ibm-q/open/main
+        proxies = {proxies}
+        """
+        with custom_qiskitrc(contents=str.encode(str_contents)):
+            with temporary_account_config_file(contents={}):
+                service = FakeProvider()
+        self.assertTrue(service._account)
+        self.assertEqual(service._account.token, token)
 
     def _verify_prefs(self, prefs, account):
         if "proxies" in prefs:
