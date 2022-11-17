@@ -214,10 +214,7 @@ class IBMProvider(Provider):
                     logger.warning(
                         "Loading default ibm_quantum account. Input 'url' is ignored."
                     )
-                account = AccountManager.get(channel="ibm_quantum")
-
-        if account is None:
-            account = AccountManager.get()
+                account = AccountManager.get()
 
         if instance:
             account.instance = instance

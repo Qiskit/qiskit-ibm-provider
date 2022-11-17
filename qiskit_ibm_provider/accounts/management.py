@@ -13,11 +13,12 @@
 """Account management related classes and functions."""
 
 import os
+import ast
 from typing import Optional, Dict
 from .exceptions import AccountNotFoundError
 from .account import Account, ChannelType
 from ..proxies import ProxyConfiguration
-from .storage import save_config, read_config, delete_config
+from .storage import save_config, read_config, delete_config, read_qiskitrc
 
 
 class AccountManager:
@@ -26,6 +27,7 @@ class AccountManager:
     _default_account_config_json_file = os.path.join(
         os.path.expanduser("~"), ".qiskit", "qiskit-ibm.json"
     )
+    _qiskitrc_config_file = os.path.join(os.path.expanduser("~"), ".qiskit", "qiskitrc")
     _default_account_name = "default"
     _default_account_name_legacy = "default-legacy"
     _default_account_name_ibm_quantum = "default-ibm-quantum"
@@ -115,13 +117,13 @@ class AccountManager:
 
     @classmethod
     def get(
-        cls, name: Optional[str] = None, channel: Optional[ChannelType] = None
+        cls,
+        name: Optional[str] = None,
     ) -> Optional[Account]:
         """Read account from disk.
 
         Args:
             name: Account name. Takes precedence if `auth` is also specified.
-            channel: Channel type.
 
         Returns:
             Account information.
@@ -140,24 +142,41 @@ class AccountManager:
                 )
             return Account.from_saved_format(saved_account)
 
-        channel_ = channel or cls._default_channel_type
-        env_account = cls._from_env_variables(channel_)
+        env_account = cls._from_env_variables(cls._default_channel_type)
         if env_account is not None:
             return env_account
-
-        if channel:
-            saved_account = read_config(
-                filename=cls._default_account_config_json_file,
-                name=cls._default_account_name_ibm_quantum,
-            )
-            if saved_account is None:
-                raise AccountNotFoundError(f"No default {channel} account saved.")
-            return Account.from_saved_format(saved_account)
 
         all_config = read_config(filename=cls._default_account_config_json_file)
         account_name = cls._default_account_name_ibm_quantum
         if account_name in all_config:
             return Account.from_saved_format(all_config[account_name])
+
+        if os.path.isfile(cls._qiskitrc_config_file):
+            qiskitrc_data = read_qiskitrc(cls._qiskitrc_config_file)
+            proxies = (
+                ProxyConfiguration(ast.literal_eval(qiskitrc_data["proxies"]))
+                if "proxies" in qiskitrc_data
+                else None
+            )
+            save_config(
+                filename=cls._default_account_config_json_file,
+                name=cls._default_account_name_ibm_quantum,
+                overwrite=False,
+                config=Account(
+                    token=qiskitrc_data.get("token", None),
+                    url=qiskitrc_data.get("url", None),
+                    instance=qiskitrc_data.get("default_provider", None),
+                    verify=bool(qiskitrc_data.get("verify", None)),
+                    proxies=proxies,
+                    channel="ibm_quantum",
+                )
+                .validate()
+                .to_saved_format(),
+            )
+            default_config = read_config(filename=cls._default_account_config_json_file)
+            return Account.from_saved_format(
+                default_config[cls._default_account_name_ibm_quantum]
+            )
 
         raise AccountNotFoundError("Unable to find account.")
 

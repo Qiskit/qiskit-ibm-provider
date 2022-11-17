@@ -193,9 +193,7 @@ class TestAccountManager(IBMTestCase):
             name=None,
             overwrite=True,
         )
-        self.assertEqual(
-            _TEST_IBM_QUANTUM_ACCOUNT, AccountManager.get(channel="ibm_quantum")
-        )
+        self.assertEqual(_TEST_IBM_QUANTUM_ACCOUNT, AccountManager.get())
 
     @temporary_account_config_file(
         contents={"conflict": _TEST_IBM_QUANTUM_ACCOUNT.to_saved_format()}
