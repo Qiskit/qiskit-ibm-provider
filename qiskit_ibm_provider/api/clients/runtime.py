@@ -43,6 +43,17 @@ class RuntimeClient(BaseClient):
         )
         self._api = Runtime(self._session)
 
+    def list_backends(self, hgp: str) -> List[str]:
+        """Return a list of backends.
+
+        Args:
+            hgp: hub, group, and project.
+
+        Returns:
+            The list of backends from the given hgp.
+        """
+        return self._api.backends(hgp)
+
     def backend_properties(
         self, backend: str, datetime: Optional[python_datetime] = None
     ) -> Dict[str, Any]:
@@ -77,6 +88,17 @@ class RuntimeClient(BaseClient):
             Backend status.
         """
         return self._api.backend(backend).status()
+
+    def backend_configuration(self, backend: str) -> Dict[str, Any]:
+        """Return the configuration of the backend.
+
+        Args:
+            backend: The name of the backend.
+
+        Returns:
+            Backend configuration.
+        """
+        return self._api.backend(backend).configuration()
 
     def program_run(
         self,

@@ -78,8 +78,9 @@ class HubGroupProject:
             A dict of the remote backend instances, keyed by backend name.
         """
         ret = OrderedDict()
-        configs_list = self._api_client.list_backends()
-        for raw_config in configs_list:
+        backends = self._provider._runtime_client.list_backends(self.name)
+        for backend in backends:
+            raw_config = self._provider._runtime_client.backend_configuration(backend)
             config = configuration_from_server_data(
                 raw_config=raw_config, instance=self.name
             )

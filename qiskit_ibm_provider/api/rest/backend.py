@@ -26,6 +26,7 @@ class Backend(RestAdapterBase):
         "properties": "/properties",
         "pulse_defaults": "/defaults",
         "status": "/status",
+        "configuration": "/configuration",
     }
 
     def __init__(
@@ -98,3 +99,12 @@ class Backend(RestAdapterBase):
             ret["pending_jobs"] = 0
 
         return ret
+
+    def configuration(self) -> Dict[str, Any]:
+        """Return backend configuration.
+
+        Returns:
+            JSON response of backend configuration.
+        """
+        url = self.get_url("configuration")
+        return self.session.get(url).json()
