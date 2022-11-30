@@ -52,7 +52,7 @@ class RuntimeClient(BaseClient):
         Returns:
             The list of backends from the given hgp.
         """
-        return self._api.backends(hgp)
+        return self._api.backend().backends(hgp=hgp)
 
     def backend_properties(
         self, backend: str, datetime: Optional[python_datetime] = None

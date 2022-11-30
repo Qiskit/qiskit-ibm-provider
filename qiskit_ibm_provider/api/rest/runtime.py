@@ -32,23 +32,9 @@ class Runtime(RestAdapterBase):
     URL_MAP = {
         "programs": "/programs",
         "jobs": "/jobs",
-        "backends": "/backends",
     }
 
-    def backends(self, hgp: str) -> List[str]:
-        """Return a list of backends.
-
-        Args:
-            hgp: hub, group, and project.
-
-        Returns:
-            The list of backends from the given hgp.
-        """
-        payload = {"provider": hgp}
-        url = self.get_url("backends")
-        return self.session.get(url, params=payload).json()["devices"]
-
-    def backend(self, backend: str) -> Backend:
+    def backend(self, backend: str = "") -> Backend:
         """Return an adapter for the backend.
 
         Args:

@@ -13,7 +13,6 @@
 """Client for accessing an individual IBM Quantum account."""
 
 import logging
-from typing import List, Dict, Any, Optional
 
 from .base import BaseClient
 from ..client_parameters import ClientParameters
@@ -46,16 +45,3 @@ class AccountClient(BaseClient):
             group=group,
             project=project,
         )
-
-    # Backend-related public functions.
-
-    def list_backends(self, timeout: Optional[float] = None) -> List[Dict[str, Any]]:
-        """Return backends available for this provider.
-
-        Args:
-            timeout: Number of seconds to wait for the request.
-
-        Returns:
-            Backends available for this provider.
-        """
-        return self.account_api.backends(timeout=timeout)
