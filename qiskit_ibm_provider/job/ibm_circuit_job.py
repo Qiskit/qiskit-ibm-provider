@@ -706,7 +706,7 @@ class IBMCircuitJob(IBMJob):
         else:
             index = raw_data.rfind("Traceback")
             if index != -1:
-                return raw_data[index:]
+                return 'Unknown error; ' + raw_data[index:]
         return None
 
     def _set_result(self, raw_data: str) -> None:
