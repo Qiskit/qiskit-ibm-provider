@@ -1360,3 +1360,65 @@ class TestALAPSchedulingAndPaddingPass(QiskitTestCase):
         expected.barrier()
 
         self.assertEqual(expected, scheduled)
+
+    def test_issue_458_extra_idle_bug(self):
+        """Regression test for https://github.com/Qiskit/qiskit-ibm-provider/issues/458
+
+        This demonstrates that delays on idle qubits are pushed to the last schedulable
+        region. This may happen if Terra's default scheduler is used and then the
+        dynamic circuit scheduler is applied.
+        """
+
+        qc = QuantumCircuit(4, 3)
+
+        qc.cx(0, 1)
+        qc.delay(700, 0)
+        qc.delay(700, 2)
+        qc.cx(1, 2)
+        qc.delay(3560, 3)
+        qc.barrier([0, 1, 2])
+
+        qc.delay(1160, 0)
+        qc.delay(1000, 2)
+        qc.measure(1, 0)
+        qc.delay(160, 1)
+        qc.x(2).c_if(0, 1)
+        qc.barrier([0, 1, 2])
+        qc.measure(0, 1)
+        qc.delay(1000, 1)
+        qc.measure(2, 2)
+
+        durations = DynamicCircuitInstructionDurations(
+            [("x", None, 160), ("cx", None, 700), ("measure", None, 840)]
+        )
+
+        pm = PassManager([ALAPScheduleAnalysis(durations), PadDelay()])
+        scheduled = pm.run(qc)
+
+        expected = QuantumCircuit(4, 3)
+
+        expected.cx(0, 1)
+        expected.delay(700, 0)
+        expected.delay(700, 2)
+        expected.cx(1, 2)
+        expected.barrier([0, 1, 2])
+        expected.delay(2560, 3)
+
+        expected.delay(1160, 0)
+        expected.delay(1160, 2)
+        expected.measure(1, 0)
+        expected.delay(160, 1)
+        expected.barrier()
+        expected.x(2).c_if(0, 1)
+        expected.barrier()
+        expected.delay(2560, 0)
+        expected.delay(2560, 1)
+        expected.delay(2560, 2)
+        expected.delay(3560, 3)
+        expected.barrier([0, 1, 2])
+        expected.delay(1000, 1)
+        expected.measure(0, 1)
+        expected.measure(2, 2)
+        expected.barrier()
+
+        self.assertEqual(scheduled, expected)
