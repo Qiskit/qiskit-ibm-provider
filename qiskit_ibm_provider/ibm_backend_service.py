@@ -355,7 +355,7 @@ class IBMBackendService:
         return job_responses
 
     def _restore_circuit_job(
-        self, job_info: Dict, raise_error: bool
+        self, job_info: Dict, raise_error: bool, iqx_job: bool = False
     ) -> Optional[IBMCircuitJob]:
         """Restore a circuit job from the API response.
 
@@ -371,18 +371,25 @@ class IBMBackendService:
             IBMBackendApiProtocolError: If unexpected return value received
                  from the server.
         """
-        job_params = {
-            "job_id": job_info["id"],
-            "creation_date": job_info["created"],
-            "status": job_info["status"],
-            "runtime_client": self._provider._runtime_client,
-            "tags": job_info.get("tags"),
-        }
-        # Recreate the backend used for this job.
-        backend_name = job_info.get("backend")
-        instance = to_instance_format(
-            job_info["hub"], job_info["group"], job_info["project"]
-        )
+        if iqx_job:
+            job_id = job_info.get("job_id", "")
+            backend_name = job_info.get("_backend_info", {}).get("name", "unknown")
+            instance = None
+            job_params = job_info
+        else:
+            job_id = job_info["id"]
+            job_params = {
+                "job_id": job_id,
+                "creation_date": job_info["created"],
+                "status": job_info["status"],
+                "runtime_client": self._provider._runtime_client,
+                "tags": job_info.get("tags"),
+            }
+            # Recreate the backend used for this job.
+            backend_name = job_info.get("backend")
+            instance = to_instance_format(
+                job_info["hub"], job_info["group"], job_info["project"]
+            )
         try:
             backend = self._provider.get_backend(backend_name, instance)
         except QiskitBackendNotFoundError:
@@ -400,7 +407,7 @@ class IBMBackendService:
             if raise_error:
                 raise IBMBackendApiProtocolError(
                     f"Unexpected return value received from the server "
-                    f"when retrieving job {job_info['id']}: {ex}"
+                    f"when retrieving job {job_id}: {ex}"
                 ) from ex
         return None
 
@@ -555,14 +562,19 @@ class IBMBackendService:
             IBMJobNotFoundError: If job cannot be found.
         """
         try:
-            job_info = self._provider._runtime_client.job_get(job_id)
+            iqx_job = False
+            if job_id[0] != "c":
+                iqx_job = True
+                job_info = self._default_hgp._api_client.job_get(job_id)
+            else:
+                job_info = self._provider._runtime_client.job_get(job_id)
         except ApiError as ex:
             if "Error code: 3250." in str(ex):
                 raise IBMJobNotFoundError(f"Job {job_id} not found.")
             raise IBMBackendApiError(
                 "Failed to get job {}: {}".format(job_id, str(ex))
             ) from ex
-        job = self._restore_circuit_job(job_info, raise_error=True)
+        job = self._restore_circuit_job(job_info, raise_error=True, iqx_job=iqx_job)
         return job
 
     @staticmethod
