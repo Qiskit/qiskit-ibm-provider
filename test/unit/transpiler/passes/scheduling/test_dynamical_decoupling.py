@@ -17,7 +17,7 @@ from numpy import pi
 
 from ddt import ddt, data
 from qiskit import pulse
-from qiskit.circuit import QuantumCircuit, Delay
+from qiskit.circuit import QuantumCircuit, Delay, QuantumRegister, ClassicalRegister
 from qiskit.circuit.library import XGate, YGate, RXGate, UGate
 from qiskit.quantum_info import Operator
 from qiskit.test import QiskitTestCase
@@ -28,7 +28,7 @@ from qiskit_ibm_provider.transpiler.passes.scheduling.dynamical_decoupling impor
     PadDynamicalDecoupling,
 )
 from qiskit_ibm_provider.transpiler.passes.scheduling.scheduler import (
-    ASAPScheduleAnalysis,
+    ALAPScheduleAnalysis, ASAPScheduleAnalysis,
 )
 from qiskit_ibm_provider.transpiler.passes.scheduling.utils import (
     DynamicCircuitInstructionDurations,
@@ -814,4 +814,63 @@ class TestPadDynamicalDecoupling(QiskitTestCase):
         expected.delay(450, 0)
         expected.delay(225, 0)
         expected.barrier()
+        self.assertEqual(qc_dd, expected)
+
+    def test_issue_458_extra_idle_bug(self):
+        """Regression test for https://github.com/Qiskit/qiskit-ibm-provider/issues/458"""
+
+        qc = QuantumCircuit(4, 3)
+
+        qc.cx(0,1)
+        qc.delay(200, 0)
+        qc.delay(700, 2)
+        qc.cx(1, 2)
+        qc.delay(3060, 3)
+        qc.barrier([0, 1, 2])
+
+        qc.delay(1160, 0)
+        qc.delay(1000, 2)
+        qc.measure(1, 0)
+        qc.delay(160, 1)
+        qc.x(2).c_if(0, 1)
+        qc.barrier([0, 1, 2])
+        qc.measure(0, 1)
+        qc.delay(1000, 1)
+        qc.measure(2, 2)
+
+        dd_sequence = [
+            [XGate(), XGate()],
+        ]
+
+        pm = PassManager(
+            [
+                ALAPScheduleAnalysis(self.durations),
+                PadDynamicalDecoupling(
+                    self.durations,
+                    dd_sequence,
+                    qubits=[0],
+                    extra_slack_distribution="edges",
+                    pulse_alignment=16,
+                    insert_multiple_cycles=False,
+                ),
+            ]
+        )
+
+        qc_dd = pm.run(qc)
+
+        expected = QuantumCircuit(1, 0)
+        expected.x(0)
+        expected.delay(225, 0)
+        expected.x(0)
+        expected.delay(450, 0)
+        expected.x(0)
+        expected.delay(225, 0)
+        expected.x(0)
+        expected.delay(225, 0)
+        expected.x(0)
+        expected.delay(450, 0)
+        expected.delay(225, 0)
+        expected.barrier()
+
+        import pdb;pdb.set_trace()
         self.assertEqual(qc_dd, expected)
