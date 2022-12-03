@@ -1361,7 +1361,7 @@ class TestALAPSchedulingAndPaddingPass(QiskitTestCase):
 
         self.assertEqual(expected, scheduled)
 
-    def test_issue_458_extra_idle_bug(self):
+    def test_issue_458_extra_idle_bug_0(self):
         """Regression test for https://github.com/Qiskit/qiskit-ibm-provider/issues/458
 
         This demonstrates that delays on idle qubits are pushed to the last schedulable
@@ -1419,6 +1419,36 @@ class TestALAPSchedulingAndPaddingPass(QiskitTestCase):
         expected.delay(1000, 1)
         expected.measure(0, 1)
         expected.measure(2, 2)
+        expected.barrier()
+
+        self.assertEqual(scheduled, expected)
+
+    def test_issue_458_extra_idle_bug_1(self):
+        """Regression test for https://github.com/Qiskit/qiskit-ibm-provider/issues/458
+
+        This demonstrates that a bug with a double-delay insertion has been resolved.
+        """
+
+        qc = QuantumCircuit(3, 3)
+
+        qc.rz(0, 2)
+        qc.barrier()
+        qc.measure(1, 0)
+
+        durations = DynamicCircuitInstructionDurations(
+            [("rz", None, 0), ("cx", None, 700), ("measure", None, 840)]
+        )
+
+        pm = PassManager([ALAPScheduleAnalysis(durations), PadDelay()])
+        scheduled = pm.run(qc)
+
+        expected = QuantumCircuit(3, 3)
+
+        expected.rz(0, 2)
+        expected.barrier()
+        expected.delay(1000, 0)
+        expected.measure(1, 0)
+        expected.delay(1000, 2)
         expected.barrier()
 
         self.assertEqual(scheduled, expected)
