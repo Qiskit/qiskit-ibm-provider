@@ -20,6 +20,10 @@ from qiskit.transpiler.preset_passmanagers.plugin import PassManagerStagePlugin
 from qiskit.transpiler.preset_passmanagers import common
 from qiskit.transpiler.passes import ConvertConditionsToIfOps
 
+from qiskit_ibm_provider.transpiler.passes.basis.convert_id_to_delay import (
+    ConvertIdToDelay,
+)
+
 
 class IBMTranslationPlugin(PassManagerStagePlugin):
     """A translation stage plugin for converting c_if to if_else and then running the basis
@@ -42,13 +46,14 @@ class IBMTranslationPlugin(PassManagerStagePlugin):
             unitary_synthesis_plugin_config=pass_manager_config.unitary_synthesis_plugin_config,
             hls_config=pass_manager_config.hls_config,
         )
-        # Only inject conversion pass at level 0 and level 1. As of
+        plugin_passes = [ConvertIdToDelay(160)]
+
+        # Only inject control-flow conversion pass at level 0 and level 1. As of
         # qiskit 0.22.x transpile() with level 2 and 3 does not support
         # control flow instructions (including if_else). This can be
         # removed when higher optimization levels support control flow
         # instructions.
-        if optimization_level in {2, 3}:
-            return translator_pm
-        else:
-            output = PassManager([ConvertConditionsToIfOps()]) + translator_pm
-            return output
+        if optimization_level in {0, 1}:
+            plugin_passes += [ConvertConditionsToIfOps()]
+
+        return PassManager(plugin_passes) + translator_pm
