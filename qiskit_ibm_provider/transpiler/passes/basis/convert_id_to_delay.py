@@ -12,15 +12,16 @@
 
 """Pass to convert Id gate operations to a delay instruction."""
 
+from typing import Dict
+
 from qiskit.converters import dag_to_circuit, circuit_to_dag
 
-from qiskit.circuit import (
-    ControlFlowOp,
-)
+from qiskit.circuit import ControlFlowOp
 from qiskit.circuit import Delay
 from qiskit.circuit.library import IGate
 from qiskit.dagcircuit import DAGCircuit
 from qiskit.transpiler.basepasses import TransformationPass
+from qiskit.transpiler.instruction_durations import InstructionDurations
 
 
 class ConvertIdToDelay(TransformationPass):
@@ -28,16 +29,17 @@ class ConvertIdToDelay(TransformationPass):
     a delay of the corresponding length.
     """
 
-    def __init__(self, duration: float, unit: str = "dt"):
+    def __init__(self, durations: InstructionDurations, gate: str = "sx"):
         """Convert :class:`qiskit.circuit.library.IGate` to a
         Convert :class:`qiskit.circuit.Delay`.
 
         Args:
             duration: Duration of the delay to replace the identity gate with.
-            str: Units for the delay.
+            gate: Single qubit gate to extract duration from.
         """
-        self.duration = duration
-        self.unit = unit
+        self.durations = durations
+        self.gate = gate
+        self._cached_durations: Dict[int, int] = {}
 
         super().__init__()
 
@@ -65,10 +67,21 @@ class ConvertIdToDelay(TransformationPass):
                     inplace=True,
                 )
             elif isinstance(node.op, IGate):
-                delay_op = Delay(self.duration, unit=self.unit)
+                delay_op = Delay(self._get_duration(node.qargs[0].index))
                 delay_op.condition = node.op.condition
                 dag.substitute_node(node, delay_op, inplace=True)
 
                 modified = True
 
         return modified
+
+    def _get_duration(self, qubit: int) -> int:
+        """Get the duration of a gate in dt."""
+        duration = self._cached_durations.get(qubit, None)
+        if duration:
+            return duration
+
+        duration = self.durations.get(self.gate, qubit)
+        self._cached_durations[qubit] = duration
+
+        return duration

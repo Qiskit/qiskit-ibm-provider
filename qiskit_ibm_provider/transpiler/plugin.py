@@ -46,7 +46,11 @@ class IBMTranslationPlugin(PassManagerStagePlugin):
             unitary_synthesis_plugin_config=pass_manager_config.unitary_synthesis_plugin_config,
             hls_config=pass_manager_config.hls_config,
         )
-        plugin_passes = [ConvertIdToDelay(160)]
+
+        instruction_durations = pass_manager_config.instruction_durations
+        plugin_passes = []
+        if instruction_durations:
+            plugin_passes.append(ConvertIdToDelay(instruction_durations))
 
         # Only inject control-flow conversion pass at level 0 and level 1. As of
         # qiskit 0.22.x transpile() with level 2 and 3 does not support

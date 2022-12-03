@@ -20,18 +20,30 @@ from qiskit_ibm_provider.transpiler.passes.basis.convert_id_to_delay import (
     ConvertIdToDelay,
 )
 
+from qiskit_ibm_provider.transpiler.passes.scheduling.utils import (
+    DynamicCircuitInstructionDurations,
+)
+
 # pylint: disable=invalid-name
 
 
 class TestConvertIdToDelay(QiskitTestCase):
     """Tests the ConvertIdToDelay pass"""
 
+    def setUp(self):
+        """Setup."""
+        super().setUp()
+
+        self.durations = DynamicCircuitInstructionDurations(
+            [("sx", None, 160), ("x", None, 200)]
+        )
+
     def test_id_gate(self):
         """Test if Id gate is converted a delay."""
         qc = QuantumCircuit(1, 0)
         qc.id(0)
 
-        pm = PassManager([ConvertIdToDelay(160)])
+        pm = PassManager([ConvertIdToDelay(self.durations)])
         transformed = pm.run(qc)
 
         expected = QuantumCircuit(1, 0)
@@ -44,11 +56,11 @@ class TestConvertIdToDelay(QiskitTestCase):
         qc = QuantumCircuit(1, 0)
         qc.id(0)
 
-        pm = PassManager([ConvertIdToDelay(1)])
+        pm = PassManager([ConvertIdToDelay(self.durations, "x")])
         transformed = pm.run(qc)
 
         expected = QuantumCircuit(1, 0)
-        expected.delay(1, 0, unit="s")
+        expected.delay(200, 0)
 
         self.assertEqual(expected, transformed)
 
@@ -58,7 +70,7 @@ class TestConvertIdToDelay(QiskitTestCase):
 
         qc.id(0).c_if(0, 1)
 
-        pm = PassManager([ConvertIdToDelay(160)])
+        pm = PassManager([ConvertIdToDelay(self.durations)])
         transformed = pm.run(qc)
 
         expected = QuantumCircuit(1, 1)
@@ -76,7 +88,7 @@ class TestConvertIdToDelay(QiskitTestCase):
         with else_:
             qc.id(0)
 
-        pm = PassManager([ConvertIdToDelay(160)])
+        pm = PassManager([ConvertIdToDelay(self.durations)])
         transformed = pm.run(qc)
 
         expected = QuantumCircuit(1, 1)
