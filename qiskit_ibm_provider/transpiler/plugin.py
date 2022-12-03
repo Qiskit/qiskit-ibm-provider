@@ -26,8 +26,8 @@ from qiskit_ibm_provider.transpiler.passes.basis.convert_id_to_delay import (
 
 
 class IBMTranslationPlugin(PassManagerStagePlugin):
-    """A translation stage plugin for converting c_if to if_else and then running the basis
-    translator."""
+    """A translation stage plugin for targeting Qiskit circuits
+    to IBM Quantum systems."""
 
     def pass_manager(
         self,
