@@ -83,9 +83,9 @@ class TestConvertIdToDelay(QiskitTestCase):
     def test_if_test_id_gate(self):
         """Test if if_test Id gate is converted a if_test delay."""
         qc = QuantumCircuit(1, 1)
-        with qc.if_test((0, 1)) as else_:
+        with qc.if_test((0, 1)) as else_: # pylint: disable=not-context-manager
             qc.id(0)
-        with else_:
+        with else_: # pylint: disable=not-context-manager
             qc.id(0)
 
         pm = PassManager([ConvertIdToDelay(self.durations)])
