@@ -92,7 +92,7 @@ class TestConvertIdToDelay(QiskitTestCase):
         transformed = pm.run(qc)
 
         expected = QuantumCircuit(1, 1)
-        with expected.if_test((0, 1)) as else_: # pylint: disable=not-context-manager
+        with expected.if_test((0, 1)) as else_:  # pylint: disable=not-context-manager
             expected.delay(160, 0)
         with else_:
             expected.delay(160, 0)
