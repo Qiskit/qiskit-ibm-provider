@@ -199,6 +199,7 @@ class IBMBackendService:
         job_tags: Optional[List[str]] = None,
         descending: bool = True,
         instance: Optional[str] = None,
+        iqx_job: bool = False,
     ) -> List[IBMJob]:
         """Return a list of jobs, subject to optional filtering.
 
@@ -225,6 +226,7 @@ class IBMBackendService:
             descending: If ``True``, return the jobs in descending order of the job
                 creation date (i.e. newest first) until the limit is reached.
             instance: The provider in the hub/group/project format.
+            iqx_job: Retrieve jobs from the old provider/
 
         Returns:
             A list of ``IBMJob`` instances.
@@ -284,7 +286,11 @@ class IBMBackendService:
         original_limit = limit
         while True:
             job_responses = self._get_jobs(
-                api_filter=api_filter, limit=limit, skip=skip, descending=descending
+                api_filter=api_filter,
+                limit=limit,
+                skip=skip,
+                descending=descending,
+                iqx_job=iqx_job,
             )
             if len(job_responses) == 0:
                 break
@@ -297,7 +303,9 @@ class IBMBackendService:
                         isinstance(status, list) and job_status not in status
                     ):
                         continue
-                job = self._restore_circuit_job(job_info, raise_error=False)
+                job = self._restore_circuit_job(
+                    job_info, raise_error=False, iqx_job=iqx_job
+                )
                 if job is None:
                     logger.warning(
                         'Discarding job "%s" because it contains invalid data.',
@@ -316,6 +324,7 @@ class IBMBackendService:
         limit: Optional[int] = 10,
         skip: int = 0,
         descending: bool = True,
+        iqx_job: bool = False,
     ) -> List:
         """Retrieve the requested number of jobs from the server using pagination.
 
@@ -334,9 +343,20 @@ class IBMBackendService:
         job_responses: List[Dict[str, Any]] = []
         current_page_limit = limit if (limit is not None and limit <= 50) else 50
         while True:
-            job_page = self._provider._runtime_client.jobs_get(
-                limit=current_page_limit, skip=skip, descending=descending, **api_filter
-            )["jobs"]
+            if iqx_job:
+                job_page = self._default_hgp._api_client.list_jobs(
+                    limit=current_page_limit,
+                    skip=skip,
+                    descending=descending,
+                    extra_filter=api_filter,
+                )
+            else:
+                job_page = self._provider._runtime_client.jobs_get(
+                    limit=current_page_limit,
+                    skip=skip,
+                    descending=descending,
+                    **api_filter,
+                )["jobs"]
             if logger.getEffectiveLevel() is logging.DEBUG:
                 filtered_data = [filter_data(job) for job in job_page]
                 logger.debug("jobs() response data is %s", filtered_data)

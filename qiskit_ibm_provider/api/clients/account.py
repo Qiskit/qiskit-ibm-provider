@@ -70,3 +70,25 @@ class AccountClient(BaseClient):
             Job information.
         """
         return self.base_api.job(job_id).get()
+
+    def list_jobs(
+        self,
+        limit: int = 10,
+        skip: int = 0,
+        descending: bool = True,
+        extra_filter: Optional[Dict[str, Any]] = None,
+    ) -> List[Dict[str, Any]]:
+        """Return a list of job data, with filtering and pagination.
+        In order to reduce the amount of data transferred, the server only
+        sends back a subset of the total information for each job.
+        Args:
+            limit: Maximum number of items to return.
+            skip: Offset for the items to return.
+            descending: Whether the jobs should be in descending order.
+            extra_filter: Additional filtering passed to the query.
+        Returns:
+            A list of job data.
+        """
+        return self.base_api.jobs(
+            limit=limit, skip=skip, descending=descending, extra_filter=extra_filter
+        )
