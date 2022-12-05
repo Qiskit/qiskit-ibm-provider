@@ -22,6 +22,10 @@ backends that support advanced "dynamic circuit" capabilities. Ie.,
 circuits with support for classical control-flow/feedback based off
 of measurement results.
 
+.. warning::
+    You should not mix these scheduling passes with Qiskit's builtin scheduling
+    passes as they will negatively interact with the scheduling routines for
+    dynamic circuits. This includes setting ``scheduling_method`` in ``transpile``.
 
 Below we demonstrate how to schedule and pad a teleportation circuit with delays
 for a dynamic circuit backend's execution model:

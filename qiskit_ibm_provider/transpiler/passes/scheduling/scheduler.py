@@ -17,7 +17,7 @@ from typing import Dict, Optional, Union, Set, Tuple
 import itertools
 
 import qiskit
-from qiskit.circuit import Clbit, Measure, Qubit, Reset
+from qiskit.circuit import Clbit, Measure, Qubit, Reset, Barrier
 from qiskit.dagcircuit import DAGCircuit, DAGNode
 from qiskit.transpiler.exceptions import TranspilerError
 from qiskit.transpiler.passes.scheduling.scheduling.base_scheduler import BaseScheduler
@@ -610,10 +610,20 @@ class ALAPScheduleAnalysis(BaseDynamicCircuitAnalysis):
         block_bit_times = {}
         # Iterated nodes starting at the first, from the node with the
         # last time, preferring barriers over non-barriers
-        iterate_nodes = sorted(
-            self._node_stop_time.items(),
-            key=lambda item: (item[1][0], -item[1][1], self._get_duration(item[0])),
-        )
+
+        def order_ops(
+            item: Tuple[DAGNode, Tuple[int, int]]
+        ) -> Tuple[int, int, bool, int]:
+            """Iterated nodes ordering by channel, time and preferring that barriers are processed
+            first."""
+            return (
+                item[1][0],
+                -item[1][1],
+                not isinstance(item[0].op, Barrier),
+                self._get_duration(item[0]),
+            )
+
+        iterate_nodes = sorted(self._node_stop_time.items(), key=order_ops)
 
         new_node_start_time = {}
         new_node_stop_time = {}
