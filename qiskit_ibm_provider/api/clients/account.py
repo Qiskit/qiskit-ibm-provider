@@ -16,9 +16,7 @@ import logging
 
 from .base import BaseClient
 from ..client_parameters import ClientParameters
-from ..rest import Account
 from ..session import RetrySession
-from ...utils.hgp import from_instance_format
 
 logger = logging.getLogger(__name__)
 
@@ -36,12 +34,3 @@ class AccountClient(BaseClient):
             params.url, auth=params.get_auth_handler(), **params.connection_parameters()
         )
         self._params = params
-        hub, group, project = from_instance_format(params.instance)
-        # base_api is used to handle endpoints that don't include h/g/p.
-        # account_api is for h/g/p.
-        self.account_api = Account(
-            session=self._session,
-            hub=hub,
-            group=group,
-            project=project,
-        )
