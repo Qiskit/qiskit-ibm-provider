@@ -776,6 +776,9 @@ class IBMBackend(Backend):
 
         return circuits
 
+    def get_translation_stage_plugin(self):
+        return "ibm_backend"
+
 
 class IBMRetiredBackend(IBMBackend):
     """Backend class interfacing with an IBM Quantum device no longer available."""
