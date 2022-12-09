@@ -767,8 +767,6 @@ class IBMBackend(Backend):
         # Make sure we don't mutate user's input circuits
         circuits = copy.deepcopy(circuits)
         # Convert id gates to delays.
-        # TODO: This should be part of user-level transpilation
-        # (But we need this to always run. Not just opt-in in plugin)
         pm = PassManager(  # pylint: disable=invalid-name
             ConvertIdToDelay(self._target.durations())
         )
@@ -776,7 +774,7 @@ class IBMBackend(Backend):
 
         return circuits
 
-    def get_translation_stage_plugin(self):
+    def get_translation_stage_plugin(self) -> str:
         """Return the default translation stage plugin name for IBM backends."""
         return "ibm_backend"
 
