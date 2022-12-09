@@ -777,6 +777,7 @@ class IBMBackend(Backend):
         return circuits
 
     def get_translation_stage_plugin(self):
+        """Return the default translation stage plugin name for IBM backends."""
         return "ibm_backend"
 
 
