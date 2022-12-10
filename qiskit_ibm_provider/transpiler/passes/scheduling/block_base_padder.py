@@ -14,9 +14,10 @@
 
 from typing import Any, Dict, List, Optional, Union
 
-from qiskit.circuit import Qubit, Clbit, Instruction
+from qiskit.circuit import Qubit, Clbit, ControlFlowOp, Instruction
 from qiskit.circuit.library import Barrier
 from qiskit.circuit.delay import Delay
+from qiskit.converters import dag_to_circuit, circuit_to_dag
 from qiskit.dagcircuit import DAGCircuit, DAGNode
 from qiskit.transpiler.basepasses import TransformationPass
 from qiskit.transpiler.exceptions import TranspilerError
@@ -55,6 +56,7 @@ class BlockBasePadder(TransformationPass):
         self._node_start_time = None
         self._idle_after: Optional[Dict[Qubit, int]] = None
         self._dag = None
+        self._block_dag = None
         self._prev_node: Optional[DAGNode] = None
         self._block_duration = 0
         self._current_block_idx = 0
@@ -79,24 +81,8 @@ class BlockBasePadder(TransformationPass):
 
         self._init_run(dag)
 
-        # Compute fresh circuit duration from the node start time dictionary and op duration.
-        # Note that pre-scheduled duration may change within the alignment passes, i.e.
-        # if some instruction time t0 violating the hardware alignment constraint,
-        # the alignment pass may delay t0 and accordingly the circuit duration changes.
-        for node in block_order_op_nodes(dag):
-            if node in self._node_start_time:
-                if isinstance(node.op, Delay):
-                    self._visit_delay(node)
-                else:
-                    self._visit_generic(node)
-
-            else:
-                raise TranspilerError(
-                    f"Operation {repr(node)} is likely added after the circuit is scheduled. "
-                    "Schedule the circuit again if you transformed it."
-                )
-
-            self._prev_node = node
+        # Top-level dag is the entry block
+        self._visit_block(dag)
 
         # terminate final block
         self._terminate_block(self._block_duration, self._current_block_idx, None)
@@ -106,6 +92,7 @@ class BlockBasePadder(TransformationPass):
     def _init_run(self, dag: DAGCircuit) -> None:
         """Setup for initial run."""
         self._node_start_time = self.property_set["node_start_time"].copy()
+        self._block_dags = self.property_set["block_dags"]
         self._idle_after = {bit: 0 for bit in dag.qubits}
         self._current_block_idx = 0
         self._conditional_block = False
@@ -118,9 +105,7 @@ class BlockBasePadder(TransformationPass):
         for creg in dag.cregs.values():
             self._dag.add_creg(creg)
 
-        # Update start time dictionary for the new_dag.
-        # This information may be used for further scheduling tasks,
-        # but this is immediately invalidated because most node ids are updated in the new_dag.
+
         self.property_set["node_start_time"].clear()
 
         self._dag.name = dag.name
@@ -190,6 +175,44 @@ class BlockBasePadder(TransformationPass):
             return 0
         return node.op.duration
 
+    def _visit_control_flow_op(self, node: DAGNode) -> None:
+        """Visit a control-flow node to pad."""
+        # TODO: This is a hack required to tie nodes of control-flow
+        # blocks across the scheduler and block_base_padder. This is
+        # because the current control flow nodes store the block as a
+        # circuit which is not hashable. For processing we are currently
+        # required to convert each circuit block to a dag which is inefficient
+        # and causes node relationships stored in analysis to be lost between
+        # passes as we are constantly recreating the block dags.
+        # We resolve this here by extracting the cached dag blocks that were
+        # stored by the scheduling pass.
+        for block_idx, _ in enumerate(node.op.blocks):
+            block_dag = self._block_dags[node][block_idx]
+            self._visit_block(block_dag)
+
+    def _visit_block(self, block: DAGCircuit) -> None:
+        # Push the previous block dag onto the stack
+        prev_block_dag = self._block_dag
+        self._block_dag = block
+        for node in block_order_op_nodes(block):
+            self._visit_node(node)
+        # Pop the previous block dag off the stack restoring it
+        self._block_dag = prev_block_dag
+
+    def _visit_node(self, node: DAGNode) -> None:
+        if isinstance(node.op, ControlFlowOp):
+                self._visit_control_flow_op(node)
+        elif node in self._node_start_time:
+            if isinstance(node.op, Delay):
+                self._visit_delay(node)
+            else:
+                self._visit_generic(node)
+        else:
+            raise TranspilerError(
+                f"Operation {repr(node)} is likely added after the circuit is scheduled. "
+                "Schedule the circuit again if you transformed it."
+            )
+
     def _visit_delay(self, node: DAGNode) -> None:
         """The padding class considers a delay instruction as idle time
         rather than instruction. Delay node is not added so that
@@ -257,29 +280,6 @@ class BlockBasePadder(TransformationPass):
         # pass to rewrite all ``c_if`` operations as ``if_else``
         # blocks that are in turn scheduled.
         self._pad_until_block_end(block_duration, block_idx)
-
-        def _is_terminating_barrier(node: Optional[DAGNode]) -> bool:
-            return (
-                node
-                and isinstance(node.op, Barrier)
-                and len(node.qargs) == self._dag.num_qubits()
-            )
-
-        # Only add a barrier to the end if a viable barrier is not already present on all qubits
-        is_terminating_barrier = _is_terminating_barrier(
-            self._prev_node
-        ) or _is_terminating_barrier(node)
-        if not is_terminating_barrier:
-            # Terminate with a barrier to be clear timing is non-deterministic
-            # across the barrier.
-            barrier_node = self._apply_scheduled_op(
-                block_idx,
-                block_duration,
-                Barrier(self._dag.num_qubits()),
-                self._dag.qubits,
-                [],
-            )
-            barrier_node.op.duration = 0
 
         # Reset idles for the new block.
         self._idle_after = {bit: 0 for bit in self._dag.qubits}

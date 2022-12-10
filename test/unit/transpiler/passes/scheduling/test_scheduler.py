@@ -33,12 +33,16 @@ from qiskit_ibm_provider.transpiler.passes.scheduling.utils import (
 class TestASAPSchedulingAndPaddingPass(QiskitTestCase):
     """Tests the ASAP Scheduling passes"""
 
-    def test_classically_controlled_gate_after_measure(self):
+    def test_if_test_gate_after_measure(self):
         """Test if schedules circuits with c_if after measure with a common clbit.
         See: https://github.com/Qiskit/qiskit-terra/issues/7654"""
         qc = QuantumCircuit(2, 1)
         qc.measure(0, 0)
-        qc.x(1).c_if(0, True)
+        with qc.if_test((0, 0)) as else_:
+            qc.x(1)
+        with else_:
+            qc.x(0)
+
 
         durations = DynamicCircuitInstructionDurations(
             [("x", None, 200), ("measure", None, 840)]
@@ -49,11 +53,24 @@ class TestASAPSchedulingAndPaddingPass(QiskitTestCase):
         expected = QuantumCircuit(2, 1)
         expected.delay(1000, 1)
         expected.measure(0, 0)
-        expected.barrier()
-        expected.x(1).c_if(0, True)
-        expected.barrier()
+        with qc.if_test((0, 0)) as else_:
+            qc.x(1)
+        with else_:
+            qc.x(0)
 
         self.assertEqual(expected, scheduled)
+
+    def test_classically_controlled_gate_raises(self):
+        """Verify that old-style c_if gate raises error."""
+        qc = QuantumCircuit(2, 1)
+        qc.measure(0, 0)
+        qc.x(1).c_if(0, True)
+
+        durations = DynamicCircuitInstructionDurations(
+            [("x", None, 200), ("measure", None, 840)]
+        )
+        pm = PassManager([ASAPScheduleAnalysis(durations), PadDelay()])
+        scheduled = pm.run(qc)
 
     def test_measure_after_measure(self):
         """Test if schedules circuits with measure after measure with a common clbit.
