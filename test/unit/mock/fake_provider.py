@@ -13,6 +13,7 @@
 """Context managers for using with IBM Provider unit tests."""
 from collections import OrderedDict
 from typing import Dict
+from unittest.mock import MagicMock
 
 from qiskit_ibm_provider import IBMProvider
 from qiskit_ibm_provider.api.client_parameters import ClientParameters
@@ -34,6 +35,10 @@ class FakeProvider(IBMProvider):
         self._fake_account_client = test_options.get("account_client")
 
         super().__init__(*args, **kwargs)
+
+    def _initialize_services(self) -> None:
+        self._backend = MagicMock()
+        self._services = {"backend": self._backend}
 
     def _authenticate_ibm_quantum_account(
         self, client_params: ClientParameters
