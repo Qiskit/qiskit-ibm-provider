@@ -40,7 +40,6 @@ from .ibm_job import IBMJob
 from .queueinfo import QueueInfo
 from .utils import build_error_report, api_to_job_error
 from ..api.clients import (
-    AccountClient,
     RuntimeClient,
     RuntimeWebsocketClient,
     WebsocketClientCloseCode,
@@ -115,7 +114,7 @@ class IBMCircuitJob(IBMJob):
     def __init__(
         self,
         backend: "ibm_backend.IBMBackend",
-        api_client: AccountClient,
+        api_client: RuntimeClient,
         job_id: str,
         creation_date: Optional[str] = None,
         status: Optional[str] = None,

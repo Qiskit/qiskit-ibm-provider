@@ -52,7 +52,7 @@ from .ibm_job import IBMJob
 from .queueinfo import QueueInfo
 from .sub_job import SubJob
 from .utils import auto_retry, JOB_STATUS_TO_INT, JobStatusQueueInfo, last_job_stat_pos
-from ..api.clients import AccountClient
+from ..api.clients import RuntimeClient
 from ..exceptions import IBMBackendJobLimitError
 from ..utils.utils import validate_job_tags, api_status_to_job_status
 
@@ -121,7 +121,7 @@ class IBMCompositeJob(IBMJob):
     def __init__(
         self,
         backend: "ibm_backend.IBMBackend",
-        api_client: AccountClient,
+        api_client: RuntimeClient,
         job_id: Optional[str] = None,
         creation_date: Optional[datetime] = None,
         jobs: Optional[List[IBMCircuitJob]] = None,
@@ -226,7 +226,7 @@ class IBMCompositeJob(IBMJob):
 
     @classmethod
     def from_jobs(
-        cls, job_id: str, jobs: List[IBMCircuitJob], api_client: AccountClient
+        cls, job_id: str, jobs: List[IBMCircuitJob], api_client: RuntimeClient
     ) -> "IBMCompositeJob":
         """Return an instance of this class.
 

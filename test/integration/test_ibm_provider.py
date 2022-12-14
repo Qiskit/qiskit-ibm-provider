@@ -22,7 +22,7 @@ from qiskit.providers.models.backendproperties import BackendProperties
 from qiskit.test.reference_circuits import ReferenceCircuits
 
 from qiskit_ibm_provider import hub_group_project
-from qiskit_ibm_provider.api.clients import AccountClient
+from qiskit_ibm_provider.api.clients import RuntimeClient
 from qiskit_ibm_provider.api.exceptions import RequestsApiError
 
 from qiskit_ibm_provider.job.ibm_job import IBMJob
@@ -83,7 +83,7 @@ class TestIBMProviderEnableAccount(IBMTestCase):
     def test_discover_backend_failed(self):
         """Test discovering backends failed."""
         with mock.patch.object(
-            AccountClient,
+            RuntimeClient,
             "list_backends",
             return_value=[{"backend_name": "bad_backend"}],
         ):

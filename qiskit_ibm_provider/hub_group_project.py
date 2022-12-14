@@ -21,7 +21,7 @@ from qiskit_ibm_provider import (  # pylint: disable=unused-import
     ibm_provider,
 )
 
-from .api.clients import AccountClient
+from .api.clients import RuntimeClient
 from .utils.backend_decoder import configuration_from_server_data
 from .api.client_parameters import ClientParameters
 from .utils.hgp import from_instance_format
@@ -45,7 +45,7 @@ class HubGroupProject:
             instance: Hub/group/project.
         """
         self._client_params = client_params
-        self._api_client = AccountClient(client_params)
+        self._api_client = RuntimeClient(client_params)
         self._provider = provider
         # Initialize the internal list of backends.
         self._backends: Dict[str, "ibm_backend.IBMBackend"] = {}

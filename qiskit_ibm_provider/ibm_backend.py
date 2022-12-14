@@ -45,7 +45,7 @@ from qiskit.transpiler.passmanager import PassManager
 from qiskit.transpiler.target import Target
 
 from qiskit_ibm_provider import ibm_provider  # pylint: disable=unused-import
-from .api.clients import AccountClient
+from .api.clients import RuntimeClient
 from .exceptions import (
     IBMBackendError,
     IBMBackendValueError,
@@ -191,7 +191,7 @@ class IBMBackend(Backend):
         self,
         configuration: Union[QasmBackendConfiguration, PulseBackendConfiguration],
         provider: "ibm_provider.IBMProvider",
-        api_client: AccountClient,
+        api_client: RuntimeClient,
         instance: Optional[str] = None,
     ) -> None:
         """IBMBackend constructor.
@@ -784,7 +784,7 @@ class IBMRetiredBackend(IBMBackend):
         self,
         configuration: Union[QasmBackendConfiguration, PulseBackendConfiguration],
         provider: "ibm_provider.IBMProvider",
-        api_client: AccountClient,
+        api_client: RuntimeClient,
     ) -> None:
         """IBMRetiredBackend constructor.
 
@@ -834,7 +834,7 @@ class IBMRetiredBackend(IBMBackend):
         cls,
         backend_name: str,
         provider: "ibm_provider.IBMProvider",
-        api: AccountClient,
+        api: RuntimeClient,
     ) -> "IBMRetiredBackend":
         """Return a retired backend from its name."""
         configuration = QasmBackendConfiguration(

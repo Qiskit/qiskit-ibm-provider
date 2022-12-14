@@ -42,6 +42,7 @@ class RuntimeClient(BaseClient):
             params.url, auth=params.get_auth_handler(), **params.connection_parameters()
         )
         self._api = Runtime(self._session)
+        self._params = params
 
     def list_backends(self, hgp: str) -> List[str]:
         """Return a list of backends.

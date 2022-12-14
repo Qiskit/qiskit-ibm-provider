@@ -26,7 +26,7 @@ from qiskit.result import Result
 
 from qiskit_ibm_provider import ibm_backend  # pylint: disable=unused-import
 from .queueinfo import QueueInfo
-from ..api.clients import AccountClient
+from ..api.clients import RuntimeClient
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +39,7 @@ class IBMJob(Job, ABC):
     def __init__(
         self,
         backend: "ibm_backend.IBMBackend",
-        api_client: AccountClient,
+        api_client: RuntimeClient,
         job_id: str,
         name: Optional[str] = None,
         tags: Optional[List[str]] = None,
