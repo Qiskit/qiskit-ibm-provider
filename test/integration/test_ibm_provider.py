@@ -173,6 +173,11 @@ class TestIBMProviderServices(IBMTestCase):
         backends = self.dependencies.provider.backends()
         self.assertTrue(len(backends) > 0)
 
+    def test_instances(self):
+        """Test the provider has instances."""
+        instances = self.dependencies.provider.instances()
+        self.assertTrue(len(instances) > 0)
+
     def test_jobs(self):
         """Test accessing jobs directly from the provider."""
         jobs = self.dependencies.provider.jobs()
