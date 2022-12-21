@@ -1,0 +1,4 @@
+---
+features:
+  - |
+    The meth:`~IBMProvider.instances` was added to list all the available instances in a provider instance.
