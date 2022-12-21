@@ -547,7 +547,7 @@ class IBMProvider(Provider):
             filters=filters,
             min_num_qubits=min_num_qubits,
             input_allowed=input_allowed,
-            instance=instance or self._account.instance,
+            instance=instance,
             **kwargs,
         )
 
@@ -601,7 +601,7 @@ class IBMProvider(Provider):
             end_datetime=end_datetime,
             job_tags=job_tags,
             descending=descending,
-            instance=instance or self._account.instance,
+            instance=instance,
         )
 
     def retrieve_job(self, job_id: str) -> IBMJob:
