@@ -59,14 +59,12 @@ class BaseDynamicCircuitAnalysis(TransformationPass):
         """
         self._durations = durations
 
-        # We require ConvertConditionsToIfOps to be run as we do not
-        # handle the c_if in this pass to avoid duplication of work.
-        self.requires = [ConvertConditionsToIfOps()]
-
         self._dag : Optional[DAGCircuit] = None
         self._block_dag : Optional[DAGCircuit] = None
         self._node_block_dags = {}
-        self._block_idx_dag_map = []
+        # Mapping of control-flow nodes to their containing blocks
+        self._block_idx_dag_map = {}
+        # Mapping of block indices to the respective DAGCircuit
 
         self._current_block_idx = 0
         self._max_block_t1: Optional[Dict[int, int]] = None
@@ -176,7 +174,7 @@ class BaseDynamicCircuitAnalysis(TransformationPass):
         self._dag = dag
         self._block_dag = None
         self._node_block_dags = {}
-        self._block_idx_dag_map = []
+        self._block_idx_dag_map = {}
 
         self._current_block_idx = 0
         self._max_block_t1 = {}
@@ -242,7 +240,7 @@ class BaseDynamicCircuitAnalysis(TransformationPass):
     def _begin_new_circuit_block(self) -> None:
         """Create a new timed circuit block completing the previous block."""
         self._current_block_idx += 1
-        self._block_idx_dag_map.append(self._block_dag)
+        self._block_idx_dag_map[self._current_block_idx] = self._block_dag
         self._control_flow_block = False
         self._bit_stop_times[self._current_block_idx] = {
             q: 0 for q in self._block_dag.qubits + self._block_dag.clbits

@@ -53,6 +53,7 @@ class TestASAPSchedulingAndPaddingPass(QiskitTestCase):
         expected = QuantumCircuit(2, 1)
         expected.delay(1000, 1)
         expected.measure(0, 0)
+        expected.barrier()
         with expected.if_test((0, 0)) as else_:
             expected.delay(200, 0)
             expected.x(1)
@@ -72,7 +73,8 @@ class TestASAPSchedulingAndPaddingPass(QiskitTestCase):
             [("x", None, 200), ("measure", None, 840)]
         )
         pm = PassManager([ASAPScheduleAnalysis(durations), PadDelay()])
-        scheduled = pm.run(qc)
+        with self.assertRaises(TranspilerError):
+            pm.run(qc)
 
     def test_measure_after_measure(self):
         """Test if schedules circuits with measure after measure with a common clbit.
@@ -94,7 +96,6 @@ class TestASAPSchedulingAndPaddingPass(QiskitTestCase):
         expected.delay(200, 1)
         expected.measure(0, 0)
         expected.measure(1, 0)
-        expected.barrier()
         self.assertEqual(expected, scheduled)
 
     def test_measure_block_not_end(self):
@@ -299,7 +300,8 @@ class TestASAPSchedulingAndPaddingPass(QiskitTestCase):
         See https://github.com/Qiskit/qiskit-terra/pull/7655"""
         qc = QuantumCircuit(3, 1)
         qc.measure(0, 0)
-        qc.x(1).c_if(0, 1)
+        with qc.if_test((0, 1)):
+            qc.x(1)
         qc.measure(2, 0)
 
         durations = DynamicCircuitInstructionDurations(
@@ -319,12 +321,14 @@ class TestASAPSchedulingAndPaddingPass(QiskitTestCase):
         expected.delay(1000, 2)
         expected.measure(0, 0)
         expected.barrier()
-        expected.x(1).c_if(0, 1)
+        with expected.if_test((0, 1)):
+            expected.delay(200, 0)
+            expected.x(1)
+            expected.delay(200, 2)
         expected.barrier()
         expected.delay(1000, 0)
         expected.delay(1000, 1)
         expected.measure(2, 0)
-        expected.barrier()
 
         self.assertEqual(expected, scheduled)
 
@@ -707,6 +711,7 @@ class TestALAPSchedulingAndPaddingPass(QiskitTestCase):
         expected = QuantumCircuit(2, 1)
         expected.delay(1000, 1)
         expected.measure(0, 0)
+        expected.barrier()
         with expected.if_test((0, 0)) as else_:
             expected.delay(200, 0)
             expected.x(1)
@@ -964,7 +969,8 @@ class TestALAPSchedulingAndPaddingPass(QiskitTestCase):
         See https://github.com/Qiskit/qiskit-terra/pull/7655"""
         qc = QuantumCircuit(3, 1)
         qc.measure(0, 0)
-        qc.x(1).c_if(0, 1)
+        with qc.if_test((0, 1)):
+            qc.x(1)
         qc.measure(2, 0)
 
         durations = DynamicCircuitInstructionDurations(
@@ -984,12 +990,14 @@ class TestALAPSchedulingAndPaddingPass(QiskitTestCase):
         expected.delay(1000, 2)
         expected.measure(0, 0)
         expected.barrier()
-        expected.x(1).c_if(0, 1)
+        with expected.if_test((0, 1)):
+            expected.delay(200, 0)
+            expected.x(1)
+            expected.delay(200, 2)
         expected.barrier()
         expected.delay(1000, 0)
         expected.delay(1000, 1)
         expected.measure(2, 0)
-        expected.barrier()
 
         self.assertEqual(expected, scheduled)
 
