@@ -89,7 +89,7 @@ class BlockBasePadder(TransformationPass):
     def _init_run(self, dag: DAGCircuit) -> None:
         """Setup for initial run."""
         self._node_start_time = self.property_set["node_start_time"].copy()
-        self._block_dags = self.property_set["block_dags"]
+        self._node_block_dags = self.property_set["node_block_dags"]
         self._idle_after = {bit: 0 for bit in dag.qubits}
         self._current_block_idx = 0
         self._conditional_block = False
@@ -206,14 +206,14 @@ class BlockBasePadder(TransformationPass):
         # passes as we are constantly recreating the block dags.
         # We resolve this here by extracting the cached dag blocks that were
         # stored by the scheduling pass.
-        new_block_dags = []
+        new_node_block_dags = []
         for block_idx, _ in enumerate(node.op.blocks):
-            block_dag = self._block_dags[node][block_idx]
-            new_block_dags.append(self._visit_block(block_dag))
+            block_dag = self._node_block_dags[node][block_idx]
+            new_node_block_dags.append(self._visit_block(block_dag))
 
         # Build new control-flow operation containing scheduled blocks
         # and apply to the DAG.
-        new_control_flow_op = node.op.replace_blocks(dag_to_circuit(block) for block in new_block_dags)
+        new_control_flow_op = node.op.replace_blocks(dag_to_circuit(block) for block in new_node_block_dags)
         new_node = self._apply_scheduled_op(block_idx, t0, new_control_flow_op, node.qargs, node.cargs)
 
     def _visit_block(self, block: DAGCircuit) -> None:

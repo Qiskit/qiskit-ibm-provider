@@ -62,8 +62,8 @@ class TestASAPSchedulingAndPaddingPass(QiskitTestCase):
 
         self.assertEqual(expected, scheduled)
 
-    def test_classically_controlled_gate_raises(self):
-        """Verify that old-style c_if gate raises error."""
+    def test_old_style_c_if_is_converted(self):
+        """Verify that old-style c_if is converted to new-style."""
         qc = QuantumCircuit(2, 1)
         qc.measure(0, 0)
         qc.x(1).c_if(0, True)
@@ -665,6 +665,7 @@ class TestASAPSchedulingAndPaddingPass(QiskitTestCase):
 class TestALAPSchedulingAndPaddingPass(QiskitTestCase):
     """Tests the ALAP Scheduling passes"""
 
+
     def test_alap(self):
         """Test standard ALAP scheduling"""
         durations = DynamicCircuitInstructionDurations(
@@ -683,6 +684,35 @@ class TestALAPSchedulingAndPaddingPass(QiskitTestCase):
         expected.x(1)
         expected.delay(1000, 2)
         expected.barrier()
+
+        self.assertEqual(expected, scheduled)
+
+    def test_if_test_gate_after_measure(self):
+        """Test if schedules circuits with c_if after measure with a common clbit.
+        See: https://github.com/Qiskit/qiskit-terra/issues/7654"""
+        qc = QuantumCircuit(2, 1)
+        qc.measure(0, 0)
+        with qc.if_test((0, 0)) as else_:
+            qc.x(1)
+        with else_:
+            qc.x(0)
+
+
+        durations = DynamicCircuitInstructionDurations(
+            [("x", None, 200), ("measure", None, 840)]
+        )
+        pm = PassManager([ALAPScheduleAnalysis(durations), PadDelay()])
+        scheduled = pm.run(qc)
+
+        expected = QuantumCircuit(2, 1)
+        expected.delay(1000, 1)
+        expected.measure(0, 0)
+        with expected.if_test((0, 0)) as else_:
+            expected.delay(200, 0)
+            expected.x(1)
+        with else_:
+            expected.x(0)
+            expected.delay(200, 1)
 
         self.assertEqual(expected, scheduled)
 

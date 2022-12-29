@@ -23,7 +23,7 @@ from qiskit.transpiler.basepasses import TransformationPass
 from qiskit.transpiler.passes import ConvertConditionsToIfOps
 from qiskit.transpiler.passes.scheduling.time_unit_conversion import TimeUnitConversion
 
-from qiskit.circuit import Clbit, ControlFlowOp, Measure, Qubit, Reset
+from qiskit.circuit import Barrier, Clbit, ControlFlowOp, Measure, Qubit, Reset
 from qiskit.dagcircuit import DAGCircuit, DAGNode
 from qiskit.transpiler.exceptions import TranspilerError
 from qiskit.transpiler.passes.scheduling.scheduling.base_scheduler import BaseScheduler
@@ -65,7 +65,8 @@ class BaseDynamicCircuitAnalysis(TransformationPass):
 
         self._dag : Optional[DAGCircuit] = None
         self._block_dag : Optional[DAGCircuit] = None
-        self._block_dags = {}
+        self._node_block_dags = {}
+        self._block_idx_dag_map = []
 
         self._current_block_idx = 0
         self._max_block_t1: Optional[Dict[int, int]] = None
@@ -137,7 +138,7 @@ class BaseDynamicCircuitAnalysis(TransformationPass):
         # and causes node relationships stored in analysis to be lost between
         # passes as we are constantly recreating the block dags.
         # We resolve this here by caching these dags in the property set.
-        self._block_dags[node] = node_block_dags = []
+        self._node_block_dags[node] = node_block_dags = []
 
         t0 = max(  # pylint: disable=invalid-name
             self._current_block_bit_times[bit] for bit in node.qargs + node.cargs
@@ -174,7 +175,8 @@ class BaseDynamicCircuitAnalysis(TransformationPass):
 
         self._dag = dag
         self._block_dag = None
-        self._block_dags = {}
+        self._node_block_dags = {}
+        self._block_idx_dag_map = []
 
         self._current_block_idx = 0
         self._max_block_t1 = {}
@@ -192,7 +194,7 @@ class BaseDynamicCircuitAnalysis(TransformationPass):
         self._bit_indices = {q: index for index, q in enumerate(dag.qubits)}
         self._last_node_to_touch = {}
 
-    def _get_duration(self, node: DAGNode) -> int:
+    def _get_duration(self, node: DAGNode, dag: Optional[DAGCircuit] = None) -> int:
         if node.op.condition_bits:
             # As we cannot currently schedule through conditionals model
             # as zero duration to avoid padding.
@@ -200,7 +202,10 @@ class BaseDynamicCircuitAnalysis(TransformationPass):
 
         indices = [self._bit_indices[qarg] for qarg in node.qargs]
 
-        if self._block_dag.has_calibration_for(node):
+        # Fall back to current block dag if not specified.
+        dag = dag or self._block_dag
+
+        if dag.has_calibration_for(node):
             # If node has calibration, this value should be the highest priority
             cal_key = tuple(indices), tuple(float(p) for p in node.op.params)
             duration = self._block_dag.calibrations[node.op.name][cal_key].duration
@@ -237,6 +242,7 @@ class BaseDynamicCircuitAnalysis(TransformationPass):
     def _begin_new_circuit_block(self) -> None:
         """Create a new timed circuit block completing the previous block."""
         self._current_block_idx += 1
+        self._block_idx_dag_map.append(self._block_dag)
         self._control_flow_block = False
         self._bit_stop_times[self._current_block_idx] = {
             q: 0 for q in self._block_dag.qubits + self._block_dag.clbits
@@ -301,7 +307,7 @@ class ASAPScheduleAnalysis(BaseDynamicCircuitAnalysis):
         self._visit_block(dag)
 
         self.property_set["node_start_time"] = self._node_start_time
-        self.property_set["block_dags"] = self._block_dags
+        self.property_set["node_block_dags"] = self._node_block_dags
         return dag
 
     def _visit_measure(self, node: DAGNode) -> None:
@@ -427,13 +433,10 @@ class ALAPScheduleAnalysis(BaseDynamicCircuitAnalysis):
 
         # Top-level dag is the entry block
         self._visit_block(dag)
-
+        self._push_block_durations()
         self.property_set["node_start_time"] = self._node_start_time
+        self.property_set["node_block_dags"] = self._node_block_dags
         return dag
-
-    def _visit_block(self, block: DAGCircuit) -> None:
-        super()._visit_block(block)
-        self._push_block_durations(block)
 
     def _visit_measure(self, node: DAGNode) -> None:
         """Visit a measurement node.
@@ -549,7 +552,7 @@ class ALAPScheduleAnalysis(BaseDynamicCircuitAnalysis):
                 item[1][0],
                 -item[1][1],
                 not isinstance(item[0].op, Barrier),
-                self._get_duration(item[0]),
+                self._get_duration(item[0], dag=self._block_idx_dag_map[item[1][0]]),
             )
 
         iterate_nodes = sorted(self._node_stop_time.items(), key=order_ops)
@@ -580,7 +583,7 @@ class ALAPScheduleAnalysis(BaseDynamicCircuitAnalysis):
             scheduled.add(node)
 
             new_node_start_time[node] = (block, new_time)
-            new_node_stop_time[node] = (block, new_time + self._get_duration(node))
+            new_node_stop_time[node] = (block, new_time + self._get_duration(node, dag=self._block_idx_dag_map[block]))
 
             # Update available times by bit
             for bit in node.qargs:
@@ -594,10 +597,11 @@ class ALAPScheduleAnalysis(BaseDynamicCircuitAnalysis):
             if node in scheduled:
                 continue
             # Start with last time as the time to push to
+            current_dag = self._block_idx_dag_map[block]
             if block not in block_bit_times:
                 block_bit_times[block] = {
                     q: self._max_block_t1[block]
-                    for q in self._block_dag.qubits + self._block_dag.clbits
+                    for q in current_dag.qubits + current_dag.clbits
                 }
 
             # Calculate the latest available time to push to collectively for tied nodes
