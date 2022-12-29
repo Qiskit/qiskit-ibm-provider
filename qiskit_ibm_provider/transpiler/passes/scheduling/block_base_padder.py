@@ -82,12 +82,9 @@ class BlockBasePadder(TransformationPass):
         self._init_run(dag)
 
         # Top-level dag is the entry block
-        self._visit_block(dag)
+        new_dag = self._visit_block(dag)
 
-        # terminate final block
-        self._terminate_block(self._block_duration, self._current_block_idx, None)
-
-        return self._dag
+        return new_dag
 
     def _init_run(self, dag: DAGCircuit) -> None:
         """Setup for initial run."""
@@ -99,22 +96,40 @@ class BlockBasePadder(TransformationPass):
         self._block_duration = 0
 
         # Prepare DAG to pad
-        self._dag = DAGCircuit()
-        for qreg in dag.qregs.values():
-            self._dag.add_qreg(qreg)
-        for creg in dag.cregs.values():
-            self._dag.add_creg(creg)
-
+        self._dag = self._empty_dag_like(dag)
+        self._block_dag = self._dag
 
         self.property_set["node_start_time"].clear()
-
-        self._dag.name = dag.name
-        self._dag.metadata = dag.metadata
-        self._dag.unit = self.property_set["time_unit"]
-        self._dag.calibrations = dag.calibrations
-        self._dag.global_phase = dag.global_phase
-
         self._prev_node = None
+
+    def _empty_dag_like(self, dag: DAGCircuit) -> DAGCircuit:
+        """Create an empty dag like the input dag."""
+        new_dag = DAGCircuit()
+
+        # Control flow blocks do not get the full reg added to the
+        # block but just the bits. To work around this we try to
+        # add the reg if available and otherwise add the bits directly.
+        # We need this work around as otherwise the padded circuit will
+        # not be equivalent to one written manually as bits will not
+        # be defined on registers like in the test case.
+        if dag.qregs:
+            for qreg in dag.qregs.values():
+                new_dag.add_qreg(qreg)
+        else:
+            new_dag.add_qubits(dag.qubits)
+
+        if dag.cregs:
+            for creg in dag.cregs.values():
+                new_dag.add_creg(creg)
+        else:
+            new_dag.add_clbits(dag.clbits)
+
+        new_dag.name = dag.name
+        new_dag.metadata = dag.metadata
+        new_dag.unit = self.property_set["time_unit"]
+        new_dag.calibrations = dag.calibrations
+        new_dag.global_phase = dag.global_phase
+        return new_dag
 
     def _pre_runhook(self, dag: DAGCircuit) -> None:
         """Extra routine inserted before running the padding pass.
@@ -177,6 +192,11 @@ class BlockBasePadder(TransformationPass):
 
     def _visit_control_flow_op(self, node: DAGNode) -> None:
         """Visit a control-flow node to pad."""
+
+        # Control-flow terminator ends scheduling of block currently
+        block_idx, t0 = self._node_start_time[node]  # pylint: disable=invalid-name
+        self._terminate_block(t0, block_idx, None)
+
         # TODO: This is a hack required to tie nodes of control-flow
         # blocks across the scheduler and block_base_padder. This is
         # because the current control flow nodes store the block as a
@@ -186,22 +206,37 @@ class BlockBasePadder(TransformationPass):
         # passes as we are constantly recreating the block dags.
         # We resolve this here by extracting the cached dag blocks that were
         # stored by the scheduling pass.
+        new_block_dags = []
         for block_idx, _ in enumerate(node.op.blocks):
             block_dag = self._block_dags[node][block_idx]
-            self._visit_block(block_dag)
+            new_block_dags.append(self._visit_block(block_dag))
+
+        # Build new control-flow operation containing scheduled blocks
+        # and apply to the DAG.
+        new_control_flow_op = node.op.replace_blocks(dag_to_circuit(block) for block in new_block_dags)
+        new_node = self._apply_scheduled_op(block_idx, t0, new_control_flow_op, node.qargs, node.cargs)
 
     def _visit_block(self, block: DAGCircuit) -> None:
         # Push the previous block dag onto the stack
         prev_block_dag = self._block_dag
-        self._block_dag = block
+        self._block_dag = new_block_dag = self._empty_dag_like(block)
+        self._idle_after = {bit: 0 for bit in self._block_dag.qubits}
+        self._block_duration = 0
+        self._conditional_block = False
+
         for node in block_order_op_nodes(block):
             self._visit_node(node)
+
+        # Terminate the block to pad it after scheduling.
+        self._terminate_block(self._block_duration, self._current_block_idx, None)
+
         # Pop the previous block dag off the stack restoring it
         self._block_dag = prev_block_dag
+        return new_block_dag
 
     def _visit_node(self, node: DAGNode) -> None:
         if isinstance(node.op, ControlFlowOp):
-                self._visit_control_flow_op(node)
+            self._visit_control_flow_op(node)
         elif node in self._node_start_time:
             if isinstance(node.op, Delay):
                 self._visit_delay(node)
@@ -254,7 +289,7 @@ class BlockBasePadder(TransformationPass):
             # Fill idle time with some sequence
             if t0 - self._idle_after[bit] > 0:
                 # Find previous node on the wire, i.e. always the latest node on the wire
-                prev_node = next(self._dag.predecessors(self._dag.output_map[bit]))
+                prev_node = next(self._block_dag.predecessors(self._block_dag.output_map[bit]))
                 self._pad(
                     block_idx=block_idx,
                     qubit=bit,
@@ -279,19 +314,15 @@ class BlockBasePadder(TransformationPass):
         # TODO: This should be reworked to instead apply a transformation
         # pass to rewrite all ``c_if`` operations as ``if_else``
         # blocks that are in turn scheduled.
-        self._pad_until_block_end(block_duration, block_idx)
-
-        # Reset idles for the new block.
-        self._idle_after = {bit: 0 for bit in self._dag.qubits}
         self._block_duration = 0
-        self._conditional_block = False
+        self._pad_until_block_end(block_duration, block_idx)
 
     def _pad_until_block_end(self, block_duration: int, block_idx: int) -> None:
         # Add delays until the end of circuit.
-        for bit in self._dag.qubits:
+        for bit in self._block_dag.qubits:
             if block_duration - self._idle_after[bit] > 0:
-                node = self._dag.output_map[bit]
-                prev_node = next(self._dag.predecessors(node))
+                node = self._block_dag.output_map[bit]
+                prev_node = next(self._block_dag.predecessors(node))
                 self._pad(
                     block_idx=block_idx,
                     qubit=bit,
@@ -328,6 +359,6 @@ class BlockBasePadder(TransformationPass):
         if isinstance(clbits, Clbit):
             clbits = [clbits]
 
-        new_node = self._dag.apply_operation_back(oper, qargs=qubits, cargs=clbits)
+        new_node = self._block_dag.apply_operation_back(oper, qargs=qubits, cargs=clbits)
         self.property_set["node_start_time"][new_node] = (block_idx, t_start)
         return new_node

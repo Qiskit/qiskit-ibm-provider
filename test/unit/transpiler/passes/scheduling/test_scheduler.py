@@ -53,10 +53,12 @@ class TestASAPSchedulingAndPaddingPass(QiskitTestCase):
         expected = QuantumCircuit(2, 1)
         expected.delay(1000, 1)
         expected.measure(0, 0)
-        with qc.if_test((0, 0)) as else_:
-            qc.x(1)
+        with expected.if_test((0, 0)) as else_:
+            expected.delay(200, 0)
+            expected.x(1)
         with else_:
-            qc.x(0)
+            expected.x(0)
+            expected.delay(200, 1)
 
         self.assertEqual(expected, scheduled)
 

@@ -138,6 +138,15 @@ class BaseDynamicCircuitAnalysis(TransformationPass):
         # passes as we are constantly recreating the block dags.
         # We resolve this here by caching these dags in the property set.
         self._block_dags[node] = node_block_dags = []
+
+        t0 = max(  # pylint: disable=invalid-name
+            self._current_block_bit_times[bit] for bit in node.qargs + node.cargs
+        )
+
+        # Duration is 0 as we do not schedule across terminator
+        t1 = t0 # pylint: disable=invalid-name
+        self._update_bit_times(node, t0, t1)
+
         for block in node.op.blocks:
             self._control_flow_block = True
 
