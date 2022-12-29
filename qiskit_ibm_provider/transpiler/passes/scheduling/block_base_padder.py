@@ -17,6 +17,7 @@ from typing import Any, Dict, List, Optional, Union
 from qiskit.circuit import Qubit, Clbit, ControlFlowOp, Instruction
 from qiskit.circuit.library import Barrier
 from qiskit.circuit.delay import Delay
+from qiskit.circuit.parameterexpression import ParameterExpression
 from qiskit.converters import dag_to_circuit, circuit_to_dag
 from qiskit.dagcircuit import DAGCircuit, DAGNode
 from qiskit.transpiler.basepasses import TransformationPass
@@ -62,6 +63,8 @@ class BlockBasePadder(TransformationPass):
         self._block_duration = 0
         self._current_block_idx = 0
         self._conditional_block = False
+        # Nodes that the scheduling of this node is tied to.
+        self._bit_indices: Optional[Dict[Qubit, int]] = None
 
         super().__init__()
 
@@ -100,6 +103,7 @@ class BlockBasePadder(TransformationPass):
         self._root_dag = dag
         self._dag = self._empty_dag_like(dag)
         self._block_dag = self._dag
+        self._bit_indices = {q: index for index, q in enumerate(dag.qubits)}
 
         self.property_set["node_start_time"].clear()
         self._prev_node = None
@@ -194,7 +198,25 @@ class BlockBasePadder(TransformationPass):
             # As we cannot currently schedule through conditionals model
             # as zero duration to avoid padding.
             return 0
-        return node.op.duration
+
+        indices = [self._bit_indices[qarg] for qarg in node.qargs]
+
+        if self._block_dag.has_calibration_for(node):
+            # If node has calibration, this value should be the highest priority
+            cal_key = tuple(indices), tuple(float(p) for p in node.op.params)
+            duration = self._block_dag.calibrations[node.op.name][cal_key].duration
+        else:
+            duration = node.op.duration
+
+        if isinstance(duration, ParameterExpression):
+            raise TranspilerError(
+                f"Parameterized duration ({duration}) "
+                f"of {node.op.name} on qubits {indices} is not bounded."
+            )
+        if duration is None:
+            raise TranspilerError(f"Duration of {node.op.name} on qubits {indices} is not found.")
+
+        return duration
 
     def _needs_block_terminating_barrier(self, node: Optional[DAGNode]) -> bool:
         return not (node is None or (isinstance(node.op, (Barrier, ControlFlowOp)) and len(node.qargs) == self._block_dag.num_qubits()))

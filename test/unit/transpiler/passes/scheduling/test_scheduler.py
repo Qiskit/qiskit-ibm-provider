@@ -216,7 +216,8 @@ class TestASAPSchedulingAndPaddingPass(QiskitTestCase):
         """
         qc = QuantumCircuit(3, 1)
         qc.measure(0, 0)
-        qc.x(1).c_if(0, 1)
+        with qc.if_test((0, 1)):
+            qc.x(1)
         qc.measure(2, 0)
 
         durations = DynamicCircuitInstructionDurations(
@@ -230,14 +231,15 @@ class TestASAPSchedulingAndPaddingPass(QiskitTestCase):
         expected.delay(1000, 2)
         expected.measure(0, 0)
         expected.barrier()
-        expected.x(1).c_if(
-            0, 1
-        )  # Not yet correct as we should insert delays for idle qubits in conditional.
+        with expected.if_test((0, 1)):
+            expected.delay(200, 0)
+            expected.x(1)
+            expected.delay(200, 2)
+
         expected.barrier()
         expected.delay(1000, 0)
         expected.measure(2, 0)
         expected.delay(1000, 1)
-        expected.barrier()
 
         self.assertEqual(expected, scheduled)
 
@@ -292,45 +294,6 @@ class TestASAPSchedulingAndPaddingPass(QiskitTestCase):
         expected.barrier()
 
         self.assertEqual(scheduled, expected)
-
-    def test_measure_after_c_if_on_edge_locking(self):
-        """Test if schedules circuits with c_if after measure with a common clbit.
-        The scheduler is configured to reproduce behavior of the 0.20.0,
-        in which clbit lock is applied to the end-edge of measure instruction.
-        See https://github.com/Qiskit/qiskit-terra/pull/7655"""
-        qc = QuantumCircuit(3, 1)
-        qc.measure(0, 0)
-        with qc.if_test((0, 1)):
-            qc.x(1)
-        qc.measure(2, 0)
-
-        durations = DynamicCircuitInstructionDurations(
-            [("x", None, 200), ("measure", None, 840)]
-        )
-
-        # lock at the end edge
-        scheduled = PassManager(
-            [
-                ASAPScheduleAnalysis(durations),
-                PadDelay(),
-            ]
-        ).run(qc)
-
-        expected = QuantumCircuit(3, 1)
-        expected.delay(1000, 1)
-        expected.delay(1000, 2)
-        expected.measure(0, 0)
-        expected.barrier()
-        with expected.if_test((0, 1)):
-            expected.delay(200, 0)
-            expected.x(1)
-            expected.delay(200, 2)
-        expected.barrier()
-        expected.delay(1000, 0)
-        expected.delay(1000, 1)
-        expected.measure(2, 0)
-
-        self.assertEqual(expected, scheduled)
 
     def test_active_reset_circuit(self):
         """Test practical example of reset circuit.
@@ -422,7 +385,6 @@ class TestASAPSchedulingAndPaddingPass(QiskitTestCase):
         expected.delay(160, 0)
         expected.cx(0, 1)
         expected.add_calibration("x", (0,), xsched)
-        expected.barrier()
 
         self.assertEqual(expected, scheduled)
 
@@ -687,7 +649,6 @@ class TestALAPSchedulingAndPaddingPass(QiskitTestCase):
         expected.delay(800, 1)
         expected.x(1)
         expected.delay(1000, 2)
-        expected.barrier()
 
         self.assertEqual(expected, scheduled)
 
@@ -885,7 +846,8 @@ class TestALAPSchedulingAndPaddingPass(QiskitTestCase):
         """
         qc = QuantumCircuit(3, 1)
         qc.measure(0, 0)
-        qc.x(1).c_if(0, 1)
+        with qc.if_test((0, 1)):
+            qc.x(1)
         qc.measure(2, 0)
 
         durations = DynamicCircuitInstructionDurations(
@@ -899,14 +861,14 @@ class TestALAPSchedulingAndPaddingPass(QiskitTestCase):
         expected.delay(1000, 2)
         expected.measure(0, 0)
         expected.barrier()
-        expected.x(1).c_if(
-            0, 1
-        )  # Not yet correct as we should insert delays for idle qubits in conditional.
+        with expected.if_test((0, 1)):
+            expected.delay(200, 0)
+            expected.x(1)
+            expected.delay(200, 2)
         expected.barrier()
         expected.delay(1000, 0)
         expected.measure(2, 0)
         expected.delay(1000, 1)
-        expected.barrier()
 
         self.assertEqual(expected, scheduled)
 
@@ -961,45 +923,6 @@ class TestALAPSchedulingAndPaddingPass(QiskitTestCase):
         expected.barrier()
 
         self.assertEqual(scheduled, expected)
-
-    def test_measure_after_c_if_on_edge_locking(self):
-        """Test if schedules circuits with c_if after measure with a common clbit.
-        The scheduler is configured to reproduce behavior of the 0.20.0,
-        in which clbit lock is applied to the end-edge of measure instruction.
-        See https://github.com/Qiskit/qiskit-terra/pull/7655"""
-        qc = QuantumCircuit(3, 1)
-        qc.measure(0, 0)
-        with qc.if_test((0, 1)):
-            qc.x(1)
-        qc.measure(2, 0)
-
-        durations = DynamicCircuitInstructionDurations(
-            [("x", None, 200), ("measure", None, 840)]
-        )
-
-        # lock at the end edge
-        scheduled = PassManager(
-            [
-                ALAPScheduleAnalysis(durations),
-                PadDelay(),
-            ]
-        ).run(qc)
-
-        expected = QuantumCircuit(3, 1)
-        expected.delay(1000, 1)
-        expected.delay(1000, 2)
-        expected.measure(0, 0)
-        expected.barrier()
-        with expected.if_test((0, 1)):
-            expected.delay(200, 0)
-            expected.x(1)
-            expected.delay(200, 2)
-        expected.barrier()
-        expected.delay(1000, 0)
-        expected.delay(1000, 1)
-        expected.measure(2, 0)
-
-        self.assertEqual(expected, scheduled)
 
     def test_active_reset_circuit(self):
         """Test practical example of reset circuit.
@@ -1091,7 +1014,6 @@ class TestALAPSchedulingAndPaddingPass(QiskitTestCase):
         expected.delay(160, 0)
         expected.cx(0, 1)
         expected.add_calibration("x", (0,), xsched)
-        expected.barrier()
 
         self.assertEqual(expected, scheduled)
 
