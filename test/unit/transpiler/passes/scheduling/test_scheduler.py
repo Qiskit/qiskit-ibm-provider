@@ -655,6 +655,116 @@ class TestASAPSchedulingAndPaddingPass(ControlFlowTestCase):
 
         self.assertEqual(expected, scheduled)
 
+    def test_nested_control_scheduling(self):
+        """Test scheduling of nested control-flow"""
+
+        qc = QuantumCircuit(4, 3)
+        qc.x(0)
+        with qc.if_test((0, 1)):
+            qc.x(1)
+            qc.measure(0, 1)
+            with qc.if_test((1, 0)):
+                qc.x(0)
+                qc.measure(2, 2)
+        qc.x(3)
+
+
+        durations = DynamicCircuitInstructionDurations(
+            [("x", None, 200), ("measure", None, 840)]
+        )
+        pm = PassManager([ASAPScheduleAnalysis(durations), PadDelay()])
+        scheduled = pm.run(qc)
+
+        expected = QuantumCircuit(4, 3)
+        expected.x(0)
+        expected.delay(200, 1)
+        expected.delay(200, 2)
+        expected.delay(200, 3)
+        expected.barrier()
+        with expected.if_test((0, 1)):
+            expected.measure(0, 1)
+            expected.delay(1000, 1)
+            expected.delay(1000, 2)
+            expected.delay(1000, 3)
+            expected.barrier()
+            with expected.if_test((1, 0)):
+                expected.x(0)
+                expected.delay(800, 0)
+                expected.delay(1000, 1)
+                expected.measure(2, 2)
+                expected.delay(1000, 3)
+            expected.barrier()
+            expected.delay(200, 0)
+            expected.x(1)
+            expected.delay(200, 2)
+            expected.delay(200, 3)
+        expected.barrier()
+        expected.delay(200, 0)
+        expected.delay(200, 1)
+        expected.delay(200, 2)
+        expected.x(3)
+
+        self.assertEqual(expected, scheduled)
+
+    def test_while_loop(self):
+        """Test scheduling while loop"""
+
+        qc = QuantumCircuit(2, 1)
+        qc.x(0)
+        with qc.while_loop((0, 1)):
+            qc.x(1)
+            qc.measure(0, 0)
+        qc.x(0)
+
+
+        durations = DynamicCircuitInstructionDurations(
+            [("x", None, 200), ("measure", None, 840)]
+        )
+        pm = PassManager([ASAPScheduleAnalysis(durations), PadDelay()])
+        scheduled = pm.run(qc)
+
+        expected = QuantumCircuit(2, 1)
+        expected.x(0)
+        expected.delay(200, 1)
+        with expected.while_loop((0, 1)):
+            expected.x(1)
+            expected.delay(800, 1)
+            expected.measure(0, 0)
+        expected.x(0)
+        expected.delay(200, 1)
+
+        self.assertEqual(expected, scheduled)
+
+    def test_for_loop(self):
+        """Test scheduling for loop"""
+
+        qc = QuantumCircuit(2, 1)
+        qc.x(0)
+        with qc.for_loop(range(2)):
+            qc.x(1)
+            qc.measure(0, 0)
+        qc.x(0)
+
+
+        durations = DynamicCircuitInstructionDurations(
+            [("x", None, 200), ("measure", None, 840)]
+        )
+        pm = PassManager([ASAPScheduleAnalysis(durations), PadDelay()])
+        scheduled = pm.run(qc)
+
+        expected = QuantumCircuit(2, 1)
+        expected.x(0)
+        expected.delay(200, 1)
+        with expected.for_loop(range(2)):
+            expected.x(1)
+            expected.delay(800, 1)
+            expected.measure(0, 0)
+        expected.x(0)
+        expected.delay(200, 1)
+
+        self.assertEqual(expected, scheduled)
+
+
 
 class TestALAPSchedulingAndPaddingPass(ControlFlowTestCase):
     """Tests the ALAP Scheduling passes"""
@@ -1384,6 +1494,7 @@ class TestALAPSchedulingAndPaddingPass(ControlFlowTestCase):
         expected.delay(1000, 2)
         self.assertEqual(expected, scheduled)
 
+
     def test_issue_458_extra_idle_bug_0(self):
         """Regression test for https://github.com/Qiskit/qiskit-ibm-provider/issues/458
 
@@ -1417,8 +1528,6 @@ class TestALAPSchedulingAndPaddingPass(ControlFlowTestCase):
 
         pm = PassManager([ALAPScheduleAnalysis(durations), PadDelay()])
         scheduled = pm.run(qc)
-
-        expected = QuantumCircuit(4, 3)
 
         expected.cx(0, 1)
         expected.delay(700, 0)
@@ -1475,3 +1584,112 @@ class TestALAPSchedulingAndPaddingPass(ControlFlowTestCase):
         expected.barrier()
 
         self.assertEqual(scheduled, expected)
+
+    def test_nested_control_scheduling(self):
+        """Test scheduling of nested control-flow"""
+
+        qc = QuantumCircuit(4, 3)
+        qc.x(0)
+        with qc.if_test((0, 1)):
+            qc.x(1)
+            qc.measure(0, 1)
+            with qc.if_test((1, 0)):
+                qc.x(0)
+                qc.measure(2, 2)
+        qc.x(3)
+
+
+        durations = DynamicCircuitInstructionDurations(
+            [("x", None, 200), ("measure", None, 840)]
+        )
+        pm = PassManager([ALAPScheduleAnalysis(durations), PadDelay()])
+        scheduled = pm.run(qc)
+
+        expected = QuantumCircuit(4, 3)
+        expected.x(0)
+        expected.delay(200, 1)
+        expected.delay(200, 2)
+        expected.delay(200, 3)
+        expected.barrier()
+        with expected.if_test((0, 1)):
+            expected.measure(0, 1)
+            expected.delay(1000, 1)
+            expected.delay(1000, 2)
+            expected.delay(1000, 3)
+            expected.barrier()
+            with expected.if_test((1, 0)):
+                expected.delay(800, 0)
+                expected.x(0)
+                expected.delay(1000, 1)
+                expected.measure(2, 2)
+                expected.delay(1000, 3)
+            expected.barrier()
+            expected.delay(200, 0)
+            expected.x(1)
+            expected.delay(200, 2)
+            expected.delay(200, 3)
+        expected.barrier()
+        expected.delay(200, 0)
+        expected.delay(200, 1)
+        expected.delay(200, 2)
+        expected.x(3)
+
+        self.assertEqual(expected, scheduled)
+
+    def test_while_loop(self):
+        """Test scheduling while loop"""
+
+        qc = QuantumCircuit(2, 1)
+        qc.x(0)
+        with qc.while_loop((0, 1)):
+            qc.x(1)
+            qc.measure(0, 0)
+        qc.x(0)
+
+
+        durations = DynamicCircuitInstructionDurations(
+            [("x", None, 200), ("measure", None, 840)]
+        )
+        pm = PassManager([ALAPScheduleAnalysis(durations), PadDelay()])
+        scheduled = pm.run(qc)
+
+        expected = QuantumCircuit(2, 1)
+        expected.x(0)
+        expected.delay(200, 1)
+        with expected.while_loop((0, 1)):
+            expected.delay(800, 1)
+            expected.x(1)
+            expected.measure(0, 0)
+        expected.x(0)
+        expected.delay(200, 1)
+
+        self.assertEqual(expected, scheduled)
+
+    def test_for_loop(self):
+        """Test scheduling for loop"""
+
+        qc = QuantumCircuit(2, 1)
+        qc.x(0)
+        with qc.for_loop(range(2)):
+            qc.x(1)
+            qc.measure(0, 0)
+        qc.x(0)
+
+
+        durations = DynamicCircuitInstructionDurations(
+            [("x", None, 200), ("measure", None, 840)]
+        )
+        pm = PassManager([ALAPScheduleAnalysis(durations), PadDelay()])
+        scheduled = pm.run(qc)
+
+        expected = QuantumCircuit(2, 1)
+        expected.x(0)
+        expected.delay(200, 1)
+        with expected.for_loop(range(2)):
+            expected.delay(800, 1)
+            expected.x(1)
+            expected.measure(0, 0)
+        expected.x(0)
+        expected.delay(200, 1)
+
+        self.assertEqual(expected, scheduled)

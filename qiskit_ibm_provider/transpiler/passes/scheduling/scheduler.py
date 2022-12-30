@@ -192,7 +192,7 @@ class BaseDynamicCircuitAnalysis(TransformationPass):
         self._last_node_to_touch = {}
 
     def _get_duration(self, node: DAGNode, dag: Optional[DAGCircuit] = None) -> int:
-        if node.op.condition_bits:
+        if node.op.condition_bits or isinstance(node.op, ControlFlowOp):
             # As we cannot currently schedule through conditionals model
             # as zero duration to avoid padding.
             return 0

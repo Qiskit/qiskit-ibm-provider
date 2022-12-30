@@ -196,7 +196,7 @@ class BlockBasePadder(TransformationPass):
 
     def _get_node_duration(self, node: DAGNode) -> int:
         """Get the duration of a node."""
-        if node.op.condition_bits:
+        if node.op.condition_bits or isinstance(node.op, ControlFlowOp):
             # As we cannot currently schedule through conditionals model
             # as zero duration to avoid padding.
             return 0
