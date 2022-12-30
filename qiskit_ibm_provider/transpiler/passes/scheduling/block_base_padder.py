@@ -220,8 +220,10 @@ class BlockBasePadder(TransformationPass):
 
         return duration
 
-    def _needs_block_terminating_barrier(self, prev_node: DAGNode, current_node: DAGNode) -> bool:
-        return not (prev_node is None or (isinstance(prev_node.op, ControlFlowOp) and isinstance(current_node.op, ControlFlowOp)) or (isinstance(prev_node.op, (Barrier, ControlFlowOp)) and len(prev_node.qargs) == self._block_dag.num_qubits()))
+    def _needs_block_terminating_barrier(self, prev_node: DAGNode, curr_node: DAGNode) -> bool:
+        def _is_terminating_barrier(node):
+           return (isinstance(node.op, (Barrier, ControlFlowOp)) and len(node.qargs) == self._block_dag.num_qubits())
+        return not (prev_node is None or (isinstance(prev_node.op, ControlFlowOp) and isinstance(curr_node.op, ControlFlowOp)) or _is_terminating_barrier(prev_node) or _is_terminating_barrier(curr_node))
 
     def _add_block_terminating_barrier(self, block_idx: int, time: int, current_node: DAGNode):
         """Add a block terminating barrier to prevent topological ordering slide by.
