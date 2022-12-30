@@ -128,11 +128,13 @@ class BlockBasePadder(TransformationPass):
 
             new_dag.add_qubits(self._root_dag.qubits)
 
+        # Don't add root cargs as these will not be padded.
+        # Just focus on current block dag.
         if dag.cregs:
-            for creg in self._root_dag.cregs.values():
+            for creg in dag.cregs.values():
                 new_dag.add_creg(creg)
         else:
-            new_dag.add_clbits(self._root_dag.clbits)
+            new_dag.add_clbits(dag.clbits)
 
         new_dag.name = dag.name
         new_dag.metadata = dag.metadata
@@ -267,8 +269,9 @@ class BlockBasePadder(TransformationPass):
         # and apply to the DAG.
         new_control_flow_op = node.op.replace_blocks(dag_to_circuit(block) for block in new_node_block_dags)
         # Enforce that this control-flow operation contains all wires since it has now been padded
-        # such that each qubit is scheduled within each block.
-        self._apply_scheduled_op(block_idx, t0, new_control_flow_op, self._block_dag.qubits, self._block_dag.clbits)
+        # such that each qubit is scheduled within each block. Don't added all cargs as these will not
+        # be padded.
+        self._apply_scheduled_op(block_idx, t0, new_control_flow_op, self._block_dag.qubits, node.cargs)
 
     def _visit_block(self, block: DAGCircuit) -> None:
         # Push the previous block dag onto the stack
