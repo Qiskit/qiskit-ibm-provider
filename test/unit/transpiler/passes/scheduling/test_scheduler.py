@@ -12,9 +12,12 @@
 
 """Test the dynamic circuits scheduling analysis"""
 
+from typing import Any
+
 from qiskit import QuantumCircuit
 from qiskit.pulse import Schedule, Play, Constant, DriveChannel
 from qiskit.test import QiskitTestCase
+from qiskit.test._canonical import canonicalize_control_flow
 from qiskit.transpiler.passmanager import PassManager
 from qiskit.transpiler.exceptions import TranspilerError
 
@@ -29,8 +32,18 @@ from qiskit_ibm_provider.transpiler.passes.scheduling.utils import (
 
 # pylint: disable=invalid-name
 
+class ControlFlowTestCase(QiskitTestCase):
 
-class TestASAPSchedulingAndPaddingPass(QiskitTestCase):
+    def assertEqual(self, left: Any, right: Any):
+        if isinstance(left, QuantumCircuit):
+            left = canonicalize_control_flow(left)
+
+        if isinstance(right, QuantumCircuit):
+            right = canonicalize_control_flow(right)
+
+        super().assertEqual(left, right)
+
+class TestASAPSchedulingAndPaddingPass(ControlFlowTestCase):
     """Tests the ASAP Scheduling passes"""
 
     def test_if_test_gate_after_measure(self):
@@ -600,8 +613,11 @@ class TestASAPSchedulingAndPaddingPass(QiskitTestCase):
 
         qc = QuantumCircuit(3, 1)
         qc.delay(800, 1)
-        qc.x(1).c_if(0, True)
-        qc.x(2).c_if(0, True)
+        with qc.if_test((0, 1)):
+            qc.x(1)
+        with qc.if_test((0, 1)):
+            qc.x(2)
+
         qc.delay(1000, 2)
         qc.x(1)
 
@@ -616,19 +632,24 @@ class TestASAPSchedulingAndPaddingPass(QiskitTestCase):
         expected.delay(800, 1)
         expected.delay(800, 2)
         expected.barrier()
-        expected.x(1).c_if(0, True)
-        expected.x(2).c_if(0, True)
+        with expected.if_test((0, 1)):
+            expected.delay(200, 0)
+            expected.x(1)
+            expected.delay(200, 2)
+        with expected.if_test((0, 1)):
+            expected.delay(200, 0)
+            expected.delay(200, 1)
+            expected.x(2)
         expected.barrier()
         expected.delay(1000, 0)
         expected.x(1)
         expected.delay(800, 1)
         expected.delay(1000, 2)
-        expected.barrier()
 
         self.assertEqual(expected, scheduled)
 
 
-class TestALAPSchedulingAndPaddingPass(QiskitTestCase):
+class TestALAPSchedulingAndPaddingPass(ControlFlowTestCase):
     """Tests the ALAP Scheduling passes"""
 
 
@@ -1313,8 +1334,11 @@ class TestALAPSchedulingAndPaddingPass(QiskitTestCase):
 
         qc = QuantumCircuit(3, 1)
         qc.delay(800, 1)
-        qc.x(1).c_if(0, True)
-        qc.x(2).c_if(0, True)
+        with qc.if_test((0, 1)):
+            qc.x(1)
+        with qc.if_test((0, 1)):
+            qc.x(2)
+
         qc.delay(1000, 2)
         qc.x(1)
 
@@ -1329,15 +1353,19 @@ class TestALAPSchedulingAndPaddingPass(QiskitTestCase):
         expected.delay(800, 1)
         expected.delay(800, 2)
         expected.barrier()
-        expected.x(1).c_if(0, True)
-        expected.x(2).c_if(0, True)
+        with expected.if_test((0, 1)):
+            expected.delay(200, 0)
+            expected.x(1)
+            expected.delay(200, 2)
+        with expected.if_test((0, 1)):
+            expected.delay(200, 0)
+            expected.delay(200, 1)
+            expected.x(2)
         expected.barrier()
         expected.delay(1000, 0)
         expected.delay(800, 1)
         expected.x(1)
         expected.delay(1000, 2)
-        expected.barrier()
-
         self.assertEqual(expected, scheduled)
 
     def test_issue_458_extra_idle_bug_0(self):

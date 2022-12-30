@@ -218,16 +218,16 @@ class BlockBasePadder(TransformationPass):
 
         return duration
 
-    def _needs_block_terminating_barrier(self, node: Optional[DAGNode]) -> bool:
-        return not (node is None or (isinstance(node.op, (Barrier, ControlFlowOp)) and len(node.qargs) == self._block_dag.num_qubits()))
+    def _needs_block_terminating_barrier(self, prev_node: DAGNode, current_node: DAGNode) -> bool:
+        return not (prev_node is None or (isinstance(prev_node.op, ControlFlowOp) and isinstance(current_node.op, ControlFlowOp)) or (isinstance(prev_node.op, (Barrier, ControlFlowOp)) and len(prev_node.qargs) == self._block_dag.num_qubits()))
 
-    def _add_block_terminating_barrier(self, block_idx: int, time: int):
+    def _add_block_terminating_barrier(self, block_idx: int, time: int, current_node: DAGNode):
         """Add a block terminating barrier to prevent topological ordering slide by.
 
         TODO: Fix by ensuring control-flow is a block terminator in the core circuit IR.
         """
         # Only add a barrier to the end if a viable barrier is not already present on all qubits
-        needs_terminating_barrier = self._needs_block_terminating_barrier(self._prev_node)
+        needs_terminating_barrier = self._needs_block_terminating_barrier(self._prev_node, current_node)
 
         if needs_terminating_barrier:
             # Terminate with a barrier to ensure topological ordering does not slide past
@@ -246,7 +246,7 @@ class BlockBasePadder(TransformationPass):
         # Control-flow terminator ends scheduling of block currently
         block_idx, t0 = self._node_start_time[node]  # pylint: disable=invalid-name
         self._terminate_block(t0, block_idx, None)
-        self._add_block_terminating_barrier(block_idx, t0)
+        self._add_block_terminating_barrier(block_idx, t0, node)
 
 
         # TODO: This is a hack required to tie nodes of control-flow
@@ -316,7 +316,7 @@ class BlockBasePadder(TransformationPass):
         # Trigger the end of a block
         if block_idx > self._current_block_idx:
             self._terminate_block(self._block_duration, self._current_block_idx, node)
-            self._add_block_terminating_barrier(block_idx, t0)
+            self._add_block_terminating_barrier(block_idx, t0, node)
 
         self._conditional_block = bool(node.op.condition_bits)
 
@@ -334,7 +334,7 @@ class BlockBasePadder(TransformationPass):
         # Trigger the end of a block
         if block_idx > self._current_block_idx:
             self._terminate_block(self._block_duration, self._current_block_idx, node)
-            self._add_block_terminating_barrier(block_idx, t0)
+            self._add_block_terminating_barrier(block_idx, t0, node)
 
         # This block will not be padded as it is conditional.
         # See TODO below.
