@@ -173,8 +173,9 @@ class TestASAPSchedulingAndPaddingPass(ControlFlowTestCase):
         """Test if schedules circuits with `c_if`s on different qubits."""
         qc = QuantumCircuit(3, 1)
         qc.measure(0, 0)
-        qc.x(1).c_if(0, True)
-        qc.x(2).c_if(0, True)
+        with qc.if_test((0, 1)):
+            qc.x(1)
+            qc.x(2)
 
         durations = DynamicCircuitInstructionDurations(
             [("x", None, 200), ("measure", None, 840)]
@@ -187,9 +188,10 @@ class TestASAPSchedulingAndPaddingPass(ControlFlowTestCase):
         expected.delay(1000, 2)
         expected.measure(0, 0)
         expected.barrier()
-        expected.x(1).c_if(0, True)
-        expected.x(2).c_if(0, True)
-        expected.barrier()
+        with expected.if_test((0, 1)):
+            expected.delay(200, 0)
+            expected.x(1)
+            expected.x(2)
 
         self.assertEqual(expected, scheduled)
 
@@ -350,8 +352,10 @@ class TestASAPSchedulingAndPaddingPass(ControlFlowTestCase):
         given by the original circuit (QuantumCircuit)."""
         qc = QuantumCircuit(2, 1)
         qc.delay(100, 0)
-        qc.x(0).c_if(0, True)
-        qc.x(1).c_if(0, True)
+        with qc.if_test((0, 1)):
+            qc.x(0)
+        with qc.if_test((0, 1)):
+            qc.x(1)
 
         durations = DynamicCircuitInstructionDurations([("x", None, 160)])
         pm = PassManager([ASAPScheduleAnalysis(durations), PadDelay()])
@@ -361,9 +365,12 @@ class TestASAPSchedulingAndPaddingPass(ControlFlowTestCase):
         expected.delay(100, 0)
         expected.delay(100, 1)
         expected.barrier()
-        expected.x(0).c_if(0, True)
-        expected.x(1).c_if(0, True)
-        expected.barrier()
+        with expected.if_test((0, 1)):
+            expected.x(0)
+            expected.delay(160, 1)
+        with expected.if_test((0, 1)):
+            expected.delay(160, 0)
+            expected.x(1)
 
         self.assertEqual(expected, scheduled)
 
@@ -426,7 +433,6 @@ class TestASAPSchedulingAndPaddingPass(ControlFlowTestCase):
         ).run(qc)
 
         expected = qc.copy()
-        expected.barrier()
 
         self.assertEqual(expected, scheduled)
 
@@ -472,7 +478,6 @@ class TestASAPSchedulingAndPaddingPass(ControlFlowTestCase):
         expected.x(0)
         expected.delay(200, 1)
         expected.delay(200, 2)
-        expected.barrier()
 
         self.assertEqual(expected, scheduled)
 
@@ -570,7 +575,6 @@ class TestASAPSchedulingAndPaddingPass(ControlFlowTestCase):
         expected.delay(1000, 1)
         expected.measure(0, 0)
         expected.x(0)
-        expected.barrier()
 
         self.assertEqual(expected, scheduled)
 
@@ -814,8 +818,9 @@ class TestALAPSchedulingAndPaddingPass(ControlFlowTestCase):
         """Test if schedules circuits with `c_if`s on different qubits."""
         qc = QuantumCircuit(3, 1)
         qc.measure(0, 0)
-        qc.x(1).c_if(0, True)
-        qc.x(2).c_if(0, True)
+        with qc.if_test((0, 1)):
+            qc.x(1)
+            qc.x(2)
 
         durations = DynamicCircuitInstructionDurations(
             [("x", None, 200), ("measure", None, 840)]
@@ -828,9 +833,10 @@ class TestALAPSchedulingAndPaddingPass(ControlFlowTestCase):
         expected.delay(1000, 2)
         expected.measure(0, 0)
         expected.barrier()
-        expected.x(1).c_if(0, True)
-        expected.x(2).c_if(0, True)
-        expected.barrier()
+        with expected.if_test((0, 1)):
+            expected.delay(200, 0)
+            expected.x(1)
+            expected.x(2)
 
         self.assertEqual(expected, scheduled)
 
@@ -990,8 +996,10 @@ class TestALAPSchedulingAndPaddingPass(ControlFlowTestCase):
         given by the original circuit (QuantumCircuit)."""
         qc = QuantumCircuit(2, 1)
         qc.delay(100, 0)
-        qc.x(0).c_if(0, True)
-        qc.x(1).c_if(0, True)
+        with qc.if_test((0, 1)):
+            qc.x(0)
+        with qc.if_test((0, 1)):
+            qc.x(1)
 
         durations = DynamicCircuitInstructionDurations([("x", None, 160)])
         pm = PassManager([ALAPScheduleAnalysis(durations), PadDelay()])
@@ -1001,9 +1009,12 @@ class TestALAPSchedulingAndPaddingPass(ControlFlowTestCase):
         expected.delay(100, 0)
         expected.delay(100, 1)
         expected.barrier()
-        expected.x(0).c_if(0, True)
-        expected.x(1).c_if(0, True)
-        expected.barrier()
+        with expected.if_test((0, 1)):
+            expected.x(0)
+            expected.delay(160, 1)
+        with expected.if_test((0, 1)):
+            expected.delay(160, 0)
+            expected.x(1)
 
         self.assertEqual(expected, scheduled)
 
@@ -1070,7 +1081,6 @@ class TestALAPSchedulingAndPaddingPass(ControlFlowTestCase):
         expected.measure(0, 0)
         expected.delay(940, 1)
         expected.x(1)
-        expected.barrier()
 
         self.assertEqual(expected, scheduled)
 
@@ -1116,7 +1126,6 @@ class TestALAPSchedulingAndPaddingPass(ControlFlowTestCase):
         expected.x(0)
         expected.delay(200, 1)
         expected.delay(200, 2)
-        expected.barrier()
 
         self.assertEqual(expected, scheduled)
 
@@ -1245,7 +1254,6 @@ class TestALAPSchedulingAndPaddingPass(ControlFlowTestCase):
         expected.x(1)
         expected.measure(0, 0)
         expected.x(0)
-        expected.barrier()
 
         self.assertEqual(expected, scheduled)
 
