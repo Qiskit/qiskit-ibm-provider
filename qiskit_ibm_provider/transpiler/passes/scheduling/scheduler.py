@@ -268,6 +268,15 @@ class BaseDynamicCircuitAnalysis(TransformationPass):
                     return True
         return False
 
+    def _check_flush_measures(self, node: DAGNode) -> None:
+        if self._current_block_measure_qargs() & set(node.qargs):
+            if self._current_block_measures_has_reset:
+                # If a reset is included we must trigger the end of a block.
+                self._begin_new_circuit_block()
+            else:
+                # Otherwise just trigger a measurement flush
+                self._flush_measures()
+
 
 class ASAPScheduleAnalysis(BaseDynamicCircuitAnalysis):
     """Dynamic circuits as-soon-as-possible (ASAP) scheduling analysis pass.
@@ -386,8 +395,7 @@ class ASAPScheduleAnalysis(BaseDynamicCircuitAnalysis):
         op_duration = self._get_duration(node)
 
         # If the measurement qubits overlap, we need to flush the measurement group
-        if self._current_block_measure_qargs() & set(node.qargs):
-            self._flush_measures()
+        self._check_flush_measures(node)
 
         t0 = max(  # pylint: disable=invalid-name
             self._current_block_bit_times[bit] for bit in node.qargs + node.cargs
@@ -522,8 +530,7 @@ class ALAPScheduleAnalysis(BaseDynamicCircuitAnalysis):
         op_duration = self._get_duration(node)
 
         # If the measurement qubits overlap, we need to flush the measurement group
-        if self._current_block_measure_qargs() & set(node.qargs):
-            self._flush_measures()
+        self._check_flush_measures(node)
 
         t0 = max(  # pylint: disable=invalid-name
             self._current_block_bit_times[bit] for bit in node.qargs + node.cargs
