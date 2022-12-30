@@ -63,8 +63,10 @@ for a dynamic circuit backend's execution model:
     teleport.h(qr[0])
     teleport.measure(qr[0], crz)
     teleport.measure(qr[1], crx)
-    teleport.z(qr[2]).c_if(crz, 1)
-    teleport.x(qr[2]).c_if(crx, 1)
+    with teleport.if_test((crz, 1)):
+        teleport.z(qr[2])
+    with teleport.if_test((crx, 1)):
+        teleport.x(qr[2])
     teleport.measure(qr[2], result)
 
     teleport = transpile(teleport, backend)
@@ -96,6 +98,35 @@ using the :class:`PadDynamicalDecoupling` pass as shown below:
     dd_teleport = pm.run(teleport)
 
     dd_teleport.draw(output="mpl")
+
+
+Scheduling old-style ``c_if`` conditioned gates
+-----------------------------------------------
+
+Scheduling with old-style ``c_if`` conditioned gates is not supported.
+
+.. jupyter-execute::
+
+    qc_c_if = QuantumCircuit(1, 1)
+    qc_c_if.x(0).c_if(0, 1)
+    qc_c_if.draw(output="mpl")
+
+To work around
+this please run the pass :class:`qiskit.transpiler.passes.ConvertConditionsToIfOps`
+prior to your scheduling pass.
+
+.. jupyter-execute::
+
+    pm = PassManager(
+          [
+              ConvertConditionsToIfOps(),
+              ALAPScheduleAnalysis(durations),
+              PadDelay(),
+          ]
+    )
+
+    qc_if_test = pm.run(qc_c_if)
+    qc_if_test.draw(output="mpl")
 
 
 Scheduling & Dynamical Decoupling

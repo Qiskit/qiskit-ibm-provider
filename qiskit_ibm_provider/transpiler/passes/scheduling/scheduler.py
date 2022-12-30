@@ -20,7 +20,6 @@ import qiskit
 from qiskit.circuit.parameterexpression import ParameterExpression
 from qiskit.converters import dag_to_circuit, circuit_to_dag
 from qiskit.transpiler.basepasses import TransformationPass
-from qiskit.transpiler.passes import ConvertConditionsToIfOps
 from qiskit.transpiler.passes.scheduling.time_unit_conversion import TimeUnitConversion
 
 from qiskit.circuit import Barrier, Clbit, ControlFlowOp, Measure, Qubit, Reset
