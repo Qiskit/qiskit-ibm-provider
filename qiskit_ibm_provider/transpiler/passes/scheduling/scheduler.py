@@ -74,7 +74,6 @@ class BaseDynamicCircuitAnalysis(TransformationPass):
         # Dictionary of blocks each containing a dictionary with the key for each bit
         # in the block and its value being the final time of the bit within the block.
         self._current_block_measures: Set[DAGNode] = set()
-        self._current_block_fast_path_nodes: Set[DAGNode] = set()
         self._current_block_measures_has_reset: bool = False
         self._node_tied_to: Optional[Dict[DAGNode, Set[DAGNode]]] = None
         # Nodes that the scheduling of this node is tied to.

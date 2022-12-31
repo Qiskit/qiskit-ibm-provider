@@ -129,17 +129,17 @@ prior to your scheduling pass.
     qc_if_test.draw(output="mpl")
 
 
-Exploiting IBM hardware's local parallel "fast-path"
-----------------------------------------------------
+Exploiting IBM backend's local parallel "fast-path"
+---------------------------------------------------
 
 IBM quantum hardware supports a localized "fast-path" which enables a block of gates
 applied to a *single qubit* that are conditional on an immediately predecessor measurement
 *of the same qubit* to be completed with lower latency. The hardware is also
 able to do this in *parallel* on disjoint qubits that satisfy this condition.
 
-For example the conditional gates below are performed in parallel with lower latency
+For example, the conditional gates below are performed in parallel with lower latency
 as the measurements flow directly into the conditional blocks which in turn only apply
-gates to the measurement qubit.
+gates to the same measurement qubit.
 
 .. jupyter-execute::
 
@@ -155,7 +155,8 @@ gates to the measurement qubit.
         qc.draw(output="mpl")
 
 
-The circuit below will not use the fast-path as the conditional gate is on a different qubit
+The circuit below will not use the fast-path as the conditional gate is on a different qubit than the measurement
+qubit.
 
 .. jupyter-execute::
 
@@ -166,7 +167,7 @@ The circuit below will not use the fast-path as the conditional gate is on a dif
 
         qc.draw(output="mpl")
 
-Similarly, the circuit below contains gates on multiple qubits and will not be performed using the fast-path
+Similarly, the circuit below contains gates on multiple qubits and will not be performed using the fast-path.
 
 .. jupyter-execute::
 
@@ -195,7 +196,7 @@ fast-path blocks being performed in parallel each block will be padded out to th
 
         qc.draw(output="mpl")
 
-This behavior is also applied to the else condition of a fast-path eligible branch
+This behavior is also applied to the else condition of a fast-path eligible branch.
 
 .. jupyter-execute::
 
@@ -211,9 +212,9 @@ This behavior is also applied to the else condition of a fast-path eligible bran
         qc.draw(output="mpl")
 
 
-If a single measurement result is used with several conditional blocks if there is a fast-path
+If a single measurement result is used with several conditional blocks, if there is a fast-path
 eligible block it will be applied followed by the non-fast-path blocks which will execute with
-the standard high latency conditional branch.
+the standard higher latency conditional branch.
 
 .. jupyter-execute::
 
@@ -229,7 +230,7 @@ the standard high latency conditional branch.
 
         qc.draw(output="mpl")
 
-If you wish to prevent the usage of the fast-path insert a barrier between the measurement and
+If you wish to prevent the usage of the fast-path you may insert a barrier between the measurement and
 the conditional branch.
 
 .. jupyter-execute::
@@ -255,7 +256,7 @@ Conditional measurements are not eligible for the fast-path.
 
         qc.draw(output="mpl")
 
-Similarly nested control-flow is not eligible
+Similarly nested control-flow is not eligible.
 
 .. jupyter-execute::
 
@@ -273,8 +274,9 @@ Similarly nested control-flow is not eligible
 The scheduler is aware of the fast-path behavior and will not insert delays on idle qubits
 in blocks that satisfy the fast-path conditions so as to avoid preventing the backend
 compiler from performing the necessary optimizations to utilize the fast-path. If
-there are fast-path blocks that will be performed in parallel they will be padded out
-to enable DD on the idle qubits.
+there are fast-path blocks that will be performed in parallel they currently *will not*
+be padded out by the scheduler to ensure they are the same of the same duration in Qiskit
+and must be manually padded:
 
 .. jupyter-execute::
 
@@ -296,6 +298,10 @@ to enable DD on the idle qubits.
     qc.measure(1, 1)
     with qc.if_test((0, 1)):
         qc.x(0)
+        # Is currently not padded to ensure
+        # a duration of 1000. If you desire
+        # this you would need to manually add
+        # qc.delay(840, 0)
     with qc.if_test((1, 1)):
         qc.delay(1000, 0)
 
@@ -310,7 +316,7 @@ to enable DD on the idle qubits.
     If there are qubits that are *not* involved in a fast-path decision it is not
     currently possible to use them in a fast-path branch in parallel with the fast-path
     qubits resulting from a measurement. This will be revised in the future as we
-    further improve these capabilities
+    further improve these capabilities.
 
     For example:
 
@@ -332,8 +338,6 @@ to enable DD on the idle qubits.
         qc.draw(output="mpl")
 
 
-
-
 Scheduling & Dynamical Decoupling
 =================================
 .. autosummary::
@@ -345,9 +349,6 @@ Scheduling & Dynamical Decoupling
     DynamicCircuitInstructionDurations
     PadDelay
     PadDynamicalDecoupling
-
-
-
 """
 
 from .block_base_padder import BlockBasePadder
