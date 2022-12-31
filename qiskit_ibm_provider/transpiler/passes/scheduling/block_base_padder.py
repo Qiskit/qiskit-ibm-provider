@@ -71,6 +71,9 @@ class BlockBasePadder(TransformationPass):
 
         self._fast_path_nodes = set()
 
+        self._dirty_qubits = set()
+        # Qubits that are dirty in the circuit.
+
         super().__init__()
 
     def run(self, dag: DAGCircuit) -> DAGCircuit:
@@ -111,6 +114,7 @@ class BlockBasePadder(TransformationPass):
         self._bit_indices = {q: index for index, q in enumerate(dag.qubits)}
         self._last_node_to_touch = {}
         self._fast_path_nodes = set()
+        self._dirty_qubits = set()
 
         self.property_set["node_start_time"].clear()
         self._prev_node = None
@@ -148,7 +152,7 @@ class BlockBasePadder(TransformationPass):
 
         new_dag.name = dag.name
         new_dag.metadata = dag.metadata
-        new_dag.unit = self.property_set["time_unit"]
+        new_dag.unit = self.property_set["time_unit"] or "dt"
         new_dag.calibrations = dag.calibrations
         new_dag.global_phase = dag.global_phase
         return new_dag
@@ -440,6 +444,9 @@ class BlockBasePadder(TransformationPass):
                 )
 
             self._idle_after[bit] = t1
+
+        if not isinstance(node.op, (Barrier, Delay)):
+            self._dirty_qubits |= set(node.qargs)
 
         new_node = self._apply_scheduled_op(block_idx, t0, node.op, node.qargs, node.cargs)
         self._last_node_to_touch.update({bit: new_node for bit in new_node.qargs + new_node.cargs})

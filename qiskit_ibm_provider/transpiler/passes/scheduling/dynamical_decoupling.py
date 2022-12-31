@@ -332,19 +332,20 @@ class PadDynamicalDecoupling(BlockBasePadder):
         # As you can see, constraints on t0 are all satified without explicit scheduling.
         time_interval = t_end - t_start
 
-        if self._qubits and self._dag.qubits.index(qubit) not in self._qubits:
+        if self._qubits and self._block_dag.qubits.index(qubit) not in self._qubits:
             # Target physical qubit is not the target of this DD sequence.
             self._apply_scheduled_op(
-                block_idx, t_start, Delay(time_interval, self._dag.unit), qubit
+                block_idx, t_start, Delay(time_interval, self._block_dag.unit), qubit
             )
             return
 
-        if self._skip_reset_qubits and (
-            isinstance(prev_node, DAGInNode) or isinstance(prev_node.op, Reset)
-        ):
+        if not isinstance(prev_node, DAGInNode) and self._skip_reset_qubits and isinstance(prev_node.op, Reset) and qubit in prev_node.qargs:
+            self._dirty_qubits.remove(qubit)
+
+        if qubit not in self._dirty_qubits:
             # Previous node is the start edge or reset, i.e. qubit is ground state.
             self._apply_scheduled_op(
-                block_idx, t_start, Delay(time_interval, self._dag.unit), qubit
+                block_idx, t_start, Delay(time_interval, self._block_dag.unit), qubit
             )
             return
 
@@ -412,7 +413,7 @@ class PadDynamicalDecoupling(BlockBasePadder):
                 else:
                     # Don't do anything if there's no single-qubit gate to absorb the inverse
                     self._apply_scheduled_op(
-                        block_idx, t_start, Delay(time_interval, self._dag.unit), qubit
+                        block_idx, t_start, Delay(time_interval, self._block_dag.unit), qubit
                     )
                     return
 
@@ -458,14 +459,14 @@ class PadDynamicalDecoupling(BlockBasePadder):
                     self._apply_scheduled_op(block_idx, idle_after, gate, qubit)
                     idle_after += gate_length
 
-            self._dag.global_phase = self._mod_2pi(
-                self._dag.global_phase + sequence_gphase
+            self._block_dag.global_phase = self._mod_2pi(
+                self._block_dag.global_phase + sequence_gphase
             )
             return
 
         # DD could not be applied, delay instead
         self._apply_scheduled_op(
-            block_idx, t_start, Delay(time_interval, self._dag.unit), qubit
+            block_idx, t_start, Delay(time_interval, self._block_dag.unit), qubit
         )
         return
 

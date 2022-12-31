@@ -12,12 +12,8 @@
 
 """Test the dynamic circuits scheduling analysis"""
 
-from typing import Any
-
 from qiskit import QuantumCircuit
 from qiskit.pulse import Schedule, Play, Constant, DriveChannel
-from qiskit.test import QiskitTestCase
-from qiskit.test._canonical import canonicalize_control_flow
 from qiskit.transpiler.passmanager import PassManager
 from qiskit.transpiler.exceptions import TranspilerError
 
@@ -30,18 +26,9 @@ from qiskit_ibm_provider.transpiler.passes.scheduling.utils import (
     DynamicCircuitInstructionDurations,
 )
 
+from .control_flow_test_case import ControlFlowTestCase
+
 # pylint: disable=invalid-name
-
-class ControlFlowTestCase(QiskitTestCase):
-
-    def assertEqual(self, left: Any, right: Any):
-        if isinstance(left, QuantumCircuit):
-            left = canonicalize_control_flow(left)
-
-        if isinstance(right, QuantumCircuit):
-            right = canonicalize_control_flow(right)
-
-        super().assertEqual(left, right)
 
 class TestASAPSchedulingAndPaddingPass(ControlFlowTestCase):
     """Tests the ASAP Scheduling passes"""
