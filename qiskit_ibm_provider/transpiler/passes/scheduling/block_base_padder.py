@@ -14,7 +14,15 @@
 
 from typing import Any, Dict, List, Optional, Union
 
-from qiskit.circuit import Qubit, Clbit, ControlFlowOp, Gate, IfElseOp, Instruction, Measure
+from qiskit.circuit import (
+    Qubit,
+    Clbit,
+    ControlFlowOp,
+    Gate,
+    IfElseOp,
+    Instruction,
+    Measure,
+)
 from qiskit.circuit.library import Barrier
 from qiskit.circuit.delay import Delay
 from qiskit.circuit.parameterexpression import ParameterExpression
@@ -230,28 +238,49 @@ class BlockBasePadder(TransformationPass):
                 f"of {node.op.name} on qubits {indices} is not bounded."
             )
         if duration is None:
-            raise TranspilerError(f"Duration of {node.op.name} on qubits {indices} is not found.")
+            raise TranspilerError(
+                f"Duration of {node.op.name} on qubits {indices} is not found."
+            )
 
         return duration
 
-    def _needs_block_terminating_barrier(self, prev_node: DAGNode, curr_node: DAGNode) -> bool:
+    def _needs_block_terminating_barrier(
+        self, prev_node: DAGNode, curr_node: DAGNode
+    ) -> bool:
         # Only barrier if not in fast-path nodes
         is_fast_path_node = curr_node in self._fast_path_nodes
 
         def _is_terminating_barrier(node):
-           return (isinstance(node.op, (Barrier, ControlFlowOp)) and len(node.qargs) == self._block_dag.num_qubits())
-        return not (prev_node is None or (isinstance(prev_node.op, ControlFlowOp) and isinstance(curr_node.op, ControlFlowOp)) or _is_terminating_barrier(prev_node) or _is_terminating_barrier(curr_node) or is_fast_path_node)
+            return (
+                isinstance(node.op, (Barrier, ControlFlowOp))
+                and len(node.qargs) == self._block_dag.num_qubits()
+            )
 
-    def _add_block_terminating_barrier(self, block_idx: int, time: int, current_node: DAGNode, force: bool = False):
+        return not (
+            prev_node is None
+            or (
+                isinstance(prev_node.op, ControlFlowOp)
+                and isinstance(curr_node.op, ControlFlowOp)
+            )
+            or _is_terminating_barrier(prev_node)
+            or _is_terminating_barrier(curr_node)
+            or is_fast_path_node
+        )
+
+    def _add_block_terminating_barrier(
+        self, block_idx: int, time: int, current_node: DAGNode, force: bool = False
+    ):
         """Add a block terminating barrier to prevent topological ordering slide by.
 
         TODO: Fix by ensuring control-flow is a block terminator in the core circuit IR.
         """
         # Only add a barrier to the end if a viable barrier is not already present on all qubits
-                # Only barrier if not in fast-path nodes
+        # Only barrier if not in fast-path nodes
         needs_terminating_barrier = True
         if not force:
-            needs_terminating_barrier = self._needs_block_terminating_barrier(self._prev_node, current_node)
+            needs_terminating_barrier = self._needs_block_terminating_barrier(
+                self._prev_node, current_node
+            )
 
         if needs_terminating_barrier:
             # Terminate with a barrier to ensure topological ordering does not slide past
@@ -285,8 +314,9 @@ class BlockBasePadder(TransformationPass):
 
         # Edge-case: Add a barrier if the final node is a fast-path
         if self._prev_node in self._fast_path_nodes:
-            self._add_block_terminating_barrier(prev_block_duration, prev_block_idx, self._prev_node, force=True)
-
+            self._add_block_terminating_barrier(
+                prev_block_duration, prev_block_idx, self._prev_node, force=True
+            )
 
         # Pop the previous block dag off the stack restoring it
         self._block_dag = prev_block_dag
@@ -364,7 +394,6 @@ class BlockBasePadder(TransformationPass):
         self._terminate_block(t0, block_idx, None)
         self._add_block_terminating_barrier(block_idx, t0, node)
 
-
         # Only pad non-fast path nodes
         fast_path_node = node in self._fast_path_nodes
 
@@ -380,15 +409,25 @@ class BlockBasePadder(TransformationPass):
         new_node_block_dags = []
         for block_idx, _ in enumerate(node.op.blocks):
             block_dag = self._node_block_dags[node][block_idx]
-            new_node_block_dags.append(self._visit_block(block_dag, pad_wires=not fast_path_node))
+            new_node_block_dags.append(
+                self._visit_block(block_dag, pad_wires=not fast_path_node)
+            )
 
         # Build new control-flow operation containing scheduled blocks
         # and apply to the DAG.
-        new_control_flow_op = node.op.replace_blocks(dag_to_circuit(block) for block in new_node_block_dags)
+        new_control_flow_op = node.op.replace_blocks(
+            dag_to_circuit(block) for block in new_node_block_dags
+        )
         # Enforce that this control-flow operation contains all wires since it has now been padded
         # such that each qubit is scheduled within each block. Don't added all cargs as these will not
         # be padded.
-        self._apply_scheduled_op(block_idx, t0, new_control_flow_op, node.qargs if fast_path_node else self._block_dag.qubits, node.cargs)
+        self._apply_scheduled_op(
+            block_idx,
+            t0,
+            new_control_flow_op,
+            node.qargs if fast_path_node else self._block_dag.qubits,
+            node.cargs,
+        )
 
     def _visit_delay(self, node: DAGNode) -> None:
         """The padding class considers a delay instruction as idle time
@@ -433,7 +472,9 @@ class BlockBasePadder(TransformationPass):
             # Fill idle time with some sequence
             if t0 - self._idle_after.get(bit, 0) > 0:
                 # Find previous node on the wire, i.e. always the latest node on the wire
-                prev_node = next(self._block_dag.predecessors(self._block_dag.output_map[bit]))
+                prev_node = next(
+                    self._block_dag.predecessors(self._block_dag.output_map[bit])
+                )
                 self._pad(
                     block_idx=block_idx,
                     qubit=bit,
@@ -448,8 +489,12 @@ class BlockBasePadder(TransformationPass):
         if not isinstance(node.op, (Barrier, Delay)):
             self._dirty_qubits |= set(node.qargs)
 
-        new_node = self._apply_scheduled_op(block_idx, t0, node.op, node.qargs, node.cargs)
-        self._last_node_to_touch.update({bit: new_node for bit in new_node.qargs + new_node.cargs})
+        new_node = self._apply_scheduled_op(
+            block_idx, t0, node.op, node.qargs, node.cargs
+        )
+        self._last_node_to_touch.update(
+            {bit: new_node for bit in new_node.qargs + new_node.cargs}
+        )
 
     def _terminate_block(
         self, block_duration: int, block_idx: int, node: Optional[DAGNode]
@@ -509,6 +554,8 @@ class BlockBasePadder(TransformationPass):
         if isinstance(clbits, Clbit):
             clbits = [clbits]
 
-        new_node = self._block_dag.apply_operation_back(oper, qargs=qubits, cargs=clbits)
+        new_node = self._block_dag.apply_operation_back(
+            oper, qargs=qubits, cargs=clbits
+        )
         self.property_set["node_start_time"][new_node] = (block_idx, t_start)
         return new_node

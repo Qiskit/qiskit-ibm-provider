@@ -30,6 +30,7 @@ from .control_flow_test_case import ControlFlowTestCase
 
 # pylint: disable=invalid-name
 
+
 class TestASAPSchedulingAndPaddingPass(ControlFlowTestCase):
     """Tests the ASAP Scheduling passes"""
 
@@ -42,7 +43,6 @@ class TestASAPSchedulingAndPaddingPass(ControlFlowTestCase):
             qc.x(1)
         with else_:
             qc.x(0)
-
 
         durations = DynamicCircuitInstructionDurations(
             [("x", None, 200), ("measure", None, 840)]
@@ -659,7 +659,6 @@ class TestASAPSchedulingAndPaddingPass(ControlFlowTestCase):
                 qc.measure(2, 2)
         qc.x(3)
 
-
         durations = DynamicCircuitInstructionDurations(
             [("x", None, 200), ("measure", None, 840)]
         )
@@ -707,7 +706,6 @@ class TestASAPSchedulingAndPaddingPass(ControlFlowTestCase):
             qc.measure(0, 0)
         qc.x(0)
 
-
         durations = DynamicCircuitInstructionDurations(
             [("x", None, 200), ("measure", None, 840)]
         )
@@ -736,7 +734,6 @@ class TestASAPSchedulingAndPaddingPass(ControlFlowTestCase):
             qc.measure(0, 0)
         qc.x(0)
 
-
         durations = DynamicCircuitInstructionDurations(
             [("x", None, 200), ("measure", None, 840)]
         )
@@ -756,10 +753,8 @@ class TestASAPSchedulingAndPaddingPass(ControlFlowTestCase):
         self.assertEqual(expected, scheduled)
 
 
-
 class TestALAPSchedulingAndPaddingPass(ControlFlowTestCase):
     """Tests the ALAP Scheduling passes"""
-
 
     def test_alap(self):
         """Test standard ALAP scheduling"""
@@ -790,7 +785,6 @@ class TestALAPSchedulingAndPaddingPass(ControlFlowTestCase):
             qc.x(1)
         with else_:
             qc.x(0)
-
 
         durations = DynamicCircuitInstructionDurations(
             [("x", None, 200), ("measure", None, 840)]
@@ -1321,7 +1315,6 @@ class TestALAPSchedulingAndPaddingPass(ControlFlowTestCase):
             qc.x(0)
         qc.measure(0, 0)
 
-
         durations = DynamicCircuitInstructionDurations(
             [("x", None, 100), ("measure", None, 840), ("cx", None, 500)]
         )
@@ -1597,7 +1590,6 @@ class TestALAPSchedulingAndPaddingPass(ControlFlowTestCase):
                 qc.measure(2, 2)
         qc.x(3)
 
-
         durations = DynamicCircuitInstructionDurations(
             [("x", None, 200), ("measure", None, 840)]
         )
@@ -1645,7 +1637,6 @@ class TestALAPSchedulingAndPaddingPass(ControlFlowTestCase):
             qc.measure(0, 0)
         qc.x(0)
 
-
         durations = DynamicCircuitInstructionDurations(
             [("x", None, 200), ("measure", None, 840)]
         )
@@ -1673,7 +1664,6 @@ class TestALAPSchedulingAndPaddingPass(ControlFlowTestCase):
             qc.x(1)
             qc.measure(0, 0)
         qc.x(0)
-
 
         durations = DynamicCircuitInstructionDurations(
             [("x", None, 200), ("measure", None, 840)]

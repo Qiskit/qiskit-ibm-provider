@@ -57,8 +57,8 @@ class BaseDynamicCircuitAnalysis(TransformationPass):
         """
         self._durations = durations
 
-        self._dag : Optional[DAGCircuit] = None
-        self._block_dag : Optional[DAGCircuit] = None
+        self._dag: Optional[DAGCircuit] = None
+        self._block_dag: Optional[DAGCircuit] = None
         self._node_block_dags = {}
         # Mapping of control-flow nodes to their containing blocks
         self._block_idx_dag_map = {}
@@ -87,7 +87,6 @@ class BaseDynamicCircuitAnalysis(TransformationPass):
     def _current_block_bit_times(self) -> Dict[Union[Qubit, Clbit], int]:
         return self._bit_stop_times[self._current_block_idx]
 
-
     def _visit_block(self, block: DAGCircuit) -> None:
         # Push the previous block dag onto the stack
         prev_block_dag = self._block_dag
@@ -112,7 +111,9 @@ class BaseDynamicCircuitAnalysis(TransformationPass):
         if isinstance(node.op, ControlFlowOp):
             self._visit_control_flow_op(node)
         elif node.op.condition_bits:
-            raise TranspilerError('c_if control-flow is not supported by this pass. Please apply "ConvertConditionsToIfOps" to convert these conditional operations to new-style Qiskit control-flow.')
+            raise TranspilerError(
+                'c_if control-flow is not supported by this pass. Please apply "ConvertConditionsToIfOps" to convert these conditional operations to new-style Qiskit control-flow.'
+            )
         else:
             if isinstance(node.op, Measure):
                 self._visit_measure(node)
@@ -137,7 +138,7 @@ class BaseDynamicCircuitAnalysis(TransformationPass):
         )
 
         # Duration is 0 as we do not schedule across terminator
-        t1 = t0 # pylint: disable=invalid-name
+        t1 = t0  # pylint: disable=invalid-name
         self._update_bit_times(node, t0, t1)
 
         for block in node.op.blocks:
@@ -209,10 +210,11 @@ class BaseDynamicCircuitAnalysis(TransformationPass):
                 f"of {node.op.name} on qubits {indices} is not bounded."
             )
         if duration is None:
-            raise TranspilerError(f"Duration of {node.op.name} on qubits {indices} is not found.")
+            raise TranspilerError(
+                f"Duration of {node.op.name} on qubits {indices} is not found."
+            )
 
         return duration
-
 
     def _update_bit_times(  # pylint: disable=invalid-name
         self, node: DAGNode, t0: int, t1: int, update_cargs: bool = True
@@ -351,7 +353,9 @@ class ASAPScheduleAnalysis(BaseDynamicCircuitAnalysis):
 
         for measure in self._current_block_measures:
             t0 = t0q  # pylint: disable=invalid-name
-            bit_indices = {bit: index for index, bit in enumerate(self._block_dag.qubits)}
+            bit_indices = {
+                bit: index for index, bit in enumerate(self._block_dag.qubits)
+            }
             measure_duration = self._durations.get(
                 Measure(), [bit_indices[qarg] for qarg in measure.qargs], unit="dt"
             )
@@ -476,7 +480,9 @@ class ALAPScheduleAnalysis(BaseDynamicCircuitAnalysis):
 
         for measure in self._current_block_measures:
             t0 = t0q  # pylint: disable=invalid-name
-            bit_indices = {bit: index for index, bit in enumerate(self._block_dag.qubits)}
+            bit_indices = {
+                bit: index for index, bit in enumerate(self._block_dag.qubits)
+            }
             measure_duration = self._durations.get(
                 Measure(), [bit_indices[qarg] for qarg in measure.qargs], unit="dt"
             )
@@ -566,7 +572,10 @@ class ALAPScheduleAnalysis(BaseDynamicCircuitAnalysis):
             scheduled.add(node)
 
             new_node_start_time[node] = (block, new_time)
-            new_node_stop_time[node] = (block, new_time + self._get_duration(node, dag=self._block_idx_dag_map[block]))
+            new_node_stop_time[node] = (
+                block,
+                new_time + self._get_duration(node, dag=self._block_idx_dag_map[block]),
+            )
 
             # Update available times by bit
             for bit in node.qargs:

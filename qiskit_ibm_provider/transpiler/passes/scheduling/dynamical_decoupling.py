@@ -339,7 +339,12 @@ class PadDynamicalDecoupling(BlockBasePadder):
             )
             return
 
-        if not isinstance(prev_node, DAGInNode) and self._skip_reset_qubits and isinstance(prev_node.op, Reset) and qubit in prev_node.qargs:
+        if (
+            not isinstance(prev_node, DAGInNode)
+            and self._skip_reset_qubits
+            and isinstance(prev_node.op, Reset)
+            and qubit in prev_node.qargs
+        ):
             self._dirty_qubits.remove(qubit)
 
         if qubit not in self._dirty_qubits:
@@ -413,7 +418,10 @@ class PadDynamicalDecoupling(BlockBasePadder):
                 else:
                     # Don't do anything if there's no single-qubit gate to absorb the inverse
                     self._apply_scheduled_op(
-                        block_idx, t_start, Delay(time_interval, self._block_dag.unit), qubit
+                        block_idx,
+                        t_start,
+                        Delay(time_interval, self._block_dag.unit),
+                        qubit,
                     )
                     return
 
