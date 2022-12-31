@@ -49,6 +49,7 @@ def block_order_op_nodes(dag: DAGCircuit) -> Generator[DAGOpNode, None, None]:
         for block_trigger in block_triggers:
             if dag.is_predecessor(node, block_trigger):
                 return True
+
         return _is_grouped_measure(node) or _is_block_trigger(node)
 
     # Begin processing nodes in order

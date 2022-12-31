@@ -18,14 +18,13 @@ import itertools
 
 import qiskit
 from qiskit.circuit.parameterexpression import ParameterExpression
-from qiskit.converters import dag_to_circuit, circuit_to_dag
+from qiskit.converters import circuit_to_dag
 from qiskit.transpiler.basepasses import TransformationPass
 from qiskit.transpiler.passes.scheduling.time_unit_conversion import TimeUnitConversion
 
 from qiskit.circuit import Barrier, Clbit, ControlFlowOp, Measure, Qubit, Reset
 from qiskit.dagcircuit import DAGCircuit, DAGNode
 from qiskit.transpiler.exceptions import TranspilerError
-from qiskit.transpiler.passes.scheduling.scheduling.base_scheduler import BaseScheduler
 
 from .utils import block_order_op_nodes
 
@@ -80,9 +79,6 @@ class BaseDynamicCircuitAnalysis(TransformationPass):
         self._node_tied_to: Optional[Dict[DAGNode, Set[DAGNode]]] = None
         # Nodes that the scheduling of this node is tied to.
         self._bit_indices: Optional[Dict[Qubit, int]] = None
-
-        # Last node to touch a bit
-        self._last_node_to_touch: Optional[Dict[Qubit, DAGNode]] = None
 
         self._time_unit_converter = TimeUnitConversion(durations)
 
@@ -189,7 +185,6 @@ class BaseDynamicCircuitAnalysis(TransformationPass):
         self._current_block_measures_has_reset = False
         self._node_tied_to = {}
         self._bit_indices = {q: index for index, q in enumerate(dag.qubits)}
-        self._last_node_to_touch = {}
 
     def _get_duration(self, node: DAGNode, dag: Optional[DAGCircuit] = None) -> int:
         if node.op.condition_bits or isinstance(node.op, ControlFlowOp):
@@ -244,7 +239,6 @@ class BaseDynamicCircuitAnalysis(TransformationPass):
         self._bit_stop_times[self._current_block_idx] = {
             q: 0 for q in self._block_dag.qubits + self._block_dag.clbits
         }
-        self._last_node_to_touch = {}
         self._flush_measures()
 
     def _flush_measures(self) -> None:
@@ -259,14 +253,6 @@ class BaseDynamicCircuitAnalysis(TransformationPass):
         return set(
             qarg for measure in self._current_block_measures for qarg in measure.qargs
         )
-
-    def _last_node_to_touch_was_conditional(self, node: DAGNode) -> bool:
-        for arg in itertools.chain(node.qargs, node.cargs):
-            last_node = self._last_node_to_touch.get(arg, None)
-            if last_node is not None:
-                if last_node.op.condition_bits or isinstance(last_node.op, Reset):
-                    return True
-        return False
 
     def _check_flush_measures(self, node: DAGNode) -> None:
         if self._current_block_measure_qargs() & set(node.qargs):
@@ -329,8 +315,6 @@ class ASAPScheduleAnalysis(BaseDynamicCircuitAnalysis):
         end of a scheduling block with said measurement occurring in a following block
         which begins another grouping sequence. This behavior will change in future
         backend software updates."""
-
-        self._last_node_to_touch.update({bit: node for bit in node.qargs + node.cargs})
 
         current_block_measure_qargs = self._current_block_measure_qargs()
         # We handle a set of qubits here as _visit_reset currently calls
@@ -457,8 +441,6 @@ class ALAPScheduleAnalysis(BaseDynamicCircuitAnalysis):
         which begins another grouping sequence. This behavior will change in future
         backend software updates."""
 
-        self._last_node_to_touch.update({bit: node for bit in node.qargs + node.cargs})
-
         current_block_measure_qargs = self._current_block_measure_qargs()
         # We handle a set of qubits here as _visit_reset currently calls
         # this method and a reset may have multiple qubits.
@@ -524,8 +506,6 @@ class ALAPScheduleAnalysis(BaseDynamicCircuitAnalysis):
         # start a new block for the unconditional operations.
         if self._control_flow_block:
             self._begin_new_circuit_block()
-
-        self._last_node_to_touch.update({bit: node for bit in node.qargs})
 
         op_duration = self._get_duration(node)
 
