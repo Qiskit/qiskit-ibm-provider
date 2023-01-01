@@ -1506,7 +1506,6 @@ class TestALAPSchedulingAndPaddingPass(ControlFlowTestCase):
         expected.delay(1000, 2)
         self.assertEqual(expected, scheduled)
 
-
     def test_issue_458_extra_idle_bug_0(self):
         """Regression test for https://github.com/Qiskit/qiskit-ibm-provider/issues/458
 
@@ -1528,7 +1527,8 @@ class TestALAPSchedulingAndPaddingPass(ControlFlowTestCase):
         qc.delay(1000, 2)
         qc.measure(1, 0)
         qc.delay(160, 1)
-        qc.x(2).c_if(0, 1)
+        with qc.if_test((0, 1)):
+            qc.x(2)
         qc.barrier([0, 1, 2])
         qc.measure(0, 1)
         qc.delay(1000, 1)
@@ -1541,6 +1541,7 @@ class TestALAPSchedulingAndPaddingPass(ControlFlowTestCase):
         pm = PassManager([ALAPScheduleAnalysis(durations), PadDelay()])
         scheduled = pm.run(qc)
 
+        expected = QuantumCircuit(4, 3)
         expected.cx(0, 1)
         expected.delay(700, 0)
         expected.delay(700, 2)
@@ -1553,7 +1554,11 @@ class TestALAPSchedulingAndPaddingPass(ControlFlowTestCase):
         expected.measure(1, 0)
         expected.delay(160, 1)
         expected.barrier()
-        expected.x(2).c_if(0, 1)
+        with expected.if_test((0, 1)):
+            expected.delay(160, 0)
+            expected.delay(160, 1)
+            expected.x(2)
+            expected.delay(160, 3)
         expected.barrier()
         expected.delay(2560, 0)
         expected.delay(2560, 1)
@@ -1563,7 +1568,6 @@ class TestALAPSchedulingAndPaddingPass(ControlFlowTestCase):
         expected.delay(1000, 1)
         expected.measure(0, 1)
         expected.measure(2, 2)
-        expected.barrier()
 
         self.assertEqual(scheduled, expected)
 
@@ -1593,7 +1597,6 @@ class TestALAPSchedulingAndPaddingPass(ControlFlowTestCase):
         expected.delay(1000, 0)
         expected.measure(1, 0)
         expected.delay(1000, 2)
-        expected.barrier()
 
         self.assertEqual(scheduled, expected)
 

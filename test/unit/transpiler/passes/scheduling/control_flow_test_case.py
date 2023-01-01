@@ -22,9 +22,9 @@ from qiskit.test._canonical import canonicalize_control_flow
 class ControlFlowTestCase(QiskitTestCase):
     """Test case that enforces control flow canonicalization of quantum circuits."""
 
-    def assertEqual(
+    def assertEqual(  # pylint: disable=arguments-differ
         self, first: Any, second: Any, msg: Optional[str] = None
-    ) -> None:  # pylint: disable=arguments-differ
+    ) -> None:
         """Modify assertEqual to canonicalize the quantum circuit."""
         if isinstance(first, QuantumCircuit):
             first = canonicalize_control_flow(first)
@@ -32,6 +32,6 @@ class ControlFlowTestCase(QiskitTestCase):
         if isinstance(second, QuantumCircuit):
             second = canonicalize_control_flow(second)
 
-        super().assertEqual(
+        super().assertEqual(  # pylint: disable=no-value-for-parameter
             first, second, msg=msg
-        )  # pylint: disable=no-value-for-parameter
+        )
