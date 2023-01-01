@@ -18,7 +18,7 @@ from qiskit.test._canonical import canonicalize_control_flow
 
 
 class ControlFlowTestCase(QiskitTestCase):
-    def assertEqual(self, left: Any, right: Any):
+    def assertEqual(self, left: Any, right: Any) -> None:
         if isinstance(left, QuantumCircuit):
             left = canonicalize_control_flow(left)
 

@@ -12,7 +12,7 @@
 
 """Padding pass to fill timeslots for IBM (dynamic circuit) backends."""
 
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union, Set
 
 from qiskit.circuit import (
     Qubit,
@@ -77,9 +77,10 @@ class BlockBasePadder(TransformationPass):
         self._last_node_to_touch: Optional[Dict[Qubit, DAGNode]] = None
         # Last node to touch a bit
 
-        self._fast_path_nodes = set()
+        self._fast_path_nodes: Set[DAGNode] = set()
 
-        self._dirty_qubits = set()
+
+        self._dirty_qubits: Set[Qubit] = set()
         # Qubits that are dirty in the circuit.
 
         super().__init__()
@@ -250,7 +251,7 @@ class BlockBasePadder(TransformationPass):
         # Only barrier if not in fast-path nodes
         is_fast_path_node = curr_node in self._fast_path_nodes
 
-        def _is_terminating_barrier(node):
+        def _is_terminating_barrier(node: DAGNode) -> bool:
             return (
                 isinstance(node.op, (Barrier, ControlFlowOp))
                 and len(node.qargs) == self._block_dag.num_qubits()
@@ -269,7 +270,7 @@ class BlockBasePadder(TransformationPass):
 
     def _add_block_terminating_barrier(
         self, block_idx: int, time: int, current_node: DAGNode, force: bool = False
-    ):
+    ) -> None:
         """Add a block terminating barrier to prevent topological ordering slide by.
 
         TODO: Fix by ensuring control-flow is a block terminator in the core circuit IR.
@@ -293,7 +294,7 @@ class BlockBasePadder(TransformationPass):
             )
             barrier_node.op.duration = 0
 
-    def _visit_block(self, block: DAGCircuit, pad_wires: bool = True) -> None:
+    def _visit_block(self, block: DAGCircuit, pad_wires: bool = True) -> DAGCircuit:
         # Push the previous block dag onto the stack
         prev_node = self._prev_node
         self._prev_node = None

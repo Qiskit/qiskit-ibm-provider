@@ -59,9 +59,9 @@ class BaseDynamicCircuitAnalysis(TransformationPass):
 
         self._dag: Optional[DAGCircuit] = None
         self._block_dag: Optional[DAGCircuit] = None
-        self._node_block_dags = {}
+        self._node_block_dags: Dict[DAGNode, DAGCircuit] = {}
         # Mapping of control-flow nodes to their containing blocks
-        self._block_idx_dag_map = {}
+        self._block_idx_dag_map: Dict[int, DAGCircuit] = {}
         # Mapping of block indices to the respective DAGCircuit
 
         self._current_block_idx = 0
