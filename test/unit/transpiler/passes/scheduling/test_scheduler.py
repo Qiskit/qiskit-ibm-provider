@@ -29,7 +29,7 @@ from qiskit_ibm_provider.transpiler.passes.scheduling.utils import (
 
 from .control_flow_test_case import ControlFlowTestCase
 
-# pylint: disable=invalid-name
+# pylint: disable=invalid-name,not-context-manager
 
 
 class TestASAPSchedulingAndPaddingPass(ControlFlowTestCase):
