@@ -14,6 +14,7 @@
 
 from qiskit import QuantumCircuit
 from qiskit.pulse import Schedule, Play, Constant, DriveChannel
+from qiskit.transpiler.passes import ConvertConditionsToIfOps
 from qiskit.transpiler.passmanager import PassManager
 from qiskit.transpiler.exceptions import TranspilerError
 
@@ -62,8 +63,8 @@ class TestASAPSchedulingAndPaddingPass(ControlFlowTestCase):
 
         self.assertEqual(expected, scheduled)
 
-    def test_old_style_c_if_is_converted(self):
-        """Verify that old-style c_if is converted to new-style."""
+    def test_c_if_raises(self):
+        """Verify that old format c_if raises an error."""
         qc = QuantumCircuit(2, 1)
         qc.measure(0, 0)
         qc.x(1).c_if(0, True)
@@ -74,6 +75,25 @@ class TestASAPSchedulingAndPaddingPass(ControlFlowTestCase):
         pm = PassManager([ASAPScheduleAnalysis(durations), PadDelay()])
         with self.assertRaises(TranspilerError):
             pm.run(qc)
+
+    def test_c_if_conversion(self):
+        """Verify that old format c_if may be converted and scheduled."""
+        qc = QuantumCircuit(1, 1)
+        qc.x(0).c_if(0, True)
+
+        durations = DynamicCircuitInstructionDurations(
+            [("x", None, 200), ("measure", None, 840)]
+        )
+        pm = PassManager(
+            [ConvertConditionsToIfOps(), ASAPScheduleAnalysis(durations), PadDelay()]
+        )
+        scheduled = pm.run(qc)
+
+        expected = QuantumCircuit(1, 1)
+        with expected.if_test((0, 1)):
+            expected.x(0)
+
+        self.assertEqual(expected, scheduled)
 
     def test_measure_after_measure(self):
         """Test if schedules circuits with measure after measure with a common clbit.

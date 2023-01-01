@@ -41,7 +41,7 @@ upgrade:
   - |
     Scheduling support for ``c_if`` has been removed. Please run the pass
     ``ConvertConditionsToIfOps`` on your circuit before scheduling to
-    convert all old-style ``c_if`` statements to new-style ``if_test``
+    convert all old format ``c_if`` statements to new-style ``if_test``
     control-flow that may be scheduled.
 
     .. code-block::

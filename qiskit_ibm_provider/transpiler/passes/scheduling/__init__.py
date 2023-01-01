@@ -100,10 +100,10 @@ using the :class:`PadDynamicalDecoupling` pass as shown below:
     dd_teleport.draw(output="mpl")
 
 
-Scheduling old-style ``c_if`` conditioned gates
+Scheduling old format ``c_if`` conditioned gates
 -----------------------------------------------
 
-Scheduling with old-style ``c_if`` conditioned gates is not supported.
+Scheduling with old format ``c_if`` conditioned gates is not supported.
 
 .. jupyter-execute::
 
