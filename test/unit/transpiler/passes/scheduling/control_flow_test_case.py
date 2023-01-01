@@ -10,7 +10,9 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-from typing import Any
+"""Enhanced test case for control flow circuits."""
+
+from typing import Any, Optional
 
 from qiskit import QuantumCircuit
 from qiskit.test import QiskitTestCase
@@ -18,11 +20,18 @@ from qiskit.test._canonical import canonicalize_control_flow
 
 
 class ControlFlowTestCase(QiskitTestCase):
-    def assertEqual(self, left: Any, right: Any) -> None:
-        if isinstance(left, QuantumCircuit):
-            left = canonicalize_control_flow(left)
+    """Test case that enforces control flow canonicalization of quantum circuits."""
 
-        if isinstance(right, QuantumCircuit):
-            right = canonicalize_control_flow(right)
+    def assertEqual(
+        self, first: Any, second: Any, msg: Optional[str] = None
+    ) -> None:  # pylint: disable=arguments-differ
+        """Modify assertEqual to canonicalize the quantum circuit."""
+        if isinstance(first, QuantumCircuit):
+            first = canonicalize_control_flow(first)
 
-        super().assertEqual(left, right)
+        if isinstance(second, QuantumCircuit):
+            second = canonicalize_control_flow(second)
+
+        super().assertEqual(
+            first, second, msg=msg
+        )  # pylint: disable=no-value-for-parameter

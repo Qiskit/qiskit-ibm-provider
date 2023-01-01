@@ -112,7 +112,9 @@ class BaseDynamicCircuitAnalysis(TransformationPass):
             self._visit_control_flow_op(node)
         elif node.op.condition_bits:
             raise TranspilerError(
-                'c_if control-flow is not supported by this pass. Please apply "ConvertConditionsToIfOps" to convert these conditional operations to new-style Qiskit control-flow.'
+                "c_if control-flow is not supported by this pass. "
+                'Please apply "ConvertConditionsToIfOps" to convert these '
+                "conditional operations to new-style Qiskit control-flow."
             )
         else:
             if isinstance(node.op, Measure):
@@ -286,13 +288,15 @@ class ASAPScheduleAnalysis(BaseDynamicCircuitAnalysis):
     * Measurements and resets on disjoint qubits happen simultaneously and are part of the same block.
     """
 
-    def run(self, dag: DAGCircuit) -> None:
+    def run(self, dag: DAGCircuit) -> DAGCircuit:
         """Run the ALAPSchedule pass on `dag`.
         Args:
             dag (DAGCircuit): DAG to schedule.
         Raises:
             TranspilerError: if the circuit is not mapped on physical qubits.
             TranspilerError: if conditional bit is added to non-supported instruction.
+        Returns:
+            The scheduled DAGCircuit.
         """
         self._init_run(dag)
 
@@ -420,6 +424,8 @@ class ALAPScheduleAnalysis(BaseDynamicCircuitAnalysis):
         Raises:
             TranspilerError: if the circuit is not mapped on physical qubits.
             TranspilerError: if conditional bit is added to non-supported instruction.
+        Returns:
+            The scheduled DAGCircuit.
         """
         self._init_run(dag)
 

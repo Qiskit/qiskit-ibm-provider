@@ -155,8 +155,8 @@ gates to the same measurement qubit.
         qc.draw(output="mpl")
 
 
-The circuit below will not use the fast-path as the conditional gate is on a different qubit than the measurement
-qubit.
+The circuit below will not use the fast-path as the conditional gate is
+on a different qubit than the measurement qubit.
 
 .. jupyter-execute::
 
@@ -167,7 +167,8 @@ qubit.
 
         qc.draw(output="mpl")
 
-Similarly, the circuit below contains gates on multiple qubits and will not be performed using the fast-path.
+Similarly, the circuit below contains gates on multiple qubits
+and will not be performed using the fast-path.
 
 .. jupyter-execute::
 
@@ -179,8 +180,9 @@ Similarly, the circuit below contains gates on multiple qubits and will not be p
 
         qc.draw(output="mpl")
 
-A fast-path block may contain multiple gates as long as they are on the fast-path qubit. If there are multiple
-fast-path blocks being performed in parallel each block will be padded out to the duration of the longest block.
+A fast-path block may contain multiple gates as long as they are on the fast-path qubit.
+If there are multiple fast-path blocks being performed in parallel each block will be
+padded out to the duration of the longest block.
 
 .. jupyter-execute::
 
