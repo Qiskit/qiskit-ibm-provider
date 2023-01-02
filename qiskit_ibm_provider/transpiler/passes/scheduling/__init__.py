@@ -101,7 +101,7 @@ using the :class:`PadDynamicalDecoupling` pass as shown below:
 
 
 Scheduling old format ``c_if`` conditioned gates
------------------------------------------------
+------------------------------------------------
 
 Scheduling with old format ``c_if`` conditioned gates is not supported.
 
@@ -111,8 +111,8 @@ Scheduling with old format ``c_if`` conditioned gates is not supported.
     qc_c_if.x(0).c_if(0, 1)
     qc_c_if.draw(output="mpl")
 
-To work around
-this please run the pass :class:`qiskit.transpiler.passes.ConvertConditionsToIfOps`
+To work around this please run the pass
+:class:`qiskit.transpiler.passes.ConvertConditionsToIfOps`
 prior to your scheduling pass.
 
 .. jupyter-execute::
