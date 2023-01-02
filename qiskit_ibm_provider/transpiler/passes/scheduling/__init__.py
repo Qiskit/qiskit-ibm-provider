@@ -44,6 +44,10 @@ for a dynamic circuit backend's execution model:
 
     backend = FakeJakarta()
 
+    # Temporary workaround for mock backends. For real backends this is not required.
+    backend.configuration().basis_gates.append("if_else")
+
+
     # Use this duration class to get appropriate durations for dynamic
     # circuit backend scheduling
     durations = DynamicCircuitInstructionDurations.from_backend(backend)

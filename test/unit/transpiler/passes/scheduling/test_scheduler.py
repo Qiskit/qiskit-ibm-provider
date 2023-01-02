@@ -12,11 +12,13 @@
 
 """Test the dynamic circuits scheduling analysis"""
 
-from qiskit import QuantumCircuit
+from qiskit import ClassicalRegister, QuantumCircuit, QuantumRegister, transpile
+from qiskit.providers.fake_provider.backends.jakarta.fake_jakarta import FakeJakarta
 from qiskit.pulse import Schedule, Play, Constant, DriveChannel
 from qiskit.transpiler.passes import ConvertConditionsToIfOps
 from qiskit.transpiler.passmanager import PassManager
 from qiskit.transpiler.exceptions import TranspilerError
+
 
 from qiskit_ibm_provider.transpiler.passes.scheduling.pad_delay import PadDelay
 from qiskit_ibm_provider.transpiler.passes.scheduling.scheduler import (
@@ -771,6 +773,61 @@ class TestASAPSchedulingAndPaddingPass(ControlFlowTestCase):
         expected.delay(200, 1)
 
         self.assertEqual(expected, scheduled)
+
+    def test_registers(self):
+        """Verify scheduling works with registers."""
+        qr = QuantumRegister(1, name="q")
+        cr = ClassicalRegister(1)
+        qc = QuantumCircuit(qr, cr)
+        with qc.if_test((cr[0], True)):
+            qc.x(qr[0])
+
+        durations = DynamicCircuitInstructionDurations(
+            [("x", None, 200), ("measure", None, 840)]
+        )
+        pm = PassManager(
+            [ConvertConditionsToIfOps(), ASAPScheduleAnalysis(durations), PadDelay()]
+        )
+        scheduled = pm.run(qc)
+
+        expected = QuantumCircuit(qr, cr)
+        with expected.if_test((cr[0], True)):
+            expected.x(qr[0])
+
+        self.assertEqual(expected, scheduled)
+
+    def test_transpile_mock_backend(self):
+            backend = FakeJakarta()
+            # Temporary workaround for mock backends. For real backends this is not required.
+            backend.configuration().basis_gates.append("if_else")
+
+            durations = DynamicCircuitInstructionDurations.from_backend(backend)
+            pm = PassManager([ASAPScheduleAnalysis(durations), PadDelay()])
+
+            qr = QuantumRegister(3)
+            cr = ClassicalRegister(1)
+
+            qc = QuantumCircuit(qr, cr)
+            with qc.if_test((cr, 1)):
+                qc.z(qr[2])
+                qc.x(qr[0])
+
+            qc_transpiled = transpile(qc, backend)
+
+            scheduled = pm.run(qc_transpiled)
+
+            expected = QuantumCircuit(7, 1)
+            with expected.if_test((0, 1)):
+                expected.x(0)
+                expected.z(2)
+                expected.delay(160, 1)
+                expected.delay(160, 2)
+                expected.delay(160, 3)
+                expected.delay(160, 4)
+                expected.delay(160, 5)
+                expected.delay(160, 6)
+
+            self.assertEqual(expected, scheduled)
 
 
 class TestALAPSchedulingAndPaddingPass(ControlFlowTestCase):
