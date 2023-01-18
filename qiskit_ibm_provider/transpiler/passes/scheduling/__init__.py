@@ -198,9 +198,9 @@ padded out to the duration of the longest block.
         # Conditional blocks will be performed in parallel in the hardware
         with qc.if_test((0, 1)):
             qc.x(0)
-            # Will be padded out to a duration of 1000 on the backend.
+            # Will be padded out to a duration of 1600 on the backend.
         with qc.if_test((1, 1)):
-            qc.delay(1000, 1)
+            qc.delay(1600, 1)
 
         qc.draw(output="mpl")
 
@@ -213,9 +213,9 @@ This behavior is also applied to the else condition of a fast-path eligible bran
         # Conditional blocks will be performed in parallel in the hardware
         with qc.if_test((0, 1)) as else_:
             qc.x(0)
-            # Will be padded out to a duration of 1000 on the backend.
+            # Will be padded out to a duration of 1600 on the backend.
         with else_:
-            qc.delay(1000, 0)
+            qc.delay(1600, 0)
 
         qc.draw(output="mpl")
 
