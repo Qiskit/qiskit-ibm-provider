@@ -365,18 +365,9 @@ class BlockBasePadder(TransformationPass):
             return False
 
         bit = condition_bits[0]
-        last_node = self._last_node_to_touch.get(bit, None)
+        last_node, last_node_dag = self._last_node_to_touch.get(bit, (None, None))
 
-        last_node_in_block = True
-        # TODO: find way to check if node in DAG without using private attribute.
-        if last_node is not None:
-            last_node_in_block = True
-            try:
-                self._block_dag.node(last_node._node_id)
-            except IndexError:
-                last_node_in_block = False
-        else:
-            last_node_in_block = False
+        last_node_in_block = last_node_dag is self._block_dag
 
         if not (
             last_node_in_block
@@ -500,7 +491,7 @@ class BlockBasePadder(TransformationPass):
             block_idx, t0, node.op, node.qargs, node.cargs
         )
         self._last_node_to_touch.update(
-            {bit: new_node for bit in new_node.qargs + new_node.cargs}
+            {bit: (new_node, self._block_dag) for bit in new_node.qargs + new_node.cargs}
         )
 
     def _terminate_block(self, block_duration: int, block_idx: int) -> None:
