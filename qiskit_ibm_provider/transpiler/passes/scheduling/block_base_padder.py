@@ -151,7 +151,6 @@ class BlockBasePadder(TransformationPass):
             for qreg in source_wire_dag.qregs.values():
                 new_dag.add_qreg(qreg)
         else:
-
             new_dag.add_qubits(source_wire_dag.qubits)
 
         # Don't add root cargs as these will not be padded.
@@ -361,26 +360,30 @@ class BlockBasePadder(TransformationPass):
         """
         # Verify IfElseOp has a direct measurement predecessor
         condition_bits = node.op.condition_bits
-        for bit in condition_bits:
-            last_node = self._last_node_to_touch.get(bit, None)
+        # Fast-path valid only with a single bit.
+        if not condition_bits or len(condition_bits) > 1:
+            return False
 
+        bit = condition_bits[0]
+        last_node = self._last_node_to_touch.get(bit, None)
+
+        last_node_in_block = True
+        # TODO: find way to check if node in DAG without using private attribute.
+        if last_node is not None:
             last_node_in_block = True
-            # TODO: find way to check if node in DAG without using private attribute.
-            if last_node is not None:
-                last_node_in_block = True
-                try:
-                    self._block_dag.node(last_node._node_id)
-                except IndexError:
-                    last_node_in_block = False
-            else:
+            try:
+                self._block_dag.node(last_node._node_id)
+            except IndexError:
                 last_node_in_block = False
+        else:
+            last_node_in_block = False
 
-            if not (
-                last_node_in_block
-                and isinstance(last_node.op, Measure)
-                and set(node.qargs) == set(last_node.qargs)
-            ):
-                return False
+        if not (
+            last_node_in_block
+            and isinstance(last_node.op, Measure)
+            and set(node.qargs) == set(last_node.qargs)
+        ):
+            return False
 
         # Fast path contents are limited to gates and delays
         for block in node.op.blocks:
