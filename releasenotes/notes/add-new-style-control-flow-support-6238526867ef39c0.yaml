@@ -13,7 +13,7 @@ features:
         from qiskit_ibm_provider.transpiler.passes.scheduling import DynamicCircuitInstructionDurations
         from qiskit_ibm_provider.transpiler.passes.scheduling import ALAPScheduleAnalysis
         from qiskit_ibm_provider.transpiler.passes.scheduling import PadDynamicalDecoupling
-        from qiskit.providers.fake_provider.backends.jakarta.fake_jakarta import FakeJakarta
+        from qiskit.providers.fake_provider import FakeJakarta
 
         backend = FakeJakarta()
 
@@ -54,7 +54,7 @@ upgrade:
         from qiskit_ibm_provider.transpiler.passes.scheduling import DynamicCircuitInstructionDurations
         from qiskit_ibm_provider.transpiler.passes.scheduling import ALAPScheduleAnalysis
         from qiskit_ibm_provider.transpiler.passes.scheduling import PadDynamicalDecoupling
-        from qiskit.providers.fake_provider.backends.jakarta.fake_jakarta import FakeJakarta
+        from qiskit.providers.fake_provider import FakeJakarta
 
         backend = FakeJakarta()
 

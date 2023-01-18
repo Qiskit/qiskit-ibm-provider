@@ -39,7 +39,7 @@ for a dynamic circuit backend's execution model:
     from qiskit_ibm_provider.transpiler.passes.scheduling import DynamicCircuitInstructionDurations
     from qiskit_ibm_provider.transpiler.passes.scheduling import ALAPScheduleAnalysis
     from qiskit_ibm_provider.transpiler.passes.scheduling import PadDelay
-    from qiskit.providers.fake_provider.backends.jakarta.fake_jakarta import FakeJakarta
+    from qiskit.providers.fake_provider import FakeJakarta
 
 
     backend = FakeJakarta()
