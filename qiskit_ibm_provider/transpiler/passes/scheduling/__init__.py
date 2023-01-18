@@ -121,6 +121,8 @@ prior to your scheduling pass.
 
 .. jupyter-execute::
 
+    from qiskit.transpiler.passes import ConvertConditionsToIfOps
+
     pm = PassManager(
           [
               ConvertConditionsToIfOps(),
