@@ -287,10 +287,6 @@ be padded out by the scheduler to ensure they are of the same duration in Qiskit
 
 .. jupyter-execute::
 
-    from qiskit.circuit.library import XGate
-
-    from qiskit_ibm_provider.transpiler.passes.scheduling import PadDynamicalDecoupling
-
     dd_sequence = [XGate(), XGate()]
 
     pm = PassManager(
