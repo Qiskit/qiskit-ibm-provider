@@ -135,9 +135,12 @@ class BlockBasePadder(TransformationPass):
         # Ensure *all* registers are included from the input circuit
         # so that they are scheduled in sub-blocks
 
-        # Control flow blocks do not get the full reg added to the
-        # block but just the bits. To work around this we try to
-        # add the reg if available and otherwise add the bits directly.
+        # The top-level QuantumCircuit has the full registers available
+        # Control flow blocks do not get the full register added to the
+        # block but just the bits. When testing for equivalency the register
+        # information is taken into account. To work around this we try to
+        # while enabling generic handling of QuantumCircuits we
+        # add the register if available and otherwise add the bits directly.
         # We need this work around as otherwise the padded circuit will
         # not be equivalent to one written manually as bits will not
         # be defined on registers like in the test case.
