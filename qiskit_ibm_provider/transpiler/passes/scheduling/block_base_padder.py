@@ -165,7 +165,10 @@ class BlockBasePadder(TransformationPass):
         new_dag.metadata = dag.metadata
         new_dag.unit = self.property_set["time_unit"] or "dt"
         if new_dag.unit != "dt":
-            raise TranspilerError('All blocks must have time units of "dt". Please run TimeUnitConversion pass prior to padding.')
+            raise TranspilerError(
+                'All blocks must have time units of "dt". '
+                'Please run TimeUnitConversion pass prior to padding.'
+            )
 
         new_dag.calibrations = dag.calibrations
         new_dag.global_phase = dag.global_phase
@@ -494,7 +497,10 @@ class BlockBasePadder(TransformationPass):
             block_idx, t0, node.op, node.qargs, node.cargs
         )
         self._last_node_to_touch.update(
-            {bit: (new_node, self._block_dag) for bit in new_node.qargs + new_node.cargs}
+            {
+                bit: (new_node, self._block_dag)
+                for bit in new_node.qargs + new_node.cargs
+            }
         )
 
     def _terminate_block(self, block_duration: int, block_idx: int) -> None:

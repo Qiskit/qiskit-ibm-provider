@@ -797,37 +797,37 @@ class TestASAPSchedulingAndPaddingPass(ControlFlowTestCase):
         self.assertEqual(expected, scheduled)
 
     def test_transpile_mock_backend(self):
-            backend = FakeJakarta()
-            # Temporary workaround for mock backends. For real backends this is not required.
-            backend.configuration().basis_gates.append("if_else")
+        backend = FakeJakarta()
+        # Temporary workaround for mock backends. For real backends this is not required.
+        backend.configuration().basis_gates.append("if_else")
 
-            durations = DynamicCircuitInstructionDurations.from_backend(backend)
-            pm = PassManager([ASAPScheduleAnalysis(durations), PadDelay()])
+        durations = DynamicCircuitInstructionDurations.from_backend(backend)
+        pm = PassManager([ASAPScheduleAnalysis(durations), PadDelay()])
 
-            qr = QuantumRegister(3)
-            cr = ClassicalRegister(1)
+        qr = QuantumRegister(3)
+        cr = ClassicalRegister(1)
 
-            qc = QuantumCircuit(qr, cr)
-            with qc.if_test((cr, 1)):
-                qc.z(qr[2])
-                qc.x(qr[0])
+        qc = QuantumCircuit(qr, cr)
+        with qc.if_test((cr, 1)):
+            qc.z(qr[2])
+            qc.x(qr[0])
 
-            qc_transpiled = transpile(qc, backend)
+        qc_transpiled = transpile(qc, backend)
 
-            scheduled = pm.run(qc_transpiled)
+        scheduled = pm.run(qc_transpiled)
 
-            expected = QuantumCircuit(7, 1)
-            with expected.if_test((0, 1)):
-                expected.x(0)
-                expected.z(2)
-                expected.delay(160, 1)
-                expected.delay(160, 2)
-                expected.delay(160, 3)
-                expected.delay(160, 4)
-                expected.delay(160, 5)
-                expected.delay(160, 6)
+        expected = QuantumCircuit(7, 1)
+        with expected.if_test((0, 1)):
+            expected.x(0)
+            expected.z(2)
+            expected.delay(160, 1)
+            expected.delay(160, 2)
+            expected.delay(160, 3)
+            expected.delay(160, 4)
+            expected.delay(160, 5)
+            expected.delay(160, 6)
 
-            self.assertEqual(expected, scheduled)
+        self.assertEqual(expected, scheduled)
 
 
 class TestALAPSchedulingAndPaddingPass(ControlFlowTestCase):
