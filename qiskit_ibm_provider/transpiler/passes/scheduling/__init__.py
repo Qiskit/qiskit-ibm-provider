@@ -283,8 +283,7 @@ The scheduler is aware of the fast-path behavior and will not insert delays on i
 in blocks that satisfy the fast-path conditions so as to avoid preventing the backend
 compiler from performing the necessary optimizations to utilize the fast-path. If
 there are fast-path blocks that will be performed in parallel they currently *will not*
-be padded out by the scheduler to ensure they are the same of the same duration in Qiskit
-and must be manually padded:
+be padded out by the scheduler to ensure they are of the same duration in Qiskit
 
 .. jupyter-execute::
 
