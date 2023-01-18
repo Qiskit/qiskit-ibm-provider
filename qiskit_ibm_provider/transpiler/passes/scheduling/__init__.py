@@ -214,7 +214,7 @@ This behavior is also applied to the else condition of a fast-path eligible bran
         with qc.if_test((0, 1)) as else_:
             qc.x(0)
             # Will be padded out to a duration of 1000 on the backend.
-        else_:
+        with else_:
             qc.delay(1000, 0)
 
         qc.draw(output="mpl")
