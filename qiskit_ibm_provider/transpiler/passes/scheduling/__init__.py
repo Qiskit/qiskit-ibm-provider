@@ -125,7 +125,7 @@ conditioned gates to new-style control-flow.
 .. jupyter-execute::
 
     # Temporary workaround for mock backends. For real backends this is not required.
-    backend.get_translation_stage_plugin = lambda: return "ibm_dynamic_circuits"
+    backend.get_translation_stage_plugin = lambda: "ibm_dynamic_circuits"
 
     qc_c_if_transpiled = transpile(qc_c_if, backend)
 
