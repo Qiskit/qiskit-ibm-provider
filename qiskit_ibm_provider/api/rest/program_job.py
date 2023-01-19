@@ -61,10 +61,7 @@ class ProgramJob(RestAdapterBase):
         Returns:
             Job type, either "IQX" or "RUNTIME".
         """
-        base_url = self.session.base_url
-        self.session.base_url += "/facade/v1"
-        response = self.session.get(self.get_url("type"))
-        self.session.base_url = base_url
+        response = self.session.get(self.get_facade_url("/facade/v1", "type"))
         return json.loads(response.text)["type"]
 
     def delete(self) -> None:
