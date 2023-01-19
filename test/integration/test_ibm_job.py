@@ -138,6 +138,37 @@ class TestIBMJob(IBMTestCase):
         for job in job_list:
             self.assertTrue(isinstance(job.job_id(), str))
 
+    def test_retrieve_legacy_jobs(self):
+        """Test retrieving legacy jobs."""
+        job_list = self.provider.backend.jobs(
+            backend_name=self.sim_backend.name,
+            status="DONE",
+            limit=5,
+            skip=0,
+            legacy=True,
+        )
+        # instance used may not have any legacy jobs
+        for job in job_list:
+            self.assertTrue(isinstance(job.job_id(), str))
+            self.assertEqual(job.status(), JobStatus.DONE)
+            self.assertTrue(job.result())
+
+    def test_retrieve_single_legacy_job(self):
+        """Test retrieving a single legacy job."""
+        job_list = self.provider.backend.jobs(
+            backend_name=self.sim_backend.name,
+            status="DONE",
+            limit=1,
+            skip=0,
+            legacy=True,
+        )
+
+        # instance used may not have any legacy jobs
+        if len(job_list) == 1:
+            job = job_list[0]
+            retrieved_job = self.provider.backend.retrieve_job(job.job_id())
+            self.assertEqual(job.job_id(), retrieved_job.job_id())
+
     def test_retrieve_jobs_with_status(self):
         """Test retreiving jobs with status filter."""
         statuses = [["DONE"], JobStatus.DONE, [JobStatus.DONE]]

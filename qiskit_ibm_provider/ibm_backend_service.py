@@ -296,9 +296,11 @@ class IBMBackendService:
                 break
             for job_info in job_responses:
                 if filter_by_status:
-                    job_status = api_status_to_job_status(
-                        job_info["state"]["status"].upper()
-                    ).name
+                    if legacy:
+                        job_info_status = job_info["status"].upper()
+                    else:
+                        job_info_status = job_info["state"]["status"].upper()
+                    job_status = api_status_to_job_status(job_info_status).name
                     if (isinstance(status, str) and job_status != status) or (
                         isinstance(status, list) and job_status not in status
                     ):
