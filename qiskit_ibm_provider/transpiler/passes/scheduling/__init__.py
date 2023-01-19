@@ -73,6 +73,7 @@ for a dynamic circuit backend's execution model:
         teleport.x(qr[2])
     teleport.measure(qr[2], result)
 
+
     teleport = transpile(teleport, backend)
 
     scheduled_teleport = pm.run(teleport)
@@ -115,7 +116,36 @@ Scheduling with old format ``c_if`` conditioned gates is not supported.
     qc_c_if.x(0).c_if(0, 1)
     qc_c_if.draw(output="mpl")
 
-To work around this please run the pass
+The :class:`qiskit_ibm_provider.ibm_backend.IBMBackend` configures a translation plugin
+:class:`qiskit_ibm_provider.transpiler.plugin.IBMTranslationPlugin` to automatically
+apply transformations and optimizations for IBM hardware backends when invoking
+:class:`qiskit.transpile`. This will automatically convert all old style ``c_if``
+conditioned gates to new-style control-flow.
+
+.. jupyter-execute::
+
+    # Temporary workaround for mock backends. For real backends this is not required.
+    backend.get_translation_stage_plugin = lambda: return "ibm_dynamic_circuits"
+
+    qc_c_if_transpiled = transpile(qc_c_if, backend)
+
+We may then schedule the transpiled circuit without further modification.
+
+.. jupyter-execute::
+
+    pm = PassManager(
+        [
+            ALAPScheduleAnalysis(durations),
+            PadDynamicalDecoupling(durations, dd_sequence),
+        ]
+    )
+
+    qc_if_dd = pm.run(qc_c_if)
+    qc_if_dd.draw(output="mpl")
+
+
+If you are not using the transpiler plugin stages to
+work around this please manually run the pass
 :class:`qiskit.transpiler.passes.ConvertConditionsToIfOps`
 prior to your scheduling pass.
 
@@ -131,8 +161,8 @@ prior to your scheduling pass.
           ]
     )
 
-    qc_if_test = pm.run(qc_c_if)
-    qc_if_test.draw(output="mpl")
+    qc_if_dd = pm.run(qc_c_if)
+    qc_if_dd.draw(output="mpl")
 
 
 Exploiting IBM backend's local parallel "fast-path"
