@@ -140,7 +140,7 @@ We may then schedule the transpiled circuit without further modification.
         ]
     )
 
-    qc_if_dd = pm.run(qc_c_if)
+    qc_if_dd = pm.run(qc_c_if_transpiled)
     qc_if_dd.draw(output="mpl")
 
 
