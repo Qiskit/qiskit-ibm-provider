@@ -13,6 +13,7 @@
 """Client for accessing an individual IBM Quantum account."""
 
 import logging
+import json
 from typing import List, Dict, Any, Optional
 
 from .base import BaseClient
@@ -92,3 +93,21 @@ class AccountClient(BaseClient):
         return self.base_api.jobs(
             limit=limit, skip=skip, descending=descending, extra_filter=extra_filter
         )
+
+    def job_result(self, job_id: str) -> str:
+        """Retrieve and return the job result.
+        Args:
+            job_id: The ID of the job.
+        Returns:
+            Job result.
+        """
+
+        job_api = self.base_api.job(job_id)
+
+        # Get the download URL.
+        download_url = job_api.result_url()["url"]
+
+        # Download the result from object storage.
+        result_response = job_api.get_object_storage(download_url)
+
+        return json.dumps(result_response)
