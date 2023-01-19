@@ -13,7 +13,7 @@
 """Scheduler for dynamic circuit backends."""
 
 from abc import abstractmethod
-from typing import Dict, Optional, Union, Set, Tuple
+from typing import Dict, Iterable, List, Optional, Union, Set, Tuple
 import itertools
 
 import qiskit
@@ -59,6 +59,7 @@ class BaseDynamicCircuitAnalysis(TransformationPass):
 
         self._dag: Optional[DAGCircuit] = None
         self._block_dag: Optional[DAGCircuit] = None
+        self._wire_map: Optional[Dict[Qubit, Qubit]] = None
         self._node_block_dags: Dict[DAGNode, DAGCircuit] = {}
         # Mapping of control-flow nodes to their containing blocks
         self._block_idx_dag_map: Dict[int, DAGCircuit] = {}
@@ -87,10 +88,11 @@ class BaseDynamicCircuitAnalysis(TransformationPass):
     def _current_block_bit_times(self) -> Dict[Union[Qubit, Clbit], int]:
         return self._bit_stop_times[self._current_block_idx]
 
-    def _visit_block(self, block: DAGCircuit) -> None:
+    def _visit_block(self, block: DAGCircuit, wire_map: Dict[Qubit, Qubit]) -> None:
         # Push the previous block dag onto the stack
         prev_block_dag = self._block_dag
         self._block_dag = block
+        prev_wire_map, self._wire_map = self._wire_map, wire_map
 
         # We must run this on the individual block
         # as the current implementation does not recurse
@@ -106,6 +108,7 @@ class BaseDynamicCircuitAnalysis(TransformationPass):
 
         # Pop the previous block dag off the stack restoring it
         self._block_dag = prev_block_dag
+        self._wire_map = prev_wire_map
 
     def _visit_node(self, node: DAGNode) -> None:
         if isinstance(node.op, ControlFlowOp):
@@ -136,7 +139,8 @@ class BaseDynamicCircuitAnalysis(TransformationPass):
         self._node_block_dags[node] = node_block_dags = []
 
         t0 = max(  # pylint: disable=invalid-name
-            self._current_block_bit_times[bit] for bit in node.qargs + node.cargs
+            self._current_block_bit_times[bit]
+            for bit in itertools.chain(self._map_wires(node.qargs), node.cargs)
         )
 
         # Duration is 0 as we do not schedule across terminator
@@ -147,8 +151,12 @@ class BaseDynamicCircuitAnalysis(TransformationPass):
             self._control_flow_block = True
 
             new_dag = circuit_to_dag(block)
+            inner_wire_map = {
+                inner: outer
+                for outer, inner in zip(self._map_wires(node.qargs), new_dag.qubits)
+            }
             node_block_dags.append(new_dag)
-            self._visit_block(new_dag)
+            self._visit_block(new_dag, inner_wire_map)
 
         # Begin new block for exit to "then" block.
         self._begin_new_circuit_block()
@@ -170,6 +178,7 @@ class BaseDynamicCircuitAnalysis(TransformationPass):
 
         self._dag = dag
         self._block_dag = None
+        self._wire_map = {qubit: qubit for qubit in dag.qubits}
         self._node_block_dags = {}
         self._block_idx_dag_map = {}
 
@@ -194,7 +203,7 @@ class BaseDynamicCircuitAnalysis(TransformationPass):
             # as zero duration to avoid padding.
             return 0
 
-        indices = [self._bit_indices[qarg] for qarg in node.qargs]
+        indices = [self._bit_indices[qarg] for qarg in self._map_wires(node.qargs)]
 
         # Fall back to current block dag if not specified.
         dag = dag or self._block_dag
@@ -226,7 +235,9 @@ class BaseDynamicCircuitAnalysis(TransformationPass):
         )
 
         update_bits = (
-            itertools.chain(node.qargs, node.cargs) if update_cargs else node.qargs
+            itertools.chain(self._map_wires(node.qargs), node.cargs)
+            if update_cargs
+            else self._map_wires(node.qargs)
         )
         for bit in update_bits:
             self._current_block_bit_times[bit] = t1
@@ -240,7 +251,8 @@ class BaseDynamicCircuitAnalysis(TransformationPass):
         self._block_idx_dag_map[self._current_block_idx] = self._block_dag
         self._control_flow_block = False
         self._bit_stop_times[self._current_block_idx] = {
-            q: 0 for q in self._block_dag.qubits + self._block_dag.clbits
+            q: 0
+            for q in self._map_wires(self._block_dag.qubits) + self._block_dag.clbits
         }
         self._flush_measures()
 
@@ -254,17 +266,26 @@ class BaseDynamicCircuitAnalysis(TransformationPass):
 
     def _current_block_measure_qargs(self) -> Set[Qubit]:
         return set(
-            qarg for measure in self._current_block_measures for qarg in measure.qargs
+            qarg
+            for measure in self._current_block_measures
+            for qarg in self._map_wires(measure.qargs)
         )
 
     def _check_flush_measures(self, node: DAGNode) -> None:
-        if self._current_block_measure_qargs() & set(node.qargs):
+        if self._current_block_measure_qargs() & set(self._map_wires(node.qargs)):
             if self._current_block_measures_has_reset:
                 # If a reset is included we must trigger the end of a block.
                 self._begin_new_circuit_block()
             else:
                 # Otherwise just trigger a measurement flush
                 self._flush_measures()
+
+    def _map_wires(self, wires: Iterable[Qubit]) -> List[Qubit]:
+        """Map the wires from the current block to the top-level block's wires.
+
+        TODO: We should have an easier approach to wire mapping from the transpiler.
+        """
+        return [self._wire_map[q] for q in wires]
 
 
 class ASAPScheduleAnalysis(BaseDynamicCircuitAnalysis):
@@ -300,8 +321,10 @@ class ASAPScheduleAnalysis(BaseDynamicCircuitAnalysis):
         """
         self._init_run(dag)
 
+        # Trivial wire map at the top-level
+        wire_map = {qubit: qubit for qubit in dag.qubits}
         # Top-level dag is the entry block
-        self._visit_block(dag)
+        self._visit_block(dag, wire_map)
 
         self.property_set["node_start_time"] = self._node_start_time
         self.property_set["node_block_dags"] = self._node_block_dags
@@ -324,7 +347,7 @@ class ASAPScheduleAnalysis(BaseDynamicCircuitAnalysis):
         current_block_measure_qargs = self._current_block_measure_qargs()
         # We handle a set of qubits here as _visit_reset currently calls
         # this method and a reset may have multiple qubits.
-        measure_qargs = set(node.qargs)
+        measure_qargs = set(self._map_wires(node.qargs))
 
         t0q = max(
             self._current_block_bit_times[q] for q in measure_qargs
@@ -361,7 +384,9 @@ class ASAPScheduleAnalysis(BaseDynamicCircuitAnalysis):
                 bit: index for index, bit in enumerate(self._block_dag.qubits)
             }
             measure_duration = self._durations.get(
-                Measure(), [bit_indices[qarg] for qarg in measure.qargs], unit="dt"
+                Measure(),
+                [bit_indices[qarg] for qarg in self._map_wires(measure.qargs)],
+                unit="dt",
             )
             t1 = t0 + measure_duration  # pylint: disable=invalid-name
             self._update_bit_times(measure, t0, t1)
@@ -389,7 +414,8 @@ class ASAPScheduleAnalysis(BaseDynamicCircuitAnalysis):
         self._check_flush_measures(node)
 
         t0 = max(  # pylint: disable=invalid-name
-            self._current_block_bit_times[bit] for bit in node.qargs + node.cargs
+            self._current_block_bit_times[bit]
+            for bit in itertools.chain(self._map_wires(node.qargs), node.cargs)
         )
 
         t1 = t0 + op_duration  # pylint: disable=invalid-name
@@ -429,8 +455,10 @@ class ALAPScheduleAnalysis(BaseDynamicCircuitAnalysis):
         """
         self._init_run(dag)
 
+        # Trivial wire map at the top-level
+        wire_map = {qubit: qubit for qubit in dag.qubits}
         # Top-level dag is the entry block
-        self._visit_block(dag)
+        self._visit_block(dag, wire_map)
         self._push_block_durations()
         self.property_set["node_start_time"] = self._node_start_time
         self.property_set["node_block_dags"] = self._node_block_dags
@@ -453,7 +481,7 @@ class ALAPScheduleAnalysis(BaseDynamicCircuitAnalysis):
         current_block_measure_qargs = self._current_block_measure_qargs()
         # We handle a set of qubits here as _visit_reset currently calls
         # this method and a reset may have multiple qubits.
-        measure_qargs = set(node.qargs)
+        measure_qargs = set(self._map_wires(node.qargs))
 
         t0q = max(
             self._current_block_bit_times[q] for q in measure_qargs
@@ -490,7 +518,9 @@ class ALAPScheduleAnalysis(BaseDynamicCircuitAnalysis):
                 bit: index for index, bit in enumerate(self._block_dag.qubits)
             }
             measure_duration = self._durations.get(
-                Measure(), [bit_indices[qarg] for qarg in measure.qargs], unit="dt"
+                Measure(),
+                [bit_indices[qarg] for qarg in self._map_wires(measure.qargs)],
+                unit="dt",
             )
             t1 = t0 + measure_duration  # pylint: disable=invalid-name
             self._update_bit_times(measure, t0, t1)
@@ -524,7 +554,8 @@ class ALAPScheduleAnalysis(BaseDynamicCircuitAnalysis):
         self._check_flush_measures(node)
 
         t0 = max(  # pylint: disable=invalid-name
-            self._current_block_bit_times[bit] for bit in node.qargs + node.cargs
+            self._current_block_bit_times[bit]
+            for bit in itertools.chain(self._map_wires(node.qargs), node.cargs)
         )
 
         t1 = t0 + op_duration  # pylint: disable=invalid-name
@@ -558,7 +589,9 @@ class ALAPScheduleAnalysis(BaseDynamicCircuitAnalysis):
         def _calculate_new_times(
             block: int, node: DAGNode, block_bit_times: Dict[int, Dict[Qubit, int]]
         ) -> int:
-            max_block_time = min(block_bit_times[block][bit] for bit in node.qargs)
+            max_block_time = min(
+                block_bit_times[block][bit] for bit in self._map_wires(node.qargs)
+            )
 
             t0 = self._node_start_time[node][1]  # pylint: disable=invalid-name
             t1 = self._node_stop_time[node][1]  # pylint: disable=invalid-name
@@ -584,7 +617,7 @@ class ALAPScheduleAnalysis(BaseDynamicCircuitAnalysis):
             )
 
             # Update available times by bit
-            for bit in node.qargs:
+            for bit in self._map_wires(node.qargs):
                 block_bit_times[block][bit] = new_time
 
         for node, (

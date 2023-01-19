@@ -12,7 +12,7 @@
 
 """Padding pass to fill timeslots for IBM (dynamic circuit) backends."""
 
-from typing import Any, Dict, List, Optional, Union, Set
+from typing import Any, Dict, Iterable, List, Optional, Union, Set
 
 from qiskit.circuit import (
     Qubit,
@@ -69,6 +69,7 @@ class BlockBasePadder(TransformationPass):
         self._dag = None
         self._block_dag = None
         self._prev_node: Optional[DAGNode] = None
+        self._wire_map: Optional[Dict[Qubit, Qubit]] = None
         self._block_duration = 0
         self._current_block_idx = 0
         self._conditional_block = False
@@ -102,8 +103,10 @@ class BlockBasePadder(TransformationPass):
 
         self._init_run(dag)
 
+        # Trivial wire map at the top-level
+        wire_map = {qubit: qubit for qubit in dag.qubits}
         # Top-level dag is the entry block
-        new_dag = self._visit_block(dag)
+        new_dag = self._visit_block(dag, wire_map)
 
         return new_dag
 
@@ -127,6 +130,7 @@ class BlockBasePadder(TransformationPass):
 
         self.property_set["node_start_time"].clear()
         self._prev_node = None
+        self._wire_map = {}
 
     def _empty_dag_like(self, dag: DAGCircuit, pad_wires: bool = True) -> DAGCircuit:
         """Create an empty dag like the input dag."""
@@ -167,7 +171,7 @@ class BlockBasePadder(TransformationPass):
         if new_dag.unit != "dt":
             raise TranspilerError(
                 'All blocks must have time units of "dt". '
-                'Please run TimeUnitConversion pass prior to padding.'
+                "Please run TimeUnitConversion pass prior to padding."
             )
 
         new_dag.calibrations = dag.calibrations
@@ -232,7 +236,7 @@ class BlockBasePadder(TransformationPass):
             # as zero duration to avoid padding.
             return 0
 
-        indices = [self._bit_indices[qarg] for qarg in node.qargs]
+        indices = [self._bit_indices[qarg] for qarg in self._map_wires(node.qargs)]
 
         if self._block_dag.has_calibration_for(node):
             # If node has calibration, this value should be the highest priority
@@ -302,10 +306,13 @@ class BlockBasePadder(TransformationPass):
             )
             barrier_node.op.duration = 0
 
-    def _visit_block(self, block: DAGCircuit, pad_wires: bool = True) -> DAGCircuit:
+    def _visit_block(
+        self, block: DAGCircuit, wire_map: Dict[Qubit, Qubit], pad_wires: bool = True
+    ) -> DAGCircuit:
         # Push the previous block dag onto the stack
         prev_node = self._prev_node
         self._prev_node = None
+        prev_wire_map, self._wire_map = self._wire_map, wire_map
 
         prev_block_dag = self._block_dag
         self._block_dag = new_block_dag = self._empty_dag_like(block, pad_wires)
@@ -330,6 +337,8 @@ class BlockBasePadder(TransformationPass):
         # Pop the previous block dag off the stack restoring it
         self._block_dag = prev_block_dag
         self._prev_node = prev_node
+        self._wire_map = prev_wire_map
+
         return new_block_dag
 
     def _visit_node(self, node: DAGNode) -> None:
@@ -378,7 +387,8 @@ class BlockBasePadder(TransformationPass):
         if not (
             last_node_in_block
             and isinstance(last_node.op, Measure)
-            and set(node.qargs) == set(last_node.qargs)
+            and set(self._map_wires(node.qargs))
+            == set(self._map_wires(last_node.qargs))
         ):
             return False
 
@@ -413,8 +423,14 @@ class BlockBasePadder(TransformationPass):
         new_node_block_dags = []
         for block_idx, _ in enumerate(node.op.blocks):
             block_dag = self._node_block_dags[node][block_idx]
+            inner_wire_map = {
+                inner: outer
+                for outer, inner in zip(self._map_wires(node.qargs), block_dag.qubits)
+            }
             new_node_block_dags.append(
-                self._visit_block(block_dag, pad_wires=not fast_path_node)
+                self._visit_block(
+                    block_dag, pad_wires=not fast_path_node, wire_map=inner_wire_map
+                )
             )
 
         # Build new control-flow operation containing scheduled blocks
@@ -429,7 +445,7 @@ class BlockBasePadder(TransformationPass):
             block_idx,
             t0,
             new_control_flow_op,
-            node.qargs if fast_path_node else self._block_dag.qubits,
+            self._map_wires(node.qargs) if fast_path_node else self._block_dag.qubits,
             node.cargs,
         )
 
@@ -472,7 +488,7 @@ class BlockBasePadder(TransformationPass):
         t1 = t0 + self._get_node_duration(node)  # pylint: disable=invalid-name
         self._block_duration = max(self._block_duration, t1)
 
-        for bit in node.qargs:
+        for bit in self._map_wires(node.qargs):
             # Fill idle time with some sequence
             if t0 - self._idle_after.get(bit, 0) > 0:
                 # Find previous node on the wire, i.e. always the latest node on the wire
@@ -491,10 +507,10 @@ class BlockBasePadder(TransformationPass):
             self._idle_after[bit] = t1
 
         if not isinstance(node.op, (Barrier, Delay)):
-            self._dirty_qubits |= set(node.qargs)
+            self._dirty_qubits |= set(self._map_wires(node.qargs))
 
         new_node = self._apply_scheduled_op(
-            block_idx, t0, node.op, node.qargs, node.cargs
+            block_idx, t0, node.op, self._map_wires(node.qargs), node.cargs
         )
         self._last_node_to_touch.update(
             {
@@ -564,3 +580,10 @@ class BlockBasePadder(TransformationPass):
         )
         self.property_set["node_start_time"][new_node] = (block_idx, t_start)
         return new_node
+
+    def _map_wires(self, wires: Iterable[Qubit]) -> List[Qubit]:
+        """Map the wires from the current block to the top-level block's wires.
+
+        TODO: We should have an easier approach to wire mapping from the transpiler.
+        """
+        return [self._wire_map[q] for q in wires]
