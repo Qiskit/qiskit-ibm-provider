@@ -12,13 +12,14 @@
 
 """Test the dynamic circuits scheduling analysis"""
 
+from unittest.mock import patch
+
 from qiskit import ClassicalRegister, QuantumCircuit, QuantumRegister, transpile
 from qiskit.providers.fake_provider import FakeJakarta
 from qiskit.pulse import Schedule, Play, Constant, DriveChannel
 from qiskit.transpiler.passes import ConvertConditionsToIfOps
 from qiskit.transpiler.passmanager import PassManager
 from qiskit.transpiler.exceptions import TranspilerError
-
 
 from qiskit_ibm_provider.transpiler.passes.scheduling.pad_delay import PadDelay
 from qiskit_ibm_provider.transpiler.passes.scheduling.scheduler import (
@@ -789,6 +790,40 @@ class TestASAPSchedulingAndPaddingPass(ControlFlowTestCase):
         expected = QuantumCircuit(qr, cr)
         with expected.if_test((cr[0], True)):
             expected.x(qr[0])
+
+        self.assertEqual(expected, scheduled)
+
+    def test_c_if_plugin_conversion_with_transpile(self):
+        """Verify that old format c_if may be converted and scheduled after transpilation with the plugin."""
+        # Patch the test backend with the plugin
+        with patch.object(FakeJakarta, 'get_translation_stage_plugin', return_value="ibm_dynamic_circuits", create=True):
+            backend = FakeJakarta()
+            # Temporary workaround for mock backends. For real backends this is not required.
+            backend.configuration().basis_gates.append("if_else")
+
+            durations = DynamicCircuitInstructionDurations.from_backend(backend)
+            pm = PassManager([ASAPScheduleAnalysis(durations), PadDelay()])
+
+            qr0 = QuantumRegister(1, name="q")
+            cr = ClassicalRegister(1, name="c")
+            qc = QuantumCircuit(qr0, cr)
+            qc.x(qr0[0]).c_if(cr[0], True)
+
+            qc_transpiled = transpile(qc, backend, initial_layout=[0])
+
+        scheduled = pm.run(qc_transpiled)
+
+        qr1 = QuantumRegister(7, name="q")
+        cr = ClassicalRegister(1, name="c")
+        expected = QuantumCircuit(qr1, cr)
+        with expected.if_test((cr[0], True)):
+            expected.x(qr1[0])
+            expected.delay(160, qr1[1])
+            expected.delay(160, qr1[2])
+            expected.delay(160, qr1[3])
+            expected.delay(160, qr1[4])
+            expected.delay(160, qr1[5])
+            expected.delay(160, qr1[6])
 
         self.assertEqual(expected, scheduled)
 
@@ -1765,5 +1800,39 @@ class TestALAPSchedulingAndPaddingPass(ControlFlowTestCase):
             expected.delay(160, qr[4])
             expected.delay(160, qr[5])
             expected.delay(160, qr[6])
+
+        self.assertEqual(expected, scheduled)
+
+    def test_c_if_plugin_conversion_with_transpile(self):
+        """Verify that old format c_if may be converted and scheduled after transpilation with the plugin."""
+        # Patch the test backend with the plugin
+        with patch.object(FakeJakarta, 'get_translation_stage_plugin', return_value="ibm_dynamic_circuits", create=True):
+            backend = FakeJakarta()
+            # Temporary workaround for mock backends. For real backends this is not required.
+            backend.configuration().basis_gates.append("if_else")
+
+            durations = DynamicCircuitInstructionDurations.from_backend(backend)
+            pm = PassManager([ALAPScheduleAnalysis(durations), PadDelay()])
+
+            qr0 = QuantumRegister(1, name="q")
+            cr = ClassicalRegister(1, name="c")
+            qc = QuantumCircuit(qr0, cr)
+            qc.x(qr0[0]).c_if(cr[0], True)
+
+            qc_transpiled = transpile(qc, backend, initial_layout=[0])
+
+        scheduled = pm.run(qc_transpiled)
+
+        qr1 = QuantumRegister(7, name="q")
+        cr = ClassicalRegister(1, name="c")
+        expected = QuantumCircuit(qr1, cr)
+        with expected.if_test((cr[0], True)):
+            expected.x(qr1[0])
+            expected.delay(160, qr1[1])
+            expected.delay(160, qr1[2])
+            expected.delay(160, qr1[3])
+            expected.delay(160, qr1[4])
+            expected.delay(160, qr1[5])
+            expected.delay(160, qr1[6])
 
         self.assertEqual(expected, scheduled)
