@@ -570,6 +570,7 @@ class IBMProvider(Provider):
         job_tags: Optional[List[str]] = None,
         descending: bool = True,
         instance: Optional[str] = None,
+        legacy: bool = False,
     ) -> List[IBMJob]:
         """Return a list of jobs, subject to optional filtering.
 
@@ -594,6 +595,7 @@ class IBMProvider(Provider):
             descending: If ``True``, return the jobs in descending order of the job
                 creation date (i.e. newest first) until the limit is reached.
             instance: The provider in the hub/group/project format.
+            legacy: Retrieve jobs run from the deprecated `qiskit-ibmq-provider`.
 
         Returns:
             A list of ``IBMJob`` instances.
@@ -610,6 +612,7 @@ class IBMProvider(Provider):
             job_tags=job_tags,
             descending=descending,
             instance=instance,
+            legacy=legacy,
         )
 
     def retrieve_job(self, job_id: str) -> IBMJob:

@@ -199,7 +199,7 @@ class IBMBackendService:
         job_tags: Optional[List[str]] = None,
         descending: bool = True,
         instance: Optional[str] = None,
-        iqx_job: bool = False,
+        legacy: bool = False,
     ) -> List[IBMJob]:
         """Return a list of jobs, subject to optional filtering.
 
@@ -226,7 +226,7 @@ class IBMBackendService:
             descending: If ``True``, return the jobs in descending order of the job
                 creation date (i.e. newest first) until the limit is reached.
             instance: The provider in the hub/group/project format.
-            iqx_job: Retrieve jobs from the old provider/
+            legacy: Retrieve jobs run from the deprecated `qiskit-ibmq-provider`.
 
         Returns:
             A list of ``IBMJob`` instances.
@@ -290,7 +290,7 @@ class IBMBackendService:
                 limit=limit,
                 skip=skip,
                 descending=descending,
-                iqx_job=iqx_job,
+                legacy=legacy,
             )
             if len(job_responses) == 0:
                 break
@@ -304,7 +304,7 @@ class IBMBackendService:
                     ):
                         continue
                 job = self._restore_circuit_job(
-                    job_info, raise_error=False, iqx_job=iqx_job
+                    job_info, raise_error=False, legacy=legacy
                 )
                 if job is None:
                     logger.warning(
@@ -324,7 +324,7 @@ class IBMBackendService:
         limit: Optional[int] = 10,
         skip: int = 0,
         descending: bool = True,
-        iqx_job: bool = False,
+        legacy: bool = False,
     ) -> List:
         """Retrieve the requested number of jobs from the server using pagination.
 
@@ -334,6 +334,7 @@ class IBMBackendService:
             skip: Starting index for the job retrieval.
             descending: If ``True``, return the jobs in descending order of the job
                 creation date (i.e. newest first) until the limit is reached.
+            legacy: Retrieve jobs run from the deprecated `qiskit-ibmq-provider`.
 
         Returns:
             A list of raw API response.
@@ -343,7 +344,7 @@ class IBMBackendService:
         job_responses: List[Dict[str, Any]] = []
         current_page_limit = limit if (limit is not None and limit <= 50) else 50
         while True:
-            if iqx_job:
+            if legacy:
                 job_page = self._default_hgp._api_client.list_jobs(
                     limit=current_page_limit,
                     skip=skip,
@@ -375,7 +376,7 @@ class IBMBackendService:
         return job_responses
 
     def _restore_circuit_job(
-        self, job_info: Dict, raise_error: bool, iqx_job: bool = False
+        self, job_info: Dict, raise_error: bool, legacy: bool = False
     ) -> Optional[IBMCircuitJob]:
         """Restore a circuit job from the API response.
 
@@ -383,6 +384,7 @@ class IBMBackendService:
             job_info: Job info in dictionary format.
             raise_error: Whether to raise an exception if `job_info` is in
                 an invalid format.
+            legacy: Retrieve jobs run from the deprecated `qiskit-ibmq-provider`.
 
         Returns:
             Circuit job restored from the data, or ``None`` if format is invalid.
@@ -391,7 +393,7 @@ class IBMBackendService:
             IBMBackendApiProtocolError: If unexpected return value received
                  from the server.
         """
-        if iqx_job:
+        if legacy:
             job_id = job_info.get("job_id", "")
             backend_name = job_info.get("_backend_info", {}).get("name", "unknown")
             instance = None
@@ -582,9 +584,9 @@ class IBMBackendService:
             IBMJobNotFoundError: If job cannot be found.
         """
         try:
-            iqx_job = False
-            if job_id[0] != "c":
-                iqx_job = True
+            legacy = False
+            if self._provider._runtime_client.job_type(job_id) == "IQX":
+                legacy = True
                 job_info = self._default_hgp._api_client.job_get(job_id)
             else:
                 job_info = self._provider._runtime_client.job_get(job_id)
@@ -594,7 +596,7 @@ class IBMBackendService:
             raise IBMBackendApiError(
                 "Failed to get job {}: {}".format(job_id, str(ex))
             ) from ex
-        job = self._restore_circuit_job(job_info, raise_error=True, iqx_job=iqx_job)
+        job = self._restore_circuit_job(job_info, raise_error=True, legacy=legacy)
         return job
 
     @staticmethod

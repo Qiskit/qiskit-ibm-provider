@@ -32,6 +32,7 @@ class ProgramJob(RestAdapterBase):
         "interim_results": "/interim_results",
         "metrics": "/metrics",
         "tags": "/tags",
+        "type": "/type",
     }
 
     def __init__(
@@ -53,6 +54,18 @@ class ProgramJob(RestAdapterBase):
             JSON response.
         """
         return self.session.get(self.get_url("self")).json(cls=RuntimeDecoder)
+
+    def job_type(self) -> str:
+        """Return job type:
+
+        Returns:
+            Job type, either "IQX" or "RUNTIME".
+        """
+        base_url = self.session.base_url
+        self.session.base_url += "/facade/v1"
+        response = self.session.get(self.get_url("type"))
+        self.session.base_url = base_url
+        return json.loads(response.text)["type"]
 
     def delete(self) -> None:
         """Delete program job."""
