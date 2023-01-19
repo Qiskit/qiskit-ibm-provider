@@ -19,8 +19,7 @@ from dataclasses import asdict
 from datetime import datetime as python_datetime
 from typing import Iterable, Dict, List, Union, Optional, Any
 
-from qiskit.circuit import QuantumCircuit, Delay
-from qiskit.circuit.duration import duration_in_dt
+from qiskit.circuit import QuantumCircuit
 from qiskit.providers.backend import BackendV2 as Backend
 from qiskit.providers.models import (
     BackendStatus,
@@ -42,6 +41,7 @@ from qiskit.pulse.channels import (
 
 from qiskit.qobj.utils import MeasLevel, MeasReturnType
 from qiskit.tools.events.pubsub import Publisher
+from qiskit.transpiler.passmanager import PassManager
 from qiskit.transpiler.target import Target
 
 from qiskit_ibm_provider import ibm_provider  # pylint: disable=unused-import
@@ -53,6 +53,9 @@ from .exceptions import (
     IBMBackendApiProtocolError,
 )
 from .job import IBMJob, IBMCircuitJob
+from .transpiler.passes.basis.convert_id_to_delay import (
+    ConvertIdToDelay,
+)
 from .utils import validate_job_tags
 from .utils.options import QASM2Options, QASM3Options
 from .utils.backend_converter import (
@@ -61,6 +64,7 @@ from .utils.backend_converter import (
 from .utils.converters import local_to_utc
 from .utils.json_decoder import defaults_from_server_data, properties_from_server_data
 from .api.exceptions import RequestsApiError
+
 
 logger = logging.getLogger(__name__)
 
@@ -760,23 +764,17 @@ class IBMBackend(Backend):
 
             self.id_warning_issued = True
 
-        dt_in_s = self.configuration().dt
+        # Make sure we don't mutate user's input circuits
+        circuits = copy.deepcopy(circuits)
+        # Convert id gates to delays.
+        # TODO: This should be part of user-level transpilation
+        # (But we need this to always run. Not just opt-in in plugin)
+        pm = PassManager(  # pylint: disable=invalid-name
+            ConvertIdToDelay(self._target.durations())
+        )
+        circuits = pm.run(circuits)
 
-        circuits_copy = copy.deepcopy(circuits)
-        for circuit in circuits_copy:
-            if isinstance(circuit, Schedule):
-                continue
-
-            for idx, (instr, qargs, cargs) in enumerate(circuit.data):
-                if instr.name == "id":
-
-                    sx_duration = self.properties().gate_length("sx", qargs[0].index)
-                    sx_duration_in_dt = duration_in_dt(sx_duration, dt_in_s)
-
-                    delay_instr = Delay(sx_duration_in_dt)
-
-                    circuit.data[idx] = (delay_instr, qargs, cargs)
-        return circuits_copy
+        return circuits
 
 
 class IBMRetiredBackend(IBMBackend):

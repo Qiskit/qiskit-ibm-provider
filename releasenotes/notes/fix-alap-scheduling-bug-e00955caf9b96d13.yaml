@@ -1,0 +1,7 @@
+---
+fixes:
+  - |
+    A bug was fixed in
+    :class:`qiskit.transpiler.passes.scheduling.LAPScheduleAnalysis`
+    which was caused by an bad interaction between duration-less gates
+    such as ``rz`` and ``barrier``.

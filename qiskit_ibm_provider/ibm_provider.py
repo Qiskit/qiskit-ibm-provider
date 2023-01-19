@@ -427,6 +427,14 @@ class IBMProvider(Provider):
         active_account_dict.update({"instance": hgps[0].name})
         return active_account_dict
 
+    def instances(self) -> List[str]:
+        """Return the IBM Quantum instances list currently in use for the session.
+
+        Returns:
+            A list with instances currently in the session.
+        """
+        return [hgp.name for hgp in self._get_hgps()]
+
     @staticmethod
     def delete_account(name: Optional[str] = None) -> bool:
         """Delete a saved account from disk.
