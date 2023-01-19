@@ -794,9 +794,15 @@ class TestASAPSchedulingAndPaddingPass(ControlFlowTestCase):
         self.assertEqual(expected, scheduled)
 
     def test_c_if_plugin_conversion_with_transpile(self):
-        """Verify that old format c_if may be converted and scheduled after transpilation with the plugin."""
+        """Verify that old format c_if may be converted and scheduled
+        after transpilation with the plugin."""
         # Patch the test backend with the plugin
-        with patch.object(FakeJakarta, 'get_translation_stage_plugin', return_value="ibm_dynamic_circuits", create=True):
+        with patch.object(
+            FakeJakarta,
+            "get_translation_stage_plugin",
+            return_value="ibm_dynamic_circuits",
+            create=True,
+        ):
             backend = FakeJakarta()
             # Temporary workaround for mock backends. For real backends this is not required.
             backend.configuration().basis_gates.append("if_else")
@@ -1804,9 +1810,15 @@ class TestALAPSchedulingAndPaddingPass(ControlFlowTestCase):
         self.assertEqual(expected, scheduled)
 
     def test_c_if_plugin_conversion_with_transpile(self):
-        """Verify that old format c_if may be converted and scheduled after transpilation with the plugin."""
+        """Verify that old format c_if may be converted and scheduled after
+        transpilation with the plugin."""
         # Patch the test backend with the plugin
-        with patch.object(FakeJakarta, 'get_translation_stage_plugin', return_value="ibm_dynamic_circuits", create=True):
+        with patch.object(
+            FakeJakarta,
+            "get_translation_stage_plugin",
+            return_value="ibm_dynamic_circuits",
+            create=True,
+        ):
             backend = FakeJakarta()
             # Temporary workaround for mock backends. For real backends this is not required.
             backend.configuration().basis_gates.append("if_else")
