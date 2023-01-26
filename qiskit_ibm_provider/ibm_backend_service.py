@@ -226,7 +226,7 @@ class IBMBackendService:
             descending: If ``True``, return the jobs in descending order of the job
                 creation date (i.e. newest first) until the limit is reached.
             instance: The provider in the hub/group/project format.
-            legacy: Retrieve jobs run from the deprecated `qiskit-ibmq-provider`.
+            legacy: Filter to only retrieve jobs run from the deprecated `qiskit-ibmq-provider`.
 
         Returns:
             A list of ``IBMJob`` instances.
@@ -336,7 +336,7 @@ class IBMBackendService:
             skip: Starting index for the job retrieval.
             descending: If ``True``, return the jobs in descending order of the job
                 creation date (i.e. newest first) until the limit is reached.
-            legacy: Retrieve jobs run from the deprecated `qiskit-ibmq-provider`.
+            legacy: Filter to only retrieve jobs run from the deprecated `qiskit-ibmq-provider`.
 
         Returns:
             A list of raw API response.
@@ -386,7 +386,7 @@ class IBMBackendService:
             job_info: Job info in dictionary format.
             raise_error: Whether to raise an exception if `job_info` is in
                 an invalid format.
-            legacy: Retrieve jobs run from the deprecated `qiskit-ibmq-provider`.
+            legacy: Filter to only retrieve jobs run from the deprecated `qiskit-ibmq-provider`.
 
         Returns:
             Circuit job restored from the data, or ``None`` if format is invalid.
