@@ -1,0 +1,13 @@
+---
+features:
+  - |
+    A new transpiler pass
+    :class:`qiskit_ibm_provider.transpiler.passes.basis.ConvertIdToDelay
+    was added which converts an :class:`qiskit.circuit.library.IGate`
+    to :class:`qiskit.circuit.Delay`. This was added to the default transpiler
+    plugin :class:`qiskit_ibm_provider.transpiler.plugin.IBMTranslationPlugin`.
+fixes:
+  - |
+    A bug was fixed where conditional :class:`qiskit.circuit.library.IGate` were
+    being converted to unconditional :class:`qiskit.circuit.Delay` operations
+    rather than conditional operations.

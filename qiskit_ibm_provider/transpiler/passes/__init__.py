@@ -22,10 +22,13 @@ A collection of transpiler passes for IBM backends.
 .. autosummary::
    :toctree: ../stubs/
 
+   basis
    scheduling
 
 
 """
+
+from .basis import ConvertIdToDelay
 
 # circuit scheduling
 from .scheduling import ASAPScheduleAnalysis
