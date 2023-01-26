@@ -1735,6 +1735,7 @@ class TestALAPSchedulingAndPaddingPass(ControlFlowTestCase):
         backend = FakeJakarta()
         # Temporary workaround for mock backends. For real backends this is not required.
         backend.configuration().basis_gates.append("if_else")
+        backend.configuration().basis_gates.append("while_loop")
 
         durations = DynamicCircuitInstructionDurations.from_backend(backend)
         pm = PassManager([ALAPScheduleAnalysis(durations), PadDelay()])
@@ -1743,7 +1744,7 @@ class TestALAPSchedulingAndPaddingPass(ControlFlowTestCase):
         cr = ClassicalRegister(2)
 
         qc = QuantumCircuit(qr, cr)
-        with qc.if_test((cr, 1)):
+        with qc.while_loop((cr, 1)):
             qc.x(qr[2])
             with qc.if_test((cr[1], 1)):
                 qc.x(qr[1])
@@ -1755,7 +1756,7 @@ class TestALAPSchedulingAndPaddingPass(ControlFlowTestCase):
 
         qr = QuantumRegister(7, name="q")
         expected = QuantumCircuit(qr, cr)
-        with expected.if_test((cr, 1)):
+        with expected.while_loop((cr, 1)):
             with expected.if_test((cr[1], 1)):
                 expected.delay(160, qr[0])
                 expected.x(qr[1])
