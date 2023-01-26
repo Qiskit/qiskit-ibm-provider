@@ -706,6 +706,10 @@ class IBMCircuitJob(IBMJob):
         result = re.search("JobError: '(.*)'", raw_data)
         if result is not None:
             return result.group(1)
+        else:
+            index = raw_data.rfind("Traceback")
+            if index != -1:
+                return "Unknown error; " + raw_data[index:]
         return None
 
     def _set_result(self, raw_data: str) -> None:
