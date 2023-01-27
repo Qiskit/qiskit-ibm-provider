@@ -27,7 +27,7 @@ from qiskit.providers.models.backendproperties import Gate as GateSchema
 from qiskit.circuit.gate import Gate
 from qiskit.circuit.parameter import Parameter
 from qiskit.circuit.library.standard_gates import get_standard_gate_name_mapping
-from qiskit.pulse.instruction_schedule_map import PulseQobjDef
+from qiskit.pulse.calibration_entries import PulseQobjDef
 from qiskit.transpiler.target import Target, InstructionProperties
 from qiskit.qobj.pulse_qobj import PulseLibraryItem
 from qiskit.qobj.converters.pulse_instruction import QobjToInstructionConverter
@@ -104,15 +104,18 @@ def target_from_server_data(
 
     # Parse qubit properties
     if properties:
-        in_data["qubit_properties"] = list(map(_decode_qubit_property, properties["qubits"]))
+        in_data["qubit_properties"] = list(
+            map(_decode_qubit_property, properties["qubits"])
+        )
     # Parse global configuration properties
     if hasattr(configuration, "dt"):
         in_data["dt"] = configuration.dt
     if hasattr(configuration, "timing_constraints"):
-        in_data["granularity"] = configuration.timing_constraints.get("granularity")
-        in_data["min_length"] = configuration.timing_constraints.get("min_length")
-        in_data["pulse_alignment"] = configuration.timing_constraints.get("pulse_alignment")
-        in_data["aquire_alignment"] = configuration.timing_constraints.get("acquire_alignment")
+        consts = configuration.timing_constraints
+        in_data["granularity"] = consts["granularity"]
+        in_data["min_length"] = consts["min_length"]
+        in_data["pulse_alignment"] = consts["pulse_alignment"]
+        in_data["aquire_alignment"] = consts["acquire_alignment"]
     target = Target(**in_data)
 
     # Create instruction property placeholder from backend configuration
@@ -123,7 +126,9 @@ def target_from_server_data(
     for gate in configuration.gates:
         operand_qubits = getattr(gate, "coupling_map", None)
         if gate.name not in qiskit_gate_mapping:
-            gate_params = [Parameter(pname) for pname in getattr(gate, "parameters", [])]
+            gate_params = [
+                Parameter(pname) for pname in getattr(gate, "parameters", [])
+            ]
             gate_len = len(operand_qubits[0]) if operand_qubits else 0
             instruction = Gate(gate.name, num_qubits=gate_len, params=gate_params)
         else:
@@ -133,17 +138,21 @@ def target_from_server_data(
         if not operand_qubits:
             prop_name_map[gate.name] = {None: None}
         else:
-            prop_name_map[gate.name] = {tuple(qubits): None for qubits in operand_qubits}
+            prop_name_map[gate.name] = dict.fromkeys(map(tuple, operand_qubits))
     for extra in ("delay", "measure"):
         if extra not in all_inst_names:
             instruction = qiskit_gate_mapping[extra]
             inst_name_map[extra] = instruction
-            prop_name_map[extra] = {(q,): None for q in range(configuration.n_qubits)}
+            prop_name_map[extra] = dict.fromkeys(
+                map(lambda q: (q,), range(configuration.n_qubits))
+            )
             all_inst_names.append(extra)
     # Define pulse qobj converter and command sequence for lazy conversion
     cmd_dict = {}
     if pulse_defaults:
-        pulse_lib = list(map(PulseLibraryItem.from_dict, pulse_defaults["pulse_library"]))
+        pulse_lib = list(
+            map(PulseLibraryItem.from_dict, pulse_defaults["pulse_library"])
+        )
         converter = QobjToInstructionConverter(pulse_lib)
         for cmd in map(Command.from_dict, pulse_defaults["cmd_def"]):
             entry = PulseQobjDef(converter=converter, name=cmd.name)
@@ -153,14 +162,15 @@ def target_from_server_data(
             cmd_dict[cmd.name][tuple(cmd.qubits)] = entry
     # Populate actual properties
     if properties:
-        gate_specs = list(map(GateSchema.from_dict, properties["gates"]))
-        for gate_spec in gate_specs:
+        for gate_spec in list(map(GateSchema.from_dict, properties["gates"])):
             inst_prop = _decode_instruction_property(gate_spec)
             qubits = tuple(gate_spec.qubits)
             if gate_spec.gate in cmd_dict and qubits in cmd_dict[gate_spec.gate]:
                 inst_prop.calibration = cmd_dict[gate_spec.gate][qubits]
             if gate_spec.gate not in all_inst_names:
-                new_instruction = Gate(gate_spec.gate, num_qubits=len(qubits), params=[])
+                new_instruction = Gate(
+                    gate_spec.gate, num_qubits=len(qubits), params=[]
+                )
                 prop_name_map[gate_spec.gate] = {}
                 inst_name_map[gate_spec.gate] = new_instruction
                 all_inst_names.append(gate_spec.gate)
@@ -168,7 +178,7 @@ def target_from_server_data(
         # Measure instruction property is stored in qubit property
         measure_props = list(map(_decode_measure_property, properties["qubits"]))
         for qubit, measure_prop in enumerate(measure_props):
-            qubits = (qubit, )
+            qubits = (qubit,)
             if "measure" in cmd_dict and qubits in cmd_dict["measure"]:
                 measure_prop.calibration = cmd_dict["measure"][qubits]
             prop_name_map["measure"][qubits] = measure_prop
@@ -283,7 +293,9 @@ def _decode_qubit_property(qubit_specs: List[Dict]) -> IBMQubitProperties:
     for spec in qubit_specs:
         name = spec["name"]
         if name in IBMQubitProperties.__slots__:
-            in_data[name] = apply_prefix(value=spec["value"], unit=spec.get("unit", None))
+            in_data[name] = apply_prefix(
+                value=spec["value"], unit=spec.get("unit", None)
+            )
     return IBMQubitProperties(**in_data)
 
 
@@ -320,5 +332,7 @@ def _decode_measure_property(qubit_specs: List[Dict]) -> InstructionProperties:
         if name == "readout_error":
             in_data["error"] = spec["value"]
         if name == "readout_length":
-            in_data["duration"] = apply_prefix(value=spec["value"], unit=spec.get("unit", None))
+            in_data["duration"] = apply_prefix(
+                value=spec["value"], unit=spec.get("unit", None)
+            )
     return InstructionProperties(**in_data)
