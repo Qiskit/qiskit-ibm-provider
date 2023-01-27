@@ -58,9 +58,6 @@ from .transpiler.passes.basis.convert_id_to_delay import (
 )
 from .utils import validate_job_tags
 from .utils.options import QASM2Options, QASM3Options
-from .utils.backend_converter import (
-    convert_to_target,
-)
 from .utils.converters import local_to_utc
 from .utils.json_decoder import (
     defaults_from_server_data,
@@ -244,7 +241,6 @@ class IBMBackend(Backend):
         # Lazy load properties and pulse defaults and construct the target object.
         self._get_properties()
         self._get_defaults()
-        self._convert_to_target()
         # Check if the attribute now is available on IBMBackend class due to above steps
         try:
             return super().__getattribute__(name)
@@ -281,15 +277,6 @@ class IBMBackend(Backend):
             )
             if api_defaults:
                 self._defaults = defaults_from_server_data(api_defaults)
-
-    def _convert_to_target(self) -> None:
-        """Converts backend configuration, properties and defaults to Target object"""
-        if not self._target:
-            self._target = convert_to_target(
-                configuration=self._configuration,
-                properties=self._properties,
-                defaults=self._defaults,
-            )
 
     @classmethod
     def _default_options(cls) -> Options:
@@ -329,8 +316,9 @@ class IBMBackend(Backend):
             Target
         """
         if not self._target:
-            api_pulse_defaults = self._api_client.backend_pulse_defaults(self.name)
-            api_properties = self._api_client.backend_properties(self.name)
+            client = getattr(self.provider, "_runtime_client")
+            api_pulse_defaults = client.backend_pulse_defaults(self.name)
+            api_properties = client.backend_properties(self.name)
             self._target = target_from_server_data(
                 configuration=self._configuration,
                 pulse_defaults=api_pulse_defaults,
