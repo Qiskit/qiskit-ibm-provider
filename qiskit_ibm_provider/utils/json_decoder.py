@@ -11,8 +11,8 @@
 # that they have been altered from the originals.
 
 """Custom JSON decoder."""
-
-from typing import Dict, Union, List, Any, Optional
+import warnings
+from typing import Dict, Tuple, Union, List, Any, Optional
 import json
 
 import dateutil.parser
@@ -24,8 +24,8 @@ from qiskit.providers.models import (
     Command,
 )
 from qiskit.providers.models.backendproperties import Gate as GateSchema
-from qiskit.circuit.gate import Gate
-from qiskit.circuit.parameter import Parameter
+from qiskit.circuit.controlflow import IfElseOp, WhileLoopOp, ForLoopOp
+from qiskit.circuit.gate import Gate, Instruction
 from qiskit.circuit.library.standard_gates import get_standard_gate_name_mapping
 from qiskit.pulse.calibration_entries import PulseQobjDef
 from qiskit.transpiler.target import Target, InstructionProperties
@@ -102,11 +102,6 @@ def target_from_server_data(
     """
     in_data = {"num_qubits": configuration.n_qubits}
 
-    # Parse qubit properties
-    if properties:
-        in_data["qubit_properties"] = list(
-            map(_decode_qubit_property, properties["qubits"])
-        )
     # Parse global configuration properties
     if hasattr(configuration, "dt"):
         in_data["dt"] = configuration.dt
@@ -116,78 +111,113 @@ def target_from_server_data(
         in_data["min_length"] = consts["min_length"]
         in_data["pulse_alignment"] = consts["pulse_alignment"]
         in_data["aquire_alignment"] = consts["acquire_alignment"]
-    target = Target(**in_data)
+
+    # Load Qiskit object representation
+    qiskit_inst_mapping = get_standard_gate_name_mapping()
+    qiskit_control_flow_mapping = {
+        "if_else": IfElseOp,
+        "while_loop": WhileLoopOp,
+        "for_loop": ForLoopOp,
+    }
 
     # Create instruction property placeholder from backend configuration
-    qiskit_gate_mapping = get_standard_gate_name_mapping()
-    all_inst_names = []
-    inst_name_map = {}
-    prop_name_map = {}
-    for gate in configuration.gates:
-        operand_qubits = getattr(gate, "coupling_map", None)
-        if gate.name not in qiskit_gate_mapping:
-            gate_params = [
-                Parameter(pname) for pname in getattr(gate, "parameters", [])
-            ]
-            gate_len = len(operand_qubits[0]) if operand_qubits else 0
-            instruction = Gate(gate.name, num_qubits=gate_len, params=gate_params)
-        else:
-            instruction = qiskit_gate_mapping[gate.name]
-        inst_name_map[gate.name] = instruction
-        all_inst_names.append(gate.name)
-        if not operand_qubits:
-            prop_name_map[gate.name] = {None: None}
-        else:
-            prop_name_map[gate.name] = dict.fromkeys(map(tuple, operand_qubits))
-    for extra in ("delay", "measure"):
-        if extra not in all_inst_names:
-            instruction = qiskit_gate_mapping[extra]
-            inst_name_map[extra] = instruction
-            prop_name_map[extra] = dict.fromkeys(
-                map(lambda q: (q,), range(configuration.n_qubits))
+    supported_instructions = set(getattr(configuration, "supported_instructions", []))
+    basis_gates = set(getattr(configuration, "basis_gates", []))
+    gate_configs = {gate.name: gate for gate in configuration.gates}
+    inst_name_map = {}  # type: Dict[str, Instruction]
+    prop_name_map = {}  # type: Dict[str, Dict[Tuple[int, ...], InstructionProperties]]
+
+    all_instructions = set.union(supported_instructions, basis_gates)
+    for name in all_instructions:
+        if name in qiskit_control_flow_mapping:
+            continue
+        if name in qiskit_inst_mapping:
+            inst_name_map[name] = qiskit_inst_mapping[name]
+        elif name in gate_configs:
+            this_config = gate_configs[name]
+            params = getattr(this_config, "parameters", [])
+            coupling_map = getattr(this_config, "coupling_map", [])
+            inst_name_map[name] = Gate(
+                name=name,
+                num_qubits=len(coupling_map[0]) if coupling_map else 0,
+                params=params,
             )
-            all_inst_names.append(extra)
+        else:
+            warnings.warn(
+                f"Definition of instruction {name} is not found in Qiskit and "
+                "no gate configuration is provided by the backend. "
+                "This instruction is not created in Target.",
+                UserWarning,
+            )
+            all_instructions.remove(name)
+            continue
+        if name in gate_configs:
+            coupling_map = getattr(gate_configs[name], "coupling_map", [])
+            prop_name_map[name] = dict.fromkeys(map(tuple, coupling_map))
+        elif name in ("measure", "delay"):
+            # Special cases
+            # These are not gates but all qubits support these instructions in IBM
+            prop_name_map[name] = {(q,): None for q in range(configuration.n_qubits)}
+        else:
+            # Broadcast to all qubits. This is a special syntax of Target.
+            prop_name_map[name] = {None: None}
+
+    # Populate gate properties
+    if properties:
+        in_data["qubit_properties"] = list(
+            map(_decode_qubit_property, properties["qubits"])
+        )
+        for gate_spec in map(GateSchema.from_dict, properties["gates"]):
+            inst_prop = _decode_instruction_property(gate_spec)
+            qubits = tuple(gate_spec.qubits)
+            if gate_spec.gate not in all_instructions:
+                # New instruction is found in property. Likely an edge case.
+                new_instruction = Gate(
+                    gate_spec.gate,
+                    num_qubits=len(qubits),
+                    params=[],
+                )
+                prop_name_map[gate_spec.gate] = {}
+                inst_name_map[gate_spec.gate] = new_instruction
+                all_instructions.add(gate_spec.gate)
+            prop_name_map[gate_spec.gate][qubits] = inst_prop
+        # Measure instruction property is stored in qubit property
+        measure_props = list(map(_decode_measure_property, properties["qubits"]))
+        for qubit, measure_prop in enumerate(measure_props):
+            qubits = (qubit,)
+            prop_name_map["measure"][qubits] = measure_prop
+
     # Define pulse qobj converter and command sequence for lazy conversion
-    cmd_dict = {}
     if pulse_defaults:
         pulse_lib = list(
             map(PulseLibraryItem.from_dict, pulse_defaults["pulse_library"])
         )
         converter = QobjToInstructionConverter(pulse_lib)
         for cmd in map(Command.from_dict, pulse_defaults["cmd_def"]):
+            name = cmd.name
+            qubits = tuple(cmd.qubits)
+            if name not in all_instructions or qubits not in prop_name_map[name]:
+                # Ignore pulse gate.
+                continue
             entry = PulseQobjDef(converter=converter, name=cmd.name)
             entry.define(cmd.sequence)
-            if cmd.name not in cmd_dict:
-                cmd_dict[cmd.name] = {}
-            cmd_dict[cmd.name][tuple(cmd.qubits)] = entry
-    # Populate actual properties
-    if properties:
-        for gate_spec in list(map(GateSchema.from_dict, properties["gates"])):
-            inst_prop = _decode_instruction_property(gate_spec)
-            qubits = tuple(gate_spec.qubits)
-            if gate_spec.gate in cmd_dict and qubits in cmd_dict[gate_spec.gate]:
-                inst_prop.calibration = cmd_dict[gate_spec.gate][qubits]
-            if gate_spec.gate not in all_inst_names:
-                new_instruction = Gate(
-                    gate_spec.gate, num_qubits=len(qubits), params=[]
-                )
-                prop_name_map[gate_spec.gate] = {}
-                inst_name_map[gate_spec.gate] = new_instruction
-                all_inst_names.append(gate_spec.gate)
-            prop_name_map[gate_spec.gate][qubits] = inst_prop
-        # Measure instruction property is stored in qubit property
-        measure_props = list(map(_decode_measure_property, properties["qubits"]))
-        for qubit, measure_prop in enumerate(measure_props):
-            qubits = (qubit,)
-            if "measure" in cmd_dict and qubits in cmd_dict["measure"]:
-                measure_prop.calibration = cmd_dict["measure"][qubits]
-            prop_name_map["measure"][qubits] = measure_prop
+            prop_name_map[name][qubits].calibration = entry
 
     # Add parsed properties to target
-    for inst_name in all_inst_names:
-        instruction = inst_name_map[inst_name]
-        inst_props = prop_name_map[inst_name]
-        target.add_instruction(instruction, inst_props)
+    target = Target(**in_data)
+    for inst_name in all_instructions:
+        if inst_name in qiskit_control_flow_mapping:
+            # Control flow operator doesn't have gate property.
+            target.add_instruction(
+                instruction=qiskit_control_flow_mapping[inst_name],
+                name=inst_name,
+            )
+        else:
+            target.add_instruction(
+                instruction=inst_name_map[inst_name],
+                properties=prop_name_map[inst_name],
+            )
+
     return target
 
 
@@ -296,7 +326,7 @@ def _decode_qubit_property(qubit_specs: List[Dict]) -> IBMQubitProperties:
             in_data[name] = apply_prefix(
                 value=spec["value"], unit=spec.get("unit", None)
             )
-    return IBMQubitProperties(**in_data)
+    return IBMQubitProperties(**in_data)  # type: ignore[no-untyped-call]
 
 
 def _decode_instruction_property(gate_spec: GateSchema) -> InstructionProperties:
