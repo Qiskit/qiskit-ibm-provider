@@ -289,24 +289,28 @@ class IBMBackendService:
             if len(job_responses) == 0:
                 break
             for job_info in job_responses:
-                if filter_by_status:
-                    job_status = api_status_to_job_status(
-                        job_info["state"]["status"].upper()
-                    ).name
-                    if (isinstance(status, str) and job_status != status) or (
-                        isinstance(status, list) and job_status not in status
-                    ):
+                if job_info.get("program", {}).get("id") in [
+                    "circuit-runner",
+                    "qasm3-runner",
+                ]:
+                    if filter_by_status:
+                        job_status = api_status_to_job_status(
+                            job_info["state"]["status"].upper()
+                        ).name
+                        if (isinstance(status, str) and job_status != status) or (
+                            isinstance(status, list) and job_status not in status
+                        ):
+                            continue
+                    job = self._restore_circuit_job(job_info, raise_error=False)
+                    if job is None:
+                        logger.warning(
+                            'Discarding job "%s" because it contains invalid data.',
+                            job_info.get("job_id", ""),
+                        )
                         continue
-                job = self._restore_circuit_job(job_info, raise_error=False)
-                if job is None:
-                    logger.warning(
-                        'Discarding job "%s" because it contains invalid data.',
-                        job_info.get("job_id", ""),
-                    )
-                    continue
-                job_list.append(job)
-                if len(job_list) == original_limit:
-                    return job_list
+                    job_list.append(job)
+                    if len(job_list) == original_limit:
+                        return job_list
             skip += limit
         return job_list
 
