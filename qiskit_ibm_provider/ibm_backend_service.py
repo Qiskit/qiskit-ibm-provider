@@ -226,7 +226,8 @@ class IBMBackendService:
             descending: If ``True``, return the jobs in descending order of the job
                 creation date (i.e. newest first) until the limit is reached.
             instance: The provider in the hub/group/project format.
-            legacy: Filter to only retrieve jobs run from the deprecated `qiskit-ibmq-provider`.
+            legacy: If ``True``, only retrieve jobs run from the deprecated ``qiskit-ibmq-provider``.
+            Otherwise, only retrieve jobs run from ``qiskit-ibm-provider``.
 
         Returns:
             A list of ``IBMJob`` instances.
