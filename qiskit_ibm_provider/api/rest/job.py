@@ -34,6 +34,7 @@ class Job(RestAdapterBase):
         "status": "/status",
         "properties": "/properties",
         "delete": "",
+        "result_url": "/resultDownloadUrl",
     }
 
     def __init__(
@@ -107,3 +108,23 @@ class Job(RestAdapterBase):
         """Mark job for deletion."""
         url = self.get_url("delete")
         self.session.delete(url)
+
+    def result_url(self) -> Dict[str, Any]:
+        """Return an object storage URL for downloading results.
+
+        Returns:
+            JSON response.
+        """
+        url = self.get_url("result_url")
+        return self.session.get(url).json()
+
+    def get_object_storage(self, url: str) -> Dict[str, Any]:
+        """Get via object_storage.
+        Args:
+            url: Object storage URL.
+        Returns:
+            JSON response.
+        """
+        logger.debug("Downloading from object storage.")
+        response = self.session.get(url, bare=True, timeout=600).json()
+        return response

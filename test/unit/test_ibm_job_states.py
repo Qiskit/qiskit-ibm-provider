@@ -522,6 +522,11 @@ class BaseFakeAPI:
             "status_msg": "active",
         }
 
+    def job_type(self, job_id: str) -> str:
+        if job_id[0] != "c" and len(job_id) == 24:
+            return "IQX"
+        return "RUNTIME"
+
 
 class UnknownStatusAPI(BaseFakeAPI):
     """Class for emulating an API with unknown status codes."""
