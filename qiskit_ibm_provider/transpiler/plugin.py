@@ -47,6 +47,36 @@ class IBMTranslationPlugin(PassManagerStagePlugin):
             hls_config=pass_manager_config.hls_config,
         )
 
+        plugin_passes = []
+        instruction_durations = pass_manager_config.instruction_durations
+        if instruction_durations:
+            plugin_passes.append(ConvertIdToDelay(instruction_durations))
+
+        return PassManager(plugin_passes) + translator_pm
+
+
+class IBMDynamicTranslationPlugin(PassManagerStagePlugin):
+    """A translation stage plugin for targeting Qiskit circuits
+    to IBM Quantum systems."""
+
+    def pass_manager(
+        self,
+        pass_manager_config: PassManagerConfig,
+        optimization_level: Optional[int] = None,
+    ) -> PassManager:
+        """Build IBMTranslationPlugin PassManager."""
+
+        translator_pm = common.generate_translation_passmanager(
+            target=pass_manager_config.target,
+            basis_gates=pass_manager_config.basis_gates,
+            approximation_degree=pass_manager_config.approximation_degree,
+            coupling_map=pass_manager_config.coupling_map,
+            backend_props=pass_manager_config.backend_properties,
+            unitary_synthesis_method=pass_manager_config.unitary_synthesis_method,
+            unitary_synthesis_plugin_config=pass_manager_config.unitary_synthesis_plugin_config,
+            hls_config=pass_manager_config.hls_config,
+        )
+
         instruction_durations = pass_manager_config.instruction_durations
         plugin_passes = []
         if instruction_durations:
