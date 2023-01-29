@@ -1,0 +1,4 @@
+---
+features:
+  - |
+    The meth:`~qiskit_ibm_provider.IBMProvider.instances` was added to list all the available instances in a provider instance.

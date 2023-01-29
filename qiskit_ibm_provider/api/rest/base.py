@@ -43,3 +43,14 @@ class RestAdapterBase:
             The resolved URL of the endpoint (relative to the session base URL).
         """
         return "{}{}".format(self.prefix_url, self.URL_MAP[identifier])
+
+    def get_facade_url(self, facade_prefix: str, identifier: str) -> str:
+        """Return the resolved facade URL for the specified identifier.
+
+        Args:
+            identifier: Internal identifier of the endpoint.
+
+        Returns:
+            The resolved facade URL of the endpoint.
+        """
+        return "{}{}{}".format(facade_prefix, self.prefix_url, self.URL_MAP[identifier])

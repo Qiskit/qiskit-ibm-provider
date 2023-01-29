@@ -430,6 +430,14 @@ class IBMProvider(Provider):
         active_account_dict.update({"instance": hgps[0].name})
         return active_account_dict
 
+    def instances(self) -> List[str]:
+        """Return the IBM Quantum instances list currently in use for the session.
+
+        Returns:
+            A list with instances currently in the session.
+        """
+        return [hgp.name for hgp in self._get_hgps()]
+
     @staticmethod
     def delete_account(name: Optional[str] = None) -> bool:
         """Delete a saved account from disk.
@@ -562,6 +570,7 @@ class IBMProvider(Provider):
         job_tags: Optional[List[str]] = None,
         descending: bool = True,
         instance: Optional[str] = None,
+        legacy: bool = False,
     ) -> List[IBMJob]:
         """Return a list of jobs, subject to optional filtering.
 
@@ -586,6 +595,8 @@ class IBMProvider(Provider):
             descending: If ``True``, return the jobs in descending order of the job
                 creation date (i.e. newest first) until the limit is reached.
             instance: The provider in the hub/group/project format.
+            legacy: If ``True``, only retrieve jobs run from the deprecated ``qiskit-ibmq-provider``.
+            Otherwise, only retrieve jobs run from ``qiskit-ibm-provider``.
 
         Returns:
             A list of ``IBMJob`` instances.
@@ -602,6 +613,7 @@ class IBMProvider(Provider):
             job_tags=job_tags,
             descending=descending,
             instance=instance,
+            legacy=legacy,
         )
 
     def retrieve_job(self, job_id: str) -> IBMJob:
