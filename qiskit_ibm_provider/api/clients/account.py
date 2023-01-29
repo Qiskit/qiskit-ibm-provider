@@ -13,11 +13,12 @@
 """Client for accessing an individual IBM Quantum account."""
 
 import logging
+import json
 from typing import List, Dict, Any, Optional
 
 from .base import BaseClient
 from ..client_parameters import ClientParameters
-from ..rest import Account
+from ..rest import Api, Account
 from ..session import RetrySession
 from ...utils.hgp import from_instance_format
 
@@ -39,6 +40,7 @@ class AccountClient(BaseClient):
         self._params = params
         hub, group, project = from_instance_format(params.instance)
         # base_api is used to handle endpoints that don't include h/g/p.
+        self.base_api = Api(self._session)
         # account_api is for h/g/p.
         self.account_api = Account(
             session=self._session,
@@ -59,3 +61,53 @@ class AccountClient(BaseClient):
             Backends available for this provider.
         """
         return self.account_api.backends(timeout=timeout)
+
+    # Old iqx api
+    def job_get(self, job_id: str) -> Dict[str, Any]:
+        """Return information about the job.
+        Args:
+            job_id: The ID of the job.
+        Returns:
+            Job information.
+        """
+        return self.base_api.job(job_id).get()
+
+    def list_jobs(
+        self,
+        limit: int = 10,
+        skip: int = 0,
+        descending: bool = True,
+        extra_filter: Optional[Dict[str, Any]] = None,
+    ) -> List[Dict[str, Any]]:
+        """Return a list of job data, with filtering and pagination.
+        In order to reduce the amount of data transferred, the server only
+        sends back a subset of the total information for each job.
+        Args:
+            limit: Maximum number of items to return.
+            skip: Offset for the items to return.
+            descending: Whether the jobs should be in descending order.
+            extra_filter: Additional filtering passed to the query.
+        Returns:
+            A list of job data.
+        """
+        return self.base_api.jobs(
+            limit=limit, skip=skip, descending=descending, extra_filter=extra_filter
+        )
+
+    def job_result(self, job_id: str) -> str:
+        """Retrieve and return the job result.
+        Args:
+            job_id: The ID of the job.
+        Returns:
+            Job result.
+        """
+
+        job_api = self.base_api.job(job_id)
+
+        # Get the download URL.
+        download_url = job_api.result_url()["url"]
+
+        # Download the result from object storage.
+        result_response = job_api.get_object_storage(download_url)
+
+        return json.dumps(result_response)

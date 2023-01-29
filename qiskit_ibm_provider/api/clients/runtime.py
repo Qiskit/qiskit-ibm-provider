@@ -138,6 +138,17 @@ class RuntimeClient(BaseClient):
         logger.debug("Runtime job get response: %s", response)
         return response
 
+    def job_type(self, job_id: str) -> str:
+        """Get job type.
+
+        Args:
+            job_id: Job ID.
+
+        Returns:
+            Job type, either "IQX" or "RUNTIME".
+        """
+        return self._api.program_job(job_id).job_type()
+
     def jobs_get(
         self,
         limit: int = None,
