@@ -681,7 +681,10 @@ class IBMCircuitJob(IBMJob):
 
         if not self._result or refresh:  # type: ignore[has-type]
             try:
-                api_result = self._runtime_client.job_results(self.job_id())
+                if self._provider._runtime_client.job_type(self.job_id()) == "IQX":
+                    api_result = self._api_client.job_result(self.job_id())
+                else:
+                    api_result = self._runtime_client.job_results(self.job_id())
                 self._set_result(api_result)
             except ApiError as err:
                 if self._status not in (JobStatus.ERROR, JobStatus.CANCELLED):
