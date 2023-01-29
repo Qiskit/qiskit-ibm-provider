@@ -296,10 +296,14 @@ class IBMBackendService:
             if len(job_responses) == 0:
                 break
             for job_info in job_responses:
-                if job_info.get("program", {}).get("id") in [
-                    "circuit-runner",
-                    "qasm3-runner",
-                ] or legacy:
+                if (
+                    job_info.get("program", {}).get("id")
+                    in [
+                        "circuit-runner",
+                        "qasm3-runner",
+                    ]
+                    or legacy
+                ):
                     if filter_by_status:
                         if legacy:
                             job_info_status = job_info["status"].upper()
