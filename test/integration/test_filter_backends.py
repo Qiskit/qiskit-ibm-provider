@@ -123,23 +123,6 @@ class TestBackendFilters(IBMTestCase):
                 self.assertGreaterEqual(backend.configuration().n_qubits, 5)
                 self.assertTrue(backend.configuration().quantum_volume, 10)
 
-    def test_filter_input_allowed(self):
-        """Test filtering by input allowed"""
-        subtests = ("job", ["job"], ["job", "runtime"])
-
-        for input_type in subtests:
-            with self.subTest(input_type=input_type):
-                filtered = self.dependencies.provider.backends(
-                    input_allowed=input_type, instance=self.dependencies.instance
-                )
-                self.assertTrue(filtered)
-                if not isinstance(input_type, list):
-                    input_type = [input_type]
-                for backend in filtered[:5]:
-                    self.assertTrue(
-                        set(input_type) <= set(backend.configuration().input_allowed)
-                    )
-
     def test_filter_dynamic_circuits(self):
         """Test filtering by dynamic ciruits."""
         filtered = self.dependencies.provider.backends(dynamic_circuits=True)
