@@ -51,6 +51,7 @@ class ConvertIdToDelay(TransformationPass):
         """Run the pass on one :class:`.DAGCircuit`, mutating it.  Returns ``True`` if the circuit
         was modified and ``False`` if not."""
         modified = False
+        qubit_index_map = {bit: index for index, bit in enumerate(dag.qubits)}
         for node in dag.op_nodes():
             if isinstance(node.op, ControlFlowOp):
                 modified_blocks = False
@@ -67,7 +68,7 @@ class ConvertIdToDelay(TransformationPass):
                     inplace=True,
                 )
             elif isinstance(node.op, IGate):
-                delay_op = Delay(self._get_duration(node.qargs[0].index))
+                delay_op = Delay(self._get_duration(qubit_index_map[node.qargs[0]]))
                 delay_op.condition = node.op.condition
                 dag.substitute_node(node, delay_op, inplace=True)
 
