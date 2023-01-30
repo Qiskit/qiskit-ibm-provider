@@ -33,6 +33,7 @@ from .hub_group_project import HubGroupProject
 from .ibm_backend import IBMBackend, IBMRetiredBackend
 from .job import IBMJob, IBMCircuitJob
 from .job.exceptions import IBMJobNotFoundError
+from .utils.hgp import from_instance_format
 from .utils.converters import local_to_utc
 from .utils.utils import (
     to_python_identifier,
@@ -274,7 +275,10 @@ class IBMBackendService:
             validate_job_tags(job_tags, IBMBackendValueError)
             api_filter["job_tags"] = job_tags
         if instance:
-            api_filter["provider"] = instance
+            hub, group, project = from_instance_format(instance)
+            api_filter["hub"] = hub
+            api_filter["group"] = group
+            api_filter["project"] = project
         # Retrieve all requested jobs.
         filter_by_status = (
             status
