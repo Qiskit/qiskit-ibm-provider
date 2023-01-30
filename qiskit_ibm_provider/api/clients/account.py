@@ -18,9 +18,8 @@ from typing import List, Dict, Any, Optional
 
 from .base import BaseClient
 from ..client_parameters import ClientParameters
-from ..rest import Api, Account
+from ..rest import Api
 from ..session import RetrySession
-from ...utils.hgp import from_instance_format
 
 logger = logging.getLogger(__name__)
 
@@ -38,29 +37,7 @@ class AccountClient(BaseClient):
             params.url, auth=params.get_auth_handler(), **params.connection_parameters()
         )
         self._params = params
-        hub, group, project = from_instance_format(params.instance)
-        # base_api is used to handle endpoints that don't include h/g/p.
         self.base_api = Api(self._session)
-        # account_api is for h/g/p.
-        self.account_api = Account(
-            session=self._session,
-            hub=hub,
-            group=group,
-            project=project,
-        )
-
-    # Backend-related public functions.
-
-    def list_backends(self, timeout: Optional[float] = None) -> List[Dict[str, Any]]:
-        """Return backends available for this provider.
-
-        Args:
-            timeout: Number of seconds to wait for the request.
-
-        Returns:
-            Backends available for this provider.
-        """
-        return self.account_api.backends(timeout=timeout)
 
     # Old iqx api
     def job_get(self, job_id: str) -> Dict[str, Any]:
