@@ -394,10 +394,8 @@ class BlockBasePadder(TransformationPass):
 
         # Fast path contents are limited to gates and delays
         for block in node.op.blocks:
-            block_dag = circuit_to_dag(block)
-            for node_ in block_dag.topological_op_nodes():
-                if not isinstance(node_.op, (Gate, Delay)):
-                    return False
+            if not all(isinstance(inst.operation, (Gate, Delay)) for inst in block.data):
+                return False
         return True
 
     def _visit_control_flow_op(self, node: DAGNode) -> None:
