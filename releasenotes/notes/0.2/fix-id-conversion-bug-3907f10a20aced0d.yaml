@@ -2,7 +2,7 @@
 features:
   - |
     A new transpiler pass
-    :class:`qiskit_ibm_provider.transpiler.passes.basis.ConvertIdToDelay
+    :class:`qiskit_ibm_provider.transpiler.passes.basis.ConvertIdToDelay`
     was added which converts an :class:`qiskit.circuit.library.IGate`
     to :class:`qiskit.circuit.Delay`. This was added to the default transpiler
     plugin :class:`qiskit_ibm_provider.transpiler.plugin.IBMTranslationPlugin`.
