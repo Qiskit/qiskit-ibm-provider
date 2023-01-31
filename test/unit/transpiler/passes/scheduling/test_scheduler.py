@@ -229,11 +229,7 @@ class TestASAPSchedulingAndPaddingPass(ControlFlowTestCase):
         self.assertEqual(expected, scheduled)
 
     def test_measure_after_c_if(self):
-        """Test if schedules circuits with c_if after measure with a common clbit.
-
-        Note: This test is not yet correct as we should schedule the conditional block
-        qubits with delays as well.
-        """
+        """Test if schedules circuits with c_if after measure with a common clbit."""
         qc = QuantumCircuit(3, 1)
         qc.measure(0, 0)
         with qc.if_test((0, 1)):
@@ -1006,11 +1002,7 @@ class TestALAPSchedulingAndPaddingPass(ControlFlowTestCase):
         self.assertEqual(expected, scheduled)
 
     def test_measure_after_c_if(self):
-        """Test if schedules circuits with c_if after measure with a common clbit.
-
-        Note: This test is not yet correct as we should schedule the conditional block
-        qubits with delays as well.
-        """
+        """Test if schedules circuits with c_if after measure with a common clbit."""
         qc = QuantumCircuit(3, 1)
         qc.measure(0, 0)
         with qc.if_test((0, 1)):
