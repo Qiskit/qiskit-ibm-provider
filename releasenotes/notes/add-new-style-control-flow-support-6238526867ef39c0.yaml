@@ -40,8 +40,8 @@ features:
 upgrade:
   - |
     Scheduling support for ``c_if`` has been removed. Please run the pass
-    ``ConvertConditionsToIfOps`` on your circuit before scheduling to
-    convert all old format ``c_if`` statements to new format ``if_test``
+    :class:`qiskit.transpiler.passes.ConvertConditionsToIfOps` on your circuit
+    before scheduling to convert all old format ``c_if`` statements to new format ``if_test``
     control-flow that may be scheduled.
 
     .. code-block::
