@@ -26,7 +26,7 @@ from qiskit.circuit import (
 from qiskit.circuit.library import Barrier
 from qiskit.circuit.delay import Delay
 from qiskit.circuit.parameterexpression import ParameterExpression
-from qiskit.converters import dag_to_circuit, circuit_to_dag
+from qiskit.converters import dag_to_circuit
 from qiskit.dagcircuit import DAGCircuit, DAGNode
 from qiskit.transpiler.basepasses import TransformationPass
 from qiskit.transpiler.exceptions import TranspilerError
@@ -394,7 +394,9 @@ class BlockBasePadder(TransformationPass):
 
         # Fast path contents are limited to gates and delays
         for block in node.op.blocks:
-            if not all(isinstance(inst.operation, (Gate, Delay)) for inst in block.data):
+            if not all(
+                isinstance(inst.operation, (Gate, Delay)) for inst in block.data
+            ):
                 return False
         return True
 

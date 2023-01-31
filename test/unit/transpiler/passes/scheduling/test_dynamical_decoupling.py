@@ -443,7 +443,12 @@ class TestPadDynamicalDecoupling(ControlFlowTestCase):
                 PadDynamicalDecoupling(durations, dd_sequence),
             ]
         )
-        pm.run(circ)
+        dd_circuit = pm.run(circ)
+
+        for instruction in dd_circuit.data:
+            op = instruction.operation
+            if isinstance(op, RXGate):
+                self.assertEqual(op.duration, rx_duration)
 
     def test_insert_dd_ghz_xy4_with_alignment(self):
         """Test DD with pulse alignment constraints."""

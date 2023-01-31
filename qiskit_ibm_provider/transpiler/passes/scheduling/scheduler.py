@@ -214,6 +214,7 @@ class BaseDynamicCircuitAnalysis(TransformationPass):
             # If node has calibration, this value should be the highest priority
             cal_key = tuple(indices), tuple(float(p) for p in node.op.params)
             duration = dag.calibrations[node.op.name][cal_key].duration
+            node.op.duration = duration
         else:
             duration = node.op.duration
 
