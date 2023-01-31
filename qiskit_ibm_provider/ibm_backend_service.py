@@ -108,7 +108,6 @@ class IBMBackendService:
         name: Optional[str] = None,
         filters: Optional[Callable[[List[IBMBackend]], bool]] = None,
         min_num_qubits: Optional[int] = None,
-        input_allowed: Optional[Union[str, List[str]]] = None,
         instance: Optional[str] = None,
         dynamic_circuits: Optional[bool] = None,
         **kwargs: Any,
@@ -123,11 +122,6 @@ class IBMBackendService:
                     IBMProvider.backends(
                         filters=lambda b: b.configuration().quantum_volume > 16)
             min_num_qubits: Minimum number of qubits the backend has to have.
-            input_allowed: Filter by the types of input the backend supports.
-                Valid input types are ``job`` (circuit job) and ``runtime`` (Qiskit Runtime).
-                For example, ``inputs_allowed='runtime'`` will return all backends
-                that support Qiskit Runtime. If a list is given, the backend must
-                support all types specified in the list.
             instance: The provider in the hub/group/project format.
             dynamic_circuits: Filter by whether the backend supports dynamic circuits.
             **kwargs: Simple filters that specify a ``True``/``False`` criteria in the
@@ -158,16 +152,6 @@ class IBMBackendService:
         if min_num_qubits:
             backends = list(
                 filter(lambda b: b.configuration().n_qubits >= min_num_qubits, backends)
-            )
-        if input_allowed:
-            if not isinstance(input_allowed, list):
-                input_allowed = [input_allowed]
-            backends = list(
-                filter(
-                    lambda b: set(input_allowed)
-                    <= set(b.configuration().input_allowed),
-                    backends,
-                )
             )
         if dynamic_circuits is not None:
             backends = list(
