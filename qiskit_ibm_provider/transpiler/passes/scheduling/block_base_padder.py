@@ -521,11 +521,7 @@ class BlockBasePadder(TransformationPass):
         """Terminate the end of a block scheduling region."""
         # Update all other qubits as not idle so that delays are *not*
         # inserted. This is because we need the delays to be inserted in
-        # the conditional circuit block. However, c_if currently only
-        # allows writing a single conditional gate.
-        # TODO: This should be reworked to instead apply a transformation
-        # pass to rewrite all ``c_if`` operations as ``if_else``
-        # blocks that are in turn scheduled.
+        # the conditional circuit block.
         self._block_duration = 0
         self._pad_until_block_end(block_duration, block_idx)
         self._idle_after = {bit: 0 for bit in self._block_dag.qubits}
