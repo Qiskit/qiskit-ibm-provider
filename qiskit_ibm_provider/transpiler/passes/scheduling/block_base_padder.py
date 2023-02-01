@@ -23,6 +23,7 @@ from qiskit.circuit import (
     Instruction,
     Measure,
 )
+from qiskit.circuit.bit import Bit
 from qiskit.circuit.library import Barrier
 from qiskit.circuit.delay import Delay
 from qiskit.circuit.parameterexpression import ParameterExpression
@@ -69,7 +70,7 @@ class BlockBasePadder(TransformationPass):
         self._dag = None
         self._block_dag = None
         self._prev_node: Optional[DAGNode] = None
-        self._wire_map: Optional[Dict[Qubit, Qubit]] = None
+        self._wire_map: Optional[Dict[Bit, Bit]] = None
         self._block_duration = 0
         self._current_block_idx = 0
         self._conditional_block = False
@@ -104,7 +105,7 @@ class BlockBasePadder(TransformationPass):
         self._init_run(dag)
 
         # Trivial wire map at the top-level
-        wire_map = {qubit: qubit for qubit in dag.qubits}
+        wire_map = {wire: wire for wire in dag.wires}
         # Top-level dag is the entry block
         new_dag = self._visit_block(dag, wire_map)
 
@@ -425,7 +426,10 @@ class BlockBasePadder(TransformationPass):
             block_dag = self._node_block_dags[node][block_idx]
             inner_wire_map = {
                 inner: outer
-                for outer, inner in zip(self._map_wires(node.qargs), block_dag.qubits)
+                for outer, inner in zip(
+                    self._map_wires(node.qargs + node.cargs),
+                    block_dag.qubits + block_dag.clbits,
+                )
             }
             new_node_block_dags.append(
                 self._visit_block(
@@ -446,7 +450,7 @@ class BlockBasePadder(TransformationPass):
             t0,
             new_control_flow_op,
             self._map_wires(node.qargs) if fast_path_node else self._block_dag.qubits,
-            node.cargs,
+            self._map_wires(node.cargs),
         )
 
     def _visit_delay(self, node: DAGNode) -> None:
@@ -510,7 +514,11 @@ class BlockBasePadder(TransformationPass):
             self._dirty_qubits |= set(self._map_wires(node.qargs))
 
         new_node = self._apply_scheduled_op(
-            block_idx, t0, node.op, self._map_wires(node.qargs), node.cargs
+            block_idx,
+            t0,
+            node.op,
+            self._map_wires(node.qargs),
+            self._map_wires(node.cargs),
         )
         self._last_node_to_touch.update(
             {
@@ -577,9 +585,9 @@ class BlockBasePadder(TransformationPass):
         self.property_set["node_start_time"][new_node] = (block_idx, t_start)
         return new_node
 
-    def _map_wires(self, wires: Iterable[Qubit]) -> List[Qubit]:
+    def _map_wires(self, wires: Iterable[Bit]) -> List[Bit]:
         """Map the wires from the current block to the top-level block's wires.
 
         TODO: We should have an easier approach to wire mapping from the transpiler.
         """
-        return [self._wire_map[q] for q in wires]
+        return [self._wire_map[w] for w in wires]
