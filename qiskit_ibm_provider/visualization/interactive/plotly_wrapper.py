@@ -18,11 +18,6 @@ from typing import Tuple, Optional, Any
 import plotly.graph_objects as go
 
 # pylint: disable=abstract-method
-<<<<<<< HEAD
-=======
-
-
->>>>>>> 2ce90ac (Fix ALAP scheduler and add test.)
 class PlotlyFigure:
     """A simple wrapper around ``plotly.graph_objects.Figure`` class.
 
