@@ -22,7 +22,7 @@ from qiskit.providers.models.backendproperties import BackendProperties
 from qiskit.test.reference_circuits import ReferenceCircuits
 
 from qiskit_ibm_provider import hub_group_project
-from qiskit_ibm_provider.api.clients import AccountClient
+from qiskit_ibm_provider.api.clients import AccountClient, RuntimeClient
 from qiskit_ibm_provider.api.exceptions import RequestsApiError
 
 from qiskit_ibm_provider.job.ibm_job import IBMJob
@@ -92,6 +92,16 @@ class TestIBMProviderEnableAccount(IBMTestCase):
             ) as context_manager:
                 IBMProvider(self.dependencies.token, self.dependencies.url)
         self.assertIn("bad_backend", str(context_manager.output))
+
+    def test_provider_init_no_backends(self):
+        """Test initializing provider when a hgp has no backends."""
+        with mock.patch.object(
+            RuntimeClient,
+            "list_backends",
+            return_value=None,
+        ):
+            provider = IBMProvider(self.dependencies.token, self.dependencies.url)
+            self.assertIsInstance(provider, IBMProvider)
 
 
 class TestIBMProviderHubGroupProject(IBMTestCase):

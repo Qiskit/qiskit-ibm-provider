@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Fixed a bug where users could not initialize :class:`~qiskit_ibm_provider.IBMProvider`
+    if they were in a h/g/p without any backends.
