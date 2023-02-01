@@ -1,0 +1,7 @@
+---
+fixes:
+  - |
+    Filtering backends with the parameter ``input_allowed`` in 
+    :meth:`~qiskit_ibm_provider.IBMBackendService.backends`
+    has been removed because it is no longer in use and not supported 
+    by the runtime api.
