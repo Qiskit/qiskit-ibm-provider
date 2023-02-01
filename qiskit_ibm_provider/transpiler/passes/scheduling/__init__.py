@@ -116,8 +116,8 @@ Scheduling with old format ``c_if`` conditioned gates is not supported.
     qc_c_if.x(0).c_if(0, 1)
     qc_c_if.draw(output="mpl")
 
-The :class:`qiskit_ibm_provider.ibm_backend.IBMBackend` configures a translation plugin
-:class:`qiskit_ibm_provider.transpiler.plugin.IBMTranslationPlugin` to automatically
+The :class:`.IBMBackend` configures a translation plugin
+:class:`.IBMTranslationPlugin` to automatically
 apply transformations and optimizations for IBM hardware backends when invoking
 :class:`qiskit.transpile`. This will automatically convert all old style ``c_if``
 conditioned gates to new-style control-flow.
