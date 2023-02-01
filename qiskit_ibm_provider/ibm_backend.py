@@ -325,14 +325,6 @@ class IBMBackend(Backend):
         self._convert_to_target()
         return self._target
 
-    def get_translation_stage_plugin(self) -> str:
-        """Return the translation stage plugin for the transpiler for IBM backends.
-
-        This automatically configures custom transpilation behavior for IBM backends in Qiskit's
-        transpiler.
-        """
-        return "ibm_dynamic_circuits"
-
     def run(
         self,
         circuits: Union[
@@ -784,7 +776,7 @@ class IBMBackend(Backend):
 
     def get_translation_stage_plugin(self) -> str:
         """Return the default translation stage plugin name for IBM backends."""
-        return "ibm_backend"
+        return "ibm_dynamic_circuits"
 
 
 class IBMRetiredBackend(IBMBackend):
