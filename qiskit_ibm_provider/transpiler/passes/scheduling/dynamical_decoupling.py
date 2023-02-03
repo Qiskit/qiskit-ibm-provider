@@ -454,21 +454,31 @@ class PadDynamicalDecoupling(BlockBasePadder):
                 )
 
             # (3) Construct DD sequence with delays
-            num_elements = max(len(dd_sequence), len(taus))
             idle_after = t_start
-            for dd_ind in range(num_elements):
-                if dd_ind < len(taus):
-                    tau = taus[dd_ind]
-                    if tau > 0:
-                        self._apply_scheduled_op(
-                            block_idx, idle_after, Delay(tau, self._dag.unit), qubit
-                        )
-                        idle_after += tau
-                if dd_ind < len(dd_sequence):
+            dd_ind = 0
+            # Interleave delays with DD sequence operations
+            for tau_idx, tau in enumerate(taus):
+                if tau > 0:
+                    self._apply_scheduled_op(
+                        block_idx, idle_after, Delay(tau, self._dag.unit), qubit
+                    )
+                    idle_after += tau
+
+                # Detect if we are on a sequence boundary
+                # If so skip insert of sequence to allow delays to combine
+                # There are two cases.
+                # 1. The number of delays to be inserted is equal to the number of gates.
+                # 2. There is an extra delay inserted after the last operation.
+                # The condition below handles both.
+                seq_length = int(len(taus) / num_sequences)
+                if len(dd_sequence) == len(taus) or tau_idx % seq_length != (
+                    seq_length - 1
+                ):
                     gate = dd_sequence[dd_ind]
                     gate_length = seq_lengths[dd_ind]
                     self._apply_scheduled_op(block_idx, idle_after, gate, qubit)
                     idle_after += gate_length
+                    dd_ind += 1
 
             self._block_dag.global_phase = self._mod_2pi(
                 self._block_dag.global_phase + sequence_gphase
