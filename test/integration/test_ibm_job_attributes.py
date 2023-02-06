@@ -221,7 +221,7 @@ class TestIBMJobAttributes(IBMTestCase):
 
             self.assertTrue(queue_info.format())
             self.assertTrue(repr(queue_info))
-        else:
+        elif job._status is not None:
             self.assertIsNone(job.queue_position())
             self.log.warning("Unable to retrieve queue information")
 

@@ -1,0 +1,7 @@
+---
+upgrade:
+  - |
+    Users can now retrieve jobs run from the previous provider, ``qiskit-ibmq-provider`` with
+    :meth:`~qiskit_ibm_provider.IBMBackendService.retrieve_job`. 
+    There is also a new ``legacy`` parameter in :meth:`~qiskit_ibm_provider.IBMBackendService.jobs` 
+    for retrieving these jobs in bulk.
