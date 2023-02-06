@@ -28,6 +28,7 @@ from .exceptions import (
     IBMBackendValueError,
     IBMBackendApiError,
     IBMBackendApiProtocolError,
+    IBMInputValueError,
 )
 from .hub_group_project import HubGroupProject
 from .ibm_backend import IBMBackend, IBMRetiredBackend
@@ -581,6 +582,7 @@ class IBMBackendService:
             IBMBackendApiProtocolError: If unexpected return value received
                  from the server.
             IBMJobNotFoundError: If job cannot be found.
+            IBMInputValueError: If job exists but was run from a different service.
         """
         try:
             legacy = False
@@ -589,6 +591,14 @@ class IBMBackendService:
                 job_info = self._default_hgp._api_client.job_get(job_id)
             else:
                 job_info = self._provider._runtime_client.job_get(job_id)
+                if job_info.get("program", {}).get("id") not in [
+                    "circuit-runner",
+                    "qasm3-runner",
+                ]:
+                    raise IBMInputValueError(
+                        f"Job {job_id} was not run with qiskit-ibm-provider, "
+                        f"please try retrieving job results from qiskit-ibm-runtime"
+                    )
         except ApiError as ex:
             if "Error code: 3250." in str(ex):
                 raise IBMJobNotFoundError(f"Job {job_id} not found.")
