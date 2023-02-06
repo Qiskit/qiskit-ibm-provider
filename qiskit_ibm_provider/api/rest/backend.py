@@ -12,7 +12,7 @@
 
 """Backend REST adapter."""
 
-from typing import Dict, Optional, Any
+from typing import Dict, Optional, Any, List
 from datetime import datetime
 
 from .base import RestAdapterBase
@@ -26,10 +26,11 @@ class Backend(RestAdapterBase):
         "properties": "/properties",
         "pulse_defaults": "/defaults",
         "status": "/status",
+        "configuration": "/configuration",
     }
 
     def __init__(
-        self, session: RetrySession, backend_name: str, url_prefix: str = ""
+        self, session: RetrySession, backend_name: str = "", url_prefix: str = ""
     ) -> None:
         """Backend constructor.
 
@@ -40,6 +41,18 @@ class Backend(RestAdapterBase):
         """
         self.backend_name = backend_name
         super().__init__(session, "{}/backends/{}".format(url_prefix, backend_name))
+
+    def backends(self, hgp: str) -> List[str]:
+        """Return a list of backends.
+
+        Args:
+            hgp: hub, group, and project.
+
+        Returns:
+            The list of backends from the given hgp.
+        """
+        payload = {"provider": hgp}
+        return self.session.get(self.prefix_url, params=payload).json()["devices"]
 
     def properties(self, datetime: Optional[datetime] = None) -> Dict[str, Any]:
         """Return backend properties.
@@ -98,3 +111,12 @@ class Backend(RestAdapterBase):
             ret["pending_jobs"] = 0
 
         return ret
+
+    def configuration(self) -> Dict[str, Any]:
+        """Return backend configuration.
+
+        Returns:
+            JSON response of backend configuration.
+        """
+        url = self.get_url("configuration")
+        return self.session.get(url).json()

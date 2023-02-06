@@ -1,0 +1,6 @@
+---
+fixes:
+  - |
+    Fixed an issue where filtering by instance with
+    :meth:`~qiskit_ibm_provider.IBMBackendService.jobs` was not working correctly.
+
