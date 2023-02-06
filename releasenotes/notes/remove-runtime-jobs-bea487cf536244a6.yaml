@@ -1,7 +1,8 @@
 ---
 fixes:
   - |
-    :meth:`~qiskit_ibm_provider.IBMBackendService.jobs` now only retrieves jobs 
+    :meth:`~qiskit_ibm_provider.IBMBackendService.jobs` and 
+    :meth:`~qiskit_ibm_provider.IBMBackendService.retrieve_job` now only retrieve jobs 
     that are run with the ``circuit-runner`` or ``qasm3-runner`` programs.
     Jobs run from ``qiskit-ibm-runtime`` will not be retrievable because their results
     are in an unsupported format.
