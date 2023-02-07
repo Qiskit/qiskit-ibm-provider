@@ -154,7 +154,10 @@ class PadDynamicalDecoupling(BlockBasePadder):
                     * "edges": Divide the extra slack as evenly as possible into
                       intervals at beginning and end of the sequence.
             sequence_min_length_ratios: List of minimum delay length to DD sequence ratio to satisfy
-                in order to insert the DD sequence. Defaults to a value of 2.0.
+                in order to insert the DD sequence. For example if the X-X dynamical decoupling sequence
+                is 320dt samples long and the available delay is 384dt it has a ratio of 384dt/320dt=1.2.
+                From the perspective of dynamical decoupling this is likely to add more control noise
+                than decoupling error rate reductions. The defaults value is 2.0.
             insert_multiple_cycles: If the available duration exceeds
                 2*sequence_min_length_ratio*duration(dd_sequence) enable the insertion of multiple
                 rounds of the dynamical decoupling sequence in that delay.
@@ -332,19 +335,25 @@ class PadDynamicalDecoupling(BlockBasePadder):
         # As you can see, constraints on t0 are all satified without explicit scheduling.
         time_interval = t_end - t_start
 
-        if self._qubits and self._dag.qubits.index(qubit) not in self._qubits:
+        if self._qubits and self._block_dag.qubits.index(qubit) not in self._qubits:
             # Target physical qubit is not the target of this DD sequence.
             self._apply_scheduled_op(
-                block_idx, t_start, Delay(time_interval, self._dag.unit), qubit
+                block_idx, t_start, Delay(time_interval, self._block_dag.unit), qubit
             )
             return
 
-        if self._skip_reset_qubits and (
-            isinstance(prev_node, DAGInNode) or isinstance(prev_node.op, Reset)
+        if (
+            not isinstance(prev_node, DAGInNode)
+            and self._skip_reset_qubits
+            and isinstance(prev_node.op, Reset)
+            and qubit in prev_node.qargs
         ):
+            self._dirty_qubits.remove(qubit)
+
+        if qubit not in self._dirty_qubits:
             # Previous node is the start edge or reset, i.e. qubit is ground state.
             self._apply_scheduled_op(
-                block_idx, t_start, Delay(time_interval, self._dag.unit), qubit
+                block_idx, t_start, Delay(time_interval, self._block_dag.unit), qubit
             )
             return
 
@@ -412,7 +421,10 @@ class PadDynamicalDecoupling(BlockBasePadder):
                 else:
                     # Don't do anything if there's no single-qubit gate to absorb the inverse
                     self._apply_scheduled_op(
-                        block_idx, t_start, Delay(time_interval, self._dag.unit), qubit
+                        block_idx,
+                        t_start,
+                        Delay(time_interval, self._block_dag.unit),
+                        qubit,
                     )
                     return
 
@@ -442,30 +454,40 @@ class PadDynamicalDecoupling(BlockBasePadder):
                 )
 
             # (3) Construct DD sequence with delays
-            num_elements = max(len(dd_sequence), len(taus))
             idle_after = t_start
-            for dd_ind in range(num_elements):
-                if dd_ind < len(taus):
-                    tau = taus[dd_ind]
-                    if tau > 0:
-                        self._apply_scheduled_op(
-                            block_idx, idle_after, Delay(tau, self._dag.unit), qubit
-                        )
-                        idle_after += tau
-                if dd_ind < len(dd_sequence):
+            dd_ind = 0
+            # Interleave delays with DD sequence operations
+            for tau_idx, tau in enumerate(taus):
+                if tau > 0:
+                    self._apply_scheduled_op(
+                        block_idx, idle_after, Delay(tau, self._dag.unit), qubit
+                    )
+                    idle_after += tau
+
+                # Detect if we are on a sequence boundary
+                # If so skip insert of sequence to allow delays to combine
+                # There are two cases.
+                # 1. The number of delays to be inserted is equal to the number of gates.
+                # 2. There is an extra delay inserted after the last operation.
+                # The condition below handles both.
+                seq_length = int(len(taus) / num_sequences)
+                if len(dd_sequence) == len(taus) or tau_idx % seq_length != (
+                    seq_length - 1
+                ):
                     gate = dd_sequence[dd_ind]
                     gate_length = seq_lengths[dd_ind]
                     self._apply_scheduled_op(block_idx, idle_after, gate, qubit)
                     idle_after += gate_length
+                    dd_ind += 1
 
-            self._dag.global_phase = self._mod_2pi(
-                self._dag.global_phase + sequence_gphase
+            self._block_dag.global_phase = self._mod_2pi(
+                self._block_dag.global_phase + sequence_gphase
             )
             return
 
         # DD could not be applied, delay instead
         self._apply_scheduled_op(
-            block_idx, t_start, Delay(time_interval, self._dag.unit), qubit
+            block_idx, t_start, Delay(time_interval, self._block_dag.unit), qubit
         )
         return
 

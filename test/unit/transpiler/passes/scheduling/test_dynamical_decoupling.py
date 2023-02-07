@@ -20,7 +20,6 @@ from qiskit import pulse
 from qiskit.circuit import QuantumCircuit, Delay
 from qiskit.circuit.library import XGate, YGate, RXGate, UGate
 from qiskit.quantum_info import Operator
-from qiskit.test import QiskitTestCase
 from qiskit.transpiler.passmanager import PassManager
 from qiskit.transpiler.exceptions import TranspilerError
 
@@ -34,11 +33,13 @@ from qiskit_ibm_provider.transpiler.passes.scheduling.utils import (
     DynamicCircuitInstructionDurations,
 )
 
-# pylint: disable=invalid-name
+from .control_flow_test_case import ControlFlowTestCase
+
+# pylint: disable=invalid-name,not-context-manager
 
 
 @ddt
-class TestPadDynamicalDecoupling(QiskitTestCase):
+class TestPadDynamicalDecoupling(ControlFlowTestCase):
     """Tests PadDynamicalDecoupling pass."""
 
     def setUp(self):
@@ -108,8 +109,6 @@ class TestPadDynamicalDecoupling(QiskitTestCase):
         expected = expected.compose(XGate(), [1])
         expected = expected.compose(Delay(50), [1])
 
-        expected.barrier()
-
         self.assertEqual(ghz4_dd, expected)
 
     def test_insert_dd_ghz_one_qubit(self):
@@ -140,7 +139,6 @@ class TestPadDynamicalDecoupling(QiskitTestCase):
         expected = expected.compose(Delay(300), [1])
 
         expected.measure_all()
-        expected.barrier()
 
         self.assertEqual(ghz4_dd, expected)
 
@@ -165,18 +163,6 @@ class TestPadDynamicalDecoupling(QiskitTestCase):
         expected = self.ghz4.copy()
         expected = expected.compose(Delay(50), [1], front=True)
 
-        expected = expected.compose(Delay(162), [2], front=True)
-        expected = expected.compose(YGate(), [2], front=True)
-        expected = expected.compose(Delay(326), [2], front=True)
-        expected = expected.compose(YGate(), [2], front=True)
-        expected = expected.compose(Delay(162), [2], front=True)
-
-        expected = expected.compose(Delay(212), [3], front=True)
-        expected = expected.compose(YGate(), [3], front=True)
-        expected = expected.compose(Delay(426), [3], front=True)
-        expected = expected.compose(YGate(), [3], front=True)
-        expected = expected.compose(Delay(212), [3], front=True)
-
         expected = expected.compose(Delay(100), [0])
         expected = expected.compose(YGate(), [0])
         expected = expected.compose(Delay(200), [0])
@@ -188,7 +174,9 @@ class TestPadDynamicalDecoupling(QiskitTestCase):
         expected = expected.compose(Delay(100), [1])
         expected = expected.compose(YGate(), [1])
         expected = expected.compose(Delay(50), [1])
-        expected.barrier()
+
+        expected = expected.compose(Delay(750), [2], front=True)
+        expected = expected.compose(Delay(950), [3], front=True)
 
         self.assertEqual(ghz4_dd, expected)
 
@@ -233,7 +221,6 @@ class TestPadDynamicalDecoupling(QiskitTestCase):
         expected = expected.compose(Delay(25), [1])
         expected = expected.compose(YGate(), [1])
         expected = expected.compose(Delay(12), [1])
-        expected.barrier()
 
         self.assertEqual(ghz4_dd, expected)
 
@@ -264,7 +251,6 @@ class TestPadDynamicalDecoupling(QiskitTestCase):
         expected.cx(1, 2)
         expected.cx(0, 1)
         expected.delay(700, 2)
-        expected.barrier()
 
         self.assertEqual(midmeas_dd, expected)
         # check the absorption into U was done correctly
@@ -331,7 +317,6 @@ class TestPadDynamicalDecoupling(QiskitTestCase):
         expected = expected.compose(Delay(3), [0])
 
         expected = expected.compose(Delay(300), [1])
-        expected.barrier()
 
         self.assertEqual(ghz4_dd, expected)
 
@@ -364,7 +349,6 @@ class TestPadDynamicalDecoupling(QiskitTestCase):
         expected.y(0)
         expected.delay(450, 0)
         expected.h(0)
-        expected.barrier()
         expected.global_phase = pi
 
         t2_dd = pm.run(t2)
@@ -411,7 +395,6 @@ class TestPadDynamicalDecoupling(QiskitTestCase):
         expected.delay(1710, 0)
         expected.x(0)
         expected.h(0)
-        expected.barrier()
 
         t2_dd = pm.run(t2)
 
@@ -460,11 +443,12 @@ class TestPadDynamicalDecoupling(QiskitTestCase):
                 PadDynamicalDecoupling(durations, dd_sequence),
             ]
         )
-        pm.run(circ)
-        node_start_times = pm.property_set["node_start_time"]
-        for node, _ in node_start_times.items():
-            if isinstance(node.op, RXGate):
-                self.assertEqual(node.op.duration, rx_duration)
+        dd_circuit = pm.run(circ)
+
+        for instruction in dd_circuit.data:
+            op = instruction.operation
+            if isinstance(op, RXGate):
+                self.assertEqual(op.duration, rx_duration)
 
     def test_insert_dd_ghz_xy4_with_alignment(self):
         """Test DD with pulse alignment constraints."""
@@ -508,7 +492,6 @@ class TestPadDynamicalDecoupling(QiskitTestCase):
         expected = expected.compose(Delay(20), [1])
         expected = expected.compose(YGate(), [1])
         expected = expected.compose(Delay(20), [1])
-        expected.barrier()
 
         self.assertEqual(ghz4_dd, expected)
 
@@ -539,8 +522,8 @@ class TestPadDynamicalDecoupling(QiskitTestCase):
 
         self.assertEqual(circ1, circ2)
 
-    def test_back_to_back_c_if(self):
-        """Test DD with c_if circuit back to back."""
+    def test_back_to_back_if_test(self):
+        """Test DD with if_test circuit back to back."""
 
         dd_sequence = [XGate(), XGate()]
         pm = PassManager(
@@ -557,8 +540,10 @@ class TestPadDynamicalDecoupling(QiskitTestCase):
 
         qc = QuantumCircuit(3, 1)
         qc.delay(800, 1)
-        qc.x(1).c_if(0, True)
-        qc.x(2).c_if(0, True)
+        with qc.if_test((0, True)):
+            qc.x(1)
+        with qc.if_test((0, True)):
+            qc.x(2)
         qc.delay(1000, 2)
         qc.x(1)
 
@@ -569,14 +554,16 @@ class TestPadDynamicalDecoupling(QiskitTestCase):
         expected.delay(800, 1)
         expected.delay(800, 2)
         expected.barrier()
-        expected.x(1).c_if(0, True)
-        expected.x(2).c_if(0, True)
+        with expected.if_test((0, True)):
+            expected.delay(50, 0)
+            expected.x(1)
+            expected.delay(50, 2)
+        with expected.if_test((0, True)):
+            expected.delay(50, 0)
+            expected.delay(50, 1)
+            expected.x(2)
         expected.barrier()
-        expected.delay(225, 0)
-        expected.x(0)
-        expected.delay(450, 0)
-        expected.x(0)
-        expected.delay(225, 0)
+        expected.delay(1000, 0)
         expected.x(1)
         expected.delay(212, 1)
         expected.x(1)
@@ -588,12 +575,11 @@ class TestPadDynamicalDecoupling(QiskitTestCase):
         expected.delay(450, 2)
         expected.x(2)
         expected.delay(225, 2)
-        expected.barrier()
 
         self.assertEqual(expected, qc_dd)
 
-    def test_dd_c_if(self):
-        """Test DD with c_if circuit."""
+    def test_dd_if_test(self):
+        """Test DD with if_test circuit."""
 
         dd_sequence = [XGate(), XGate()]
         pm = PassManager(
@@ -612,9 +598,11 @@ class TestPadDynamicalDecoupling(QiskitTestCase):
         qc.measure(0, 0)
         qc.x(2)
         qc.delay(1000, 1)
-        qc.x(1).c_if(0, True)
+        with qc.if_test((0, True)):
+            qc.x(1)
         qc.delay(8000, 1)
-        qc.x(2).c_if(0, True)
+        with qc.if_test((0, True)):
+            qc.x(2)
         qc.delay(1000, 2)
         qc.x(0)
         qc.x(2)
@@ -631,8 +619,14 @@ class TestPadDynamicalDecoupling(QiskitTestCase):
         expected.x(2)
         expected.delay(212, 2)
         expected.barrier()
-        expected.x(1).c_if(0, True)
-        expected.x(2).c_if(0, True)
+        with expected.if_test((0, True)):
+            expected.delay(50, 0)
+            expected.x(1)
+            expected.delay(50, 2)
+        with expected.if_test((0, True)):
+            expected.delay(50, 0)
+            expected.delay(50, 1)
+            expected.x(2)
         expected.barrier()
         expected.x(0)
         expected.delay(1962, 0)
@@ -656,7 +650,6 @@ class TestPadDynamicalDecoupling(QiskitTestCase):
         expected.delay(3426, 2)
         expected.x(2)
         expected.delay(1712, 2)
-        expected.barrier()
 
         self.assertEqual(expected, qc_dd)
 
@@ -667,9 +660,11 @@ class TestPadDynamicalDecoupling(QiskitTestCase):
         qc.measure(0, 0)
         qc.x(2)
         qc.delay(1000, 1)
-        qc.x(1).c_if(0, True)
+        with qc.if_test((0, True)):
+            qc.x(1)
         qc.delay(800, 1)
-        qc.x(2).c_if(0, True)
+        with qc.if_test((0, True)):
+            qc.x(2)
         qc.delay(1000, 2)
         qc.x(0)
         qc.x(2)
@@ -692,6 +687,51 @@ class TestPadDynamicalDecoupling(QiskitTestCase):
         qc_dd1 = pm1.run(qc)
 
         self.assertEqual(qc_dd0, qc_dd1)
+
+    def test_nested_block_dd(self):
+        """Test DD applied within a block."""
+
+        dd_sequence = [XGate(), XGate()]
+        pm = PassManager(
+            [
+                ASAPScheduleAnalysis(self.durations),
+                PadDynamicalDecoupling(
+                    self.durations,
+                    dd_sequence,
+                    pulse_alignment=1,
+                    sequence_min_length_ratios=[0.0],
+                ),
+            ]
+        )
+
+        qc = QuantumCircuit(3, 1)
+        qc.x(1)
+        qc.x(2)
+        qc.barrier()
+        with qc.if_test((0, True)):
+            qc.delay(1000, 1)
+
+        qc_dd = pm.run(qc)
+
+        expected = QuantumCircuit(3, 1)
+        expected.delay(50, 0)
+        expected.x(1)
+        expected.x(2)
+        expected.barrier()
+        with expected.if_test((0, True)):
+            expected.delay(225, 1)
+            expected.x(1)
+            expected.delay(450, 1)
+            expected.x(1)
+            expected.delay(225, 1)
+            expected.delay(225, 2)
+            expected.x(2)
+            expected.delay(450, 2)
+            expected.x(2)
+            expected.delay(225, 2)
+            expected.delay(1000, 0)
+
+        self.assertEqual(expected, qc_dd)
 
     def test_multiple_dd_sequences(self):
         """Test multiple DD sequence can be submitted"""
@@ -770,7 +810,6 @@ class TestPadDynamicalDecoupling(QiskitTestCase):
         expected.delay(200, 1)
         expected.x(1)
         expected.delay(100, 1)
-        expected.barrier()
 
         self.assertEqual(qc_dd, expected)
 
@@ -808,10 +847,9 @@ class TestPadDynamicalDecoupling(QiskitTestCase):
         expected.delay(450, 0)
         expected.x(0)
         expected.delay(225, 0)
-        expected.x(0)
         expected.delay(225, 0)
         expected.x(0)
         expected.delay(450, 0)
+        expected.x(0)
         expected.delay(225, 0)
-        expected.barrier()
         self.assertEqual(qc_dd, expected)
