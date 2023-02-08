@@ -14,7 +14,7 @@
 
 from typing import List, Generator, Optional, Tuple, Union
 
-from qiskit.circuit import Measure, Reset, Parameter
+from qiskit.circuit import ControlFlowOp, Measure, Reset, Parameter
 from qiskit.dagcircuit import DAGCircuit, DAGOpNode
 from qiskit.transpiler.instruction_durations import (
     InstructionDurations,
@@ -24,13 +24,9 @@ from qiskit.transpiler.exceptions import TranspilerError
 
 
 def block_order_op_nodes(dag: DAGCircuit) -> Generator[DAGOpNode, None, None]:
-    """Yield nodes such that they are sorted into blocks that they minimize synchronization.
+    """Yield nodes such that they are sorted into groups of blocks that minimize synchronization.
 
-    This should be used when iterating nodes in order to find blocks within the circuit
-    for IBM dynamic circuit hardware
-
-    TODO: The need for this should be mitigated when Qiskit adds better support for
-    blocks and walking them in its program representation.
+    Measurements are also grouped.
     """
 
     def _is_grouped_measure(node: DAGOpNode) -> bool:
@@ -39,7 +35,7 @@ def block_order_op_nodes(dag: DAGCircuit) -> Generator[DAGOpNode, None, None]:
 
     def _is_block_trigger(node: DAGOpNode) -> bool:
         """Does this node trigger the end of a block?"""
-        return node.op.condition_bits
+        return isinstance(node.op, ControlFlowOp)
 
     def _emit(
         node: DAGOpNode,
@@ -53,6 +49,7 @@ def block_order_op_nodes(dag: DAGCircuit) -> Generator[DAGOpNode, None, None]:
         for block_trigger in block_triggers:
             if dag.is_predecessor(node, block_trigger):
                 return True
+
         return _is_grouped_measure(node) or _is_block_trigger(node)
 
     # Begin processing nodes in order

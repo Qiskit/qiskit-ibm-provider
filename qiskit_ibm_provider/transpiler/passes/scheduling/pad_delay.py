@@ -72,6 +72,4 @@ class PadDelay(BlockBasePadder):
             return
 
         time_interval = t_end - t_start
-        self._apply_scheduled_op(
-            block_idx, t_start, Delay(time_interval, self._dag.unit), qubit
-        )
+        self._apply_scheduled_op(block_idx, t_start, Delay(time_interval, "dt"), qubit)
