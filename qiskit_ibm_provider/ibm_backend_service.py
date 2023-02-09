@@ -28,6 +28,7 @@ from .exceptions import (
     IBMBackendValueError,
     IBMBackendApiError,
     IBMBackendApiProtocolError,
+    IBMInputValueError,
 )
 from .hub_group_project import HubGroupProject
 from .ibm_backend import IBMBackend, IBMRetiredBackend
@@ -284,28 +285,36 @@ class IBMBackendService:
             if len(job_responses) == 0:
                 break
             for job_info in job_responses:
-                if filter_by_status:
-                    if legacy:
-                        job_info_status = job_info["status"].upper()
-                    else:
-                        job_info_status = job_info["state"]["status"].upper()
-                    job_status = api_status_to_job_status(job_info_status).name
-                    if (isinstance(status, str) and job_status != status) or (
-                        isinstance(status, list) and job_status not in status
-                    ):
-                        continue
-                job = self._restore_circuit_job(
-                    job_info, raise_error=False, legacy=legacy
-                )
-                if job is None:
-                    logger.warning(
-                        'Discarding job "%s" because it contains invalid data.',
-                        job_info.get("job_id", ""),
+                if (
+                    job_info.get("program", {}).get("id")
+                    in [
+                        "circuit-runner",
+                        "qasm3-runner",
+                    ]
+                    or legacy
+                ):
+                    if filter_by_status:
+                        if legacy:
+                            job_info_status = job_info["status"].upper()
+                        else:
+                            job_info_status = job_info["state"]["status"].upper()
+                        job_status = api_status_to_job_status(job_info_status).name
+                        if (isinstance(status, str) and job_status != status) or (
+                            isinstance(status, list) and job_status not in status
+                        ):
+                            continue
+                    job = self._restore_circuit_job(
+                        job_info, raise_error=False, legacy=legacy
                     )
-                    continue
-                job_list.append(job)
-                if len(job_list) == original_limit:
-                    return job_list
+                    if job is None:
+                        logger.warning(
+                            'Discarding job "%s" because it contains invalid data.',
+                            job_info.get("job_id", ""),
+                        )
+                        continue
+                    job_list.append(job)
+                    if len(job_list) == original_limit:
+                        return job_list
             skip += limit
         return job_list
 
@@ -573,6 +582,7 @@ class IBMBackendService:
             IBMBackendApiProtocolError: If unexpected return value received
                  from the server.
             IBMJobNotFoundError: If job cannot be found.
+            IBMInputValueError: If job exists but was run from a different service.
         """
         try:
             legacy = False
@@ -581,6 +591,14 @@ class IBMBackendService:
                 job_info = self._default_hgp._api_client.job_get(job_id)
             else:
                 job_info = self._provider._runtime_client.job_get(job_id)
+                if job_info.get("program", {}).get("id") not in [
+                    "circuit-runner",
+                    "qasm3-runner",
+                ]:
+                    raise IBMInputValueError(
+                        f"Job {job_id} was not run with qiskit-ibm-provider, "
+                        f"please try retrieving job results from qiskit-ibm-runtime"
+                    )
         except ApiError as ex:
             if "Error code: 3250." in str(ex):
                 raise IBMJobNotFoundError(f"Job {job_id} not found.")
