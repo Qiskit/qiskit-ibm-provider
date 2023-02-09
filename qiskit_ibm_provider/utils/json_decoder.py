@@ -101,8 +101,9 @@ def target_from_server_data(
     Returns:
         A ``Target`` instance.
     """
-    in_data = {"num_qubits": configuration.n_qubits}
+    required = ["measure", "delay"]
 
+    in_data = {"num_qubits": configuration.n_qubits}
     # Parse global configuration properties
     if hasattr(configuration, "dt"):
         in_data["dt"] = configuration.dt
@@ -127,10 +128,10 @@ def target_from_server_data(
     gate_configs = {gate.name: gate for gate in configuration.gates}
     inst_name_map = {}  # type: Dict[str, Instruction]
     prop_name_map = {}  # type: Dict[str, Dict[Tuple[int, ...], InstructionProperties]]
+    all_instructions = set.union(supported_instructions, basis_gates, set(required))
 
-    all_instructions = set.union(supported_instructions, basis_gates)
+    # Create name to Qiskit instruction object repr mapping
     for name in all_instructions:
-        # 1. Create name to Qiskit instruction object repr mapping
         if name in qiskit_control_flow_mapping:
             continue
         if name in qiskit_inst_mapping:
@@ -153,19 +154,19 @@ def target_from_server_data(
             )
             all_instructions.remove(name)
             continue
-        # 2. Create placeholder for the instruction properties
-        if name in gate_configs and hasattr(gate_configs[name], "coupling_map"):
-            coupling_map = gate_configs[name].coupling_map
-            prop_name_map[name] = dict.fromkeys(map(tuple, coupling_map))
-        elif name in ("measure", "delay"):
-            # Special cases
-            # These are not gates but all qubits support these instructions in IBM
-            prop_name_map[name] = {(q,): None for q in range(configuration.n_qubits)}
-        else:
-            # Broadcast to all qubits. This is a special syntax of Target.
-            prop_name_map[name] = {None: None}
 
-    # Populate gate properties
+    # Create placeholder for the instruction properties
+    for name, spec in gate_configs.items():
+        if hasattr(spec, "coupling_map"):
+            coupling_map = spec.coupling_map
+            prop_name_map[name] = dict.fromkeys(map(tuple, coupling_map))
+        else:
+            prop_name_map[name] = None
+    if "delay" not in prop_name_map:
+        # Case for real IBM backend. They don't have delay in gate configuration.
+        prop_name_map["delay"] = {(q,): None for q in range(configuration.n_qubits)}
+
+    # Populate instruction properties
     if properties:
         in_data["qubit_properties"] = list(
             map(_decode_qubit_property, properties["qubits"])
@@ -173,19 +174,23 @@ def target_from_server_data(
         for gate_spec in map(GateSchema.from_dict, properties["gates"]):
             inst_prop = _decode_instruction_property(gate_spec)
             qubits = tuple(gate_spec.qubits)
-            if gate_spec.gate not in all_instructions:
+            name = gate_spec.gate
+            if name not in all_instructions:
                 # New instruction is found in property. Likely an edge case.
                 new_instruction = Gate(
-                    gate_spec.gate,
+                    name=name,
                     num_qubits=len(qubits),
                     params=[],
                 )
-                prop_name_map[gate_spec.gate] = {}
-                inst_name_map[gate_spec.gate] = new_instruction
-                all_instructions.add(gate_spec.gate)
-            prop_name_map[gate_spec.gate][qubits] = inst_prop
-        # Measure instruction property is stored in qubit property
+                prop_name_map[name] = {}
+                inst_name_map[name] = new_instruction
+                all_instructions.add(name)
+            if prop_name_map[name] is None:
+                prop_name_map[name] = {}
+            prop_name_map[name][qubits] = inst_prop
+        # Measure instruction property is stored in qubit property in IBM
         measure_props = list(map(_decode_measure_property, properties["qubits"]))
+        prop_name_map["measure"] = {}
         for qubit, measure_prop in enumerate(measure_props):
             qubits = (qubit,)
             prop_name_map["measure"][qubits] = measure_prop
@@ -218,7 +223,7 @@ def target_from_server_data(
         else:
             target.add_instruction(
                 instruction=inst_name_map[inst_name],
-                properties=prop_name_map[inst_name],
+                properties=prop_name_map.get(inst_name, None),
             )
 
     return target
