@@ -1,0 +1,76 @@
+---
+features:
+  - |
+    Support has been added for applying scheduling and dynamical decoupling for circuits
+    with new format control flow (including nested control-flow).
+
+    .. code-block::
+
+        from qiskit.circuit import ClassicalRegister, QuantumCircuit, QuantumRegister
+        from qiskit.circuit.library import XGate
+        from qiskit.transpiler.passmanager import PassManager
+
+        from qiskit_ibm_provider.transpiler.passes.scheduling import DynamicCircuitInstructionDurations
+        from qiskit_ibm_provider.transpiler.passes.scheduling import ALAPScheduleAnalysis
+        from qiskit_ibm_provider.transpiler.passes.scheduling import PadDynamicalDecoupling
+        from qiskit.providers.fake_provider import FakeJakarta
+
+        backend = FakeJakarta()
+
+        durations = DynamicCircuitInstructionDurations.from_backend(backend)
+
+        qc = QuantumCircuit(2, 2)
+        with qc.if_test((0, 1)):
+            qc.x(0)
+            qc.measure(0, 1)
+            with qc.if_test((1, 1)):
+              qc.measure(1, 1)
+
+        dd_sequence = [XGate(), XGate()]
+
+        pm = PassManager(
+          [
+              ALAPScheduleAnalysis(durations),
+              PadDynamicalDecoupling(durations, dd_sequence),
+          ]
+        )
+
+        qc_dd = pm.run(qc)
+
+upgrade:
+  - |
+    Scheduling support for ``c_if`` has been removed. Please run the pass
+    :class:`qiskit.transpiler.passes.ConvertConditionsToIfOps` on your circuit
+    before scheduling to convert all old format ``c_if`` statements to new format ``if_test``
+    control-flow that may be scheduled.
+
+    .. code-block::
+
+        from qiskit.circuit import ClassicalRegister, QuantumCircuit, QuantumRegister
+        from qiskit.transpiler.passes import ConvertConditionsToIfOps
+        from qiskit.transpiler.passmanager import PassManager
+
+
+        from qiskit_ibm_provider.transpiler.passes.scheduling import DynamicCircuitInstructionDurations
+        from qiskit_ibm_provider.transpiler.passes.scheduling import ALAPScheduleAnalysis
+        from qiskit_ibm_provider.transpiler.passes.scheduling import PadDynamicalDecoupling
+        from qiskit.providers.fake_provider import FakeJakarta
+
+        backend = FakeJakarta()
+
+        durations = DynamicCircuitInstructionDurations.from_backend(backend)
+
+
+        qc = QuantumCircuit(1, 1)
+        qc.x(0).c_if(0, 1)
+
+        pm = PassManager(
+          [
+              ConvertConditionsToIfOps(),
+              ALAPScheduleAnalysis(durations),
+              PadDelay(),
+          ]
+        )
+
+        qc_dd = pm.run(qc)
+

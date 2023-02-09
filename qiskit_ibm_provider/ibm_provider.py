@@ -548,7 +548,7 @@ class IBMProvider(Provider):
             name=name,
             filters=filters,
             min_num_qubits=min_num_qubits,
-            instance=instance,
+            instance=instance or self._account.instance,
             **kwargs,
         )
 
@@ -605,7 +605,7 @@ class IBMProvider(Provider):
             end_datetime=end_datetime,
             job_tags=job_tags,
             descending=descending,
-            instance=instance,
+            instance=instance or self._account.instance,
             legacy=legacy,
         )
 
