@@ -130,6 +130,7 @@ def target_from_server_data(
 
     all_instructions = set.union(supported_instructions, basis_gates)
     for name in all_instructions:
+        # 1. Create name to Qiskit instruction object repr mapping
         if name in qiskit_control_flow_mapping:
             continue
         if name in qiskit_inst_mapping:
@@ -152,8 +153,9 @@ def target_from_server_data(
             )
             all_instructions.remove(name)
             continue
-        if name in gate_configs:
-            coupling_map = getattr(gate_configs[name], "coupling_map", [])
+        # 2. Create placeholder for the instruction properties
+        if name in gate_configs and hasattr(gate_configs[name], "coupling_map"):
+            coupling_map = gate_configs[name].coupling_map
             prop_name_map[name] = dict.fromkeys(map(tuple, coupling_map))
         elif name in ("measure", "delay"):
             # Special cases
