@@ -119,7 +119,7 @@ Scheduling with old format ``c_if`` conditioned gates is not supported.
 The :class:`.IBMBackend` configures a translation plugin
 :class:`.IBMTranslationPlugin` to automatically
 apply transformations and optimizations for IBM hardware backends when invoking
-:class:`qiskit.transpile`. This will automatically convert all old style ``c_if``
+:func:`~qiskit.compiler.transpile`. This will automatically convert all old style ``c_if``
 conditioned gates to new-style control-flow.
 
 .. jupyter-execute::
