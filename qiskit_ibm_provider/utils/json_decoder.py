@@ -26,6 +26,7 @@ from qiskit.providers.models import (
 from qiskit.providers.models.backendproperties import Gate as GateSchema
 from qiskit.circuit.controlflow import IfElseOp, WhileLoopOp, ForLoopOp
 from qiskit.circuit.gate import Gate, Instruction
+from qiskit.circuit.parameter import Parameter
 from qiskit.circuit.library.standard_gates import get_standard_gate_name_mapping
 from qiskit.pulse.calibration_entries import PulseQobjDef
 from qiskit.transpiler.target import Target, InstructionProperties
@@ -135,7 +136,7 @@ def target_from_server_data(
             inst_name_map[name] = qiskit_inst_mapping[name]
         elif name in gate_configs:
             this_config = gate_configs[name]
-            params = getattr(this_config, "parameters", [])
+            params = list(map(Parameter, getattr(this_config, "parameters", [])))
             coupling_map = getattr(this_config, "coupling_map", [])
             inst_name_map[name] = Gate(
                 name=name,
