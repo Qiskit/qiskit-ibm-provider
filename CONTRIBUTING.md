@@ -198,63 +198,49 @@ section of the Qiskit documentation.
 
 ### Test
 
-New features often imply changes in the existent tests or new ones are
-needed. Once they\'re updated/added run this be sure they keep passing.
+#### Test Types
+There are three different types of tests in `qiskit-ibm-provider`. The implementation is based upon the well-documented [unittest](https://docs.python.org/3/library/unittest.html) Unit testing framework.
 
-For executing the tests, a `make test` target is available.
+##### 1. Unit tests
+Run locally without connecting to an external system. They are short-running, stable and give a basic level of confidence during development.
 
-For executing a simple python test manually, you can just run this
-command:
-
-Linux and Mac:
-
+To execute all unit tests, run:
 ``` {.bash}
-$ LOG_LEVEL=INFO python -m unittest test/test_something.py
+$ make unit-test
+```
+##### 2. Integration tests
+Executed against an external system configured via a (token, instance, url) tuple. Detailed coverage of happy and non-happy paths. They are long-running and unstable at times. A successful test run gives a high level of confidence that client and APIs work well together.
+
+To execute all integration tests, run
+``` {.bash}
+$ make integration-test-1 integration-test-2 integration-test-3
 ```
 
-Windows:
+##### 3. E2E tests
 
+Executed against an external system configured via a (token, instance, url) tuple. Basic coverage of most important user-facing happy paths. Test suite runs faster than integration but slower than unit tests and is stable.
+
+To execute all e2e tests, run
 ``` {.bash}
-C:\..\> python -m unittest test/test_something.py
+$ make e2e-test
 ```
 
-Note many of the tests will not be executed unless you have setup an
-IBM Quantum account. To set this up please go to this
-[page](https://quantum-computing.ibm.com/login) and
-register an account.
+#### Configuration
 
-By default, and if there is no user credentials available, the tests
-that require online access are run with recorded (mocked) information.
-This is, the remote requests are replayed from a `test/cassettes` and
-not real HTTP requests is generated. If user credentials are found, in
-that cases it use them to make the network requests.
+Integration and E2E tests require an environment configuration and will be run against the IBM Quantum API ("ibm_quantum").
 
-How and which tests are executed is controlled by a environment variable
-`QISKIT_TESTS`. The options are (where `uc_available = True` if the user
-credentials are available, and `False` otherwise):
 
-  ----------------------------------------------------------------------------------------------------
-  Option          Description                             Default              If `True`, forces
-  --------------- --------------------------------------- -------------------- -----------------------
-  `skip_online`   Skips tests that require remote         `False`              `rec = False`
-                  requests (also, no mocked information
-                  is used). Does not require user
-                  credentials.
+Sample configuration for IBM Quantum
+```bash
+QISKIT_IBM_TOKEN=...                                            # IBM Quantum API token
+QISKIT_IBM_URL=https://auth.quantum-computing.ibm.com/api       # IBM Quantum API URL
+QISKIT_IBM_INSTANCE=ibm-q/open/main                             # IBM Quantum provider to use (hub/group/project)
+```
 
-  `mock_online`   It runs the online tests using mocked   `not uc_available`   `skip_online = False`
-                  information. Does not require user
-                  credentials.
-
-  `run_slow`      It runs tests tagged as *slow*.         `False`
-
-  `rec`           It records the remote requests. It      `False`              `skip_online = False`
-                  requires user credentials.                                   `run_slow = False`
-  ----------------------------------------------------------------------------------------------------
-
-It is possible to provide more than one option separated with commas.
-The order of precedence in the options is right to left. For example,
-`QISKIT_TESTS=skip_online,rec` will set the options as
-`skip_online == False` and `rec == True`.
+To enable test cases against external system in your private fork, make sure to set above values as
+[encrypted environment secrets](https://docs.github.com/en/actions/security-guides/encrypted-secrets#creating-encrypted-secrets-for-an-environment).
+The names of the environments must match the ones that the [CI workflow](.github/workflows/ci.yml) relies
+upon.
 
 ### Style guide
 
