@@ -1,0 +1,8 @@
+---
+upgrade:
+  - |
+    The :class:`qiskit_ibm_provider.ibm_backend.IBMBackend` now returns the
+    ``ibm_dynamic_circuits`` translation stage as its plugin
+    translation stage. This will automatically add custom
+    transformations when calling the transpiler that are tuned
+    for IBM quantum hardware.
