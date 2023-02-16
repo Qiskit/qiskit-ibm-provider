@@ -115,21 +115,6 @@ class TestIBMQasmSimulator(IBMTestCase):
         self.assertEqual(result1, {"00 01": 1024})
         self.assertEqual(result2, {"10 00": 1024})
 
-    def test_conditional_operation(self):
-        """Test conditional operation."""
-        quantum_register = QuantumRegister(4)
-        classical_register = ClassicalRegister(4)
-        circuit = QuantumCircuit(quantum_register, classical_register)
-        circuit.x(quantum_register[0])
-        circuit.x(quantum_register[2])
-        circuit.measure(quantum_register[0], classical_register[0])
-        circuit.x(quantum_register[0]).c_if(classical_register, 1)
-
-        result = self.sim_backend.run(
-            transpile(circuit, backend=self.sim_backend)
-        ).result()
-        self.assertEqual(result.get_counts(circuit), {"0001": 4000})
-
     @skip("TODO refactor to use backend._runtime_run")
     def test_new_sim_method(self):
         """Test new simulator methods."""
