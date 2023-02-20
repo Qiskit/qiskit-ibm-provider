@@ -25,7 +25,7 @@ REQUIREMENTS = [
     "numpy>=1.13",
     "urllib3>=1.21.1",
     "python-dateutil>=2.8.0",
-    "websocket-client<=1.3.3",
+    "websocket-client>=1.5.1",
     "websockets>=10.0",
     "typing_extensions>=4.3",
 ]
