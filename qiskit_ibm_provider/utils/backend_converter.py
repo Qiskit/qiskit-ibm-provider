@@ -16,7 +16,15 @@ from typing import Any, Dict, List
 
 from qiskit.transpiler.target import Target, InstructionProperties
 from qiskit.utils.units import apply_prefix
-from qiskit.circuit.library.standard_gates import IGate, SXGate, XGate, CXGate, RZGate
+from qiskit.circuit.library.standard_gates import (
+    IGate,
+    SXGate,
+    XGate,
+    CXGate,
+    RZGate,
+    ECRGate,
+    CZGate,
+)
 from qiskit.circuit import IfElseOp, WhileLoopOp, ForLoopOp
 from qiskit.circuit.parameter import Parameter
 from qiskit.circuit.gate import Gate
@@ -47,6 +55,8 @@ def convert_to_target(
         "cx": CXGate(),
         "rz": RZGate(Parameter("λ")),
         "reset": Reset(),
+        "ecr": ECRGate(),
+        "cz": CZGate(),
     }
     control_flow_map = {
         "if_else": IfElseOp,
