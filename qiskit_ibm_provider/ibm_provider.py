@@ -530,7 +530,6 @@ class IBMProvider(Provider):
             name: Backend name to filter by.
             min_num_qubits: Minimum number of qubits the backend must have.
             instance: The provider in the hub/group/project format.
-            dynamic_circuits: Filter by whether the backend supports dynamic circuits.
             filters: More complex filters, such as lambda functions.
                 For example::
                     IBMProvider.backends(
