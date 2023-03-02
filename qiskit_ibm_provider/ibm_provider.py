@@ -532,19 +532,21 @@ class IBMProvider(Provider):
             instance: The provider in the hub/group/project format.
             filters: More complex filters, such as lambda functions.
                 For example::
-                    IBMProvider.backends(
-                        filters=lambda b: b.max_shots > 50000)
-                    IBMProvider.backends(
-                        filters=lambda x: ("rz" in x.basis_gates )
+
+                    IBMProvider.backends(filters=lambda b: b.max_shots > 50000)
+                    IBMProvider.backends(filters=lambda x: ("rz" in x.basis_gates )
+
             **kwargs: Simple filters that require a specific value for an attribute in
                 backend configuration, backend status, or provider credentials.
                 Examples::
+
                     # Get the operational real backends
                     IBMProvider.backends(simulator=False, operational=True)
                     # Get the backends with at least 127 qubits
                     IBMProvider.backends(min_num_qubits=127)
                     # Get the backends that support OpenPulse
                     IBMProvider.backends(open_pulse=True)
+
                 For the full list of backend attributes, see the `IBMBackend` class documentation
                 <https://qiskit.org/documentation/apidoc/providers_models.html>
 
