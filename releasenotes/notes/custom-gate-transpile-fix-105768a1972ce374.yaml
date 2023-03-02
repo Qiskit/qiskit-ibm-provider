@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    ``ECRGate`` and ``CZGate`` mappings have been added to the ``Target``
+    constructor to fix a tranpile bug. 
