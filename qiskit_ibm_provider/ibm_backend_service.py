@@ -117,19 +117,26 @@ class IBMBackendService:
 
         Args:
             name: Backend name to filter by.
-            filters: More complex filters, such as lambda functions.
-                For example::
-
-                    IBMProvider.backends(
-                        filters=lambda b: b.configuration().quantum_volume > 16)
-            min_num_qubits: Minimum number of qubits the backend has to have.
+            min_num_qubits: Minimum number of qubits the backend must have.
             instance: The provider in the hub/group/project format.
             dynamic_circuits: Filter by whether the backend supports dynamic circuits.
-            **kwargs: Simple filters that specify a ``True``/``False`` criteria in the
-                backend configuration, backends status, or provider credentials.
-                An example to get the operational backends with 5 qubits::
-
-                    IBMProvider.backends(n_qubits=5, operational=True)
+            filters: More complex filters, such as lambda functions.
+                For example::
+                    IBMProvider.backends(
+                        filters=lambda b: b.max_shots > 50000)
+                    IBMProvider.backends(
+                        filters=lambda x: ("rz" in x.basis_gates )
+            **kwargs: Simple filters that require a specific value for an attribute in
+                backend configuration, backend status, or provider credentials.
+                Examples::
+                    # Get the operational real backends
+                    IBMProvider.backends(simulator=False, operational=True)
+                    # Get the backends with at least 127 qubits
+                    IBMProvider.backends(min_num_qubits=127)
+                    # Get the backends that support OpenPulse
+                    IBMProvider.backends(open_pulse=True)
+                For the full list of backend attributes, see the `IBMBackend` class documentation
+                <https://qiskit.org/documentation/apidoc/providers_models.html>
 
         Returns:
             The list of available backends that match the filter.
