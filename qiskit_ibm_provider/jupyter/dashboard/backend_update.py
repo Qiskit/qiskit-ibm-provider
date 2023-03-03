@@ -31,7 +31,7 @@ def update_backend_info(device_list: wid.VBox, interval: int = 30) -> None:
         device_list: Widget showing the devices.
         interval: How often to refresh the backend information.
     """
-    my_thread = threading.currentThread()
+    my_thread = threading.current_thread()
     current_interval = 0
     started = False
     reservation_interval = 10 * 60
