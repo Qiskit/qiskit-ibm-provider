@@ -318,10 +318,21 @@ class IBMBackend(Backend):
         """
         return self._configuration.meas_map
 
-    def target(self, datetime: Optional[python_datetime] = None) -> Target:
+    @property
+    def target(self) -> Target:
         """A :class:`qiskit.transpiler.Target` object for the backend.
         Returns:
             Target
+        """
+        self._get_properties()
+        self._get_defaults()
+        self._convert_to_target()
+        return self._target
+
+    def target_history(self, datetime: Optional[python_datetime] = None) -> Target:
+        """A :class:`qiskit.transpiler.Target` object for the backend.
+        Returns:
+            Target with properties found on `datetime`
         """
         self._get_properties(datetime=datetime)
         self._get_defaults()
