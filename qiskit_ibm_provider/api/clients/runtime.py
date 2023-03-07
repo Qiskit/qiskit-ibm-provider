@@ -78,7 +78,7 @@ class RuntimeClient(BaseClient):
         Returns:
             Backend pulse defaults.
         """
-        return self._api.backend(backend).pulse_defaults(datetime=datetime)
+        return self._api.backend(backend).pulse_defaults(prev_datetime=datetime)
 
     def backend_status(self, backend: str) -> Dict[str, Any]:
         """Return the status of the backend.
