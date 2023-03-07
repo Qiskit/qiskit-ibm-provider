@@ -91,7 +91,6 @@ class Backend(RestAdapterBase):
 
         return self.session.get(url, params=params).json()
 
-
     def status(self) -> Dict[str, Any]:
         """Return backend status.
 

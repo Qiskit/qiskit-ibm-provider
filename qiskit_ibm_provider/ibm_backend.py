@@ -632,8 +632,9 @@ class IBMBackend(Backend):
                 "getting backend status: {}".format(str(ex))
             ) from ex
 
-    def defaults(self, refresh: bool = False, datetime: Optional[python_datetime] = None
-                 ) -> Optional[PulseDefaults]:
+    def defaults(
+        self, refresh: bool = False, datetime: Optional[python_datetime] = None
+    ) -> Optional[PulseDefaults]:
         """Return the pulse defaults for the backend.
 
         The schema for default pulse configuration can be found in
@@ -657,8 +658,7 @@ class IBMBackend(Backend):
 
         if datetime or refresh or self._defaults is None:
             api_defaults = self.provider._runtime_client.backend_pulse_defaults(
-                self.name,
-                datetime=datetime
+                self.name, datetime=datetime
             )
             if api_defaults:
                 backend_defaults = defaults_from_server_data(api_defaults)
@@ -845,7 +845,9 @@ class IBMRetiredBackend(IBMBackend):
         """Return the backend properties."""
         return None
 
-    def defaults(self, refresh: bool = False, datetime: Optional[python_datetime] = None) -> None:
+    def defaults(
+        self, refresh: bool = False, datetime: Optional[python_datetime] = None
+    ) -> None:
         """Return the pulse defaults for the backend."""
         return None
 

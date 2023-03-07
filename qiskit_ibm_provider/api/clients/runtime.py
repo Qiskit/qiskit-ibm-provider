@@ -67,7 +67,9 @@ class RuntimeClient(BaseClient):
         """
         return self._api.backend(backend).properties(datetime=datetime)
 
-    def backend_pulse_defaults(self, backend: str, datetime: Optional[python_datetime] = None) -> Dict:
+    def backend_pulse_defaults(
+        self, backend: str, datetime: Optional[python_datetime] = None
+    ) -> Dict:
         """Return the pulse defaults of the backend.
 
         Args:
