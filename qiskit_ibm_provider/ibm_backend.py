@@ -257,10 +257,14 @@ class IBMBackend(Backend):
                 )
             )
 
-    def _get_properties(self) -> None:
+    def _get_properties(self, datetime: Optional[python_datetime] = None) -> None:
         """Gets backend properties and decodes it"""
         if not self._properties:
-            api_properties = self.provider._runtime_client.backend_properties(self.name)
+            if datetime:
+                datetime = local_to_utc(datetime)
+            api_properties = self.provider._runtime_client.backend_properties(
+                self.name, datetime=datetime
+            )
             if api_properties:
                 backend_properties = properties_from_server_data(api_properties)
                 self._properties = backend_properties
@@ -321,6 +325,16 @@ class IBMBackend(Backend):
             Target
         """
         self._get_properties()
+        self._get_defaults()
+        self._convert_to_target()
+        return self._target
+
+    def target_history(self, datetime: Optional[python_datetime] = None) -> Target:
+        """A :class:`qiskit.transpiler.Target` object for the backend.
+        Returns:
+            Target with properties found on `datetime`
+        """
+        self._get_properties(datetime=datetime)
         self._get_defaults()
         self._convert_to_target()
         return self._target
