@@ -1,0 +1,6 @@
+---
+upgrade:
+  - |
+    There will now be a warning if a boolean is passed in for the ``init_circuit`` parameter 
+    in :meth:`~qiskit_ibm_provider.IBMBackend.run`.
+

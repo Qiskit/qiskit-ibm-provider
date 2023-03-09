@@ -439,6 +439,12 @@ class IBMBackend(Backend):
         else:
             run_config.pop("program_id", None)
 
+        if isinstance(init_circuit, bool):
+            warnings.warn(
+                "init_circuit does not accept boolean values. "
+                "A quantum circuit should be passed in instead."
+            )
+
         if isinstance(shots, float):
             shots = int(shots)
         if not self.configuration().simulator:
