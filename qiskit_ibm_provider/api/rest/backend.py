@@ -78,20 +78,14 @@ class Backend(RestAdapterBase):
 
         return response
 
-    def pulse_defaults(
-        self, prev_datetime: Optional[datetime] = None
-    ) -> Dict[str, Any]:
+    def pulse_defaults(self) -> Dict[str, Any]:
         """Return backend pulse defaults.
 
         Returns:
             JSON response of pulse defaults.
         """
         url = self.get_url("pulse_defaults")
-        params = {}
-        if prev_datetime:
-            params["updated_before"] = prev_datetime.isoformat()
-
-        return self.session.get(url, params=params).json()
+        return self.session.get(url).json()
 
     def status(self) -> Dict[str, Any]:
         """Return backend status.

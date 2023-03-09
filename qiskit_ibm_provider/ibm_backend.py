@@ -269,13 +269,11 @@ class IBMBackend(Backend):
                 backend_properties = properties_from_server_data(api_properties)
                 self._properties = backend_properties
 
-    def _get_defaults(self, datetime: Optional[python_datetime] = None) -> None:
+    def _get_defaults(self) -> None:
         """Gets defaults if pulse backend and decodes it"""
         if not self._defaults:
-            if datetime:
-                datetime = local_to_utc(datetime)
             api_defaults = self.provider._runtime_client.backend_pulse_defaults(
-                self.name, datetime=datetime
+                self.name
             )
             if api_defaults:
                 self._defaults = defaults_from_server_data(api_defaults)
@@ -337,7 +335,7 @@ class IBMBackend(Backend):
             Target with properties found on `datetime`
         """
         self._get_properties(datetime=datetime)
-        self._get_defaults(datetime=datetime)
+        self._get_defaults()
         self._convert_to_target()
         return self._target
 
@@ -599,7 +597,6 @@ class IBMBackend(Backend):
             api_properties = self.provider._runtime_client.backend_properties(
                 self.name, datetime=datetime
             )
-
             if not api_properties:
                 return None
             backend_properties = properties_from_server_data(api_properties)
@@ -632,9 +629,7 @@ class IBMBackend(Backend):
                 "getting backend status: {}".format(str(ex))
             ) from ex
 
-    def defaults(
-        self, refresh: bool = False, datetime: Optional[python_datetime] = None
-    ) -> Optional[PulseDefaults]:
+    def defaults(self, refresh: bool = False) -> Optional[PulseDefaults]:
         """Return the pulse defaults for the backend.
 
         The schema for default pulse configuration can be found in
@@ -647,26 +642,16 @@ class IBMBackend(Backend):
 
         Returns:
             The backend pulse defaults or ``None`` if the backend does not support pulse.
-        Raises:
-            TypeError: If datetime is not of type 'datetime'.
         """
-        if datetime and not isinstance(datetime, python_datetime):
-            raise TypeError("'{}' is not of type 'datetime'.")
 
-        if datetime:
-            datetime = local_to_utc(datetime)
-
-        if datetime or refresh or self._defaults is None:
+        if refresh or self._defaults is None:
             api_defaults = self.provider._runtime_client.backend_pulse_defaults(
-                self.name, datetime=datetime
+                self.name
             )
             if api_defaults:
-                backend_defaults = defaults_from_server_data(api_defaults)
+                self._defaults = defaults_from_server_data(api_defaults)
             else:
-                backend_defaults = None
-            if datetime:  # Don't cache result.
-                return backend_defaults
-            self._defaults = backend_defaults
+                self._defaults = None
         return self._defaults
 
     def configuration(
@@ -845,9 +830,7 @@ class IBMRetiredBackend(IBMBackend):
         """Return the backend properties."""
         return None
 
-    def defaults(
-        self, refresh: bool = False, datetime: Optional[python_datetime] = None
-    ) -> None:
+    def defaults(self, refresh: bool = False) -> None:
         """Return the pulse defaults for the backend."""
         return None
 
