@@ -643,7 +643,6 @@ class IBMBackend(Backend):
         Returns:
             The backend pulse defaults or ``None`` if the backend does not support pulse.
         """
-
         if refresh or self._defaults is None:
             api_defaults = self.provider._runtime_client.backend_pulse_defaults(
                 self.name
@@ -652,6 +651,7 @@ class IBMBackend(Backend):
                 self._defaults = defaults_from_server_data(api_defaults)
             else:
                 self._defaults = None
+
         return self._defaults
 
     def configuration(
