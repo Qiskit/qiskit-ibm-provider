@@ -234,8 +234,6 @@ class IBMBackendService:
                 )
             )
 
-        if not backends:
-            print('do something')
         return filter_backends(backends, filters=filters, **kwargs)
 
     def jobs(
