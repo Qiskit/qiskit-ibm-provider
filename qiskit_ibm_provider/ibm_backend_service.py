@@ -13,6 +13,7 @@
 """Backend namespace for an IBM Quantum account."""
 
 import logging
+from collections import OrderedDict
 from datetime import datetime
 from typing import Dict, List, Callable, Optional, Any, Union
 from typing_extensions import Literal
@@ -21,8 +22,9 @@ from qiskit.providers.exceptions import QiskitBackendNotFoundError
 from qiskit.providers.jobstatus import JobStatus
 from qiskit.providers.providerutils import filter_backends
 
-from qiskit_ibm_provider import ibm_provider  # pylint: disable=unused-import
+from qiskit_ibm_provider import ibm_provider, ibm_backend  # pylint: disable=unused-import
 from .api.exceptions import ApiError
+from .api.clients import AccountClient
 from .apiconstants import ApiJobStatus
 from .exceptions import (
     IBMBackendValueError,
@@ -35,6 +37,7 @@ from .ibm_backend import IBMBackend, IBMRetiredBackend
 from .job import IBMJob, IBMCircuitJob
 from .job.exceptions import IBMJobNotFoundError
 from .utils.hgp import from_instance_format
+from .utils.backend_decoder import configuration_from_server_data
 from .utils.converters import local_to_utc
 from .utils.utils import (
     to_python_identifier,
@@ -84,16 +87,15 @@ class IBMBackendService:
         self._default_hgp = hgp
         self._backends: Dict[str, IBMBackend] = {}
         self._initialize_backends()
-        self._discover_backends()
 
     def _initialize_backends(self) -> None:
         """Initialize the internal list of backends."""
         # Add backends from user selected hgp followed by backends
         # from other hgps if not already added
-        for hgp in self._provider._get_hgps():
-            for name, backend in hgp.backends.items():
+        for hgp in self._provider._get_hgps():            
+            for name in hgp.backends:
                 if name not in self._backends:
-                    self._backends[name] = backend
+                    self._backends[name] = None
 
     def _discover_backends(self) -> None:
         """Discovers the remote backends for this account, if not already known."""
@@ -149,11 +151,68 @@ class IBMBackendService:
                 `project` are specified.
         """
         backends: List[IBMBackend] = []
+        ret = OrderedDict()
         if instance:
             hgp = self._provider._get_hgp(instance=instance)
-            backends = list(hgp.backends.values())
+            for backend_name in hgp.backends.keys():
+                if not self._backends[backend_name]:
+                    raw_config = self._provider._runtime_client.backend_configuration(
+                        backend_name
+                    )
+                    config = configuration_from_server_data(
+                        raw_config=raw_config, instance=instance
+                    )
+                    if not config:
+                        continue
+                    backends = ibm_backend.IBMBackend(
+                        instance=instance,
+                        configuration=config,
+                        api_client=AccountClient(self._provider._client_params),
+                        provider=self._provider,
+                    )
+                    self._backends[config.backend_name] = backend
+                ret[backend_name] = self._backends[backend_name]
+        elif name:
+            for backend_name in self._backends:
+                if backend_name == name:
+                    if not self._backends[backend_name]:
+                        raw_config = self._provider._runtime_client.backend_configuration(
+                            backend_name
+                        )
+                        config = configuration_from_server_data(
+                            raw_config=raw_config, instance=instance
+                        )
+                        if not config:
+                            continue
+                        backend = ibm_backend.IBMBackend(
+                            instance=instance,
+                            configuration=config,
+                            api_client=AccountClient(self._provider._client_params),
+                            provider=self._provider,
+                        )
+                        self._backends[config.backend_name] = backend
+                    ret[backend_name] = self._backends[backend_name]
         else:
-            backends = list(self._backends.values())
+            for backend_name in self._backends:
+                if not self._backends[backend_name]:
+                    raw_config = self._provider._runtime_client.backend_configuration(
+                        backend_name
+                    )
+                    config = configuration_from_server_data(
+                        raw_config=raw_config, instance=instance
+                    )
+                    if not config:
+                        continue
+                    backend = ibm_backend.IBMBackend(
+                        instance=instance,
+                        configuration=config,
+                        api_client=AccountClient(self._provider._client_params),
+                        provider=self._provider,
+                    )
+                    self._backends[backend_name] = backend
+                ret[backend_name] = self._backends[backend_name]
+        backends = list(ret.values())
+
         # Special handling of the `name` parameter, to support alias resolution.
         if name:
             aliases = self._aliased_backend_names()
@@ -175,6 +234,8 @@ class IBMBackendService:
                 )
             )
 
+        if not backends:
+            print('do something')
         return filter_backends(backends, filters=filters, **kwargs)
 
     def jobs(
