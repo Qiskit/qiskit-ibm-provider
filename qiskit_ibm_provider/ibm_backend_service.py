@@ -22,7 +22,10 @@ from qiskit.providers.exceptions import QiskitBackendNotFoundError
 from qiskit.providers.jobstatus import JobStatus
 from qiskit.providers.providerutils import filter_backends
 
-from qiskit_ibm_provider import ibm_provider, ibm_backend  # pylint: disable=unused-import
+from qiskit_ibm_provider import (
+    ibm_provider,
+    ibm_backend,
+)  # pylint: disable=unused-import
 from .api.exceptions import ApiError
 from .api.clients import AccountClient
 from .apiconstants import ApiJobStatus
@@ -92,7 +95,7 @@ class IBMBackendService:
         """Initialize the internal list of backends."""
         # Add backends from user selected hgp followed by backends
         # from other hgps if not already added
-        for hgp in self._provider._get_hgps():            
+        for hgp in self._provider._get_hgps():
             for name in hgp.backends:
                 if name not in self._backends:
                     self._backends[name] = None
@@ -176,8 +179,10 @@ class IBMBackendService:
             for backend_name in self._backends:
                 if backend_name == name:
                     if not self._backends[backend_name]:
-                        raw_config = self._provider._runtime_client.backend_configuration(
-                            backend_name
+                        raw_config = (
+                            self._provider._runtime_client.backend_configuration(
+                                backend_name
+                            )
                         )
                         config = configuration_from_server_data(
                             raw_config=raw_config, instance=instance
