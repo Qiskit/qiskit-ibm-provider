@@ -12,6 +12,7 @@
 
 """IBM Quantum job."""
 
+import json
 import logging
 import time
 import queue
@@ -19,6 +20,7 @@ from concurrent import futures
 from datetime import datetime
 from typing import Dict, Optional, Any, List, Union
 import re
+import requests
 
 import dateutil.parser
 from qiskit.providers.jobstatus import JOB_FINAL_STATES, JobStatus
@@ -660,6 +662,21 @@ class IBMCircuitJob(IBMJob):
 
         return True
 
+    def _download_external_result(self, response: Any) -> Any:
+        """Download result from external URL.
+
+        Args:
+            response: Response to check for url keyword, if available, download result from given URL
+        """
+        if "url" in response:
+            result_url_json = json.loads(response)
+            if "url" in result_url_json:
+                url = result_url_json["url"]
+                result_response = requests.get(url)
+                response = result_response.content
+
+        return response
+
     def _retrieve_result(self, refresh: bool = False) -> None:
         """Retrieve the job result response.
 
@@ -681,7 +698,13 @@ class IBMCircuitJob(IBMJob):
 
         if not self._result or refresh:  # type: ignore[has-type]
             try:
-                api_result = self._runtime_client.job_results(self.job_id())
+                if self._provider._runtime_client.job_type(self.job_id()) == "IQX":
+                    api_result = self._api_client.job_result(self.job_id())
+                else:
+                    api_result = self._download_external_result(
+                        self._runtime_client.job_results(self.job_id())
+                    )
+
                 self._set_result(api_result)
             except ApiError as err:
                 if self._status not in (JobStatus.ERROR, JobStatus.CANCELLED):
@@ -703,6 +726,10 @@ class IBMCircuitJob(IBMJob):
         result = re.search("JobError: '(.*)'", raw_data)
         if result is not None:
             return result.group(1)
+        else:
+            index = raw_data.rfind("Traceback")
+            if index != -1:
+                return "Unknown error; " + raw_data[index:]
         return None
 
     def _set_result(self, raw_data: str) -> None:

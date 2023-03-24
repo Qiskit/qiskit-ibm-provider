@@ -1,0 +1,7 @@
+---
+upgrade:
+  - |
+    If an instance is passed in when initializing :class:`~qiskit_ibm_provider.IBMProvider`,
+    the instance will be used for filtering backends and jobs in 
+    :meth:`~qiskit_ibm_provider.IBMBackendService.backends` and 
+    :meth:`~qiskit_ibm_provider.IBMBackendService.jobs`.

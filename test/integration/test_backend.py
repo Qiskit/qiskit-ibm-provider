@@ -15,7 +15,7 @@
 from unittest import SkipTest, mock, skip
 from unittest.mock import patch
 
-from qiskit import QuantumCircuit
+from qiskit import QuantumCircuit, transpile
 from qiskit.providers.models import QasmBackendConfiguration
 from qiskit.test.reference_circuits import ReferenceCircuits
 
@@ -156,3 +156,13 @@ class TestIBMBackend(IBMTestCase):
 
             self.assertEqual(mutated_circuit[0].count_ops(), {"delay": 3})
             self.assertEqual(circuit_with_id.count_ops(), {"id": 3})
+
+    def test_transpile_converts_id(self):
+        """Test that when targeting an IBM backend id is translated to delay."""
+        circ = QuantumCircuit(2)
+        circ.id(0)
+        circ.id(1)
+        tqc = transpile(circ, self.backend)
+        op_counts = tqc.count_ops()
+        self.assertNotIn("id", op_counts)
+        self.assertIn("delay", op_counts)

@@ -19,13 +19,13 @@ import os
 import setuptools
 
 REQUIREMENTS = [
-    "qiskit-terra>=0.22.0",
+    "qiskit-terra>=0.23.1",
     "requests>=2.19",
     "requests-ntlm>=1.1.0",
     "numpy>=1.13",
     "urllib3>=1.21.1",
     "python-dateutil>=2.8.0",
-    "websocket-client<=1.3.3",
+    "websocket-client>=1.5.1",
     "websockets>=10.0",
     "typing_extensions>=4.3",
 ]
@@ -95,7 +95,8 @@ setuptools.setup(
     },
     entry_points={
         "qiskit.transpiler.translation": [
-            "ibm_dynamic_circuits = qiskit_ibm_provider.transpiler.plugin:IBMTranslationPlugin",
+            "ibm_backend = qiskit_ibm_provider.transpiler.plugin:IBMTranslationPlugin",
+            "ibm_dynamic_circuits = qiskit_ibm_provider.transpiler.plugin:IBMDynamicTranslationPlugin",
         ]
     },
 )

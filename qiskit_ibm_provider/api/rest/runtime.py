@@ -32,10 +32,9 @@ class Runtime(RestAdapterBase):
     URL_MAP = {
         "programs": "/programs",
         "jobs": "/jobs",
-        "backends": "/backends",
     }
 
-    def backend(self, backend: str) -> Backend:
+    def backend(self, backend: str = "") -> Backend:
         """Return an adapter for the backend.
 
         Args:

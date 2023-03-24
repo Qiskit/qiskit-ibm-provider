@@ -62,7 +62,7 @@ class IBMProvider(Provider):
 
     Instead of saving credentials to disk, you can also set the environment
     variables QISKIT_IBM_TOKEN, QISKIT_IBM_URL and QISKIT_IBM_INSTANCE
-    and then instantiate the provider like below::
+    and then instantiate the provider as below::
 
         from qiskit_ibm_provider import IBMProvider
         provider = IBMProvider()
@@ -430,6 +430,14 @@ class IBMProvider(Provider):
         active_account_dict.update({"instance": hgps[0].name})
         return active_account_dict
 
+    def instances(self) -> List[str]:
+        """Return the IBM Quantum instances list currently in use for the session.
+
+        Returns:
+            A list with instances currently in the session.
+        """
+        return [hgp.name for hgp in self._get_hgps()]
+
     @staticmethod
     def delete_account(name: Optional[str] = None) -> bool:
         """Delete a saved account from disk.
@@ -513,7 +521,6 @@ class IBMProvider(Provider):
         name: Optional[str] = None,
         filters: Optional[Callable[[List[IBMBackend]], bool]] = None,
         min_num_qubits: Optional[int] = None,
-        input_allowed: Optional[Union[str, List[str]]] = None,
         instance: Optional[str] = None,
         **kwargs: Any,
     ) -> List[IBMBackend]:
@@ -521,22 +528,27 @@ class IBMProvider(Provider):
 
         Args:
             name: Backend name to filter by.
+            min_num_qubits: Minimum number of qubits the backend must have.
+            instance: The provider in the hub/group/project format.
             filters: More complex filters, such as lambda functions.
                 For example::
 
-                    IBMProvider.backends(filters=lambda b: b.configuration().quantum_volume > 16)
-            min_num_qubits: Minimum number of qubits the backend has to have.
-            input_allowed: Filter by the types of input the backend supports.
-                Valid input types are ``job`` (circuit job) and ``runtime`` (Qiskit Runtime).
-                For example, ``inputs_allowed='runtime'`` will return all backends
-                that support Qiskit Runtime. If a list is given, the backend must
-                support all types specified in the list.
-            instance: The provider in the hub/group/project format.
-            **kwargs: Simple filters that specify a ``True``/``False`` criteria in the
-                backend configuration, backends status, or provider credentials.
-                An example to get the operational backends with 5 qubits::
+                    IBMProvider.backends(filters=lambda b: b.max_shots > 50000)
+                    IBMProvider.backends(filters=lambda x: ("rz" in x.basis_gates )
 
-                    IBMProvider.backends(n_qubits=5, operational=True)
+            **kwargs: Simple filters that require a specific value for an attribute in
+                backend configuration, backend status, or provider credentials.
+                Examples::
+
+                    # Get the operational real backends
+                    IBMProvider.backends(simulator=False, operational=True)
+                    # Get the backends with at least 127 qubits
+                    IBMProvider.backends(min_num_qubits=127)
+                    # Get the backends that support OpenPulse
+                    IBMProvider.backends(open_pulse=True)
+
+                For the full list of backend attributes, see the `IBMBackend` class documentation
+                <https://qiskit.org/documentation/apidoc/providers_models.html>
 
         Returns:
             The list of available backends that match the filter.
@@ -546,8 +558,7 @@ class IBMProvider(Provider):
             name=name,
             filters=filters,
             min_num_qubits=min_num_qubits,
-            input_allowed=input_allowed,
-            instance=instance,
+            instance=instance or self._account.instance,
             **kwargs,
         )
 
@@ -562,6 +573,7 @@ class IBMProvider(Provider):
         job_tags: Optional[List[str]] = None,
         descending: bool = True,
         instance: Optional[str] = None,
+        legacy: bool = False,
     ) -> List[IBMJob]:
         """Return a list of jobs, subject to optional filtering.
 
@@ -586,6 +598,8 @@ class IBMProvider(Provider):
             descending: If ``True``, return the jobs in descending order of the job
                 creation date (i.e. newest first) until the limit is reached.
             instance: The provider in the hub/group/project format.
+            legacy: If ``True``, only retrieve jobs run from the deprecated ``qiskit-ibmq-provider``.
+            Otherwise, only retrieve jobs run from ``qiskit-ibm-provider``.
 
         Returns:
             A list of ``IBMJob`` instances.
@@ -601,7 +615,8 @@ class IBMProvider(Provider):
             end_datetime=end_datetime,
             job_tags=job_tags,
             descending=descending,
-            instance=instance,
+            instance=instance or self._account.instance,
+            legacy=legacy,
         )
 
     def retrieve_job(self, job_id: str) -> IBMJob:
