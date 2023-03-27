@@ -167,7 +167,7 @@ class IBMBackendService:
                     )
                     if not config:
                         continue
-                    backends = ibm_backend.IBMBackend(
+                    backend = ibm_backend.IBMBackend(
                         instance=instance,
                         configuration=config,
                         api_client=AccountClient(self._provider._client_params),
