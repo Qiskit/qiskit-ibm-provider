@@ -13,22 +13,29 @@ Contributing to qiskit-ibm-provider
 In addition to the general guidelines there are specific details for
 contributing to the qiskit-ibm-provider, these are documented below.
 
-### Pull request checklist
 
-When submitting a pull request and you feel it is ready for review,
-please ensure that:
+### Initial Steps
 
-1. The code follows the code style of the project and successfully
-   passes the tests. For convenience, you can execute `tox` locally,
-   which will run these checks and report any issues.
-2. The documentation has been updated accordingly. In particular, if a
-   function or class has been modified during the PR, please update the
-   *docstring* accordingly.
-3. If it makes sense for your change that you have added new tests that
-   cover the changes.
-4. Ensure that if your change has an end user facing impact (new feature,
-   deprecation, removal etc) that you have added a reno release note for that
-   change and that the PR is tagged for the changelog.
+1. Fork your own copy of qiskit-ibm-runtime repository, then clone it in your 
+   local.
+2. Setup a virtualenv based on the requirements.txt and requirements-dev.txt 
+   files.
+3. Create a new branch and then make your contribution on it.
+
+
+### Pushing a new branch
+
+Before pushing your contribution please ensure that:
+
+1. The code follows the code style of the project. For convenience, you can 
+   check [Style guide](#style-guide)
+2. If it makes sense for your change that you have added new tests that cover 
+   the changes. 
+3. All tests passes. For convenience, you can verify the [Test Types](#test-types).
+4. The documentation has been updated accordingly. In particular, if a
+   function or class has been modified during your contribution, please update
+   the *docstring* accordingly. For convenience, you can check [Building the 
+   Documentation Locally](#building-documentation-locally).
 
 ### Changelog generation
 
@@ -144,7 +151,7 @@ After you've finished writing your release notes you'll want to add the note
 file to your commit with `git add` and commit them to your PR branch to make
 sure they're included with the code in your PR.
 
-##### Linking to issues
+#### Linking to issues
 
 If you need to link to an issue or other github artifact as part of the release
 note this should be done using an inline link with the text being the issue
@@ -181,7 +188,7 @@ release and the output will be submitted as a pull request to the documentation
 repository's [release notes file](
 https://github.com/Qiskit/qiskit/blob/master/docs/release_notes.rst)
 
-#### Building release notes locally
+### Building documentation locally
 
 Building The release notes are part of the standard qiskit-ibm-provider
 documentation builds. To check what the rendered html output of the release
@@ -190,26 +197,25 @@ notes will look like for the current state of the repo you can run:
 and the release notes in particular will be located at
 `docs/_build/html/release_notes.html`
 
-## Installing Qiskit IBM Provider from source
-Please see the [Installing IBM Quantum Provider from
-Source](https://qiskit.org/documentation/contributing_to_qiskit.html#installing-ibm-quantum-provider-from-source)
-section of the Qiskit documentation.
-
-
 ### Test
 
 #### Test Types
-There are three different types of tests in `qiskit-ibm-provider`. The implementation is based upon the well-documented [unittest](https://docs.python.org/3/library/unittest.html) Unit testing framework.
+There are three different types of tests in `qiskit-ibm-provider`. The 
+implementation is based upon the well-documented [unittest](https://docs.python.org/3/library/unittest.html) Unit testing framework.
 
 ##### 1. Unit tests
-Run locally without connecting to an external system. They are short-running, stable and give a basic level of confidence during development.
+Run locally without connecting to an external system. They are short-running,
+stable and give a basic level of confidence during development.
 
 To execute all unit tests, run:
 ``` {.bash}
 $ make unit-test
 ```
 ##### 2. Integration tests
-Executed against an external system configured via a (token, instance, url) tuple. Detailed coverage of happy and non-happy paths. They are long-running and unstable at times. A successful test run gives a high level of confidence that client and APIs work well together.
+Executed against an external system configured via a (token, instance, url) 
+tuple. Detailed coverage of happy and non-happy paths. They are long-running and
+unstable at times. A successful test run gives a high level of confidence that 
+client and APIs work well together.
 
 To execute all integration tests, run
 ``` {.bash}
@@ -218,16 +224,19 @@ $ make integration-test-1 integration-test-2 integration-test-3
 
 ##### 3. E2E tests
 
-Executed against an external system configured via a (token, instance, url) tuple. Basic coverage of most important user-facing happy paths. Test suite runs faster than integration but slower than unit tests and is stable.
+Executed against an external system configured via a (token, instance, url) 
+tuple. Basic coverage of most important user-facing happy paths. Test suite runs
+faster than integration but slower than unit tests and is stable.
 
 To execute all e2e tests, run
 ``` {.bash}
 $ make e2e-test
 ```
 
-#### Configuration
+###### Configuration
 
-Integration and E2E tests require an environment configuration and will be run against the IBM Quantum API ("ibm_quantum").
+Integration and E2E tests require an environment configuration and will be run 
+against the IBM Quantum API ("ibm_quantum").
 
 
 Sample configuration for IBM Quantum
@@ -255,11 +264,10 @@ commands:
 
 All platforms:
 
-``` {.sh}
-$> cd out
-out$> make lint
-out$> make style
-out$> make mypy
+```bash
+make lint
+make style
+make mypy
 ```
 
 ### Development Cycle

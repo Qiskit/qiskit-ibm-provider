@@ -29,3 +29,5 @@ scikit-learn>=0.20.0
 ddt>=1.2.0,!=1.4.0,!=1.4.3
 pylatexenc>=1.4
 qiskit-ibmq-provider>=0.19.2
+tox==3.28.0
+doc8
