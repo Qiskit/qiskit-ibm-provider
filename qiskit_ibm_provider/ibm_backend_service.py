@@ -160,61 +160,20 @@ class IBMBackendService:
             hgp = self._provider._get_hgp(instance=instance)
             for backend_name in hgp.backends.keys():
                 if not self._backends[backend_name]:
-                    raw_config = self._provider._runtime_client.backend_configuration(
-                        backend_name
-                    )
-                    config = configuration_from_server_data(
-                        raw_config=raw_config, instance=instance
-                    )
-                    if not config:
-                        continue
-                    backend = ibm_backend.IBMBackend(
-                        instance=instance,
-                        configuration=config,
-                        api_client=AccountClient(self._provider._client_params),
-                        provider=self._provider,
-                    )
-                    self._backends[config.backend_name] = backend
+                    backend = self._fetch_backend_config(backend_name, instance)
+                    self._backends[backend_name] = backend
                 ret[backend_name] = self._backends[backend_name]
         elif name:
             for backend_name, backend_config in self._backends.items():
                 if backend_name == name:
                     if not backend_config:
-                        raw_config = (
-                            self._provider._runtime_client.backend_configuration(
-                                backend_name
-                            )
-                        )
-                        config = configuration_from_server_data(
-                            raw_config=raw_config, instance=instance
-                        )
-                        if not config:
-                            continue
-                        backend = ibm_backend.IBMBackend(
-                            instance=instance,
-                            configuration=config,
-                            api_client=AccountClient(self._provider._client_params),
-                            provider=self._provider,
-                        )
-                        self._backends[config.backend_name] = backend
+                        backend = self._fetch_backend_config(backend_name, instance)
+                        self._backends[backend_name] = backend
                     ret[backend_name] = self._backends[backend_name]
         else:
             for backend_name, backend_config in self._backends.items():
                 if not backend_config:
-                    raw_config = self._provider._runtime_client.backend_configuration(
-                        backend_name
-                    )
-                    config = configuration_from_server_data(
-                        raw_config=raw_config, instance=instance
-                    )
-                    if not config:
-                        continue
-                    backend = ibm_backend.IBMBackend(
-                        instance=instance,
-                        configuration=config,
-                        api_client=AccountClient(self._provider._client_params),
-                        provider=self._provider,
-                    )
+                    backend = self._fetch_backend_config(backend_name, instance)
                     self._backends[backend_name] = backend
                 ret[backend_name] = self._backends[backend_name]
         backends = list(ret.values())
@@ -682,6 +641,32 @@ class IBMBackendService:
             ) from ex
         job = self._restore_circuit_job(job_info, raise_error=True, legacy=legacy)
         return job
+
+    def _fetch_backend_config(
+        self, backend_name: str, instance: Optional[str] = None
+    ) -> Optional[ibm_backend.IBMBackend]:
+        """Return a backend object with the backend configuration.
+
+        Args:
+            backend_name: backend name that will be returned.
+            instance: the current h/g/p
+
+        Returns:
+            backend object.
+        """
+        raw_config = self._provider._runtime_client.backend_configuration(backend_name)
+        config = configuration_from_server_data(
+            raw_config=raw_config, instance=instance
+        )
+        backend = None
+        if config:
+            backend = ibm_backend.IBMBackend(
+                instance=instance,
+                configuration=config,
+                api_client=AccountClient(self._provider._client_params),
+                provider=self._provider,
+            )
+        return backend
 
     @staticmethod
     def _deprecated_backend_names() -> Dict[str, str]:
