@@ -22,10 +22,11 @@ from qiskit.providers.exceptions import QiskitBackendNotFoundError
 from qiskit.providers.jobstatus import JobStatus
 from qiskit.providers.providerutils import filter_backends
 
+# pylint: disable=unused-import
 from qiskit_ibm_provider import (
-    ibm_provider,
     ibm_backend,
-)  # pylint: disable=unused-import
+    ibm_provider,
+)
 from .api.exceptions import ApiError
 from .api.clients import AccountClient
 from .apiconstants import ApiJobStatus
@@ -176,9 +177,9 @@ class IBMBackendService:
                     self._backends[config.backend_name] = backend
                 ret[backend_name] = self._backends[backend_name]
         elif name:
-            for backend_name in self._backends:
+            for backend_name, backend_config in self._backends.items():
                 if backend_name == name:
-                    if not self._backends[backend_name]:
+                    if not backend_config:
                         raw_config = (
                             self._provider._runtime_client.backend_configuration(
                                 backend_name
@@ -198,8 +199,8 @@ class IBMBackendService:
                         self._backends[config.backend_name] = backend
                     ret[backend_name] = self._backends[backend_name]
         else:
-            for backend_name in self._backends:
-                if not self._backends[backend_name]:
+            for backend_name, backend_config in self._backends.items():
+                if not backend_config:
                     raw_config = self._provider._runtime_client.backend_configuration(
                         backend_name
                     )

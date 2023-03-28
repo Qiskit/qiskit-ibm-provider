@@ -22,7 +22,6 @@ from qiskit_ibm_provider import (  # pylint: disable=unused-import
 )
 
 from .api.clients import AccountClient
-from .utils.backend_decoder import configuration_from_server_data
 from .api.client_parameters import ClientParameters
 from .utils.hgp import from_instance_format
 
@@ -77,7 +76,7 @@ class HubGroupProject:
         Returns:
             A dict of the remote backend instances, keyed by backend name.
         """
-        ret = OrderedDict()
+        ret: OrderedDict[str, Any] = OrderedDict()
         backends = self._provider._runtime_client.list_backends(self.name)
         if backends:
             for backend in backends:
