@@ -45,7 +45,6 @@ from qiskit.circuit import (
     QuantumCircuit,
     QuantumRegister,
 )
-from qiskit.circuit.library import BlueprintCircuit
 from qiskit.result import Result
 from qiskit.version import __version__ as _terra_version_string
 
