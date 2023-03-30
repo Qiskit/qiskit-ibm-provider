@@ -389,7 +389,9 @@ class IBMCircuitJob(IBMJob):
             return self._job_error_msg
 
         # Now try parsing a meaningful reason from the results, if possible
-        api_result = self._runtime_client.job_results(self.job_id())
+        api_result = self._download_external_result(
+            self._runtime_client.job_results(self.job_id())
+        )
         reason = self._parse_result_for_errors(api_result)
         if reason is not None:
             self._job_error_msg = reason
@@ -551,7 +553,9 @@ class IBMCircuitJob(IBMJob):
             api_metadata.get("qiskit_version", None)
         )
         if self._status == JobStatus.DONE:
-            api_result = self._runtime_client.job_results(self.job_id())
+            api_result = self._download_external_result(
+                self._runtime_client.job_results(self.job_id())
+            )
             self._set_result(api_result)
 
         for key, value in api_response.items():
