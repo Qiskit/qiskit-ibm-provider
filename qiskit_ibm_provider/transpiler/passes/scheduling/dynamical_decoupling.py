@@ -166,8 +166,8 @@ class PadDynamicalDecoupling(BlockBasePadder):
             insert_multiple_cycles: If the available duration exceeds
                 2*sequence_min_length_ratio*duration(dd_sequence) enable the insertion of multiple
                 rounds of the dynamical decoupling sequence in that delay.
-            coupling_map: coupling map for the device. Specifying a coupling map partitions the device into two subcircuits,
-                in order to stagger the inter-pulse delays between the two.
+            coupling_map: directed graph representing the coupling map for the device. Specifying a coupling map partitions the device into subcircuits,
+                in order to apply DD sequences with different pulse spacings within each. Currently support 2 subcircuits.
             alt_spacings: A list of lists of spacings between the DD gates, for the second subcircuit, as
                 determined by the coupling map. If None, a balanced spacing that is staggered with respect
                 to the first subcircuit will be used [d, d, d, ..., d, d, 0].
@@ -175,6 +175,8 @@ class PadDynamicalDecoupling(BlockBasePadder):
             TranspilerError: When invalid DD sequence is specified.
             TranspilerError: When pulse gate with the duration which is
                 non-multiple of the alignment constraint value is found.
+            TranspilerError: When alternate spacings are specified without a coupling map.
+            TranspilerError: When the coupling map is not supported (i.e., if degree > 3)
         """
 
         super().__init__()
@@ -261,7 +263,6 @@ class PadDynamicalDecoupling(BlockBasePadder):
         alt_spacings_required = (
             self._alt_spacings is None and self._coupling_map is not None
         )
-        print("alt required", alt_spacings_required)
         if alt_spacings_required:
             self._alt_spacings = []
 
