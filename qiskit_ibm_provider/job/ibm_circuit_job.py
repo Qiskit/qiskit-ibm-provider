@@ -678,9 +678,9 @@ class IBMCircuitJob(IBMJob):
                 url = result_url_json["url"]
                 result_response = requests.get(url)
                 return result_response.content
+            return response  # add this line
         except json.JSONDecodeError:
             return response
-       
 
     def _retrieve_result(self, refresh: bool = False) -> None:
         """Retrieve the job result response.
