@@ -672,14 +672,15 @@ class IBMCircuitJob(IBMJob):
         Args:
             response: Response to check for url keyword, if available, download result from given URL
         """
-        if "url" in response:
+        try:
             result_url_json = json.loads(response)
             if "url" in result_url_json:
                 url = result_url_json["url"]
                 result_response = requests.get(url)
-                response = result_response.content
-
-        return response
+                return result_response.content
+            return response
+        except json.JSONDecodeError:
+            return response
 
     def _retrieve_result(self, refresh: bool = False) -> None:
         """Retrieve the job result response.
