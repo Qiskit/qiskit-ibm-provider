@@ -160,21 +160,20 @@ class IBMBackendService:
             hgp = self._provider._get_hgp(instance=instance)
             for backend_name in hgp.backends.keys():
                 if not self._backends[backend_name]:
-                    backend = self._fetch_backend_config(backend_name, instance)
-                    self._backends[backend_name] = backend
+                    self._backends[backend_name] = self._fetch_backend_config(
+                        backend_name, instance
+                    )
                 ret[backend_name] = self._backends[backend_name]
         elif name:
-            for backend_name, backend_config in self._backends.items():
-                if backend_name == name:
-                    if not backend_config:
-                        backend = self._fetch_backend_config(backend_name, instance)
-                        self._backends[backend_name] = backend
-                    ret[backend_name] = self._backends[backend_name]
+            if not self._backends[name]:
+                self._backends[name] = self._fetch_backend_config(name)
+            ret[name] = self._backends[name]
         else:
             for backend_name, backend_config in self._backends.items():
                 if not backend_config:
-                    backend = self._fetch_backend_config(backend_name, instance)
-                    self._backends[backend_name] = backend
+                    self._backends[backend_name] = self._fetch_backend_config(
+                        backend_name, instance
+                    )
                 ret[backend_name] = self._backends[backend_name]
         backends = list(ret.values())
 
