@@ -159,7 +159,10 @@ class IBMBackendService:
         if instance:
             hgp = self._provider._get_hgp(instance=instance)
             for backend_name in hgp.backends.keys():
-                if not self._backends[backend_name]:
+                if (
+                    not self._backends[backend_name]
+                    or instance != self._backends[backend_name]._instance
+                ):
                     self._backends[backend_name] = self._fetch_backend_config(
                         backend_name, instance
                     )
