@@ -13,7 +13,6 @@
 """Backend namespace for an IBM Quantum account."""
 
 import logging
-from collections import OrderedDict
 from datetime import datetime
 from typing import Dict, List, Callable, Optional, Any, Union
 from typing_extensions import Literal
@@ -155,7 +154,6 @@ class IBMBackendService:
                 `project` are specified.
         """
         backends: List[IBMBackend] = []
-        ret = OrderedDict()
         if instance:
             hgp = self._provider._get_hgp(instance=instance)
             for backend_name in hgp.backends.keys():
@@ -166,20 +164,18 @@ class IBMBackendService:
                     self._backends[backend_name] = self._fetch_backend_config(
                         backend_name, instance
                     )
-                ret[backend_name] = self._backends[backend_name]
+                backends.append(self._backends[backend_name])
         elif name:
             if not self._backends[name]:
                 self._backends[name] = self._fetch_backend_config(name)
-            ret[name] = self._backends[name]
+            backends.append(self._backends[name])
         else:
             for backend_name, backend_config in self._backends.items():
                 if not backend_config:
                     self._backends[backend_name] = self._fetch_backend_config(
                         backend_name, instance
                     )
-                ret[backend_name] = self._backends[backend_name]
-        backends = list(ret.values())
-
+                backends.append(self._backends[backend_name])
         # Special handling of the `name` parameter, to support alias resolution.
         if name:
             aliases = self._aliased_backend_names()
