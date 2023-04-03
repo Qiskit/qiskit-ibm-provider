@@ -796,9 +796,7 @@ class IBMBackend(Backend):
 
     def get_translation_stage_plugin(self) -> str:
         """Return the default translation stage plugin name for IBM backends."""
-        if "id" not in self.target:
-            return "ibm_dynamic_circuits"
-        return None
+        return "ibm_dynamic_circuits"
 
 
 class IBMRetiredBackend(IBMBackend):
