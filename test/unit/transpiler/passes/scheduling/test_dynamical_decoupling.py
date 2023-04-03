@@ -22,6 +22,7 @@ from qiskit.circuit.library import XGate, YGate, RXGate, UGate
 from qiskit.quantum_info import Operator
 from qiskit.transpiler.passmanager import PassManager
 from qiskit.transpiler.exceptions import TranspilerError
+from qiskit.transpiler.coupling import CouplingMap
 
 from qiskit_ibm_provider.transpiler.passes.scheduling.dynamical_decoupling import (
     PadDynamicalDecoupling,
@@ -74,6 +75,8 @@ class TestPadDynamicalDecoupling(ControlFlowTestCase):
                 ("reset", None, 1340),
             ]
         )
+
+        self.coupling_map = CouplingMap([[0, 1], [1, 2], [2, 3]])
 
     def test_insert_dd_ghz(self):
         """Test DD gates are inserted in correct spots."""
@@ -852,4 +855,64 @@ class TestPadDynamicalDecoupling(ControlFlowTestCase):
         expected.delay(450, 0)
         expected.x(0)
         expected.delay(225, 0)
+        self.assertEqual(qc_dd, expected)
+
+    def test_staggered_dd(self):
+        """Test that timing on DD can be staggered if coupled with each other"""
+        dd_sequence = [XGate(), XGate()]
+        pm = PassManager(
+            [
+                ASAPScheduleAnalysis(self.durations),
+                PadDynamicalDecoupling(
+                    self.durations,
+                    dd_sequence,
+                    coupling_map=self.coupling_map,
+                    alt_spacings=[0.1, 0.8, 0.1],
+                ),
+            ]
+        )
+
+        qc_barriers = QuantumCircuit(4, 1)
+        qc_barriers.x(0)
+        qc_barriers.x(1)
+        qc_barriers.x(2)
+        qc_barriers.x(3)
+        qc_barriers.barrier()
+        qc_barriers.measure(0, 0)
+        qc_barriers.delay(14, 0)
+        qc_barriers.x(1)
+        qc_barriers.x(2)
+        qc_barriers.x(3)
+        qc_barriers.barrier()
+
+        qc_dd = pm.run(qc_barriers)
+
+        expected = QuantumCircuit(4, 1)
+        expected.x(0)
+        expected.x(1)
+        expected.x(2)
+        expected.x(3)
+        expected.barrier()
+        expected.x(1)
+        expected.delay(208, 1)
+        expected.x(1)
+        expected.delay(448, 1)
+        expected.x(1)
+        expected.delay(208, 1)
+        expected.x(2)
+        expected.delay(80, 2)  # q1-q2 are coupled, staggered delays
+        expected.x(2)
+        expected.delay(704, 2)
+        expected.x(2)
+        expected.delay(80, 2)  # q2-q3 are uncoupled, same delays
+        expected.x(3)
+        expected.delay(208, 3)
+        expected.x(3)
+        expected.delay(448, 3)
+        expected.x(3)
+        expected.delay(208, 3)
+        expected.measure(0, 0)
+        expected.delay(14, 0)
+        expected.barrier()
+
         self.assertEqual(qc_dd, expected)
