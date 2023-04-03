@@ -916,3 +916,53 @@ class TestPadDynamicalDecoupling(ControlFlowTestCase):
         expected.barrier()
 
         self.assertEqual(qc_dd, expected)
+
+    def test_insert_dd_bad_spacings(self):
+        """Test DD raises when spacings don't add up to 1."""
+        dd_sequence = [XGate(), XGate()]
+        pm = PassManager(
+            [
+                ASAPScheduleAnalysis(self.durations),
+                PadDynamicalDecoupling(
+                    self.durations,
+                    dd_sequence,
+                    spacings=[0.1, 0.9, 0.1],
+                    coupling_map=self.coupling_map,
+                ),
+            ]
+        )
+
+        with self.assertRaises(TranspilerError):
+            pm.run(self.ghz4)
+
+    def test_insert_dd_bad_alt_spacings(self):
+        """Test DD raises when alt_spacings don't add up to 1."""
+        dd_sequence = [XGate(), XGate()]
+        pm = PassManager(
+            [
+                ASAPScheduleAnalysis(self.durations),
+                PadDynamicalDecoupling(
+                    self.durations,
+                    dd_sequence,
+                    alt_spacings=[0.1, 0.9, 0.1],
+                    coupling_map=self.coupling_map,
+                ),
+            ]
+        )
+
+    def test_unsupported_coupling_map(self):
+        """Test DD raises if coupling map is not supported."""
+        dd_sequence = [XGate(), XGate()]
+        pm = PassManager(
+            [
+                ASAPScheduleAnalysis(self.durations),
+                PadDynamicalDecoupling(
+                    self.durations,
+                    dd_sequence,
+                    coupling_map=CouplingMap([[0, 1], [0, 2], [1, 2], [2, 3]]),
+                ),
+            ]
+        )
+
+        with self.assertRaises(TranspilerError):
+            pm.run(self.ghz4)

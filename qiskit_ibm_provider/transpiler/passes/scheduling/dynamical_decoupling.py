@@ -175,7 +175,6 @@ class PadDynamicalDecoupling(BlockBasePadder):
             TranspilerError: When invalid DD sequence is specified.
             TranspilerError: When pulse gate with the duration which is
                 non-multiple of the alignment constraint value is found.
-            TranspilerError: When alternate spacings are specified without a coupling map.
             TranspilerError: When the coupling map is not supported (i.e., if degree > 3)
         """
 
@@ -288,12 +287,12 @@ class PadDynamicalDecoupling(BlockBasePadder):
                     )
 
             if self._coupling_map:
-                if alt_spacings_required:  # TODO: merge final pulse if delay is 0
+                if alt_spacings_required:
                     mid = 1 / num_pulses
                     self._alt_spacings.append([mid] * num_pulses + [0])  # type: ignore
                 else:
                     if sum(self._alt_spacings[seq_idx]) != 1 or any(  # type: ignore
-                        a < 0 for a in self._alt_spacings[seq_idx]  
+                        a < 0 for a in self._alt_spacings[seq_idx]
                     ):
                         raise TranspilerError(
                             "The spacings must be given in terms of fractions "
@@ -456,7 +455,7 @@ class PadDynamicalDecoupling(BlockBasePadder):
             if slack <= 0:
                 continue
 
-            if len(dd_sequence) == 1:  # TODO: include the case where last delay is 0
+            if len(dd_sequence) == 1:
                 # Special case of using a single gate for DD
                 u_inv = dd_sequence[0].inverse().to_matrix()
                 theta, phi, lam, phase = OneQubitEulerDecomposer().angles_and_phase(
