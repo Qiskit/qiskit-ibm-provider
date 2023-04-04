@@ -389,7 +389,9 @@ class IBMCircuitJob(IBMJob):
             return self._job_error_msg
 
         # Now try parsing a meaningful reason from the results, if possible
-        api_result = self._runtime_client.job_results(self.job_id())
+        api_result = self._download_external_result(
+            self._runtime_client.job_results(self.job_id())
+        )
         reason = self._parse_result_for_errors(api_result)
         if reason is not None:
             self._job_error_msg = reason
@@ -551,7 +553,9 @@ class IBMCircuitJob(IBMJob):
             api_metadata.get("qiskit_version", None)
         )
         if self._status == JobStatus.DONE:
-            api_result = self._runtime_client.job_results(self.job_id())
+            api_result = self._download_external_result(
+                self._runtime_client.job_results(self.job_id())
+            )
             self._set_result(api_result)
 
         for key, value in api_response.items():
@@ -668,14 +672,15 @@ class IBMCircuitJob(IBMJob):
         Args:
             response: Response to check for url keyword, if available, download result from given URL
         """
-        if "url" in response:
+        try:
             result_url_json = json.loads(response)
             if "url" in result_url_json:
                 url = result_url_json["url"]
                 result_response = requests.get(url)
-                response = result_response.content
-
-        return response
+                return result_response.content
+            return response
+        except json.JSONDecodeError:
+            return response
 
     def _retrieve_result(self, refresh: bool = False) -> None:
         """Retrieve the job result response.
