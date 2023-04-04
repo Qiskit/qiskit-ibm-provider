@@ -20,6 +20,10 @@ from typing_extensions import Literal
 from qiskit.providers.exceptions import QiskitBackendNotFoundError
 from qiskit.providers.jobstatus import JobStatus
 from qiskit.providers.providerutils import filter_backends
+from qiskit.providers.models import (
+    PulseBackendConfiguration,
+    QasmBackendConfiguration,
+)
 
 # pylint: disable=unused-import
 from qiskit_ibm_provider import (
@@ -89,6 +93,7 @@ class IBMBackendService:
         self._provider = provider
         self._default_hgp = hgp
         self._backends: Dict[str, IBMBackend] = {}
+        self._backend_configs: Dict[str, Any] = {}
         self._initialize_backends()
 
     def _initialize_backends(self) -> None:
@@ -161,19 +166,27 @@ class IBMBackendService:
                     not self._backends[backend_name]
                     or instance != self._backends[backend_name]._instance
                 ):
-                    self._backends[backend_name] = self._fetch_backend_config(
-                        backend_name, instance
+                    if backend_name not in self._backend_configs:
+                        self._set_backend_config(backend_name, instance)
+                    self._backends[backend_name] = self._create_backend_obj(
+                        self._backend_configs[backend_name], instance
                     )
                 backends.append(self._backends[backend_name])
         elif name:
             if not self._backends[name]:
-                self._backends[name] = self._fetch_backend_config(name)
+                if name not in self._backend_configs:
+                    self._set_backend_config(name, instance)
+                self._backends[name] = self._create_backend_obj(
+                    self._backend_configs[name], instance
+                )
             backends.append(self._backends[name])
         else:
             for backend_name, backend_config in self._backends.items():
                 if not backend_config:
-                    self._backends[backend_name] = self._fetch_backend_config(
-                        backend_name, instance
+                    if backend_name not in self._backend_configs:
+                        self._set_backend_config(backend_name, instance)
+                    self._backends[backend_name] = self._create_backend_obj(
+                        self._backend_configs[backend_name], instance
                     )
                 backends.append(self._backends[backend_name])
         # Special handling of the `name` parameter, to support alias resolution.
@@ -640,31 +653,40 @@ class IBMBackendService:
         job = self._restore_circuit_job(job_info, raise_error=True, legacy=legacy)
         return job
 
-    def _fetch_backend_config(
+    def _set_backend_config(
         self, backend_name: str, instance: Optional[str] = None
-    ) -> Optional[ibm_backend.IBMBackend]:
-        """Return a backend object with the backend configuration.
+    ) -> None:
+        """Retrieve backend configuration and add to backend_configs.
 
         Args:
             backend_name: backend name that will be returned.
-            instance: the current h/g/p
-
-        Returns:
-            backend object.
+            instance: the current h/g/p.
         """
         raw_config = self._provider._runtime_client.backend_configuration(backend_name)
         config = configuration_from_server_data(
             raw_config=raw_config, instance=instance
         )
-        backend = None
-        if config:
-            backend = ibm_backend.IBMBackend(
-                instance=instance,
-                configuration=config,
-                api_client=AccountClient(self._provider._client_params),
-                provider=self._provider,
-            )
-        return backend
+        self._backend_configs[backend_name] = config
+
+    def _create_backend_obj(
+        self,
+        config: Union[QasmBackendConfiguration, PulseBackendConfiguration],
+        instance: Optional[str] = None,
+    ) -> IBMBackend:
+        """Given a backend configuration return the backend object.
+
+        Args:
+            config: backend configuration.
+            instance: the current h/g/p.
+        Returns:
+            A backend object.
+        """
+        return ibm_backend.IBMBackend(
+            instance=instance,
+            configuration=config,
+            api_client=AccountClient(self._provider._client_params),
+            provider=self._provider,
+        )
 
     @staticmethod
     def _deprecated_backend_names() -> Dict[str, str]:
