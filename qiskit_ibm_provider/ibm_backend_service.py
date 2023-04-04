@@ -166,16 +166,14 @@ class IBMBackendService:
                     not self._backends[backend_name]
                     or instance != self._backends[backend_name]._instance
                 ):
-                    if backend_name not in self._backend_configs:
-                        self._set_backend_config(backend_name, instance)
+                    self._set_backend_config(backend_name, instance)
                     self._backends[backend_name] = self._create_backend_obj(
                         self._backend_configs[backend_name], instance
                     )
                 backends.append(self._backends[backend_name])
         elif name:
             if not self._backends[name]:
-                if name not in self._backend_configs:
-                    self._set_backend_config(name, instance)
+                self._set_backend_config(name, instance)
                 self._backends[name] = self._create_backend_obj(
                     self._backend_configs[name], instance
                 )
@@ -183,8 +181,7 @@ class IBMBackendService:
         else:
             for backend_name, backend_config in self._backends.items():
                 if not backend_config:
-                    if backend_name not in self._backend_configs:
-                        self._set_backend_config(backend_name, instance)
+                    self._set_backend_config(backend_name, instance)
                     self._backends[backend_name] = self._create_backend_obj(
                         self._backend_configs[backend_name], instance
                     )
@@ -662,11 +659,14 @@ class IBMBackendService:
             backend_name: backend name that will be returned.
             instance: the current h/g/p.
         """
-        raw_config = self._provider._runtime_client.backend_configuration(backend_name)
-        config = configuration_from_server_data(
-            raw_config=raw_config, instance=instance
-        )
-        self._backend_configs[backend_name] = config
+        if backend_name not in self._backend_configs:
+            raw_config = self._provider._runtime_client.backend_configuration(
+                backend_name
+            )
+            config = configuration_from_server_data(
+                raw_config=raw_config, instance=instance
+            )
+            self._backend_configs[backend_name] = config
 
     def _create_backend_obj(
         self,
