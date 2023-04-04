@@ -263,7 +263,7 @@ class PadDynamicalDecoupling(BlockBasePadder):
             self._alt_spacings is None and self._coupling_map is not None
         )
         if alt_spacings_required:
-            self._alt_spacings = []
+            self._alt_spacings = []  # type: ignore
 
         for seq_idx, seq in enumerate(self._dd_sequences):
             num_pulses = len(self._dd_sequences[seq_idx])
@@ -292,7 +292,7 @@ class PadDynamicalDecoupling(BlockBasePadder):
                     self._alt_spacings.append([mid] * num_pulses + [0])  # type: ignore
                 else:
                     if sum(self._alt_spacings[seq_idx]) != 1 or any(  # type: ignore
-                        a < 0 for a in self._alt_spacings[seq_idx]
+                        a < 0 for a in self._alt_spacings[seq_idx]  # type: ignore
                     ):
                         raise TranspilerError(
                             "The spacings must be given in terms of fractions "
