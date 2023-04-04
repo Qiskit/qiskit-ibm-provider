@@ -192,6 +192,8 @@ class PadDynamicalDecoupling(BlockBasePadder):
         self._skip_reset_qubits = skip_reset_qubits
         self._alignment = pulse_alignment
         self._coupling_map = coupling_map
+        self._coupling_coloring = None
+
         if spacings is not None:
             try:
                 iter(spacings[0])  # type: ignore

@@ -950,6 +950,9 @@ class TestPadDynamicalDecoupling(ControlFlowTestCase):
             ]
         )
 
+        with self.assertRaises(TranspilerError):
+            pm.run(self.ghz4)
+
     def test_unsupported_coupling_map(self):
         """Test DD raises if coupling map is not supported."""
         dd_sequence = [XGate(), XGate()]
