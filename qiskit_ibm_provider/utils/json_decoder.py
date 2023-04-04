@@ -106,7 +106,7 @@ def decode_result(result: str, result_decoder: Any) -> Dict:
         result_decoder: A decoder class for loading the json
     """
     result_dict = json.loads(result, cls=result_decoder)
-    if "date" in result:
+    if "date" in result_dict:
         if isinstance(result_dict["date"], str):
             result_dict["date"] = dateutil.parser.isoparse(result_dict["date"])
         result_dict["date"] = utc_to_local(result_dict["date"])
