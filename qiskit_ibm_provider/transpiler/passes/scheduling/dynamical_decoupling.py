@@ -137,8 +137,9 @@ class PadDynamicalDecoupling(BlockBasePadder):
                 The available slack will be divided according to this.
                 The list length must be one more than the length of dd_sequence,
                 and the elements must sum to 1. If None, a balanced spacing
-                will be used [d/2, d, d, ..., d, d, d/2]. This spacing only applies to the first subcircuit, if a
-                ``coupling_map`` is specified
+                will be used [d/2, d, d, ..., d, d, d/2]. This spacing only
+                applies to the first subcircuit, if a ``coupling_map`` is
+                specified
             skip_reset_qubits: If True, does not insert DD on idle periods that
                 immediately follow initialized/reset qubits
                 (as qubits in the ground state are less susceptible to decoherence).
@@ -166,11 +167,12 @@ class PadDynamicalDecoupling(BlockBasePadder):
             insert_multiple_cycles: If the available duration exceeds
                 2*sequence_min_length_ratio*duration(dd_sequence) enable the insertion of multiple
                 rounds of the dynamical decoupling sequence in that delay.
-            coupling_map: directed graph representing the coupling map for the device. Specifying a coupling map partitions the device into subcircuits,
-                in order to apply DD sequences with different pulse spacings within each. Currently support 2 subcircuits.
-            alt_spacings: A list of lists of spacings between the DD gates, for the second subcircuit, as
-                determined by the coupling map. If None, a balanced spacing that is staggered with respect
-                to the first subcircuit will be used [d, d, d, ..., d, d, 0].
+            coupling_map: directed graph representing the coupling map for the device. Specifying a
+                coupling map partitions the device into subcircuits, in order to apply DD sequences
+                with different pulse spacings within each. Currently support 2 subcircuits.
+            alt_spacings: A list of lists of spacings between the DD gates, for the second subcircuit,
+                as determined by the coupling map. If None, a balanced spacing that is staggered with
+                respect to the first subcircuit will be used [d, d, d, ..., d, d, 0].
         Raises:
             TranspilerError: When invalid DD sequence is specified.
             TranspilerError: When pulse gate with the duration which is
@@ -255,7 +257,8 @@ class PadDynamicalDecoupling(BlockBasePadder):
             )
             if any(c > 1 for c in self._coupling_coloring.values()):
                 raise TranspilerError(
-                    "This circuit topology not supported for staggered dynamical decoupling. Maximum connectivity is 3 nearest neighbors per qubit."
+                    "This circuit topology is not supported for staggered dynamical decoupling."
+                    "The maximum connectivity is 3 nearest neighbors per qubit."
                 )
 
         spacings_required = self._spacings is None
