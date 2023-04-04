@@ -421,7 +421,7 @@ class PadDynamicalDecoupling(BlockBasePadder):
             seq_lengths = self._dd_sequence_lengths[qubit][sequence_idx]
             seq_length = np.sum(seq_lengths)
             seq_ratio = self._sequence_min_length_ratios[sequence_idx]
-            spacings = np.asarray(self._spacings[sequence_idx])
+            spacings = self._spacings[sequence_idx]
             alt_spacings = (
                 np.asarray(self._alt_spacings[sequence_idx])
                 if self._coupling_map
@@ -449,8 +449,9 @@ class PadDynamicalDecoupling(BlockBasePadder):
                 dd_sequence = list(dd_sequence) * num_sequences
                 seq_lengths = seq_lengths * num_sequences
                 seq_length = np.sum(seq_lengths)
+                spacings = spacings * num_sequences
 
-            spacings = np.asarray(spacings)
+            spacings = np.asarray(spacings) / num_sequences
             slack = time_interval - seq_length
             sequence_gphase = self._sequence_phase
 
