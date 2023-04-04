@@ -768,7 +768,7 @@ class IBMBackend(Backend):
         circuits = copy.deepcopy(circuits)
         # Convert id gates to delays.
         pm = PassManager(  # pylint: disable=invalid-name
-            ConvertIdToDelay(self._target.durations())
+            ConvertIdToDelay(self.target.durations())
         )
         circuits = pm.run(circuits)
 
