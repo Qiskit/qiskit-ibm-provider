@@ -172,18 +172,37 @@ class IBMBackendService:
                     )
                 backends.append(self._backends[backend_name])
         elif name:
+            default_instance = None
+            if not instance:
+                for hgp in self._provider._get_hgps():
+                    if name in hgp.backends:
+                        default_instance = to_instance_format(
+                            hgp._hub, hgp._group, hgp._project
+                        )
+                        break
             if not self._backends[name]:
-                self._set_backend_config(name, instance)
+                self._set_backend_config(name, instance or default_instance)
                 self._backends[name] = self._create_backend_obj(
-                    self._backend_configs[name], instance
+                    self._backend_configs[name], instance or default_instance
                 )
             backends.append(self._backends[name])
         else:
+            hgps = self._provider._get_hgps()
+            default_instance = None
             for backend_name, backend_config in self._backends.items():
                 if not backend_config:
-                    self._set_backend_config(backend_name, instance)
+                    if not instance:
+                        for hgp in hgps:
+                            if backend_name in hgp.backends:
+                                default_instance = to_instance_format(
+                                    hgp._hub, hgp._group, hgp._project
+                                )
+                                break
+
+                    self._set_backend_config(backend_name, instance or default_instance)
                     self._backends[backend_name] = self._create_backend_obj(
-                        self._backend_configs[backend_name], instance
+                        self._backend_configs[backend_name],
+                        instance or default_instance,
                     )
                 backends.append(self._backends[backend_name])
         # Special handling of the `name` parameter, to support alias resolution.
