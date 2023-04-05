@@ -673,7 +673,7 @@ class IBMBackendService:
         self,
         config: Union[QasmBackendConfiguration, PulseBackendConfiguration],
         instance: Optional[str] = None,
-        hgps: Optional[List] = None
+        hgps: Optional[List] = None,
     ) -> IBMBackend:
         """Given a backend configuration return the backend object.
 
@@ -686,9 +686,7 @@ class IBMBackendService:
         if not instance:
             for hgp in hgps:
                 if config.backend_name in hgp.backends:
-                    instance = to_instance_format(
-                        hgp._hub, hgp._group, hgp._project
-                    )
+                    instance = to_instance_format(hgp._hub, hgp._group, hgp._project)
                     break
 
         return ibm_backend.IBMBackend(
