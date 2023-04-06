@@ -46,6 +46,28 @@ class TestBackend(IBMTestCase):
 
         self.assertIn(f"faulty qubit {faulty_qubit}", str(err.exception))
 
+    def test_raise_faulty_qubits_many(self):
+        """Test faulty qubits is raised if one circuit uses it."""
+        fake_backend = FakeManila()
+        num_qubits = fake_backend.configuration().num_qubits
+
+        circ1 = QuantumCircuit(1, 1)
+        circ1.x(0)
+        circ2 = QuantumCircuit(num_qubits, num_qubits)
+        for i in range(num_qubits):
+            circ2.x(i)
+
+        transpiled = transpile([circ1, circ2], backend=fake_backend)
+        faulty_qubit = 4
+        ibm_backend = self._create_faulty_backend(
+            fake_backend, faulty_qubit=faulty_qubit
+        )
+
+        with self.assertRaises(ValueError) as err:
+            ibm_backend.run(transpiled)
+
+        self.assertIn(f"faulty qubit {faulty_qubit}", str(err.exception))
+
     def test_raise_faulty_edge(self):
         """Test faulty edge is raised."""
         fake_backend = FakeManila()
