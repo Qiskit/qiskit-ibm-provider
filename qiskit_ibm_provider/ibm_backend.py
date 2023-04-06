@@ -815,6 +815,9 @@ class IBMBackend(Backend):
         Raises:
             ValueError: If an instruction operating on a faulty qubit or edge is found.
         """
+        if not self.properties():
+            return
+
         faulty_qubits = self.properties().faulty_qubits()
         faulty_gates = self.properties().faulty_gates()
         faulty_edges = [
