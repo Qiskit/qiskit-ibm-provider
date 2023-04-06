@@ -159,7 +159,14 @@ class IBMBackendService:
                 `project` are specified.
         """
         backends: List[IBMBackend] = []
-        if instance:
+        if name:
+            if not self._backends[name] or instance != self._backends[name]._instance:
+                self._set_backend_config(name)
+                self._backends[name] = self._create_backend_obj(
+                    self._backend_configs[name], instance, self._provider._get_hgps()
+                )
+            backends.append(self._backends[name])
+        elif instance:
             hgp = self._provider._get_hgp(instance=instance)
             for backend_name in hgp.backends.keys():
                 if (
@@ -171,19 +178,13 @@ class IBMBackendService:
                         self._backend_configs[backend_name], instance
                     )
                 backends.append(self._backends[backend_name])
-        elif name:
-            if not self._backends[name]:
-                self._set_backend_config(name, instance)
-                self._backends[name] = self._create_backend_obj(
-                    self._backend_configs[name], instance
-                )
-            backends.append(self._backends[name])
         else:
+            hgps = self._provider._get_hgps()
             for backend_name, backend_config in self._backends.items():
                 if not backend_config:
-                    self._set_backend_config(backend_name, instance)
+                    self._set_backend_config(backend_name)
                     self._backends[backend_name] = self._create_backend_obj(
-                        self._backend_configs[backend_name], instance
+                        self._backend_configs[backend_name], hgps=hgps
                     )
                 backends.append(self._backends[backend_name])
         # Special handling of the `name` parameter, to support alias resolution.
@@ -672,6 +673,7 @@ class IBMBackendService:
         self,
         config: Union[QasmBackendConfiguration, PulseBackendConfiguration],
         instance: Optional[str] = None,
+        hgps: Optional[List] = None,
     ) -> IBMBackend:
         """Given a backend configuration return the backend object.
 
@@ -681,6 +683,12 @@ class IBMBackendService:
         Returns:
             A backend object.
         """
+        if not instance:
+            for hgp in hgps:
+                if config.backend_name in hgp.backends:
+                    instance = to_instance_format(hgp._hub, hgp._group, hgp._project)
+                    break
+
         return ibm_backend.IBMBackend(
             instance=instance,
             configuration=config,
