@@ -159,7 +159,14 @@ class IBMBackendService:
                 `project` are specified.
         """
         backends: List[IBMBackend] = []
-        if instance:
+        if name:
+            if not self._backends[name] or instance != self._backends[name]._instance:
+                self._set_backend_config(name)
+                self._backends[name] = self._create_backend_obj(
+                    self._backend_configs[name], instance, self._provider._get_hgps()
+                )
+            backends.append(self._backends[name])
+        elif instance:
             hgp = self._provider._get_hgp(instance=instance)
             for backend_name in hgp.backends.keys():
                 if (
@@ -171,13 +178,6 @@ class IBMBackendService:
                         self._backend_configs[backend_name], instance
                     )
                 backends.append(self._backends[backend_name])
-        elif name:
-            if not self._backends[name]:
-                self._set_backend_config(name)
-                self._backends[name] = self._create_backend_obj(
-                    self._backend_configs[name], hgps=self._provider._get_hgps()
-                )
-            backends.append(self._backends[name])
         else:
             hgps = self._provider._get_hgps()
             for backend_name, backend_config in self._backends.items():
