@@ -51,6 +51,7 @@ from .exceptions import (
     IBMBackendValueError,
     IBMBackendApiError,
     IBMBackendApiProtocolError,
+    IBMInputValueError,
 )
 from .job import IBMJob, IBMCircuitJob
 from .transpiler.passes.basis.convert_id_to_delay import (
@@ -339,6 +340,58 @@ class IBMBackend(Backend):
         self._convert_to_target()
         return self._target
 
+    def _check_circuit(
+        self,
+        circuit: Union[QuantumCircuit, Schedule, List[Union[QuantumCircuit, Schedule]]],
+    ) -> None:
+        """Check if circuit contains operations on faulty qubits or gates.
+
+        Args:
+            circuit: transpiled circuit to check.
+            backend: backend the circuit will run on.
+
+        Raises:
+            IBMInputValueError: if circuit contains operations on faulty qubits or gates.
+        """
+        self.properties()
+        faulty_qubits = self._properties.faulty_qubits()
+        faulty_gates = self._properties.faulty_gates()
+        faulty_edges = [
+            tuple(gate.qubits) for gate in faulty_gates if len(gate.qubits) > 1
+        ]
+
+        if isinstance(circuit, List):
+            for circ in circuit:
+                for inst in circ.data:
+                    if inst.operation.name == "barrier":
+                        continue
+                    qubit_indices = tuple(circ.find_bit(x).index for x in inst.qubits)
+                    if any(x in faulty_qubits for x in qubit_indices):
+                        raise IBMInputValueError(
+                            f"Circuit contains instruction {inst} operating "
+                            f"on a faulty qubit {qubit_indices}"
+                        )
+                    if len(qubit_indices) == 2 and qubit_indices in faulty_edges:
+                        raise IBMInputValueError(
+                            f"Circuit contains instruction {circ} operating "
+                            f"on a faulty edge {qubit_indices}"
+                        )
+        else:
+            for inst in circuit.data:
+                if inst.operation.name == "barrier":
+                    continue
+                qubit_indices = tuple(circuit.find_bit(x).index for x in inst.qubits)
+                if any(x in faulty_qubits for x in qubit_indices):
+                    raise IBMInputValueError(
+                        f"Circuit contains instruction {inst} operating "
+                        f"on a faulty qubit {qubit_indices}"
+                    )
+                if len(qubit_indices) == 2 and qubit_indices in faulty_edges:
+                    raise IBMInputValueError(
+                        f"Circuit contains instruction {circuit} operating "
+                        f"on a faulty edge {qubit_indices}"
+                    )
+
     def run(
         self,
         circuits: Union[
@@ -463,6 +516,7 @@ class IBMBackend(Backend):
             shots = int(shots)
         if not self.configuration().simulator:
             circuits = self._deprecate_id_instruction(circuits)
+            self._check_circuit(circuits)
         options = {"backend": self.name}
 
         run_config_dict = self._get_run_config(
