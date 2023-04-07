@@ -17,6 +17,7 @@ from unittest.mock import patch
 
 from qiskit import QuantumCircuit, transpile
 from qiskit.providers.models import QasmBackendConfiguration
+from qiskit.providers.exceptions import QiskitBackendNotFoundError
 from qiskit.test.reference_circuits import ReferenceCircuits
 
 from qiskit_ibm_provider import IBMBackend, IBMProvider
@@ -166,3 +167,19 @@ class TestIBMBackend(IBMTestCase):
         op_counts = tqc.count_ops()
         self.assertNotIn("id", op_counts)
         self.assertIn("delay", op_counts)
+
+    def test_backend_wrong_instance(self):
+        """Test that an error is raised when retrieving a backend not in the instance."""
+        backends = self.dependencies.provider.backends()
+        hgps = self.dependencies.provider._hgps.values()
+        if len(hgps) >= 2:
+            for hgp in hgps:
+                backend_names = list(hgp._backends)
+                for backend in backends:
+                    if backend.name not in backend_names:
+                        with self.assertRaises(QiskitBackendNotFoundError):
+                            self.dependencies.provider.get_backend(
+                                backend.name,
+                                instance=f"{hgp._hub}/{hgp._group}/{hgp._project}",
+                            )
+                        return
