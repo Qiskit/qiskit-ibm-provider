@@ -183,3 +183,8 @@ class TestIBMBackend(IBMTestCase):
                                 instance=f"{hgp._hub}/{hgp._group}/{hgp._project}",
                             )
                         return
+
+    def test_retrieve_backend_not_exist(self):
+        """Test that an error is raised when retrieving a backend that does not exist."""
+        with self.assertRaises(QiskitBackendNotFoundError):
+            self.dependencies.provider.get_backend("nonexistent_backend")

@@ -157,9 +157,12 @@ class IBMBackendService:
         Raises:
             IBMBackendValueError: If only one or two parameters from `hub`, `group`,
                 `project` are specified.
+            QiskitBackendNotFoundError: If the backend is not found in any instance.
         """
         backends: List[IBMBackend] = []
         if name:
+            if name not in self._backends:
+                raise QiskitBackendNotFoundError("No backend matches the criteria")
             if not self._backends[name] or instance != self._backends[name]._instance:
                 self._set_backend_config(name)
                 self._backends[name] = self._create_backend_obj(
