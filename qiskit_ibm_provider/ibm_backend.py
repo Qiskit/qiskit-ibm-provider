@@ -492,11 +492,9 @@ class IBMBackend(Backend):
 
         if isinstance(circuits, (QuantumCircuit, Schedule)):
             circuits = [circuits]
-
-        if run_config_dict["skip_transpilation"]:
-            for circ in circuits:
-                if isinstance(circ, QuantumCircuit):
-                    self.check_faulty(circ)
+        for circ in circuits:
+            if isinstance(circ, QuantumCircuit):
+                self.check_faulty(circ)
 
         return self._runtime_run(
             program_id=program_id,

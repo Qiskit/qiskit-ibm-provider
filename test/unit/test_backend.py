@@ -88,25 +88,6 @@ class TestBackend(IBMTestCase):
         self.assertIn("cx", str(err.exception))
         self.assertIn(f"faulty edge {tuple(edge_qubits)}", str(err.exception))
 
-    def test_no_raise_skip_transpilation(self):
-        """Test faulty qubits and edges are not raise if not skipping."""
-        fake_backend = FakeManila()
-        num_qubits = fake_backend.configuration().num_qubits
-        circ = QuantumCircuit(num_qubits, num_qubits)
-        for i in range(num_qubits - 2):
-            circ.cx(i, i + 1)
-
-        transpiled = transpile(circ, backend=fake_backend)
-        edge_qubits = [0, 1]
-        ibm_backend = self._create_faulty_backend(
-            fake_backend, faulty_qubit=0, faulty_edge=("cx", edge_qubits)
-        )
-
-        with mock.patch.object(IBMBackend, "_runtime_run") as mock_run:
-            ibm_backend.run(circuits=transpiled, dynamic=True, skip_transpilation=False)
-
-        mock_run.assert_called_once()
-
     def test_faulty_qubit_not_used(self):
         """Test faulty qubit is not raise if not used."""
         fake_backend = FakeManila()
