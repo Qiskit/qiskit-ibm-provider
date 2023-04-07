@@ -490,6 +490,12 @@ class IBMBackend(Backend):
             # Transpiling in circuit-runner is deprecated.
             run_config_dict["skip_transpilation"] = True
 
+        if isinstance(circuits, (QuantumCircuit, Schedule)):
+            circuits = [circuits]
+        for circ in circuits:
+            if isinstance(circ, QuantumCircuit):
+                self.check_faulty(circ)
+
         return self._runtime_run(
             program_id=program_id,
             inputs=run_config_dict,
@@ -797,6 +803,42 @@ class IBMBackend(Backend):
     def get_translation_stage_plugin(self) -> str:
         """Return the default translation stage plugin name for IBM backends."""
         return "ibm_dynamic_circuits"
+
+    def check_faulty(self, circuit: QuantumCircuit) -> None:
+        """Check if the input circuit uses faulty qubits or edges.
+
+        Args:
+            circuit: Circuit to check.
+
+        Raises:
+            ValueError: If an instruction operating on a faulty qubit or edge is found.
+        """
+        if not self.properties():
+            return
+
+        faulty_qubits = self.properties().faulty_qubits()
+        faulty_gates = self.properties().faulty_gates()
+        faulty_edges = [
+            tuple(gate.qubits) for gate in faulty_gates if len(gate.qubits) > 1
+        ]
+
+        for instr in circuit.data:
+            if instr.operation.name == "barrier":
+                continue
+            qubit_indices = tuple(circuit.find_bit(x).index for x in instr.qubits)
+
+            for circ_qubit in qubit_indices:
+                if circ_qubit in faulty_qubits:
+                    raise ValueError(
+                        f"Circuit {circuit.name} contains instruction "
+                        f"{instr} operating on a faulty qubit {circ_qubit}."
+                    )
+
+            if len(qubit_indices) == 2 and qubit_indices in faulty_edges:
+                raise ValueError(
+                    f"Circuit {circuit.name} contains instruction "
+                    f"{instr} operating on a faulty edge {qubit_indices}"
+                )
 
 
 class IBMRetiredBackend(IBMBackend):
