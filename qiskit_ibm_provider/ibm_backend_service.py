@@ -157,9 +157,12 @@ class IBMBackendService:
         Raises:
             IBMBackendValueError: If only one or two parameters from `hub`, `group`,
                 `project` are specified.
+            QiskitBackendNotFoundError: If the backend is not found in any instance.
         """
         backends: List[IBMBackend] = []
         if name:
+            if name not in self._backends:
+                raise QiskitBackendNotFoundError("No backend matches the criteria")
             if not self._backends[name] or instance != self._backends[name]._instance:
                 self._set_backend_config(name)
                 self._backends[name] = self._create_backend_obj(
@@ -682,12 +685,23 @@ class IBMBackendService:
             instance: the current h/g/p.
         Returns:
             A backend object.
+        Raises:
+            QiskitBackendNotFoundError: if the backend is not in the hgp passed in.
         """
         if not instance:
             for hgp in hgps:
                 if config.backend_name in hgp.backends:
                     instance = to_instance_format(hgp._hub, hgp._group, hgp._project)
                     break
+
+        elif (
+            config.backend_name
+            not in self._provider._get_hgp(instance=instance).backends
+        ):
+            raise QiskitBackendNotFoundError(
+                f"Backend {config.backend_name} is not in "
+                f"{instance}: please try a different hub/group/project."
+            )
 
         return ibm_backend.IBMBackend(
             instance=instance,
