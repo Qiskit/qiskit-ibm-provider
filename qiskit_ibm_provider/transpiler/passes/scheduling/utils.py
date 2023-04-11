@@ -137,6 +137,7 @@ class DynamicCircuitInstructionDurations(InstructionDurations):
     """
 
     MEASURE_PATCH_CYCLES = 160
+    MEASURE_PATCH_ODD_OFFSET = 16
 
     def __init__(
         self,
@@ -211,7 +212,8 @@ class DynamicCircuitInstructionDurations(InstructionDurations):
         prev_duration, unit = self._get_duration_dt(key)
         if unit != "dt":
             raise TranspilerError('Can currently only patch durations of "dt".')
-        self._patch_key(key, prev_duration + self.MEASURE_PATCH_CYCLES, unit)
+        oddCycleCorrection = self._getOddCycleCorrection()
+        self._patch_key(key, prev_duration + self.MEASURE_PATCH_CYCLES + oddCycleCorrection, unit)
         # Enforce patching of reset on measurement update
         self._patch_reset(("reset", key[1], key[2]))
 
@@ -231,7 +233,8 @@ class DynamicCircuitInstructionDurations(InstructionDurations):
             prev_duration, unit = self._get_duration_dt(key)
             if unit != "dt":
                 raise TranspilerError('Can currently only patch durations of "dt".')
-            self._patch_key(key, prev_duration + self.MEASURE_PATCH_CYCLES, unit)
+            oddCycleCorrection = self._getOddCycleCorrection()
+            self._patch_key(key, prev_duration + self.MEASURE_PATCH_CYCLES + oddCycleCorrection, unit)
 
     def _get_duration_dt(self, key: InstrKey) -> Tuple[int, str]:
         """Handling for the complicated structure of this class.
@@ -256,3 +259,20 @@ class DynamicCircuitInstructionDurations(InstructionDurations):
             self.duration_by_name_qubits[(key[0], key[1])] = (duration, unit)
 
         self.duration_by_name_qubits_params[key] = (duration, unit)
+
+    def _getOddCycleCorrection(self) -> int:
+        """Determine the amount of the odd cycle correction to apply
+        For devices with short gates with odd lenghts we add an extra 16dt to the measurement
+
+        TODO: Eliminate the need for this correction
+        """
+        keyPulse = "sx"
+        keyQubit = 0
+        try:
+            keyDuration = self.get(keyPulse, keyQubit, "dt")
+        except TranspilerError:
+            keyDuration = 160 # keyPulse gate not found
+
+        if keyDuration < 160 and keyDuration % 32:
+            return self.MEASURE_PATCH_ODD_OFFSET
+        return 0
