@@ -212,9 +212,9 @@ class DynamicCircuitInstructionDurations(InstructionDurations):
         prev_duration, unit = self._get_duration_dt(key)
         if unit != "dt":
             raise TranspilerError('Can currently only patch durations of "dt".')
-        oddCycleCorrection = self._getOddCycleCorrection()
+        odd_cycle_correction = self._get_odd_cycle_correction()
         self._patch_key(
-            key, prev_duration + self.MEASURE_PATCH_CYCLES + oddCycleCorrection, unit
+            key, prev_duration + self.MEASURE_PATCH_CYCLES + odd_cycle_correction, unit
         )
         # Enforce patching of reset on measurement update
         self._patch_reset(("reset", key[1], key[2]))
@@ -235,10 +235,10 @@ class DynamicCircuitInstructionDurations(InstructionDurations):
             prev_duration, unit = self._get_duration_dt(key)
             if unit != "dt":
                 raise TranspilerError('Can currently only patch durations of "dt".')
-            oddCycleCorrection = self._getOddCycleCorrection()
+            odd_cycle_correction = self._get_odd_cycle_correction()
             self._patch_key(
                 key,
-                prev_duration + self.MEASURE_PATCH_CYCLES + oddCycleCorrection,
+                prev_duration + self.MEASURE_PATCH_CYCLES + odd_cycle_correction,
                 unit,
             )
 
@@ -266,19 +266,19 @@ class DynamicCircuitInstructionDurations(InstructionDurations):
 
         self.duration_by_name_qubits_params[key] = (duration, unit)
 
-    def _getOddCycleCorrection(self) -> int:
+    def _get_odd_cycle_correction(self) -> int:
         """Determine the amount of the odd cycle correction to apply
         For devices with short gates with odd lenghts we add an extra 16dt to the measurement
 
         TODO: Eliminate the need for this correction
         """
-        keyPulse = "sx"
-        keyQubit = 0
+        key_pulse = "sx"
+        key_qubit = 0
         try:
-            keyDuration = self.get(keyPulse, keyQubit, "dt")
+            key_duration = self.get(key_pulse, key_qubit, "dt")
         except TranspilerError:
-            keyDuration = 160  # keyPulse gate not found
+            key_duration = 160  # keyPulse gate not found
 
-        if keyDuration < 160 and keyDuration % 32:
+        if key_duration < 160 and key_duration % 32:
             return self.MEASURE_PATCH_ODD_OFFSET
         return 0
