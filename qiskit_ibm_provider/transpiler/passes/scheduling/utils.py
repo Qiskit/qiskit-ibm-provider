@@ -12,6 +12,7 @@
 
 """Utility functions for scheduling passes."""
 
+import warnings
 from typing import List, Generator, Optional, Tuple, Union
 
 from qiskit.circuit import ControlFlowOp, Measure, Reset, Parameter
@@ -277,6 +278,10 @@ class DynamicCircuitInstructionDurations(InstructionDurations):
         try:
             key_duration = self.get(key_pulse, key_qubit, "dt")
         except TranspilerError:
+            warnings.warn(
+                f"No {key_pulse} gate found for {key_qubit} for detection of "
+                "short odd gate lengths, default measurement timing will be used."
+            )
             key_duration = 160  # keyPulse gate not found
 
         if key_duration < 160 and key_duration % 32:
