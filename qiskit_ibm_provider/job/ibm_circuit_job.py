@@ -109,8 +109,6 @@ class IBMCircuitJob(IBMJob):
     which is a supported attribute.
     """
 
-    _data = {}  # type: Dict
-
     _executor = futures.ThreadPoolExecutor()
     """Threads used for asynchronous processing."""
 
@@ -170,11 +168,6 @@ class IBMCircuitJob(IBMJob):
             self._status = api_status_to_job_status(status)
         self._client_version = self._extract_client_version(client_info)
         self._set_result(result)
-
-        self._data = {}
-        for key, value in kwargs.items():
-            # Append suffix to key to avoid conflicts.
-            self._data[key + "_"] = value
 
         # Properties used for caching.
         self._cancelled = False
@@ -830,9 +823,3 @@ class IBMCircuitJob(IBMJob):
             "job.submit() is not supported. Please use "
             "IBMBackend.run() to submit a job."
         )
-
-    def __getattr__(self, name: str) -> Any:
-        try:
-            return self._data[name]
-        except KeyError:
-            raise AttributeError("Attribute {} is not defined.".format(name)) from None

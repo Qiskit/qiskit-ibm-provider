@@ -1,5 +1,5 @@
 ---
-upgrade:
+fixes:
   - |
     An unnecessary call to :meth:`~qiskit_ibm_provider.job.IBMCircuitJob.refresh` 
     has been removed from :meth:`~qiskit_ibm_provider.job.IBMCircuitJob.status`. Circuits and other
