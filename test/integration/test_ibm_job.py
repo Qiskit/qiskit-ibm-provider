@@ -153,7 +153,6 @@ class TestIBMJob(IBMTestCase):
             backend_name=backend_name,
             limit=5,
             skip=0,
-            legacy=True,
         )
         job_ids = [job.job_id() for job in job_list]
         self.assertTrue(job1.job_id() in job_ids)
