@@ -213,7 +213,9 @@ class DynamicCircuitInstructionDurations(InstructionDurations):
         if unit != "dt":
             raise TranspilerError('Can currently only patch durations of "dt".')
         oddCycleCorrection = self._getOddCycleCorrection()
-        self._patch_key(key, prev_duration + self.MEASURE_PATCH_CYCLES + oddCycleCorrection, unit)
+        self._patch_key(
+            key, prev_duration + self.MEASURE_PATCH_CYCLES + oddCycleCorrection, unit
+        )
         # Enforce patching of reset on measurement update
         self._patch_reset(("reset", key[1], key[2]))
 
@@ -234,7 +236,11 @@ class DynamicCircuitInstructionDurations(InstructionDurations):
             if unit != "dt":
                 raise TranspilerError('Can currently only patch durations of "dt".')
             oddCycleCorrection = self._getOddCycleCorrection()
-            self._patch_key(key, prev_duration + self.MEASURE_PATCH_CYCLES + oddCycleCorrection, unit)
+            self._patch_key(
+                key,
+                prev_duration + self.MEASURE_PATCH_CYCLES + oddCycleCorrection,
+                unit,
+            )
 
     def _get_duration_dt(self, key: InstrKey) -> Tuple[int, str]:
         """Handling for the complicated structure of this class.
@@ -271,7 +277,7 @@ class DynamicCircuitInstructionDurations(InstructionDurations):
         try:
             keyDuration = self.get(keyPulse, keyQubit, "dt")
         except TranspilerError:
-            keyDuration = 160 # keyPulse gate not found
+            keyDuration = 160  # keyPulse gate not found
 
         if keyDuration < 160 and keyDuration % 32:
             return self.MEASURE_PATCH_ODD_OFFSET
