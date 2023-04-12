@@ -360,10 +360,6 @@ class IBMCircuitJob(IBMJob):
             self._api_status = api_response["status"]
             self._status = api_status_to_job_status(self._api_status)
 
-        # Get all job attributes if the job is done.
-        if self._status in JOB_FINAL_STATES:
-            self.refresh()
-
         return self._status
 
     def error_message(self) -> Optional[str]:
@@ -557,9 +553,6 @@ class IBMCircuitJob(IBMJob):
                 self._runtime_client.job_results(self.job_id())
             )
             self._set_result(api_result)
-
-        for key, value in api_response.items():
-            self._data[key + "_"] = value
         self._refreshed = True
 
     def backend_options(self) -> Dict:
