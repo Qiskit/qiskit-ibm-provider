@@ -260,27 +260,24 @@ class IBMBackend(Backend):
         refresh: bool = False,
     ) -> Target:
         """Gets target from configuration, properties and pulse defaults."""
-        if self._target and datetime is None and not refresh:
-            return self._target
-
         if datetime:
             if not isinstance(datetime, python_datetime):
                 raise TypeError("'{}' is not of type 'datetime'.")
             datetime = local_to_utc(datetime)
 
-        client = getattr(self.provider, "_runtime_client")
-        api_properties = client.backend_properties(self.name, datetime=datetime)
-        api_pulse_defaults = client.backend_pulse_defaults(self.name)
-        target = target_from_server_data(
-            configuration=self._configuration,
-            pulse_defaults=api_pulse_defaults,
-            properties=api_properties,
-        )
-        if datetime:
-            # Don't cache result.
-            return target
-        self._target = target
-
+        if datetime or refresh or self._target is None:
+            client = getattr(self.provider, "_runtime_client")
+            api_properties = client.backend_properties(self.name, datetime=datetime)
+            api_pulse_defaults = client.backend_pulse_defaults(self.name)
+            target = target_from_server_data(
+                configuration=self._configuration,
+                pulse_defaults=api_pulse_defaults,
+                properties=api_properties,
+            )
+            if datetime:
+                # Don't cache result.
+                return target
+            self._target = target
         return self._target
 
     @classmethod

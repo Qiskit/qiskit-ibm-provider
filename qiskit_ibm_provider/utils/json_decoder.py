@@ -11,9 +11,9 @@
 # that they have been altered from the originals.
 
 """Custom JSON decoder."""
-import warnings
 from typing import Dict, Tuple, Union, List, Any, Optional
 import json
+import logging
 
 import dateutil.parser
 from qiskit.providers.models import (
@@ -36,6 +36,9 @@ from qiskit.utils import apply_prefix
 
 from .converters import utc_to_local, utc_to_local_all
 from ..ibm_qubit_properties import IBMQubitProperties
+from ..exceptions import IBMBackendApiProtocolError
+
+logger = logging.getLogger(__name__)
 
 
 def defaults_from_server_data(defaults: Dict) -> PulseDefaults:
@@ -100,19 +103,12 @@ def target_from_server_data(
 
     Returns:
         A ``Target`` instance.
+
+    Raises:
+        IBMBackendApiProtocolError: When calibration is provided for gate which
+            doesn't appear in the configurations or properties payload.
     """
     required = ["measure", "delay"]
-
-    in_data = {"num_qubits": configuration.n_qubits}
-    # Parse global configuration properties
-    if hasattr(configuration, "dt"):
-        in_data["dt"] = configuration.dt
-    if hasattr(configuration, "timing_constraints"):
-        consts = configuration.timing_constraints
-        in_data["granularity"] = consts["granularity"]
-        in_data["min_length"] = consts["min_length"]
-        in_data["pulse_alignment"] = consts["pulse_alignment"]
-        in_data["aquire_alignment"] = consts["acquire_alignment"]
 
     # Load Qiskit object representation
     qiskit_inst_mapping = get_standard_gate_name_mapping()
@@ -121,6 +117,14 @@ def target_from_server_data(
         "while_loop": WhileLoopOp,
         "for_loop": ForLoopOp,
     }
+
+    in_data = {"num_qubits": configuration.n_qubits}
+
+    # Parse global configuration properties
+    if hasattr(configuration, "dt"):
+        in_data["dt"] = configuration.dt
+    if hasattr(configuration, "timing_constraints"):
+        in_data.update(configuration.timing_constraints)
 
     # Create instruction property placeholder from backend configuration
     supported_instructions = set(getattr(configuration, "supported_instructions", []))
@@ -146,11 +150,13 @@ def target_from_server_data(
                 params=params,
             )
         else:
-            warnings.warn(
-                f"Definition of instruction {name} is not found in Qiskit and "
-                "no gate configuration is provided by the backend. "
-                "This instruction is not created in Target.",
-                UserWarning,
+            logger.info(
+                "Definition of instruction %s is not found in the Qiskit namespace and "
+                "GateConfig is not provided by the BackendConfiguration payload. "
+                "Qiskit Gate model cannot be instantiated for this instruction and "
+                "this instruction is silently excluded from the Target. "
+                "Please add new gate class to Qiskit or provide GateConfig for this name.",
+                name,
             )
             all_instructions.remove(name)
             continue
@@ -172,19 +178,19 @@ def target_from_server_data(
             map(_decode_qubit_property, properties["qubits"])
         )
         for gate_spec in map(GateSchema.from_dict, properties["gates"]):
-            inst_prop = _decode_instruction_property(gate_spec)
-            qubits = tuple(gate_spec.qubits)
             name = gate_spec.gate
+            qubits = tuple(gate_spec.qubits)
             if name not in all_instructions:
-                # New instruction is found in property. Likely an edge case.
-                new_instruction = Gate(
-                    name=name,
-                    num_qubits=len(qubits),
-                    params=[],
+                logger.info(
+                    "Gate property for instruction %s on qubits %s is found "
+                    "in the BackendProperties payload. However, this gate is not included in the "
+                    "basis_gates or supported_instructions, or maybe the gate model "
+                    "is not defined in the Qiskit namespace. This gate is ignored.",
+                    name,
+                    qubits,
                 )
-                prop_name_map[name] = {}
-                inst_name_map[name] = new_instruction
-                all_instructions.add(name)
+                continue
+            inst_prop = _decode_instruction_property(gate_spec)
             if prop_name_map[name] is None:
                 prop_name_map[name] = {}
             prop_name_map[name][qubits] = inst_prop
@@ -205,11 +211,23 @@ def target_from_server_data(
             name = cmd.name
             qubits = tuple(cmd.qubits)
             if name not in all_instructions or qubits not in prop_name_map[name]:
-                # Ignore pulse gate.
+                logger.info(
+                    "Gate calibration for instruction %s on qubits %s is found "
+                    "in the PulseDefaults payload. However, this name is not defined in "
+                    "the gate mapping of Target. This calibration is ignored.",
+                    name,
+                    qubits,
+                )
                 continue
             entry = PulseQobjDef(converter=converter, name=cmd.name)
             entry.define(cmd.sequence)
-            prop_name_map[name][qubits].calibration = entry
+            try:
+                prop_name_map[name][qubits].calibration = entry
+            except AttributeError as ex:
+                raise IBMBackendApiProtocolError(
+                    f"The PulseDefaults payload received contains an instruction {name} on "
+                    f"qubits {qubits} which is not present in the configuration or properties payload."
+                ) from ex
 
     # Add parsed properties to target
     target = Target(**in_data)
