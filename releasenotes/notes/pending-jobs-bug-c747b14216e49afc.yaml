@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Fixed a bug where :meth:`~qiskit_ibm_provider.IBMBackend.status` was not returning
+    pending jobs.
