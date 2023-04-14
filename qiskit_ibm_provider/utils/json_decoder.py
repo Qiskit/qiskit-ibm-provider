@@ -36,7 +36,6 @@ from qiskit.utils import apply_prefix
 
 from .converters import utc_to_local, utc_to_local_all
 from ..ibm_qubit_properties import IBMQubitProperties
-from ..exceptions import IBMBackendApiProtocolError
 
 logger = logging.getLogger(__name__)
 
@@ -103,10 +102,6 @@ def target_from_server_data(
 
     Returns:
         A ``Target`` instance.
-
-    Raises:
-        IBMBackendApiProtocolError: When calibration is provided for gate which
-            doesn't appear in the configurations or properties payload.
     """
     required = ["measure", "delay"]
 
@@ -150,7 +145,7 @@ def target_from_server_data(
                 params=params,
             )
         else:
-            logger.info(
+            logger.warning(
                 "Definition of instruction %s is not found in the Qiskit namespace and "
                 "GateConfig is not provided by the BackendConfiguration payload. "
                 "Qiskit Gate model cannot be instantiated for this instruction and "
@@ -213,7 +208,7 @@ def target_from_server_data(
             if name not in all_instructions or qubits not in prop_name_map[name]:
                 logger.info(
                     "Gate calibration for instruction %s on qubits %s is found "
-                    "in the PulseDefaults payload. However, this name is not defined in "
+                    "in the PulseDefaults payload. However, this entry is not defined in "
                     "the gate mapping of Target. This calibration is ignored.",
                     name,
                     qubits,
@@ -223,11 +218,13 @@ def target_from_server_data(
             entry.define(cmd.sequence)
             try:
                 prop_name_map[name][qubits].calibration = entry
-            except AttributeError as ex:
-                raise IBMBackendApiProtocolError(
-                    f"The PulseDefaults payload received contains an instruction {name} on "
-                    f"qubits {qubits} which is not present in the configuration or properties payload."
-                ) from ex
+            except AttributeError:
+                logger.info(
+                    "The PulseDefaults payload received contains an instruction %s on "
+                    "qubits %s which is not present in the configuration or properties payload.",
+                    name,
+                    qubits,
+                )
 
     # Add parsed properties to target
     target = Target(**in_data)
