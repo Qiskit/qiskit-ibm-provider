@@ -14,7 +14,6 @@
 
 from unittest import SkipTest, mock, skip
 from unittest.mock import patch
-from dataclasses import asdict
 
 from qiskit import QuantumCircuit, transpile
 from qiskit.providers.models import QasmBackendConfiguration
