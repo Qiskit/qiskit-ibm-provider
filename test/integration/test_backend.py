@@ -44,6 +44,11 @@ class TestIBMBackend(IBMTestCase):
         cls.backend = backend
         cls.dependencies = dependencies
 
+    def test_backend_pending_jobs(self):
+        """Test pending jobs are returned."""
+        backends = self.dependencies.provider.backends()
+        self.assertTrue(any(backend.status().pending_jobs > 0 for backend in backends))
+
     def test_backend_status(self):
         """Check the status of a backend."""
         self.dependencies.provider.backends()
