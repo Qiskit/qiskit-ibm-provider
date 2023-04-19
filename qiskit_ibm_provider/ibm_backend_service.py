@@ -632,7 +632,7 @@ class IBMBackendService:
         """
         try:
             legacy = False
-            if self._provider._runtime_client.job_type(job_id) == "IQX":
+            if job_id[0] != "c" and len(job_id) == 24:
                 legacy = True
                 job_info = self._default_hgp._api_client.job_get(job_id)
             else:

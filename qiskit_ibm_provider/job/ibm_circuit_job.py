@@ -689,7 +689,7 @@ class IBMCircuitJob(IBMJob):
 
         if not self._result or refresh:  # type: ignore[has-type]
             try:
-                if self._provider._runtime_client.job_type(self.job_id()) == "IQX":
+                if self.job_id()[0] != "c" and len(self.job_id()) == 24:
                     api_result = self._api_client.job_result(self.job_id())
                 else:
                     api_result = self._download_external_result(
