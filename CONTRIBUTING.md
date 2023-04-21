@@ -191,9 +191,9 @@ and the release notes in particular will be located at
 `docs/_build/html/release_notes.html`
 
 ## Installing Qiskit IBM Provider from source
-Please see the [Installing IBM Quantum Provider from
-Source](https://qiskit.org/documentation/contributing_to_qiskit.html#installing-ibm-quantum-provider-from-source)
+Please see the [Getting started - Installation](https://qiskit.org/documentation/getting_started.html#installation)
 section of the Qiskit documentation.
+Select the _Install from source_ tab and scroll down to _Installing IBM Quantum Provider from Source_.
 
 
 ### Test
