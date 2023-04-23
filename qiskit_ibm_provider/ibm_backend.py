@@ -58,11 +58,12 @@ from .transpiler.passes.basis.convert_id_to_delay import (
 )
 from .utils import validate_job_tags
 from .utils.options import QASM2Options, QASM3Options
-from .utils.backend_converter import (
-    convert_to_target,
-)
 from .utils.converters import local_to_utc
-from .utils.json_decoder import defaults_from_server_data, properties_from_server_data
+from .utils.json_decoder import (
+    defaults_from_server_data,
+    properties_from_server_data,
+    target_from_server_data,
+)
 from .api.exceptions import RequestsApiError
 
 
@@ -237,11 +238,6 @@ class IBMBackend(Backend):
                     self.__class__.__name__, name
                 )
             )
-        # Lazy load properties and pulse defaults and construct the target object.
-        self._get_properties()
-        self._get_defaults()
-        self._convert_to_target()
-        # Check if the attribute now is available on IBMBackend class due to above steps
         try:
             return super().__getattribute__(name)
         except AttributeError:
@@ -257,35 +253,32 @@ class IBMBackend(Backend):
                 )
             )
 
-    def _get_properties(self, datetime: Optional[python_datetime] = None) -> None:
-        """Gets backend properties and decodes it"""
-        if not self._properties:
-            if datetime:
-                datetime = local_to_utc(datetime)
-            api_properties = self.provider._runtime_client.backend_properties(
-                self.name, datetime=datetime
-            )
-            if api_properties:
-                backend_properties = properties_from_server_data(api_properties)
-                self._properties = backend_properties
+    def _get_target(
+        self,
+        *,
+        datetime: Optional[python_datetime] = None,
+        refresh: bool = False,
+    ) -> Target:
+        """Gets target from configuration, properties and pulse defaults."""
+        if datetime:
+            if not isinstance(datetime, python_datetime):
+                raise TypeError("'{}' is not of type 'datetime'.")
+            datetime = local_to_utc(datetime)
 
-    def _get_defaults(self) -> None:
-        """Gets defaults if pulse backend and decodes it"""
-        if not self._defaults:
-            api_defaults = self.provider._runtime_client.backend_pulse_defaults(
-                self.name
-            )
-            if api_defaults:
-                self._defaults = defaults_from_server_data(api_defaults)
-
-    def _convert_to_target(self) -> None:
-        """Converts backend configuration, properties and defaults to Target object"""
-        if not self._target:
-            self._target = convert_to_target(
+        if datetime or refresh or self._target is None:
+            client = getattr(self.provider, "_runtime_client")
+            api_properties = client.backend_properties(self.name, datetime=datetime)
+            api_pulse_defaults = client.backend_pulse_defaults(self.name)
+            target = target_from_server_data(
                 configuration=self._configuration,
-                properties=self._properties,
-                defaults=self._defaults,
+                pulse_defaults=api_pulse_defaults,
+                properties=api_properties,
             )
+            if datetime:
+                # Don't cache result.
+                return target
+            self._target = target
+        return self._target
 
     @classmethod
     def _default_options(cls) -> Options:
@@ -324,20 +317,14 @@ class IBMBackend(Backend):
         Returns:
             Target
         """
-        self._get_properties()
-        self._get_defaults()
-        self._convert_to_target()
-        return self._target
+        return self._get_target()
 
     def target_history(self, datetime: Optional[python_datetime] = None) -> Target:
         """A :class:`qiskit.transpiler.Target` object for the backend.
         Returns:
             Target with properties found on `datetime`
         """
-        self._get_properties(datetime=datetime)
-        self._get_defaults()
-        self._convert_to_target()
-        return self._target
+        return self._get_target(datetime=datetime)
 
     def run(
         self,
