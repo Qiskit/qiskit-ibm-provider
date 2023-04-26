@@ -145,7 +145,7 @@ def fake_list_jobs(
 ) -> List[Dict[str, Any]]:
     """Mock method definition for AccountClient.list_jobs()"""
     if extra_filter:
-        pass  # Parameter is passed by unused in this mock
+        pass  # Parameter is passed but unused in this mock
     effective_limit = limit if (limit is not None and limit <= 50) else 50
     if skip >= SIZE_OF_FAKE_RETURN_DATA:
         return []
