@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    The dynamic circuit odd cycle delay has been bumped from 1 cycle to 4 cycles
+    to address hardware limitations.
