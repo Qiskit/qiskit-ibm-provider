@@ -138,7 +138,7 @@ class DynamicCircuitInstructionDurations(InstructionDurations):
     """
 
     MEASURE_PATCH_CYCLES = 160
-    MEASURE_PATCH_ODD_OFFSET = 16
+    MEASURE_PATCH_ODD_OFFSET = 64
 
     def __init__(
         self,
