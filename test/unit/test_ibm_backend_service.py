@@ -15,13 +15,14 @@
 import inspect
 
 from typing import List, Dict, Any, Optional
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 from qiskit_ibm_provider import IBMBackendService
 from qiskit_ibm_provider.api.clients import AccountClient, RuntimeClient
 from qiskit_ibm_provider.hub_group_project import HubGroupProject
 from qiskit_ibm_provider.ibm_provider import IBMProvider
 from ..ibm_test_case import IBMTestCase
+from ..decorators import mock_a_function
 
 SIZE_OF_FAKE_RETURN_DATA = 112
 
@@ -57,74 +58,81 @@ class TestIBMBackendService(IBMTestCase):
         params = inspect.signature(IBMBackendService.jobs).parameters
         return params["limit"].default
 
+    @classmethod
+    def fake_restore_circuit_job(
+        cls, job_info: Dict, raise_error: bool, legacy: bool = False
+    ) -> List:
+        """Mock method definition for IBMBackendService._restore_circuit_job()"""
+        if raise_error or legacy:
+            pass  # Parameter is passed by unused in this mock
+        return [job_info]
+
+    @mock_a_function(
+        function_string="qiskit_ibm_provider.ibm_backend_service.IBMBackendService._restore_circuit_job",
+        mocked_behavior=fake_restore_circuit_job,
+    )
     def test_retrieve_jobs_default_limit(self):
         """Test retrieving jobs with no explicit limit given"""
         mock_service = self.mock_service
-        with patch(
-            "qiskit_ibm_provider.ibm_backend_service.IBMBackendService._restore_circuit_job",
-            side_effect=fake_restore_circuit_job,
-        ):
-            job_list = mock_service.jobs()
-            print(f"job_list: {job_list}")
+        job_list = mock_service.jobs()
 
         self.assertEqual(len(job_list), self.default_limit)
 
+    @mock_a_function(
+        function_string="qiskit_ibm_provider.ibm_backend_service.IBMBackendService._restore_circuit_job",
+        mocked_behavior=fake_restore_circuit_job,
+    )
     def test_retrieve_jobs_small_limit(self):
         """Test retrieving jobs with limit smaller than default given"""
         mock_service = self.mock_service
         small_limit = self.default_limit // 2
-        with patch(
-            "qiskit_ibm_provider.ibm_backend_service.IBMBackendService._restore_circuit_job",
-            side_effect=fake_restore_circuit_job,
-        ):
-            job_list = mock_service.jobs(limit=small_limit)
+        job_list = mock_service.jobs(limit=small_limit)
 
         self.assertEqual(len(job_list), small_limit)
 
+    @mock_a_function(
+        function_string="qiskit_ibm_provider.ibm_backend_service.IBMBackendService._restore_circuit_job",
+        mocked_behavior=fake_restore_circuit_job,
+    )
     def test_retrieve_jobs_no_limit(self):
         """Test retrieving jobs with 'None' limit"""
         mock_service = self.mock_service
-
-        with patch(
-            "qiskit_ibm_provider.ibm_backend_service.IBMBackendService._restore_circuit_job",
-            side_effect=fake_restore_circuit_job,
-        ):
-            job_list = mock_service.jobs(limit=None, descending=False)
+        job_list = mock_service.jobs(limit=None, descending=False)
 
         self.assertEqual(len(job_list), SIZE_OF_FAKE_RETURN_DATA)
 
+    @mock_a_function(
+        function_string="qiskit_ibm_provider.ibm_backend_service.IBMBackendService._restore_circuit_job",
+        mocked_behavior=fake_restore_circuit_job,
+    )
     def test_retrieve_legacy_jobs_default_limit(self):
         """Test retrieving legacy jobs with no explicit limit given"""
         mock_service = self.mock_service
-        with patch(
-            "qiskit_ibm_provider.ibm_backend_service.IBMBackendService._restore_circuit_job",
-            side_effect=fake_restore_circuit_job,
-        ):
-            job_list = mock_service.jobs(legacy=True)
+        job_list = mock_service.jobs(legacy=True)
 
         self.assertEqual(len(job_list), self.default_limit)
 
+    @mock_a_function(
+        function_string="qiskit_ibm_provider.ibm_backend_service.IBMBackendService._restore_circuit_job",
+        mocked_behavior=fake_restore_circuit_job,
+    )
     def test_retrieve_legacy_jobs_small_limit(self):
         """Test retrieving legacy jobs with limit smaller than default given"""
         mock_service = self.mock_service
         small_limit = self.default_limit // 2
-        with patch(
-            "qiskit_ibm_provider.ibm_backend_service.IBMBackendService._restore_circuit_job",
-            side_effect=fake_restore_circuit_job,
-        ):
-            job_list = mock_service.jobs(legacy=True, limit=small_limit)
+        job_list = mock_service.jobs(legacy=True, limit=small_limit)
 
         self.assertEqual(len(job_list), small_limit)
 
+    @mock_a_function(
+        function_string="qiskit_ibm_provider.ibm_backend_service.IBMBackendService._restore_circuit_job",
+        mocked_behavior=fake_restore_circuit_job,
+    )
     def test_retrieve_legacy_jobs_no_limit(self):
         """Test retrieving legacy jobs with 'None' limit"""
         mock_service = self.mock_service
 
-        with patch(
-            "qiskit_ibm_provider.ibm_backend_service.IBMBackendService._restore_circuit_job",
-            side_effect=fake_restore_circuit_job,
-        ):
-            job_list = mock_service.jobs(limit=None, legacy=True, descending=False)
+        job_list = mock_service.jobs(limit=None, legacy=True, descending=False)
 
         self.assertEqual(len(job_list), SIZE_OF_FAKE_RETURN_DATA)
 
@@ -169,12 +177,3 @@ def fake_jobs_get(
 ) -> Dict:
     """Mock method definition for RuntimeClient.jobs_get()"""
     return {"jobs": fake_list_jobs(limit=limit, skip=skip, descending=descending)}
-
-
-def fake_restore_circuit_job(
-    job_info: Dict, raise_error: bool, legacy: bool = False
-) -> List:
-    """Mock method definition for IBMBackendService._restore_circuit_job()"""
-    if raise_error or legacy:
-        pass  # Parameter is passed by unused in this mock
-    return [job_info]
