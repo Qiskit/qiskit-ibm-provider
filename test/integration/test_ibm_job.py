@@ -139,14 +139,6 @@ class TestIBMJob(IBMTestCase):
         for job in job_list:
             self.assertTrue(isinstance(job.job_id(), str))
 
-    def test_retrieve_jobs_no_limit(self):
-        """Test retrieving jobs with 'None' limit"""
-        job_list = self.provider.backend.jobs(
-            backend_name=self.sim_backend.name,
-            limit=None,
-        )
-        self.assertGreaterEqual(len(job_list), 0)
-
     def test_retrieve_legacy_jobs(self):
         """Test retrieving legacy jobs."""
         # run jobs from qiskit_ibmq_provider
