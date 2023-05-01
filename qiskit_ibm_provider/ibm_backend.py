@@ -427,6 +427,11 @@ class IBMBackend(Backend):
 
         validate_job_tags(job_tags, IBMBackendValueError)
 
+        if dynamic and "qasm3" not in getattr(
+            self.configuration(), "supported_features", []
+        ):
+            warnings.warn(f"The backend {self.name} does not support dynamic circuits.")
+
         status = self.status()
         if status.operational is True and status.status_msg != "active":
             warnings.warn(f"The backend {self.name} is currently paused.")

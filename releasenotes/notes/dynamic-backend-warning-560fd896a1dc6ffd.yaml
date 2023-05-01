@@ -1,0 +1,5 @@
+---
+upgrade:
+  - |
+    If the ``dynamic`` parameter is set to ``True`` in :meth:`~qiskit_ibm_provider.IBMBackend.run` 
+    and the backend being used does not support dymamic circuits, a warning will be raised. 
