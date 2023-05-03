@@ -103,7 +103,8 @@ def target_from_server_data(
     Returns:
         A ``Target`` instance.
     """
-    backend_properties = properties_from_server_data(properties)
+    if properties:
+        backend_properties = properties_from_server_data(properties)
     required = ["measure", "delay"]
 
     # Load Qiskit object representation
