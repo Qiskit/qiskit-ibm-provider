@@ -176,7 +176,9 @@ def target_from_server_data(
         for gate_spec in map(GateSchema.from_dict, properties["gates"]):
             name = gate_spec.gate
             qubits = tuple(gate_spec.qubits)
-            if any(not backend_properties.is_qubit_operational(qubit) for qubit in qubits):
+            if any(
+                not backend_properties.is_qubit_operational(qubit) for qubit in qubits
+            ):
                 continue
             if not backend_properties.is_gate_operational(name, gate_spec.qubits):
                 continue
