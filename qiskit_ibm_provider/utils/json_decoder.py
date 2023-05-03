@@ -105,6 +105,7 @@ def target_from_server_data(
     """
     if properties:
         backend_properties = properties_from_server_data(properties)
+        faulty_qubits = set(backend_properties.faulty_qubits())
     required = ["measure", "delay"]
 
     # Load Qiskit object representation
@@ -167,7 +168,11 @@ def target_from_server_data(
             prop_name_map[name] = None
     if "delay" not in prop_name_map:
         # Case for real IBM backend. They don't have delay in gate configuration.
-        prop_name_map["delay"] = {(q,): None for q in range(configuration.n_qubits)}
+        prop_name_map["delay"] = {
+            (q,): None
+            for q in range(configuration.num_qubits)
+            if q not in faulty_qubits
+        }
 
     # Populate instruction properties
     if properties:
@@ -215,6 +220,8 @@ def target_from_server_data(
         for cmd in map(Command.from_dict, pulse_defaults["cmd_def"]):
             name = cmd.name
             qubits = tuple(cmd.qubits)
+            if any(qubit in faulty_qubits for qubit in qubits):
+                continue
             if name not in all_instructions or qubits not in prop_name_map[name]:
                 logger.info(
                     "Gate calibration for instruction %s on qubits %s is found "
