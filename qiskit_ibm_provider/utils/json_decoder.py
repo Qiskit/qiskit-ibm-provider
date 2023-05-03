@@ -103,6 +103,7 @@ def target_from_server_data(
     Returns:
         A ``Target`` instance.
     """
+    backend_properties = properties_from_server_data(properties)
     required = ["measure", "delay"]
 
     # Load Qiskit object representation
@@ -175,6 +176,10 @@ def target_from_server_data(
         for gate_spec in map(GateSchema.from_dict, properties["gates"]):
             name = gate_spec.gate
             qubits = tuple(gate_spec.qubits)
+            if any(not backend_properties.is_qubit_operational(qubit) for qubit in qubits):
+                continue
+            if not backend_properties.is_gate_operational(name, gate_spec.qubits):
+                continue
             if name not in all_instructions:
                 logger.info(
                     "Gate property for instruction %s on qubits %s is found "
@@ -193,6 +198,8 @@ def target_from_server_data(
         measure_props = list(map(_decode_measure_property, properties["qubits"]))
         prop_name_map["measure"] = {}
         for qubit, measure_prop in enumerate(measure_props):
+            if not backend_properties.is_qubit_operational(qubit):
+                continue
             qubits = (qubit,)
             prop_name_map["measure"][qubits] = measure_prop
 
