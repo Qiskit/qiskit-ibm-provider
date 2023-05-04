@@ -85,7 +85,7 @@ setuptools.setup(
             "pyperclip>=1.7",
             "ipython>=5.0.0",
             "traitlets!=5.0.5",
-            "ipyvue>=1.4.1",
+            "ipyvue>=1.8.5",
         ]
     },
     project_urls={

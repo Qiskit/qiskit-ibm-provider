@@ -522,6 +522,9 @@ class BaseFakeAPI:
             "status_msg": "active",
         }
 
+    def backend_properties(self, *args, **kwargs):  # pylint: disable=unused-argument
+        return None
+
     def job_type(self, job_id: str) -> str:
         if job_id[0] != "c" and len(job_id) == 24:
             return "IQX"

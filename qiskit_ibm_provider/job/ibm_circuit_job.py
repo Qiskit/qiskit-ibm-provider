@@ -109,8 +109,6 @@ class IBMCircuitJob(IBMJob):
     which is a supported attribute.
     """
 
-    _data = {}  # type: Dict
-
     _executor = futures.ThreadPoolExecutor()
     """Threads used for asynchronous processing."""
 
@@ -170,11 +168,6 @@ class IBMCircuitJob(IBMJob):
             self._status = api_status_to_job_status(status)
         self._client_version = self._extract_client_version(client_info)
         self._set_result(result)
-
-        self._data = {}
-        for key, value in kwargs.items():
-            # Append suffix to key to avoid conflicts.
-            self._data[key + "_"] = value
 
         # Properties used for caching.
         self._cancelled = False
@@ -360,10 +353,6 @@ class IBMCircuitJob(IBMJob):
             self._api_status = api_response["status"]
             self._status = api_status_to_job_status(self._api_status)
 
-        # Get all job attributes if the job is done.
-        if self._status in JOB_FINAL_STATES:
-            self.refresh()
-
         return self._status
 
     def error_message(self) -> Optional[str]:
@@ -389,7 +378,9 @@ class IBMCircuitJob(IBMJob):
             return self._job_error_msg
 
         # Now try parsing a meaningful reason from the results, if possible
-        api_result = self._runtime_client.job_results(self.job_id())
+        api_result = self._download_external_result(
+            self._runtime_client.job_results(self.job_id())
+        )
         reason = self._parse_result_for_errors(api_result)
         if reason is not None:
             self._job_error_msg = reason
@@ -551,11 +542,10 @@ class IBMCircuitJob(IBMJob):
             api_metadata.get("qiskit_version", None)
         )
         if self._status == JobStatus.DONE:
-            api_result = self._runtime_client.job_results(self.job_id())
+            api_result = self._download_external_result(
+                self._runtime_client.job_results(self.job_id())
+            )
             self._set_result(api_result)
-
-        for key, value in api_response.items():
-            self._data[key + "_"] = value
         self._refreshed = True
 
     def backend_options(self) -> Dict:
@@ -668,14 +658,15 @@ class IBMCircuitJob(IBMJob):
         Args:
             response: Response to check for url keyword, if available, download result from given URL
         """
-        if "url" in response:
+        try:
             result_url_json = json.loads(response)
             if "url" in result_url_json:
                 url = result_url_json["url"]
                 result_response = requests.get(url)
-                response = result_response.content
-
-        return response
+                return result_response.content
+            return response
+        except json.JSONDecodeError:
+            return response
 
     def _retrieve_result(self, refresh: bool = False) -> None:
         """Retrieve the job result response.
@@ -832,9 +823,3 @@ class IBMCircuitJob(IBMJob):
             "job.submit() is not supported. Please use "
             "IBMBackend.run() to submit a job."
         )
-
-    def __getattr__(self, name: str) -> Any:
-        try:
-            return self._data[name]
-        except KeyError:
-            raise AttributeError("Attribute {} is not defined.".format(name)) from None

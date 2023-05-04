@@ -79,7 +79,12 @@ class IBMDynamicTranslationPlugin(PassManagerStagePlugin):
 
         instruction_durations = pass_manager_config.instruction_durations
         plugin_passes = []
-        if instruction_durations:
+        if pass_manager_config.target is not None:
+            id_supported = "id" in pass_manager_config.target
+        else:
+            id_supported = "id" in pass_manager_config.basis_gates
+
+        if instruction_durations and not id_supported:
             plugin_passes.append(ConvertIdToDelay(instruction_durations))
 
         # Only inject control-flow conversion pass at level 0 and level 1. As of

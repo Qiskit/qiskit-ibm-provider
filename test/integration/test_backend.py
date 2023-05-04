@@ -17,6 +17,7 @@ from unittest.mock import patch
 
 from qiskit import QuantumCircuit, transpile
 from qiskit.providers.models import QasmBackendConfiguration
+from qiskit.providers.exceptions import QiskitBackendNotFoundError
 from qiskit.test.reference_circuits import ReferenceCircuits
 
 from qiskit_ibm_provider import IBMBackend, IBMProvider
@@ -42,6 +43,11 @@ class TestIBMBackend(IBMTestCase):
         super().setUpClass()
         cls.backend = backend
         cls.dependencies = dependencies
+
+    def test_backend_pending_jobs(self):
+        """Test pending jobs are returned."""
+        backends = self.dependencies.provider.backends()
+        self.assertTrue(any(backend.status().pending_jobs > 0 for backend in backends))
 
     def test_backend_status(self):
         """Check the status of a backend."""
@@ -153,8 +159,7 @@ class TestIBMBackend(IBMTestCase):
                 mutated_circuit = self.backend._deprecate_id_instruction(
                     circuit_with_id
                 )
-
-            self.assertEqual(mutated_circuit[0].count_ops(), {"delay": 3})
+            self.assertEqual(mutated_circuit.count_ops(), {"delay": 3})
             self.assertEqual(circuit_with_id.count_ops(), {"id": 3})
 
     def test_transpile_converts_id(self):
@@ -166,3 +171,24 @@ class TestIBMBackend(IBMTestCase):
         op_counts = tqc.count_ops()
         self.assertNotIn("id", op_counts)
         self.assertIn("delay", op_counts)
+
+    def test_backend_wrong_instance(self):
+        """Test that an error is raised when retrieving a backend not in the instance."""
+        backends = self.dependencies.provider.backends()
+        hgps = self.dependencies.provider._hgps.values()
+        if len(hgps) >= 2:
+            for hgp in hgps:
+                backend_names = list(hgp._backends)
+                for backend in backends:
+                    if backend.name not in backend_names:
+                        with self.assertRaises(QiskitBackendNotFoundError):
+                            self.dependencies.provider.get_backend(
+                                backend.name,
+                                instance=f"{hgp._hub}/{hgp._group}/{hgp._project}",
+                            )
+                        return
+
+    def test_retrieve_backend_not_exist(self):
+        """Test that an error is raised when retrieving a backend that does not exist."""
+        with self.assertRaises(QiskitBackendNotFoundError):
+            self.dependencies.provider.get_backend("nonexistent_backend")
