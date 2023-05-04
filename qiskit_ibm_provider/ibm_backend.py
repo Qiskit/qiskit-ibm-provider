@@ -362,10 +362,10 @@ class IBMBackend(Backend):
         Args:
             circuits: An individual or a
                 list of :class:`~qiskit.circuits.QuantumCircuit`.
-                :class:`~qiskit.pulse.Schedule` is no longer supported. Use ``pulse gates instead``.
+                :class:`~qiskit.pulse.Schedule` is no longer supported. Use ``pulse gates`` instead.
                 See `tutorial
                 <https://qiskit.org/documentation/tutorials/circuits_advanced/05_pulse_gates.html>`_
-                on using pulse gates.
+                on how to use pulse gates.
             dynamic: Whether the circuit is dynamic (uses in-circuit conditionals)
             job_tags: Tags to be assigned to the job. The tags can subsequently be used
                 as a filter in the :meth:`jobs()` function call.
