@@ -82,6 +82,7 @@ class TestIBMBackend(IBMTestCase):
                 if backend.configuration().open_pulse:
                     self.assertIsNotNone(defaults)
 
+    @skip("See Terra issue #9488")
     def test_backend_options(self):
         """Test backend options."""
         provider: IBMProvider = self.backend.provider
@@ -162,6 +163,7 @@ class TestIBMBackend(IBMTestCase):
             self.assertEqual(mutated_circuit.count_ops(), {"delay": 3})
             self.assertEqual(circuit_with_id.count_ops(), {"id": 3})
 
+    @skip("This is a Terra issue and test. Not related to Provider.")
     def test_transpile_converts_id(self):
         """Test that when targeting an IBM backend id is translated to delay."""
         circ = QuantumCircuit(2)
