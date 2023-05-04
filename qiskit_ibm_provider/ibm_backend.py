@@ -361,8 +361,11 @@ class IBMBackend(Backend):
 
         Args:
             circuits: An individual or a
-                list of :class:`~qiskit.circuits.QuantumCircuit` or
-                :class:`~qiskit.pulse.Schedule` object to run on the backend.
+                list of :class:`~qiskit.circuits.QuantumCircuit`.
+                :class:`~qiskit.pulse.Schedule` is no longer supported. Use ``pulse gates instead``.
+                See `tutorial
+                <https://qiskit.org/documentation/tutorials/circuits_advanced/05_pulse_gates.html>`_
+                on using pulse gates.
             dynamic: Whether the circuit is dynamic (uses in-circuit conditionals)
             job_tags: Tags to be assigned to the job. The tags can subsequently be used
                 as a filter in the :meth:`jobs()` function call.
@@ -422,6 +425,7 @@ class IBMBackend(Backend):
             IBMBackendValueError:
                 - If an input parameter value is not valid.
                 - If ESP readout is used and the backend does not support this.
+                - If Schedule is given as an input circuit.
         """
         # pylint: disable=arguments-differ
 
@@ -478,7 +482,10 @@ class IBMBackend(Backend):
             run_config_dict["skip_transpilation"] = True
 
         if isinstance(circuits, (QuantumCircuit, Schedule)):
-            circuits = [circuits]
+            raise IBMBackendValueError(
+                "Class 'Schedule' is no longer supported as "
+                "an input circuit. See 'run' method documentation"
+            )
         for circ in circuits:
             if isinstance(circ, QuantumCircuit):
                 self.check_faulty(circ)
