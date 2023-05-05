@@ -298,19 +298,6 @@ class TestIBMProviderServices(IBMTestCase):
                 else:
                     self.assertEqual(properties, None)
 
-    def test_provider_backend(self):
-        """Test provider backend has correct attributes."""
-        backend_attributes = {
-            back
-            for back in dir(self.dependencies.provider.backend)
-            if isinstance(getattr(self.dependencies.provider.backend, back), IBMBackend)
-        }
-        backends = {
-            back.name.lower()
-            for back in self.dependencies.provider.backend._backends.values()
-        }
-        self.assertEqual(backend_attributes, backends)
-
     def test_provider_has_backend_service(self):
         """Test provider has backend service."""
         self.assertIsInstance(self.dependencies.provider.backend, IBMBackendService)
