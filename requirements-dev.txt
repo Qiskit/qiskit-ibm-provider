@@ -1,6 +1,5 @@
 mypy==0.931
 pylint==2.12.2
-vcrpy
 pproxy==2.7.8
 matplotlib>=3.3
 jupyter
