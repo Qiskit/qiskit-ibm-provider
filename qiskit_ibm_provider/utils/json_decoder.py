@@ -103,6 +103,9 @@ def target_from_server_data(
     Returns:
         A ``Target`` instance.
     """
+    if properties:
+        backend_properties = properties_from_server_data(properties)
+        faulty_qubits = set(backend_properties.faulty_qubits())
     required = ["measure", "delay"]
 
     # Load Qiskit object representation
@@ -165,7 +168,11 @@ def target_from_server_data(
             prop_name_map[name] = None
     if "delay" not in prop_name_map:
         # Case for real IBM backend. They don't have delay in gate configuration.
-        prop_name_map["delay"] = {(q,): None for q in range(configuration.n_qubits)}
+        prop_name_map["delay"] = {
+            (q,): None
+            for q in range(configuration.num_qubits)
+            if q not in faulty_qubits
+        }
 
     # Populate instruction properties
     if properties:
@@ -175,6 +182,12 @@ def target_from_server_data(
         for gate_spec in map(GateSchema.from_dict, properties["gates"]):
             name = gate_spec.gate
             qubits = tuple(gate_spec.qubits)
+            if any(
+                not backend_properties.is_qubit_operational(qubit) for qubit in qubits
+            ):
+                continue
+            if not backend_properties.is_gate_operational(name, gate_spec.qubits):
+                continue
             if name not in all_instructions:
                 logger.info(
                     "Gate property for instruction %s on qubits %s is found "
@@ -193,6 +206,8 @@ def target_from_server_data(
         measure_props = list(map(_decode_measure_property, properties["qubits"]))
         prop_name_map["measure"] = {}
         for qubit, measure_prop in enumerate(measure_props):
+            if not backend_properties.is_qubit_operational(qubit):
+                continue
             qubits = (qubit,)
             prop_name_map["measure"][qubits] = measure_prop
 
@@ -205,6 +220,8 @@ def target_from_server_data(
         for cmd in map(Command.from_dict, pulse_defaults["cmd_def"]):
             name = cmd.name
             qubits = tuple(cmd.qubits)
+            if any(qubit in faulty_qubits for qubit in qubits):
+                continue
             if name not in all_instructions or qubits not in prop_name_map[name]:
                 logger.info(
                     "Gate calibration for instruction %s on qubits %s is found "
