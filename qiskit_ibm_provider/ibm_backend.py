@@ -19,7 +19,7 @@ from dataclasses import asdict
 from datetime import datetime as python_datetime
 from typing import Iterable, Dict, List, Union, Optional, Any
 
-from qiskit.circuit import QuantumCircuit
+from qiskit.circuit import QuantumCircuit, ControlFlowOp
 from qiskit.providers.backend import BackendV2 as Backend
 from qiskit.providers.models import (
     BackendStatus,
@@ -331,7 +331,6 @@ class IBMBackend(Backend):
         circuits: Union[
             QuantumCircuit, Schedule, List[Union[QuantumCircuit, Schedule]]
         ],
-        dynamic: bool = False,
         job_tags: Optional[List[str]] = None,
         init_circuit: Optional[QuantumCircuit] = None,
         init_num_resets: Optional[int] = None,
@@ -424,8 +423,15 @@ class IBMBackend(Backend):
                 - If ESP readout is used and the backend does not support this.
         """
         # pylint: disable=arguments-differ
+        def are_circuits_dynamic(circuits):
+            for circuit in circuits:
+                for inst in circuit:
+                    if isinstance(inst, ControlFlowOp):
+                        return True
+            return False
 
         validate_job_tags(job_tags, IBMBackendValueError)
+        dynamic = are_circuits_dynamic(circuits)
 
         if dynamic and "qasm3" not in getattr(
             self.configuration(), "supported_features", []
