@@ -79,8 +79,7 @@ class IBMBackend(Backend):
 
     You can run experiments on a backend using the :meth:`run()` method. The
     :meth:`run()` method takes one or more :class:`~qiskit.circuit.QuantumCircuit`
-    or :class:`~qiskit.pulse.Schedule` and returns
-    an :class:`~qiskit_ibm_provider.job.IBMJob`
+    and returns an :class:`~qiskit_ibm_provider.job.IBMJob`
     instance that represents the submitted job. Each job has a unique job ID, which
     can later be used to retrieve the job. An example of this flow::
 
@@ -98,7 +97,7 @@ class IBMBackend(Backend):
     Note:
 
         * Unlike :meth:`qiskit.execute`, the :meth:`run` method does not transpile
-          the circuits/schedules for you, so be sure to do so before submitting them.
+          the circuits for you, so be sure to do so before submitting them.
 
         * You should not instantiate the ``IBMBackend`` class directly. Instead, use
           the methods provided by an :class:`IBMProvider` instance to retrieve and handle
@@ -296,7 +295,7 @@ class IBMBackend(Backend):
     @property
     def max_circuits(self) -> int:
         """The maximum number of circuits
-        The maximum number of circuits (or Pulse schedules) that can be
+        The maximum number of circuits that can be
         run in a single job. If there is no limit this will return None.
         """
         return self._max_circuits
@@ -486,14 +485,23 @@ class IBMBackend(Backend):
             # Transpiling in circuit-runner is deprecated.
             run_config_dict["skip_transpilation"] = True
 
-        if isinstance(circuits, (QuantumCircuit, Schedule)):
+        if isinstance(circuits, Schedule):
             raise IBMBackendValueError(
                 "Class 'Schedule' is no longer supported as "
                 "an input circuit. See 'run' method documentation"
             )
+
+        if isinstance(circuits, QuantumCircuit):
+            circuits = [circuits]
+
         for circ in circuits:
-            if isinstance(circ, QuantumCircuit):
-                self.check_faulty(circ)
+            if isinstance(circ, Schedule):
+                raise IBMBackendValueError(
+                    "Class 'Schedule' is no longer supported as "
+                    "an input circuit. See 'run' method documentation"
+                )
+        for circ in circuits:
+            self.check_faulty(circ)
 
         return self._runtime_run(
             program_id=program_id,
