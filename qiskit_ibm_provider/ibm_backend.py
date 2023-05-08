@@ -422,7 +422,9 @@ class IBMBackend(Backend):
                 - If ESP readout is used and the backend does not support this.
         """
         # pylint: disable=arguments-differ
-        def are_circuits_dynamic(circuits):
+        def are_circuits_dynamic(
+            circuits: Union[QuantumCircuit, List[QuantumCircuit]]
+        ) -> bool:
             for circuit in circuits:
                 for inst in circuit:
                     if isinstance(inst, ControlFlowOp):
