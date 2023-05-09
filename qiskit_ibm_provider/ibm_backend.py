@@ -426,7 +426,7 @@ class IBMBackend(Backend):
         # pylint: disable=arguments-differ
         validate_job_tags(job_tags, IBMBackendValueError)
         actually_dynamic = are_circuits_dynamic(circuits)
-        if dynamic==False and actually_dynamic:
+        if dynamic is False and actually_dynamic:
             warnings.warn(
                 "Parameter 'dynamic' is False, but the circuit contains dynamic constructs."
             )

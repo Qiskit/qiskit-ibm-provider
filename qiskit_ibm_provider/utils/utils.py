@@ -201,6 +201,7 @@ def _filter_value(
             elif isinstance(value, dict):
                 _filter_value(value, filter_keys)
 
+
 def are_circuits_dynamic(circuits: Union[QuantumCircuit, List[QuantumCircuit]]) -> bool:
     """Checks if the input circuits are dynamic."""
     for circuit in circuits:
