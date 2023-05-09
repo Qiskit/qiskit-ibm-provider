@@ -365,7 +365,7 @@ def _decode_qubit_property(qubit_specs: List[Dict]) -> IBMQubitProperties:
     """
     in_data = {}
     for spec in qubit_specs:
-        name = spec["name"]
+        name = (spec["name"]).lower()
         if name == "operational":
             in_data[name] = bool(spec["value"])
         elif name in IBMQubitProperties.__slots__:
