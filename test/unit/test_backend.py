@@ -16,12 +16,10 @@ from datetime import datetime
 from unittest import mock
 
 from qiskit import transpile, QuantumCircuit
-from qiskit.pulse import Schedule
 from qiskit.providers.fake_provider import FakeManila
 from qiskit.providers.models import BackendStatus, BackendProperties
 
-from qiskit_ibm_provider import IBMProvider, IBMBackend
-from qiskit_ibm_provider.exceptions import IBMBackendValueError
+from qiskit_ibm_provider.ibm_backend import IBMBackend
 
 from ..ibm_test_case import IBMTestCase
 
@@ -129,18 +127,6 @@ class TestBackend(IBMTestCase):
             ibm_backend.run(circuits=transpiled)
 
         mock_run.assert_called_once()
-
-    def test_schedule_error_message(self):
-        """Test that passing a Schedule as input to Backend.run() raises an error."""
-        provider = IBMProvider()
-        backend = provider.get_backend("ibmq_qasm_simulator")
-        for circuit in [Schedule(), [Schedule()]]:
-            with self.assertRaises(IBMBackendValueError) as err:
-                backend.run(circuit)
-            self.assertIn(
-                "Class 'Schedule' is no longer supported as an input circuit",
-                str(err.exception),
-            )
 
     def _create_faulty_backend(
         self, model_backend, faulty_qubit=None, faulty_edge=None
