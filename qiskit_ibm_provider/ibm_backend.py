@@ -485,21 +485,23 @@ class IBMBackend(Backend):
             # Transpiling in circuit-runner is deprecated.
             run_config_dict["skip_transpilation"] = True
 
+        schedule_error_msg = (
+            "Class 'Schedule' is no longer supported as an input circuit. "
+            "Use 'pulse gates' instead. See `tutorial "
+            "https://qiskit.org/documentation/tutorials/circuits_advanced/05_pulse_gates.html` "
+            "on how to use pulse gates."
+        )
+
         if isinstance(circuits, Schedule):
-            raise IBMBackendValueError(
-                "Class 'Schedule' is no longer supported as "
-                "an input circuit. See 'run' method documentation"
-            )
+            raise IBMBackendValueError(schedule_error_msg)
 
         if isinstance(circuits, QuantumCircuit):
             circuits = [circuits]
 
         for circ in circuits:
             if isinstance(circ, Schedule):
-                raise IBMBackendValueError(
-                    "Class 'Schedule' is no longer supported as "
-                    "an input circuit. See 'run' method documentation"
-                )
+                raise IBMBackendValueError(schedule_error_msg)
+
         for circ in circuits:
             self.check_faulty(circ)
 
