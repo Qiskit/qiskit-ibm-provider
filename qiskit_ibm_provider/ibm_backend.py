@@ -432,9 +432,14 @@ class IBMBackend(Backend):
         ):
             warnings.warn(f"The backend {self.name} does not support dynamic circuits.")
 
-        if use_measure_esp and getattr(self.configuration(), "measure_esp_enabled", False) is False:
-            raise IBMBackendValueError("ESP readout not supported on this device. Please make sure the flag "
-                "'use_measure_esp' is unset or set to 'False'.")
+        if (
+            use_measure_esp
+            and getattr(self.configuration(), "measure_esp_enabled", False) is False
+        ):
+            raise IBMBackendValueError(
+                "ESP readout not supported on this device. Please make sure the flag "
+                "'use_measure_esp' is unset or set to 'False'."
+            )
         status = self.status()
         if status.operational is True and status.status_msg != "active":
             warnings.warn(f"The backend {self.name} is currently paused.")
