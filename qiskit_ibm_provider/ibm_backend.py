@@ -19,7 +19,7 @@ from dataclasses import asdict
 from datetime import datetime as python_datetime
 from typing import Iterable, Dict, List, Union, Optional, Any
 
-from qiskit.circuit import QuantumCircuit, ControlFlowOp
+from qiskit.circuit import QuantumCircuit
 from qiskit.providers.backend import BackendV2 as Backend
 from qiskit.providers.models import (
     BackendStatus,
@@ -56,7 +56,7 @@ from .job import IBMJob, IBMCircuitJob
 from .transpiler.passes.basis.convert_id_to_delay import (
     ConvertIdToDelay,
 )
-from .utils import validate_job_tags
+from .utils import validate_job_tags, are_circuits_dynamic
 from .utils.options import QASM2Options, QASM3Options
 from .utils.converters import local_to_utc
 from .utils.json_decoder import (
@@ -331,6 +331,7 @@ class IBMBackend(Backend):
         circuits: Union[
             QuantumCircuit, Schedule, List[Union[QuantumCircuit, Schedule]]
         ],
+        dynamic: bool = None,
         job_tags: Optional[List[str]] = None,
         init_circuit: Optional[QuantumCircuit] = None,
         init_num_resets: Optional[int] = None,
@@ -362,6 +363,7 @@ class IBMBackend(Backend):
             circuits: An individual or a
                 list of :class:`~qiskit.circuits.QuantumCircuit` or
                 :class:`~qiskit.pulse.Schedule` object to run on the backend.
+            dynamic: Whether the circuit is dynamic (uses in-circuit conditionals)
             job_tags: Tags to be assigned to the job. The tags can subsequently be used
                 as a filter in the :meth:`jobs()` function call.
             init_circuit: A quantum circuit to execute for initializing qubits before each circuit.
@@ -422,17 +424,13 @@ class IBMBackend(Backend):
                 - If ESP readout is used and the backend does not support this.
         """
         # pylint: disable=arguments-differ
-        def are_circuits_dynamic(
-            circuits: Union[QuantumCircuit, List[QuantumCircuit]]
-        ) -> bool:
-            for circuit in circuits:
-                for inst in circuit:
-                    if isinstance(inst, ControlFlowOp):
-                        return True
-            return False
-
         validate_job_tags(job_tags, IBMBackendValueError)
-        dynamic = are_circuits_dynamic(circuits)
+        actually_dynamic = are_circuits_dynamic(circuits)
+        if dynamic==False and actually_dynamic:
+            warnings.warn(
+                "Parameter 'dynamic' is False, but the circuit contains dynamic constructs."
+            )
+        dynamic = dynamic or actually_dynamic
 
         if dynamic and "qasm3" not in getattr(
             self.configuration(), "supported_features", []
