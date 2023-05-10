@@ -1,5 +1,5 @@
 mypy==0.931
-pylint==2.12.2
+pylint==2.16.2
 pproxy==2.7.8
 matplotlib>=3.3
 jupyter
