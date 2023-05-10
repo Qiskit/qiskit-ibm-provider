@@ -113,9 +113,9 @@ def _read_parameter_vec(file_obj, vectors):  # type: ignore[no-untyped-def]
         vector._params[data.index] = ParameterVectorElement.__new__(
             ParameterVectorElement, vector, data.index, uuid=param_uuid
         )
-        vector._params[data.index].__init__(
+        vector._params[data.index].__init__(  # pylint: disable=unnecessary-dunder-call
             vector, data.index
-        )  # pylint: disable=unnecessary-dunder-call
+        )
     return vector[data.index]
 
 
