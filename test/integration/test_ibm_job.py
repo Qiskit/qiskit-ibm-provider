@@ -82,14 +82,14 @@ class TestIBMJob(IBMTestCase):
         timeout = 30
         start_time = time.time()
         while True:
-            check = sum([job.status() is JobStatus.RUNNING for job in job_array])
+            check = sum(job.status() is JobStatus.RUNNING for job in job_array)
             if check >= 2:
                 self.log.info("found %d simultaneous jobs", check)
                 break
             if all((job.status() is JobStatus.DONE for job in job_array)):
                 # done too soon? don't generate error
                 self.log.warning(
-                    "all jobs completed before simultaneous jobs " "could be detected"
+                    "all jobs completed before simultaneous jobs could be detected"
                 )
                 break
             for job in job_array:

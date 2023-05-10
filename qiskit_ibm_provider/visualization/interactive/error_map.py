@@ -193,8 +193,8 @@ def iplot_error_map(
         num_left = math.ceil(n_qubits / 2)
         num_right = n_qubits - num_left
 
-    x_max = max([d[1] for d in grid_data])
-    y_max = max([d[0] for d in grid_data])
+    x_max = max(d[1] for d in grid_data)
+    y_max = max(d[0] for d in grid_data)
     max_dim = max(x_max, y_max)
 
     qubit_size = 32

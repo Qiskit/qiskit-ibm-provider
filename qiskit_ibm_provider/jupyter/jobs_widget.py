@@ -259,7 +259,7 @@ def _job_summary(
             marker={"colors": wedge_colors},
         )
     )
-    fig.update_layout(margin=dict(t=10, l=10, r=10, b=10))
+    fig.update_layout(margin={"t": 10, "l": 10, "r": 10, "b": 10})
     sun_wid = PlotlyWidget(fig)
     sun_wid._active = 0
     sun_wid._job_index = index_jobs

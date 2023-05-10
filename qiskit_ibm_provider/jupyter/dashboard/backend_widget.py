@@ -150,8 +150,8 @@ def make_backend_widget(backend_item: BackendWithProviders) -> wid.HBox:
 
     # Get basic device stats
     t1_units = props["qubits"][0][0]["unit"]
-    avg_t1 = round(sum([q[0]["value"] for q in props["qubits"]]) / n_qubits, 1)
-    avg_t2 = round(sum([q[1]["value"] for q in props["qubits"]]) / n_qubits, 1)
+    avg_t1 = round(sum(q[0]["value"] for q in props["qubits"]) / n_qubits, 1)
+    avg_t2 = round(sum(q[1]["value"] for q in props["qubits"]) / n_qubits, 1)
 
     if n_qubits != 1:
         sum_cx_err = 0
