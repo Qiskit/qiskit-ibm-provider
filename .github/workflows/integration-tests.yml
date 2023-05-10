@@ -18,6 +18,7 @@ on:
   workflow_dispatch:
 jobs:
   integration-tests-1:
+    if: github.repository_owner == 'Qiskit'
     name: Run integration tests 1 - ${{ matrix.environment }}
     runs-on: ${{ matrix.os }}
     strategy:
@@ -51,6 +52,7 @@ jobs:
       - name: Run integration tests 1
         run: make integration-test-1
   integration-tests-2:
+    if: github.repository_owner == 'Qiskit'
     name: Run integration tests 2 - ${{ matrix.environment }}
     runs-on: ${{ matrix.os }}
     strategy:
@@ -84,6 +86,7 @@ jobs:
       - name: Run integration tests 2
         run: make integration-test-2
   integration-tests-3:
+    if: github.repository_owner == 'Qiskit'
     name: Run integration tests 3 - ${{ matrix.environment }}
     runs-on: ${{ matrix.os }}
     strategy:
