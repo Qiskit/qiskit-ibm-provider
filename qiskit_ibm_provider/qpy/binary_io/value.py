@@ -13,7 +13,6 @@
 """Binary IO for any value objects, such as numbers, string, parameters."""
 
 import struct
-from typing import Any
 import uuid
 
 import numpy as np
