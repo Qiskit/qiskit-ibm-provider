@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Fixed a bug where the backend target ``qubit_properties`` were not
+    being decoded correctly.
