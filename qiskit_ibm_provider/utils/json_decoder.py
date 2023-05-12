@@ -289,9 +289,9 @@ def decode_backend_configuration(config: Dict) -> None:
     config["online_date"] = dateutil.parser.isoparse(config["online_date"])
 
     if "u_channel_lo" in config:
-        for u_channle_list in config["u_channel_lo"]:
-            for u_channle_lo in u_channle_list:
-                u_channle_lo["scale"] = _to_complex(u_channle_lo["scale"])
+        for u_channel_list in config["u_channel_lo"]:
+            for u_channel_lo in u_channel_list:
+                u_channel_lo["scale"] = _to_complex(u_channel_lo["scale"])
 
 
 def decode_result(result: str, result_decoder: Any) -> Dict:
@@ -365,7 +365,7 @@ def _decode_qubit_property(qubit_specs: List[Dict]) -> IBMQubitProperties:
     """
     in_data = {}
     for spec in qubit_specs:
-        name = spec["name"]
+        name = (spec["name"]).lower()
         if name == "operational":
             in_data[name] = bool(spec["value"])
         elif name in IBMQubitProperties.__slots__:

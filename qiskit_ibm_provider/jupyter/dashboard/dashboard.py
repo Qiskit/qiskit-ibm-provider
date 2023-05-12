@@ -210,6 +210,7 @@ class IBMDashboard(Subscriber):
                 ind = idx
                 break
         if not do_pop:
+            # pylint: disable=broad-exception-raised
             raise Exception("Job is not found.")
         if self.jobs[ind].children[3].value not in ["CANCELLED", "DONE", "ERROR"]:
             try:
