@@ -194,3 +194,20 @@ class TestIBMBackend(IBMTestCase):
         """Test that an error is raised when retrieving a backend that does not exist."""
         with self.assertRaises(QiskitBackendNotFoundError):
             self.dependencies.provider.get_backend("nonexistent_backend")
+
+    def test_dynamic_circuits_warning(self):
+        """Test warning when user defines dynamic==False and circuits are dynamic"""
+        backend = self.dependencies.provider.get_backend("ibmq_qasm_simulator")
+        circuit = QuantumCircuit(2, 2)
+        circuit.h(0)
+        circuit.measure(0, 0)
+        with circuit.if_test((0, False)): # pylint: disable=not-context-manager
+            circuit.x(1)
+        circuit.measure([0, 1], [0, 1])
+        backend.run(circuit, dynamic=False)
+        with self.assertWarns(Warning) as warn:
+            backend.run(circuit, dynamic=False)
+        self.assertIn(
+            "Parameter 'dynamic' is False, but the circuit contains dynamic constructs.",
+            str(warn.warning),
+        )
