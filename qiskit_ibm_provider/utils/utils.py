@@ -206,12 +206,8 @@ def are_circuits_dynamic(circuits: Union[QuantumCircuit, List[QuantumCircuit]]) 
     """Checks if the input circuits are dynamic."""
     for circuit in circuits:
         for inst in circuit:
-            if (
-                isinstance(inst, ControlFlowOp)
-                or getattr(inst.operation, "condition", None) is not None
-            ):
+            if isinstance(inst, ControlFlowOp):
                 return True
-        return True
     return False
 
 
