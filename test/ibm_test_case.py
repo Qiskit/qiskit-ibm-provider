@@ -80,7 +80,7 @@ class IBMTestCase(BaseQiskitTestCase):
         failed = False
         # It's surprisingly difficult to find out whether the test failed.
         # Using a private attribute is not ideal but it'll have to do.
-        if self._outcome and self._outcome.errors:
+        if self._outcome and hasattr(self._outcome, "errors"):
             for _, exc_info in self._outcome.errors:
                 if exc_info is not None:
                     failed = True

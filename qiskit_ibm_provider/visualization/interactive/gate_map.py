@@ -97,7 +97,7 @@ def iplot_gate_map(
             paper_bgcolor=background_color,
             width=figsize[0],
             height=figsize[1],
-            margin=dict(t=30, l=0, r=0, b=0),
+            margin={"t": 30, "l": 0, "r": 0, "b": 0},
         )
 
         if as_widget:
@@ -188,7 +188,7 @@ def iplot_gate_map(
                     y=[-y_start, -y_mid, -y_end],
                     mode="lines",
                     hoverinfo="none",
-                    line=dict(width=line_width, color=line_color[ind]),
+                    line={"width": line_width, "color": line_color[ind]},
                 )
             )
 
@@ -213,7 +213,7 @@ def iplot_gate_map(
             marker=go.scatter.Marker(size=qubit_size, color=qubit_color, opacity=1),
             text=[str(ii) for ii in range(n_qubits)] if label_qubits else None,
             textposition="middle center",
-            textfont=dict(size=font_size, color=font_color),
+            textfont={"size": font_size, "color": font_color},
             hoverinfo="text" if label_qubits else "none",
             hovertext=qubit_text,
         )
@@ -231,7 +231,7 @@ def iplot_gate_map(
         paper_bgcolor=background_color,
         width=figsize[0],
         height=figsize[1],
-        margin=dict(t=30, l=0, r=0, b=0),
+        margin={"t": 30, "l": 0, "r": 0, "b": 0},
     )
 
     if as_widget:
