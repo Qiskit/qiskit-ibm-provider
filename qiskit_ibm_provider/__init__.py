@@ -119,7 +119,7 @@ def least_busy(backends: List[Backend]) -> Backend:
     """
     if not backends:
         raise IBMError(
-            "Unable to find the least_busy " "backend from an empty list."
+            "Unable to find the least_busy backend from an empty list."
         ) from None
     try:
         candidates = []

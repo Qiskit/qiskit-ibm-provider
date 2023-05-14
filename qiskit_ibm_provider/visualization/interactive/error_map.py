@@ -103,7 +103,7 @@ def iplot_error_map(
             paper_bgcolor=background_color,
             width=figsize[0],
             height=figsize[1],
-            margin=dict(t=60, l=0, r=0, b=0),
+            margin={"t": 60, "l": 0, "r": 0, "b": 0},
         )
         out = PlotlyWidget(fig)
         return out
@@ -193,8 +193,8 @@ def iplot_error_map(
         num_left = math.ceil(n_qubits / 2)
         num_right = n_qubits - num_left
 
-    x_max = max([d[1] for d in grid_data])
-    y_max = max([d[0] for d in grid_data])
+    x_max = max(d[1] for d in grid_data)
+    y_max = max(d[0] for d in grid_data)
     max_dim = max(x_max, y_max)
 
     qubit_size = 32
@@ -302,7 +302,7 @@ def iplot_error_map(
                     x=[x_start, x_mid, x_end],
                     y=[-y_start, -y_mid, -y_end],
                     mode="lines",
-                    line=dict(width=6, color=line_colors[ind]),
+                    line={"width": 6, "color": line_colors[ind]},
                     hoverinfo="text",
                     hovertext="CX<sub>err</sub>{B}_{A} = {err} %".format(
                         A=edge[0], B=edge[1], err=np.round(cx_errors[ind], 3)
@@ -352,7 +352,7 @@ def iplot_error_map(
             marker=go.scatter.Marker(size=qubit_size, color=q_colors, opacity=1),
             text=[str(ii) for ii in range(n_qubits)],
             textposition="middle center",
-            textfont=dict(size=font_size, color=qtext_color),
+            textfont={"size": font_size, "color": qtext_color},
             hoverinfo="text",
             hovertext=qubit_text,
         ),
@@ -441,9 +441,9 @@ def iplot_error_map(
                 x=[read_err[kk]],
                 y=[kk],
                 orientation="h",
-                marker=dict(color="#eedccb"),
+                marker={"color": "#eedccb"},
                 hoverinfo="text",
-                hoverlabel=dict(font=dict(color=meas_text_color)),
+                hoverlabel={"font": {"color": meas_text_color}},
                 hovertext=[hover_text.format(kk, np.round(read_err[kk], 3))],
             ),
             row=1,
@@ -456,7 +456,7 @@ def iplot_error_map(
             y=[-0.25, num_left - 1 + 0.25],
             mode="lines",
             hoverinfo="none",
-            line=dict(color=text_color, width=2, dash="dot"),
+            line={"color": text_color, "width": 2, "dash": "dot"},
         ),
         row=1,
         col=1,
@@ -486,9 +486,9 @@ def iplot_error_map(
                     x=[-read_err[kk]],
                     y=[kk],
                     orientation="h",
-                    marker=dict(color="#eedccb"),
+                    marker={"color": "#eedccb"},
                     hoverinfo="text",
-                    hoverlabel=dict(font=dict(color=meas_text_color)),
+                    hoverlabel={"font": {"color": meas_text_color}},
                     hovertext=[hover_text.format(kk, np.round(read_err[kk], 3))],
                 ),
                 row=1,
@@ -501,7 +501,7 @@ def iplot_error_map(
                 y=[num_left - 0.25, n_qubits - 1 + 0.25],
                 mode="lines",
                 hoverinfo="none",
-                line=dict(color=text_color, width=2, dash="dot"),
+                line={"color": text_color, "width": 2, "dash": "dot"},
             ),
             row=1,
             col=9,
@@ -532,7 +532,7 @@ def iplot_error_map(
 
     # Makes the subplot titles smaller than the 16pt default
     for ann in fig["layout"]["annotations"]:
-        ann["font"] = dict(size=13)
+        ann["font"] = {"size": 13}
 
     title_text = "{} Error Map".format(backend.name) if show_title else ""
     fig.update_layout(
@@ -541,10 +541,10 @@ def iplot_error_map(
         paper_bgcolor=background_color,
         width=figsize[0],
         height=figsize[1],
-        title=dict(text=title_text, x=0.452),
+        title={"text": title_text, "x": 0.452},
         title_font_size=20,
-        font=dict(color=text_color),
-        margin=dict(t=60, l=0, r=40, b=0),
+        font={"color": text_color},
+        margin={"t": 60, "l": 0, "r": 40, "b": 0},
     )
     if as_widget:
         return PlotlyWidget(fig)
