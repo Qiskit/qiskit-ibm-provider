@@ -498,6 +498,8 @@ class IBMBackend(Backend):
         if isinstance(circuits, QuantumCircuit):
             circuits = [circuits]
 
+        self.check_num_qubits(circuits)
+
         for circ in circuits:
             if isinstance(circ, Schedule):
                 raise IBMBackendValueError(schedule_error_msg)
@@ -813,9 +815,18 @@ class IBMBackend(Backend):
         """Return the default translation stage plugin name for IBM backends."""
         return "ibm_dynamic_circuits"
 
+    def check_num_qubits(self, circuits: List[QuantumCircuit]) -> None:
+        """Check that number of qubits in the circuit is no more the number of qubits on the backend"""
+        for circ in circuits:
+            if circ.num_qubits > self._configuration.num_qubits:
+                raise ValueError(
+                    f"Circuit contains {circ.num_qubits} qubits, but backend has only {self.num_qubits}."
+                )
+
     def check_faulty(self, circuit: QuantumCircuit) -> None:
         """Check if the input circuit uses faulty qubits or edges.
-
+            raise ValueError(
+                        f"
         Args:
             circuit: Circuit to check.
 
