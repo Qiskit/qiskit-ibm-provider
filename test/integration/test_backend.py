@@ -19,9 +19,12 @@ from qiskit import QuantumCircuit, transpile
 from qiskit.providers.models import QasmBackendConfiguration
 from qiskit.providers.exceptions import QiskitBackendNotFoundError
 from qiskit.test.reference_circuits import ReferenceCircuits
+from qiskit.pulse import Schedule
 
 from qiskit_ibm_provider import IBMBackend, IBMProvider
 from qiskit_ibm_provider.ibm_qubit_properties import IBMQubitProperties
+from qiskit_ibm_provider.exceptions import IBMBackendValueError
+
 from ..decorators import (
     IntegrationTestDependencies,
     integration_test_setup_with_backend,
@@ -201,7 +204,7 @@ class TestIBMBackend(IBMTestCase):
         circuit = QuantumCircuit(2, 2)
         circuit.h(0)
         circuit.measure(0, 0)
-        with circuit.if_test((0, False)): # pylint: disable=not-context-manager
+        with circuit.if_test((0, False)):  # pylint: disable=not-context-manager
             circuit.x(1)
         circuit.measure([0, 1], [0, 1])
         backend.run(circuit, dynamic=False)
@@ -211,3 +214,15 @@ class TestIBMBackend(IBMTestCase):
             "Parameter 'dynamic' is False, but the circuit contains dynamic constructs.",
             str(warn.warning),
         )
+
+    def test_schedule_error_message(self):
+        """Test that passing a Schedule as input to Backend.run() raises an error."""
+        backend = self.dependencies.provider.get_backend("ibmq_qasm_simulator")
+        schedule = Schedule()
+        for circuit in [schedule, [schedule]]:
+            with self.assertRaises(IBMBackendValueError) as err:
+                backend.run(circuit)
+            self.assertIn(
+                "Class 'Schedule' is no longer supported as an input circuit",
+                str(err.exception),
+            )

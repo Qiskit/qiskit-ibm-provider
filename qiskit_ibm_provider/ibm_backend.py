@@ -79,8 +79,7 @@ class IBMBackend(Backend):
 
     You can run experiments on a backend using the :meth:`run()` method. The
     :meth:`run()` method takes one or more :class:`~qiskit.circuit.QuantumCircuit`
-    or :class:`~qiskit.pulse.Schedule` and returns
-    an :class:`~qiskit_ibm_provider.job.IBMJob`
+    and returns an :class:`~qiskit_ibm_provider.job.IBMJob`
     instance that represents the submitted job. Each job has a unique job ID, which
     can later be used to retrieve the job. An example of this flow::
 
@@ -98,7 +97,7 @@ class IBMBackend(Backend):
     Note:
 
         * Unlike :meth:`qiskit.execute`, the :meth:`run` method does not transpile
-          the circuits/schedules for you, so be sure to do so before submitting them.
+          the circuits for you, so be sure to do so before submitting them.
 
         * You should not instantiate the ``IBMBackend`` class directly. Instead, use
           the methods provided by an :class:`IBMProvider` instance to retrieve and handle
@@ -296,7 +295,7 @@ class IBMBackend(Backend):
     @property
     def max_circuits(self) -> int:
         """The maximum number of circuits
-        The maximum number of circuits (or Pulse schedules) that can be
+        The maximum number of circuits that can be
         run in a single job. If there is no limit this will return None.
         """
         return self._max_circuits
@@ -361,8 +360,11 @@ class IBMBackend(Backend):
 
         Args:
             circuits: An individual or a
-                list of :class:`~qiskit.circuits.QuantumCircuit` or
-                :class:`~qiskit.pulse.Schedule` object to run on the backend.
+                list of :class:`~qiskit.circuits.QuantumCircuit`.
+                :class:`~qiskit.pulse.Schedule` is no longer supported. Use ``pulse gates`` instead.
+                See `tutorial
+                <https://qiskit.org/documentation/tutorials/circuits_advanced/05_pulse_gates.html>`_
+                on how to use pulse gates.
             dynamic: Whether the circuit is dynamic (uses in-circuit conditionals)
             job_tags: Tags to be assigned to the job. The tags can subsequently be used
                 as a filter in the :meth:`jobs()` function call.
@@ -387,12 +389,19 @@ class IBMBackend(Backend):
             meas_lo_freq: List of default measurement LO frequencies in Hz. Will be overridden
                 by ``schedule_los`` if set.
             schedule_los: Experiment LO configurations, frequencies are given in Hz.
-            meas_level: Set the appropriate level of the measurement output for pulse experiments.
-            meas_return: Level of measurement data for the backend to return.
+            meas_level: Level of the measurement output for pulse experiments. See
+                `OpenPulse specification <https://arxiv.org/pdf/1809.03452.pdf>`_ for details:
 
-                For ``meas_level`` 0 and 1:
+                * ``0``, measurements of the raw signal (the measurement output pulse envelope)
+                * ``1``, measurement kernel is selected (a complex number obtained after applying the
+                  measurement kernel to the measurement output signal)
+                * ``2`` (default), a discriminator is selected and the qubit state is stored (0 or 1)
+
+            meas_return: Level of measurement data for the backend to return. For ``meas_level`` 0 and 1:
+
                 * ``single`` returns information from every shot.
                 * ``avg`` returns average measurement output (averaged over number of shots).
+
             rep_delay: Delay between programs in seconds. Only supported on certain
                 backends (if ``backend.configuration().dynamic_reprate_enabled=True``).
                 If supported, ``rep_delay`` must be from the range supplied
@@ -422,6 +431,7 @@ class IBMBackend(Backend):
             IBMBackendValueError:
                 - If an input parameter value is not valid.
                 - If ESP readout is used and the backend does not support this.
+                - If Schedule is given as an input circuit.
         """
         # pylint: disable=arguments-differ
         validate_job_tags(job_tags, IBMBackendValueError)
@@ -487,11 +497,25 @@ class IBMBackend(Backend):
             # Transpiling in circuit-runner is deprecated.
             run_config_dict["skip_transpilation"] = True
 
-        if isinstance(circuits, (QuantumCircuit, Schedule)):
+        schedule_error_msg = (
+            "Class 'Schedule' is no longer supported as an input circuit. "
+            "Use 'pulse gates' instead. See `tutorial "
+            "https://qiskit.org/documentation/tutorials/circuits_advanced/05_pulse_gates.html` "
+            "on how to use pulse gates."
+        )
+
+        if isinstance(circuits, Schedule):
+            raise IBMBackendValueError(schedule_error_msg)
+
+        if isinstance(circuits, QuantumCircuit):
             circuits = [circuits]
+
         for circ in circuits:
-            if isinstance(circ, QuantumCircuit):
-                self.check_faulty(circ)
+            if isinstance(circ, Schedule):
+                raise IBMBackendValueError(schedule_error_msg)
+
+        for circ in circuits:
+            self.check_faulty(circ)
 
         return self._runtime_run(
             program_id=program_id,
