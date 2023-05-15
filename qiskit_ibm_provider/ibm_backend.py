@@ -825,7 +825,7 @@ class IBMBackend(Backend):
 
     def check_num_qubits(self, circuits: List[QuantumCircuit]) -> None:
         """Check that number of qubits in the circuit does not exceed
-           the number of qubits on the backend"""
+        the number of qubits on the backend"""
         for circ in circuits:
             if circ.num_qubits > self._configuration.num_qubits:
                 raise IBMBackendValueError(
