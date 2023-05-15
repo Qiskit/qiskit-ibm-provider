@@ -432,6 +432,7 @@ class IBMBackend(Backend):
                 - If an input parameter value is not valid.
                 - If ESP readout is used and the backend does not support this.
                 - If Schedule is given as an input circuit.
+                - If one of the circuits contains more qubits than on the backend.
         """
         # pylint: disable=arguments-differ
 
@@ -826,7 +827,7 @@ class IBMBackend(Backend):
         """Check that number of qubits in the circuit is no more the number of qubits on the backend"""
         for circ in circuits:
             if circ.num_qubits > self._configuration.num_qubits:
-                raise ValueError(
+                raise IBMBackendValueError(
                     f"Circuit contains {circ.num_qubits} qubits, but backend has only {self.num_qubits}."
                 )
 
