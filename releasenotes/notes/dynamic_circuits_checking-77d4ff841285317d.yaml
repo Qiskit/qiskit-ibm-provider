@@ -1,0 +1,6 @@
+---
+features:
+  - |
+    In IBMBackend.run(), added a check to whether the input circuits are actually dynamic. 
+    Issue a warning if the user specifies ``dynamic=False``, while the circuits are
+    actually dynamic.

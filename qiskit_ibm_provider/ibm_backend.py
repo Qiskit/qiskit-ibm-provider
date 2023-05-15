@@ -56,7 +56,7 @@ from .job import IBMJob, IBMCircuitJob
 from .transpiler.passes.basis.convert_id_to_delay import (
     ConvertIdToDelay,
 )
-from .utils import validate_job_tags
+from .utils import validate_job_tags, are_circuits_dynamic
 from .utils.options import QASM2Options, QASM3Options
 from .utils.converters import local_to_utc
 from .utils.json_decoder import (
@@ -330,7 +330,7 @@ class IBMBackend(Backend):
         circuits: Union[
             QuantumCircuit, Schedule, List[Union[QuantumCircuit, Schedule]]
         ],
-        dynamic: bool = False,
+        dynamic: bool = None,
         job_tags: Optional[List[str]] = None,
         init_circuit: Optional[QuantumCircuit] = None,
         init_num_resets: Optional[int] = None,
@@ -389,12 +389,19 @@ class IBMBackend(Backend):
             meas_lo_freq: List of default measurement LO frequencies in Hz. Will be overridden
                 by ``schedule_los`` if set.
             schedule_los: Experiment LO configurations, frequencies are given in Hz.
-            meas_level: Set the appropriate level of the measurement output for pulse experiments.
-            meas_return: Level of measurement data for the backend to return.
+            meas_level: Level of the measurement output for pulse experiments. See
+                `OpenPulse specification <https://arxiv.org/pdf/1809.03452.pdf>`_ for details:
 
-                For ``meas_level`` 0 and 1:
+                * ``0``, measurements of the raw signal (the measurement output pulse envelope)
+                * ``1``, measurement kernel is selected (a complex number obtained after applying the
+                  measurement kernel to the measurement output signal)
+                * ``2`` (default), a discriminator is selected and the qubit state is stored (0 or 1)
+
+            meas_return: Level of measurement data for the backend to return. For ``meas_level`` 0 and 1:
+
                 * ``single`` returns information from every shot.
                 * ``avg`` returns average measurement output (averaged over number of shots).
+
             rep_delay: Delay between programs in seconds. Only supported on certain
                 backends (if ``backend.configuration().dynamic_reprate_enabled=True``).
                 If supported, ``rep_delay`` must be from the range supplied
@@ -427,8 +434,13 @@ class IBMBackend(Backend):
                 - If Schedule is given as an input circuit.
         """
         # pylint: disable=arguments-differ
-
         validate_job_tags(job_tags, IBMBackendValueError)
+        actually_dynamic = are_circuits_dynamic(circuits)
+        if dynamic is False and actually_dynamic:
+            warnings.warn(
+                "Parameter 'dynamic' is False, but the circuit contains dynamic constructs."
+            )
+        dynamic = dynamic or actually_dynamic
 
         if dynamic and "qasm3" not in getattr(
             self.configuration(), "supported_features", []
