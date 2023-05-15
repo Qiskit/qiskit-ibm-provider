@@ -824,7 +824,8 @@ class IBMBackend(Backend):
         return "ibm_dynamic_circuits"
 
     def check_num_qubits(self, circuits: List[QuantumCircuit]) -> None:
-        """Check that number of qubits in the circuit is no more the number of qubits on the backend"""
+        """Check that number of qubits in the circuit does not exceed
+           the number of qubits on the backend"""
         for circ in circuits:
             if circ.num_qubits > self._configuration.num_qubits:
                 raise IBMBackendValueError(
@@ -832,6 +833,7 @@ class IBMBackend(Backend):
                 )
 
     def check_faulty(self, circuit: QuantumCircuit) -> None:
+
         """Check if the input circuit uses faulty qubits or edges.
             raise ValueError(
                         f"
