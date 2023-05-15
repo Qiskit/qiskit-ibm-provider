@@ -833,10 +833,8 @@ class IBMBackend(Backend):
                 )
 
     def check_faulty(self, circuit: QuantumCircuit) -> None:
-
         """Check if the input circuit uses faulty qubits or edges.
-            raise ValueError(
-                        f"
+
         Args:
             circuit: Circuit to check.
 
