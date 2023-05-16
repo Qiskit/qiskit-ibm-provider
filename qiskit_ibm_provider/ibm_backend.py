@@ -431,8 +431,6 @@ class IBMBackend(Backend):
             IBMBackendValueError:
                 - If an input parameter value is not valid.
                 - If ESP readout is used and the backend does not support this.
-                - If Schedule is given as an input circuit.
-                - If one of the circuits contains more qubits than on the backend.
         """
         # pylint: disable=arguments-differ
         validate_job_tags(job_tags, IBMBackendValueError)
@@ -506,27 +504,9 @@ class IBMBackend(Backend):
             # Transpiling in circuit-runner is deprecated.
             run_config_dict["skip_transpilation"] = True
 
-        schedule_error_msg = (
-            "Class 'Schedule' is no longer supported as an input circuit. "
-            "Use 'pulse gates' instead. See `tutorial "
-            "https://qiskit.org/documentation/tutorials/circuits_advanced/05_pulse_gates.html` "
-            "on how to use pulse gates."
-        )
-
-        if isinstance(circuits, Schedule):
-            raise IBMBackendValueError(schedule_error_msg)
-
         if isinstance(circuits, QuantumCircuit):
             circuits = [circuits]
-
-        self.check_num_qubits(circuits)
-
-        for circ in circuits:
-            if isinstance(circ, Schedule):
-                raise IBMBackendValueError(schedule_error_msg)
-
-        for circ in circuits:
-            self.check_faulty(circ)
+        self._check_circuit_attributes(circuits)
 
         return self._runtime_run(
             program_id=program_id,
@@ -836,16 +816,28 @@ class IBMBackend(Backend):
         """Return the default translation stage plugin name for IBM backends."""
         return "ibm_dynamic_circuits"
 
-    def check_num_qubits(self, circuits: List[QuantumCircuit]) -> None:
-        """Check that number of qubits in the circuit does not exceed
-        the number of qubits on the backend"""
+    def _check_circuit_attributes(self, circuits: List[QuantumCircuit]) -> None:
+        """Check that circuit can be executed on backend.
+        Raises:
+            IBMBackendValueError:
+                - If Schedule is given as an input circuit.
+                - If one of the circuits contains more qubits than on the backend."""
+        schedule_error_msg = (
+            "Class 'Schedule' is no longer supported as an input circuit. "
+            "Use 'pulse gates' instead. See `tutorial "
+            "https://qiskit.org/documentation/tutorials/circuits_advanced/05_pulse_gates.html` "
+            "on how to use pulse gates."
+        )
         for circ in circuits:
             if circ.num_qubits > self._configuration.num_qubits:
                 raise IBMBackendValueError(
                     f"Circuit contains {circ.num_qubits} qubits, but backend has only {self.num_qubits}."
                 )
+            if isinstance(circ, Schedule):
+                raise IBMBackendValueError(schedule_error_msg)
+            self._check_faulty(circ)
 
-    def check_faulty(self, circuit: QuantumCircuit) -> None:
+    def _check_faulty(self, circuit: QuantumCircuit) -> None:
         """Check if the input circuit uses faulty qubits or edges.
 
         Args:
