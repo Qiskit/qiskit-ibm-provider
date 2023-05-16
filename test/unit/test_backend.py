@@ -19,8 +19,7 @@ from qiskit import transpile, QuantumCircuit
 from qiskit.providers.fake_provider import FakeManila
 from qiskit.providers.models import BackendStatus, BackendProperties
 
-from qiskit_ibm_provider import IBMBackend, IBMProvider
-
+from qiskit_ibm_provider.ibm_backend import IBMBackend
 
 from ..ibm_test_case import IBMTestCase
 
@@ -179,40 +178,3 @@ class TestBackend(IBMTestCase):
         )
         out_backend.properties = lambda: BackendProperties.from_dict(properties)
         return out_backend
-
-    def test_dynamic_circuits_warning(self):
-        """Test warning when user defines dynamic==False and circuits are dynamic"""
-        # pylint: disable=not-context-manager
-        provider = IBMProvider()
-        backend = provider.get_backend("ibmq_qasm_simulator")
-        circuits = []
-        circ = QuantumCircuit(2, 2)
-        circ.h(0)
-        circ.measure(0, 0)
-        with circ.if_test((0, False)):
-            circ.x(1)
-        circuits.append(circ)
-
-        circ = QuantumCircuit(3, 2)
-        with circ.for_loop(range(4)):
-            circ.h(0)
-        circuits.append(circ)
-
-        circ = QuantumCircuit(2, 2)
-        circ.h(0)
-        circ.measure([0], [0])
-        with circ.switch(target=0) as case:
-            with case(0):
-                circ.x(0)
-            with case(case.DEFAULT):
-                circ.cx(0, 1)
-        circuits.append(circ)
-
-        for circuit in circuits:
-            with self.assertWarns(Warning) as warn:
-                backend.run(circuit, dynamic=False)
-            self.assertIn(
-                "Parameter 'dynamic' is False, but the circuit "
-                "contains dynamic constructs.",
-                str(warn.warning),
-            )
