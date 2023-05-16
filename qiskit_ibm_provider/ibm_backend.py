@@ -816,8 +816,8 @@ class IBMBackend(Backend):
         """Return the default translation stage plugin name for IBM backends."""
         return "ibm_dynamic_circuits"
 
-    def _check_circuit_attributes(self, circuits: List[QuantumCircuit]) -> None:
-        """Check that circuit can be executed on backend.
+    def _check_circuits_attributes(self, circuits: List[QuantumCircuit]) -> None:
+        """Check that circuits can be executed on backend.
         Raises:
             IBMBackendValueError:
                 - If Schedule is given as an input circuit.
