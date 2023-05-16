@@ -766,7 +766,7 @@ class IBMCompositeJob(IBMJob):
             circuit_jobs = self._get_circuit_jobs()
             if not circuit_jobs:
                 return None
-            self._creation_date = min([job.creation_date() for job in circuit_jobs])
+            self._creation_date = min(job.creation_date() for job in circuit_jobs)
         return self._creation_date
 
     def time_per_step(self) -> Optional[Dict]:

@@ -19,9 +19,12 @@ from qiskit import QuantumCircuit, transpile
 from qiskit.providers.models import QasmBackendConfiguration
 from qiskit.providers.exceptions import QiskitBackendNotFoundError
 from qiskit.test.reference_circuits import ReferenceCircuits
+from qiskit.pulse import Schedule
 
 from qiskit_ibm_provider import IBMBackend, IBMProvider
 from qiskit_ibm_provider.ibm_qubit_properties import IBMQubitProperties
+from qiskit_ibm_provider.exceptions import IBMBackendValueError
+
 from ..decorators import (
     IntegrationTestDependencies,
     integration_test_setup_with_backend,
@@ -82,6 +85,7 @@ class TestIBMBackend(IBMTestCase):
                 if backend.configuration().open_pulse:
                     self.assertIsNotNone(defaults)
 
+    @skip("See Terra issue #9488")
     def test_backend_options(self):
         """Test backend options."""
         provider: IBMProvider = self.backend.provider
@@ -159,9 +163,10 @@ class TestIBMBackend(IBMTestCase):
                 mutated_circuit = self.backend._deprecate_id_instruction(
                     circuit_with_id
                 )
-            self.assertEqual(mutated_circuit.count_ops(), {"delay": 3})
+            self.assertEqual(mutated_circuit[0].count_ops(), {"delay": 3})
             self.assertEqual(circuit_with_id.count_ops(), {"id": 3})
 
+    @skip("This is a Terra issue and test. Not related to Provider.")
     def test_transpile_converts_id(self):
         """Test that when targeting an IBM backend id is translated to delay."""
         circ = QuantumCircuit(2)
@@ -192,3 +197,32 @@ class TestIBMBackend(IBMTestCase):
         """Test that an error is raised when retrieving a backend that does not exist."""
         with self.assertRaises(QiskitBackendNotFoundError):
             self.dependencies.provider.get_backend("nonexistent_backend")
+
+    def test_dynamic_circuits_warning(self):
+        """Test warning when user defines dynamic==False and circuits are dynamic"""
+        backend = self.dependencies.provider.get_backend("ibmq_qasm_simulator")
+        circuit = QuantumCircuit(2, 2)
+        circuit.h(0)
+        circuit.measure(0, 0)
+        with circuit.if_test((0, False)):  # pylint: disable=not-context-manager
+            circuit.x(1)
+        circuit.measure([0, 1], [0, 1])
+        backend.run(circuit, dynamic=False)
+        with self.assertWarns(Warning) as warn:
+            backend.run(circuit, dynamic=False)
+        self.assertIn(
+            "Parameter 'dynamic' is False, but the circuit contains dynamic constructs.",
+            str(warn.warning),
+        )
+
+    def test_schedule_error_message(self):
+        """Test that passing a Schedule as input to Backend.run() raises an error."""
+        backend = self.dependencies.provider.get_backend("ibmq_qasm_simulator")
+        schedule = Schedule()
+        for circuit in [schedule, [schedule]]:
+            with self.assertRaises(IBMBackendValueError) as err:
+                backend.run(circuit)
+            self.assertIn(
+                "Class 'Schedule' is no longer supported as an input circuit",
+                str(err.exception),
+            )

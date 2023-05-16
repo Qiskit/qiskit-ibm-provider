@@ -121,9 +121,9 @@ def _decode_backend_configuration(config: Dict) -> None:
     config["online_date"] = dateutil.parser.isoparse(config["online_date"])
 
     if "u_channel_lo" in config:
-        for u_channle_list in config["u_channel_lo"]:
-            for u_channle_lo in u_channle_list:
-                u_channle_lo["scale"] = _to_complex(u_channle_lo["scale"])
+        for u_channel_list in config["u_channel_lo"]:
+            for u_channel_lo in u_channel_list:
+                u_channel_lo["scale"] = _to_complex(u_channel_lo["scale"])
 
 
 def _to_complex(value: Union[List[float], complex]) -> complex:

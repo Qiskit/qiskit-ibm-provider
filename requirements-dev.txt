@@ -1,12 +1,6 @@
 mypy==0.931
-pylint==2.12.2
-vcrpy
+pylint==2.16.2
 pproxy==2.7.8
-Sphinx>=1.8.3
-sphinx-rtd-theme>=0.4.0
-sphinx-tabs>=1.1.11
-sphinx-automodapi
-sphinx-autodoc-typehints<=1.19.2
 matplotlib>=3.3
 jupyter
 ipywidgets<8.0.0
@@ -16,8 +10,6 @@ ipyvue>=1.4.1
 ipython>=5.0.0
 seaborn>=0.9.0
 pyperclip>=1.7
-jupyter-sphinx
-reno>=2.11.0
 scipy>=1.0
 nbformat>=4.4.0
 nbconvert>=5.3.1
@@ -29,3 +21,13 @@ scikit-learn>=0.20.0
 ddt>=1.2.0,!=1.4.0,!=1.4.3
 pylatexenc>=1.4
 qiskit-ibmq-provider>=0.19.2
+
+# Documentation
+jupyter-sphinx
+nbsphinx
+Sphinx>=5.3.0
+sphinx-tabs>=1.1.11
+sphinx-automodapi
+sphinx-autodoc-typehints<=1.19.2
+reno>=2.11.0
+qiskit-sphinx-theme~=1.11.1

@@ -43,5 +43,5 @@ from .converters import (
     seconds_to_duration,
     duration_difference,
 )
-from .utils import to_python_identifier, validate_job_tags
+from .utils import to_python_identifier, validate_job_tags, are_circuits_dynamic
 from .json import RuntimeEncoder, RuntimeDecoder
