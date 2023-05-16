@@ -435,6 +435,9 @@ class IBMBackend(Backend):
         """
         # pylint: disable=arguments-differ
         validate_job_tags(job_tags, IBMBackendValueError)
+        if isinstance(circuits, QuantumCircuit):
+            circuits = [circuits]
+
         actually_dynamic = are_circuits_dynamic(circuits)
         if dynamic is False and actually_dynamic:
             warnings.warn(
@@ -511,12 +514,6 @@ class IBMBackend(Backend):
             "https://qiskit.org/documentation/tutorials/circuits_advanced/05_pulse_gates.html` "
             "on how to use pulse gates."
         )
-
-        if isinstance(circuits, Schedule):
-            raise IBMBackendValueError(schedule_error_msg)
-
-        if isinstance(circuits, QuantumCircuit):
-            circuits = [circuits]
 
         for circ in circuits:
             if isinstance(circ, Schedule):
@@ -756,10 +753,8 @@ class IBMBackend(Backend):
 
     def _deprecate_id_instruction(
         self,
-        circuits: Union[
-            QuantumCircuit, Schedule, List[Union[QuantumCircuit, Schedule]]
-        ],
-    ) -> Union[QuantumCircuit, Schedule, List[Union[QuantumCircuit, Schedule]]]:
+        circuits: List[Union[QuantumCircuit, Schedule]],
+    ) -> List[Union[QuantumCircuit, Schedule]]:
         """Raise a DeprecationWarning if any circuit contains an 'id' instruction.
 
         Additionally, if 'delay' is a 'supported_instruction', replace each 'id'
@@ -783,9 +778,6 @@ class IBMBackend(Backend):
 
         if not delay_support:
             return circuits
-
-        if not isinstance(circuits, List):
-            circuits = [circuits]
 
         circuit_has_id = any(
             instr.name == "id"
