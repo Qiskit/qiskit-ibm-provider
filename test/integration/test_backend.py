@@ -214,7 +214,7 @@ class TestIBMBackend(IBMTestCase):
         with circ.for_loop(range(4)):
             circ.h(0)
         circuits.append(circ)
-        
+
         circ = QuantumCircuit(2, 2)
         circ.h(0)
         circ.measure([0], [0])
@@ -229,7 +229,8 @@ class TestIBMBackend(IBMTestCase):
             with self.assertWarns(Warning) as warn:
                 backend.run(circuit, dynamic=False)
             self.assertIn(
-                "Parameter 'dynamic' is False, but the circuit contains dynamic constructs.",
+                "Parameter 'dynamic' is False, but the circuit "
+                "contains dynamic constructs.",
                 str(warn.warning),
             )
 
