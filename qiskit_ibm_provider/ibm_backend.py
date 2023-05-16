@@ -506,7 +506,7 @@ class IBMBackend(Backend):
 
         if isinstance(circuits, QuantumCircuit):
             circuits = [circuits]
-        self._check_circuit_attributes(circuits)
+        self._check_circuits_attributes(circuits)
 
         return self._runtime_run(
             program_id=program_id,
