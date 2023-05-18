@@ -435,7 +435,7 @@ class IBMBackend(Backend):
         """
         # pylint: disable=arguments-differ
         validate_job_tags(job_tags, IBMBackendValueError)
-        if isinstance(circuits, QuantumCircuit) or isinstance(circuits, Schedule):
+        if isinstance(circuits, (QuantumCircuit, Schedule)):
             circuits = [circuits]
 
         schedule_error_msg = (
@@ -516,7 +516,6 @@ class IBMBackend(Backend):
         if not program_id.startswith(QASM3RUNNERPROGRAMID):
             # Transpiling in circuit-runner is deprecated.
             run_config_dict["skip_transpilation"] = True
-
 
         for circ in circuits:
             self.check_faulty(circ)
