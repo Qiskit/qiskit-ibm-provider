@@ -83,6 +83,7 @@ def integration_test_setup_with_backend(
                     )
                 )
             if not _backend:
+                # pylint: disable=broad-exception-raised
                 raise Exception("Unable to find a suitable backend.")
 
             kwargs["backend"] = _backend
@@ -111,6 +112,7 @@ def integration_test_setup(
         def _wrapper(self, *args, **kwargs):
             token, url, instance, instance_private = _get_integration_test_config()
             if not all([token, url]):
+                # pylint: disable=broad-exception-raised
                 raise Exception("Configuration Issue. Token and URL must be set.")
 
             provider = None

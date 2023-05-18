@@ -127,11 +127,11 @@ class TestRealDevices(IBMTestCase):
         ]
         time.sleep(3)  # give time for jobs to start (better way?)
         job_status = [job.status() for job in job_array]
-        num_init = sum([status is JobStatus.INITIALIZING for status in job_status])
-        num_queued = sum([status is JobStatus.QUEUED for status in job_status])
-        num_running = sum([status is JobStatus.RUNNING for status in job_status])
-        num_done = sum([status is JobStatus.DONE for status in job_status])
-        num_error = sum([status is JobStatus.ERROR for status in job_status])
+        num_init = sum(status is JobStatus.INITIALIZING for status in job_status)
+        num_queued = sum(status is JobStatus.QUEUED for status in job_status)
+        num_running = sum(status is JobStatus.RUNNING for status in job_status)
+        num_done = sum(status is JobStatus.DONE for status in job_status)
+        num_error = sum(status is JobStatus.ERROR for status in job_status)
         self.log.info(
             "number of currently initializing jobs: %d/%d", num_init, num_jobs
         )

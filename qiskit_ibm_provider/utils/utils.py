@@ -21,6 +21,7 @@ from queue import Queue
 from threading import Condition
 from typing import List, Optional, Type, Any, Dict, Union, Tuple
 
+from qiskit.circuit import QuantumCircuit, ControlFlowOp
 from qiskit.providers.jobstatus import JobStatus
 
 from ..apiconstants import ApiJobStatus
@@ -199,6 +200,18 @@ def _filter_value(
                 data[filter_key[0]][filter_key[1]] = "..."
             elif isinstance(value, dict):
                 _filter_value(value, filter_keys)
+
+
+def are_circuits_dynamic(circuits: List[QuantumCircuit]) -> bool:
+    """Checks if the input circuits are dynamic."""
+    for circuit in circuits:
+        for inst in circuit:
+            if (
+                isinstance(inst.operation, ControlFlowOp)
+                or getattr(inst.operation, "condition", None) is not None
+            ):
+                return True
+    return False
 
 
 class RefreshQueue(Queue):

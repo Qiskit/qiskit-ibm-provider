@@ -1809,6 +1809,50 @@ class TestALAPSchedulingAndPaddingPass(ControlFlowTestCase):
 
         self.assertEqual(expected, scheduled)
 
+    def test_transpile_both_paths(self):
+        """Test scheduling works with both fast- and standard path after transpiling."""
+        backend = FakeJakarta()
+        # Temporary workaround for mock backends. For real backends this is not required.
+        backend.configuration().basis_gates.append("if_else")
+
+        durations = DynamicCircuitInstructionDurations.from_backend(backend)
+        pm = PassManager([ALAPScheduleAnalysis(durations), PadDelay()])
+
+        qr = QuantumRegister(3)
+        cr = ClassicalRegister(2)
+
+        qc = QuantumCircuit(qr, cr)
+        qc.measure(qr[0], cr[0])
+        with qc.if_test((cr[0], 1)):
+            qc.x(qr[0])
+        with qc.if_test((cr[0], 1)):
+            qc.x(qr[1])
+
+        qc_transpiled = transpile(qc, backend, initial_layout=[0, 1, 2])
+
+        scheduled = pm.run(qc_transpiled)
+
+        qr = QuantumRegister(7, name="q")
+        expected = QuantumCircuit(qr, cr)
+        expected.delay(24080, qr[1])
+        expected.delay(24080, qr[2])
+        expected.delay(24080, qr[3])
+        expected.delay(24080, qr[4])
+        expected.delay(24080, qr[5])
+        expected.delay(24080, qr[6])
+        expected.measure(qr[0], cr[0])
+        with expected.if_test((cr[0], 1)):
+            expected.x(qr[0])
+        with expected.if_test((cr[0], 1)):
+            expected.delay(160, qr[0])
+            expected.x(qr[1])
+            expected.delay(160, qr[2])
+            expected.delay(160, qr[3])
+            expected.delay(160, qr[4])
+            expected.delay(160, qr[5])
+            expected.delay(160, qr[6])
+        self.assertEqual(expected, scheduled)
+
     def test_c_if_plugin_conversion_with_transpile(self):
         """Verify that old format c_if may be converted and scheduled after
         transpilation with the plugin."""

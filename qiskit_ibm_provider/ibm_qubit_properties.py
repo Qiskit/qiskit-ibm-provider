@@ -18,11 +18,12 @@ from qiskit.providers.backend import QubitProperties
 class IBMQubitProperties(QubitProperties):
     """A representation of the properties of a qubit on an IBM backend."""
 
-    __slots__ = (
+    __slots__ = (  # pylint: disable=redefined-slots-in-subclass
         "t1",
         "t2",
         "frequency",
         "anharmonicity",
+        "operational",
     )
 
     def __init__(  # type: ignore[no-untyped-def]
@@ -31,6 +32,7 @@ class IBMQubitProperties(QubitProperties):
         t2=None,
         frequency=None,
         anharmonicity=None,
+        operational=True,
     ):
         """Create a new ``IBMQubitProperties`` object
 
@@ -39,9 +41,11 @@ class IBMQubitProperties(QubitProperties):
             t2: The T2 time for a qubit in secs
             frequency: The frequency of a qubit in Hz
             anharmonicity: The anharmonicity of a qubit in Hz
+            operational: A boolean value representing if this qubit is operational.
         """
         super().__init__(t1=t1, t2=t2, frequency=frequency)
         self.anharmonicity = anharmonicity
+        self.operational = operational
 
     def __repr__(self):  # type: ignore[no-untyped-def]
         return (

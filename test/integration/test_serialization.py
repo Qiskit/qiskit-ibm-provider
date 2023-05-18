@@ -13,7 +13,7 @@
 """Test serializing and deserializing data sent to the server."""
 
 from typing import Set, Any, Dict, Optional
-from unittest import SkipTest, skipIf
+from unittest import SkipTest, skipIf, skip
 
 import dateutil.parser
 from qiskit import transpile, schedule, QuantumCircuit
@@ -43,6 +43,7 @@ class TestSerialization(IBMTestCase):
         )
         cls.bell = transpile(ReferenceCircuits.bell(), backend=cls.sim_backend)
 
+    @skip("See Terra issue #9488")
     def test_pulse_qobj(self):
         """Test serializing pulse qobj data."""
         backends = self.dependencies.provider.backends(
@@ -137,6 +138,7 @@ class TestSerialization(IBMTestCase):
 
         self._verify_data(result.to_dict(), good_keys=good_keys)
 
+    @skip("See Terra issue #9488")
     def test_pulse_job_result(self):
         """Test deserializing a pulse job result."""
         backends = self.dependencies.provider.backends(
