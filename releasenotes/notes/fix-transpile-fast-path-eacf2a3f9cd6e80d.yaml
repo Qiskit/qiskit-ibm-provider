@@ -1,0 +1,7 @@
+---
+fixes:
+  - |
+    Fix mapping for qubit registers when padding for fast-path cases, after
+    transpiling. This mapping is required due to qiskit-terra `#9332
+    <https://github.com/Qiskit/qiskit-terra/issues/9332>`
+    
