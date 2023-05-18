@@ -434,6 +434,18 @@ class IBMBackend(Backend):
         """
         # pylint: disable=arguments-differ
         validate_job_tags(job_tags, IBMBackendValueError)
+        if isinstance(circuits, (QuantumCircuit, Schedule)):
+            circuits = [circuits]
+        self._check_circuits_attributes(circuits)
+        if (
+            use_measure_esp
+            and getattr(self.configuration(), "measure_esp_enabled", False) is False
+        ):
+            raise IBMBackendValueError(
+                "ESP readout not supported on this device. Please make sure the flag "
+                "'use_measure_esp' is unset or set to 'False'."
+            )
+
         actually_dynamic = are_circuits_dynamic(circuits)
         if dynamic is False and actually_dynamic:
             warnings.warn(
@@ -446,14 +458,6 @@ class IBMBackend(Backend):
         ):
             warnings.warn(f"The backend {self.name} does not support dynamic circuits.")
 
-        if (
-            use_measure_esp
-            and getattr(self.configuration(), "measure_esp_enabled", False) is False
-        ):
-            raise IBMBackendValueError(
-                "ESP readout not supported on this device. Please make sure the flag "
-                "'use_measure_esp' is unset or set to 'False'."
-            )
         status = self.status()
         if status.operational is True and status.status_msg != "active":
             warnings.warn(f"The backend {self.name} is currently paused.")
@@ -503,10 +507,6 @@ class IBMBackend(Backend):
         if not program_id.startswith(QASM3RUNNERPROGRAMID):
             # Transpiling in circuit-runner is deprecated.
             run_config_dict["skip_transpilation"] = True
-
-        if isinstance(circuits, QuantumCircuit):
-            circuits = [circuits]
-        self._check_circuits_attributes(circuits)
 
         return self._runtime_run(
             program_id=program_id,
@@ -739,10 +739,7 @@ class IBMBackend(Backend):
 
     def _deprecate_id_instruction(
         self,
-        circuits: Union[
-            QuantumCircuit, Schedule, List[Union[QuantumCircuit, Schedule]]
-        ],
-    ) -> Union[QuantumCircuit, Schedule, List[Union[QuantumCircuit, Schedule]]]:
+        circuits: List[Union[QuantumCircuit, Schedule]]) -> List[Union[QuantumCircuit, Schedule]]:
         """Raise a DeprecationWarning if any circuit contains an 'id' instruction.
 
         Additionally, if 'delay' is a 'supported_instruction', replace each 'id'

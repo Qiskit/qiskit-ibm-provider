@@ -161,7 +161,7 @@ class TestIBMBackend(IBMTestCase):
         with patch.object(self.backend, "configuration", return_value=config):
             with self.assertWarnsRegex(DeprecationWarning, r"'id' instruction"):
                 mutated_circuit = self.backend._deprecate_id_instruction(
-                    circuit_with_id
+                    [circuit_with_id]
                 )
             self.assertEqual(mutated_circuit[0].count_ops(), {"delay": 3})
             self.assertEqual(circuit_with_id.count_ops(), {"id": 3})
