@@ -434,7 +434,7 @@ class IBMBackend(Backend):
         """
         # pylint: disable=arguments-differ
         validate_job_tags(job_tags, IBMBackendValueError)
-        if isinstance(circuits, (QuantumCircuit, Schedule)):
+        if not isinstance(circuits, List):
             circuits = [circuits]
         self._check_circuits_attributes(circuits)
         if (
@@ -738,8 +738,8 @@ class IBMBackend(Backend):
         return "<{}('{}')>".format(self.__class__.__name__, self.name)
 
     def _deprecate_id_instruction(
-        self,
-        circuits: List[Union[QuantumCircuit, Schedule]]) -> List[Union[QuantumCircuit, Schedule]]:
+        self, circuits: List[Union[QuantumCircuit, Schedule]]
+    ) -> List[Union[QuantumCircuit, Schedule]]:
         """Raise a DeprecationWarning if any circuit contains an 'id' instruction.
 
         Additionally, if 'delay' is a 'supported_instruction', replace each 'id'
@@ -763,9 +763,6 @@ class IBMBackend(Backend):
 
         if not delay_support:
             return circuits
-
-        if not isinstance(circuits, List):
-            circuits = [circuits]
 
         circuit_has_id = any(
             instr.name == "id"
