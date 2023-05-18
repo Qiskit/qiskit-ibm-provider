@@ -161,7 +161,7 @@ class TestIBMBackend(IBMTestCase):
         with patch.object(self.backend, "configuration", return_value=config):
             with self.assertWarnsRegex(DeprecationWarning, r"'id' instruction"):
                 mutated_circuit = self.backend._deprecate_id_instruction(
-                    circuit_with_id
+                    [circuit_with_id]
                 )
             self.assertEqual(mutated_circuit[0].count_ops(), {"delay": 3})
             self.assertEqual(circuit_with_id.count_ops(), {"id": 3})
@@ -197,42 +197,6 @@ class TestIBMBackend(IBMTestCase):
         """Test that an error is raised when retrieving a backend that does not exist."""
         with self.assertRaises(QiskitBackendNotFoundError):
             self.dependencies.provider.get_backend("nonexistent_backend")
-
-    def test_dynamic_circuits_warning(self):
-        """Test warning when user defines dynamic==False and circuits are dynamic"""
-        # pylint: disable=not-context-manager
-        backend = self.dependencies.provider.get_backend("ibmq_qasm_simulator")
-        circuits = []
-        circ = QuantumCircuit(2, 2)
-        circ.h(0)
-        circ.measure(0, 0)
-        with circ.if_test((0, False)):
-            circ.x(1)
-        circuits.append(circ)
-
-        circ = QuantumCircuit(3, 2)
-        with circ.for_loop(range(4)):
-            circ.h(0)
-        circuits.append(circ)
-
-        circ = QuantumCircuit(2, 2)
-        circ.h(0)
-        circ.measure([0], [0])
-        with circ.switch(target=0) as case:
-            with case(0):
-                circ.x(0)
-            with case(case.DEFAULT):
-                circ.cx(0, 1)
-        circuits.append(circ)
-
-        for circuit in circuits:
-            with self.assertWarns(Warning) as warn:
-                backend.run(circuit, dynamic=False)
-            self.assertIn(
-                "Parameter 'dynamic' is False, but the circuit "
-                "contains dynamic constructs.",
-                str(warn.warning),
-            )
 
     def test_schedule_error_message(self):
         """Test that passing a Schedule as input to Backend.run() raises an error."""
