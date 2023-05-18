@@ -435,9 +435,26 @@ class IBMBackend(Backend):
         """
         # pylint: disable=arguments-differ
         validate_job_tags(job_tags, IBMBackendValueError)
-        if isinstance(circuits, QuantumCircuit):
+        if isinstance(circuits, QuantumCircuit) or isinstance(circuits, Schedule):
             circuits = [circuits]
 
+        schedule_error_msg = (
+            "Class 'Schedule' is no longer supported as an input circuit. "
+            "Use 'pulse gates' instead. See `tutorial "
+            "https://qiskit.org/documentation/tutorials/circuits_advanced/05_pulse_gates.html` "
+            "on how to use pulse gates."
+        )
+        for circ in circuits:
+            if isinstance(circ, Schedule):
+                raise IBMBackendValueError(schedule_error_msg)
+        if (
+            use_measure_esp
+            and getattr(self.configuration(), "measure_esp_enabled", False) is False
+        ):
+            raise IBMBackendValueError(
+                "ESP readout not supported on this device. Please make sure the flag "
+                "'use_measure_esp' is unset or set to 'False'."
+            )
         actually_dynamic = are_circuits_dynamic(circuits)
         if dynamic is False and actually_dynamic:
             warnings.warn(
@@ -450,14 +467,6 @@ class IBMBackend(Backend):
         ):
             warnings.warn(f"The backend {self.name} does not support dynamic circuits.")
 
-        if (
-            use_measure_esp
-            and getattr(self.configuration(), "measure_esp_enabled", False) is False
-        ):
-            raise IBMBackendValueError(
-                "ESP readout not supported on this device. Please make sure the flag "
-                "'use_measure_esp' is unset or set to 'False'."
-            )
         status = self.status()
         if status.operational is True and status.status_msg != "active":
             warnings.warn(f"The backend {self.name} is currently paused.")
@@ -508,16 +517,6 @@ class IBMBackend(Backend):
             # Transpiling in circuit-runner is deprecated.
             run_config_dict["skip_transpilation"] = True
 
-        schedule_error_msg = (
-            "Class 'Schedule' is no longer supported as an input circuit. "
-            "Use 'pulse gates' instead. See `tutorial "
-            "https://qiskit.org/documentation/tutorials/circuits_advanced/05_pulse_gates.html` "
-            "on how to use pulse gates."
-        )
-
-        for circ in circuits:
-            if isinstance(circ, Schedule):
-                raise IBMBackendValueError(schedule_error_msg)
 
         for circ in circuits:
             self.check_faulty(circ)
@@ -785,10 +784,8 @@ class IBMBackend(Backend):
             if isinstance(circuit, QuantumCircuit)
             for instr, qargs, cargs in circuit.data
         )
-
         if not circuit_has_id:
             return circuits
-
         if not self.id_warning_issued:
             if id_support and delay_support:
                 warnings.warn(
