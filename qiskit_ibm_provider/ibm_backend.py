@@ -437,6 +437,7 @@ class IBMBackend(Backend):
         if not isinstance(circuits, List):
             circuits = [circuits]
         self._check_circuits_attributes(circuits)
+
         if (
             use_measure_esp
             and getattr(self.configuration(), "measure_esp_enabled", False) is False
@@ -445,7 +446,6 @@ class IBMBackend(Backend):
                 "ESP readout not supported on this device. Please make sure the flag "
                 "'use_measure_esp' is unset or set to 'False'."
             )
-
         actually_dynamic = are_circuits_dynamic(circuits)
         if dynamic is False and actually_dynamic:
             warnings.warn(
@@ -770,10 +770,8 @@ class IBMBackend(Backend):
             if isinstance(circuit, QuantumCircuit)
             for instr, qargs, cargs in circuit.data
         )
-
         if not circuit_has_id:
             return circuits
-
         if not self.id_warning_issued:
             if id_support and delay_support:
                 warnings.warn(
