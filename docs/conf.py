@@ -69,9 +69,8 @@ extensions = [
     'sphinx_autodoc_typehints',
     'reno.sphinxext',
     'nbsphinx',
-    "sphinxcontrib.jquery",  # Remove when changing html_theme to qiskit_ecosystem
+    "qiskit_sphinx_theme",
 ]
-html_static_path = ['_static']
 templates_path = ['_templates']
 
 nbsphinx_timeout = 300
