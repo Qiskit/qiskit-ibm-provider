@@ -821,12 +821,12 @@ class IBMBackend(Backend):
             "on how to use pulse gates."
         )
         for circ in circuits:
+            if isinstance(circ, Schedule):
+                raise IBMBackendValueError(schedule_error_msg)
             if circ.num_qubits > self._configuration.num_qubits:
                 raise IBMBackendValueError(
                     f"Circuit contains {circ.num_qubits} qubits, but backend has only {self.num_qubits}."
                 )
-            if isinstance(circ, Schedule):
-                raise IBMBackendValueError(schedule_error_msg)
             self._check_faulty(circ)
 
     def _check_faulty(self, circuit: QuantumCircuit) -> None:
