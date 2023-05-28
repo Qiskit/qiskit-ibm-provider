@@ -202,11 +202,14 @@ def _filter_value(
                 _filter_value(value, filter_keys)
 
 
-def are_circuits_dynamic(circuits: Union[QuantumCircuit, List[QuantumCircuit]]) -> bool:
+def are_circuits_dynamic(circuits: List[QuantumCircuit]) -> bool:
     """Checks if the input circuits are dynamic."""
     for circuit in circuits:
         for inst in circuit:
-            if isinstance(inst, ControlFlowOp):
+            if (
+                isinstance(inst.operation, ControlFlowOp)
+                or getattr(inst.operation, "condition", None) is not None
+            ):
                 return True
     return False
 

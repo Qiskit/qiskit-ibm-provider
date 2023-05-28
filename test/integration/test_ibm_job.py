@@ -238,8 +238,8 @@ class TestIBMJob(IBMTestCase):
         if not backend_2:
             raise SkipTest("Skipping test that requires multiple backends")
 
-        job_1 = backend_1.run(transpile(ReferenceCircuits.bell(), backend_1))
-        job_2 = backend_2.run(transpile(ReferenceCircuits.bell(), backend_2))
+        job_1 = backend_1.run(transpile(ReferenceCircuits.bell()))
+        job_2 = backend_2.run(transpile(ReferenceCircuits.bell()))
 
         # test a retrieved job's backend is the same as the queried backend
         self.assertEqual(
