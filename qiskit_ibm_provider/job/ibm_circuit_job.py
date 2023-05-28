@@ -489,6 +489,7 @@ class IBMCircuitJob(IBMJob):
         """
         if not self._time_per_step or self._status not in JOB_FINAL_STATES:
             self.refresh()
+
         # Note: By default, `None` should be returned if no time per step info is available.
         time_per_step_local = None
         if self._time_per_step:
