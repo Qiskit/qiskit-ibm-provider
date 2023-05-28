@@ -14,6 +14,7 @@
 
 from datetime import datetime
 from unittest import mock
+import warnings
 
 from qiskit import transpile, QuantumCircuit
 from qiskit.providers.fake_provider import FakeManila
@@ -178,3 +179,48 @@ class TestBackend(IBMTestCase):
         )
         out_backend.properties = lambda: BackendProperties.from_dict(properties)
         return out_backend
+
+    def test_dynamic_circuits_warning(self):
+        """Test warning when user defines dynamic==False and circuits are dynamic"""
+        # pylint: disable=not-context-manager
+
+        # backend is not faulty because no faulty parameters given
+        backend = self._create_faulty_backend(model_backend=FakeManila())
+
+        circuits = []
+        circ = QuantumCircuit(2, 2)
+        circ.h(0)
+        circ.measure(0, 0)
+        with circ.if_test((0, False)):
+            circ.x(1)
+        circuits.append(circ)
+
+        circ = QuantumCircuit(3, 2)
+        with circ.for_loop(range(4)):
+            circ.h(0)
+        circuits.append(circ)
+
+        circ = QuantumCircuit(2, 2)
+        circ.h(0)
+        circ.measure([0], [0])
+        with circ.switch(target=0) as case:
+            with case(0):
+                circ.x(0)
+            with case(case.DEFAULT):
+                circ.cx(0, 1)
+        circuits.append(circ)
+
+        for circuit in circuits:
+            # using warnings to catch multiple warnings
+            with warnings.catch_warnings(record=True) as warn:
+                with mock.patch.object(IBMBackend, "_runtime_run"):
+                    backend.run(circuits=circuit, dynamic=False)
+            self.assertIn(
+                "Parameter 'dynamic' is False, but the circuit "
+                "contains dynamic constructs.",
+                str(warn[0].message),
+            )
+            self.assertIn(
+                f"The backend {backend.name} does not support dynamic circuits.",
+                str(warn[1].message),
+            )
