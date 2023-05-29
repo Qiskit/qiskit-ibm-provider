@@ -231,7 +231,7 @@ class IBMBackend(Backend):
         does not yet exist on IBMBackend class.
         """
         # Prevent recursion since these properties are accessed within __getattr__
-        if name in ["_properties", "_defaults", "_target"]:
+        if name in ["_properties", "_defaults", "_target", "_configuration"]:
             raise AttributeError(
                 "'{}' object has no attribute '{}'".format(
                     self.__class__.__name__, name
