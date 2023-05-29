@@ -250,6 +250,8 @@ class TestBackend(IBMTestCase):
 
     def test_single_dynamic_circuit_submission(self):
         """Test submitting single circuit with dynamic=True"""
+        # pylint: disable=not-context-manager
+
         backend = self._create_dc_test_backend()
 
         circ = QuantumCircuit(2, 2)
@@ -264,6 +266,8 @@ class TestBackend(IBMTestCase):
 
     def test_multi_dynamic_circuit_submission(self):
         """Test submitting multiple circuits with dynamic=True"""
+        # pylint: disable=not-context-manager
+
         backend = self._create_dc_test_backend()
 
         circ = QuantumCircuit(2, 2)
@@ -280,6 +284,8 @@ class TestBackend(IBMTestCase):
 
     def test_single_openqasm3_submission(self):
         """Test submitting a single openqasm3 strings with dynamic=True"""
+        # pylint: disable=not-context-manager
+
         backend = self._create_dc_test_backend()
 
         circ = QuantumCircuit(2, 2)
@@ -296,6 +302,8 @@ class TestBackend(IBMTestCase):
 
     def test_multi_openqasm3_submission(self):
         """Test submitting multiple openqasm3 strings with dynamic=True"""
+        # pylint: disable=not-context-manager
+
         backend = self._create_dc_test_backend()
 
         circ = QuantumCircuit(2, 2)
