@@ -205,6 +205,8 @@ def _filter_value(
 def are_circuits_dynamic(circuits: List[QuantumCircuit]) -> bool:
     """Checks if the input circuits are dynamic."""
     for circuit in circuits:
+        if isinstance(circuit, str):
+            return True
         for inst in circuit:
             if (
                 isinstance(inst.operation, ControlFlowOp)
