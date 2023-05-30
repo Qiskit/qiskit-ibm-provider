@@ -328,7 +328,7 @@ class IBMBackend(Backend):
     def run(
         self,
         circuits: Union[
-            QuantumCircuit, Schedule, List[Union[QuantumCircuit, Schedule]]
+            QuantumCircuit, Schedule, str, List[Union[QuantumCircuit, Schedule, str]]
         ],
         dynamic: bool = None,
         job_tags: Optional[List[str]] = None,
@@ -431,22 +431,13 @@ class IBMBackend(Backend):
             IBMBackendValueError:
                 - If an input parameter value is not valid.
                 - If ESP readout is used and the backend does not support this.
-                - If Schedule is given as an input circuit.
         """
         # pylint: disable=arguments-differ
         validate_job_tags(job_tags, IBMBackendValueError)
-        if isinstance(circuits, (QuantumCircuit, Schedule)):
+        if not isinstance(circuits, List):
             circuits = [circuits]
+        self._check_circuits_attributes(circuits)
 
-        schedule_error_msg = (
-            "Class 'Schedule' is no longer supported as an input circuit. "
-            "Use 'pulse gates' instead. See `tutorial "
-            "https://qiskit.org/documentation/tutorials/circuits_advanced/05_pulse_gates.html` "
-            "on how to use pulse gates."
-        )
-        for circ in circuits:
-            if isinstance(circ, Schedule):
-                raise IBMBackendValueError(schedule_error_msg)
         if (
             use_measure_esp
             and getattr(self.configuration(), "measure_esp_enabled", False) is False
@@ -516,9 +507,6 @@ class IBMBackend(Backend):
         if not program_id.startswith(QASM3RUNNERPROGRAMID):
             # Transpiling in circuit-runner is deprecated.
             run_config_dict["skip_transpilation"] = True
-
-        for circ in circuits:
-            self.check_faulty(circ)
 
         return self._runtime_run(
             program_id=program_id,
@@ -750,8 +738,7 @@ class IBMBackend(Backend):
         return "<{}('{}')>".format(self.__class__.__name__, self.name)
 
     def _deprecate_id_instruction(
-        self,
-        circuits: List[Union[QuantumCircuit, Schedule]],
+        self, circuits: List[Union[QuantumCircuit, Schedule]]
     ) -> List[Union[QuantumCircuit, Schedule]]:
         """Raise a DeprecationWarning if any circuit contains an 'id' instruction.
 
@@ -821,7 +808,30 @@ class IBMBackend(Backend):
         """Return the default translation stage plugin name for IBM backends."""
         return "ibm_dynamic_circuits"
 
-    def check_faulty(self, circuit: QuantumCircuit) -> None:
+    def _check_circuits_attributes(self, circuits: List[QuantumCircuit]) -> None:
+        """Check that circuits can be executed on backend.
+        Raises:
+            IBMBackendValueError:
+                - If Schedule is given as an input circuit.
+                - If one of the circuits contains more qubits than on the backend."""
+        schedule_error_msg = (
+            "Class 'Schedule' is no longer supported as an input circuit. "
+            "Use 'pulse gates' instead. See `tutorial "
+            "https://qiskit.org/documentation/tutorials/circuits_advanced/05_pulse_gates.html` "
+            "on how to use pulse gates."
+        )
+        for circ in circuits:
+            if isinstance(circ, Schedule):
+                raise IBMBackendValueError(schedule_error_msg)
+            if isinstance(circ, QuantumCircuit):
+                if circ.num_qubits > self._configuration.num_qubits:
+                    raise IBMBackendValueError(
+                        f"Circuit contains {circ.num_qubits} qubits, "
+                        f"but backend has only {self.num_qubits}."
+                    )
+                self._check_faulty(circ)
+
+    def _check_faulty(self, circuit: QuantumCircuit) -> None:
         """Check if the input circuit uses faulty qubits or edges.
 
         Args:
