@@ -328,7 +328,7 @@ class IBMBackend(Backend):
     def run(
         self,
         circuits: Union[
-            QuantumCircuit, Schedule, List[Union[QuantumCircuit, Schedule]]
+            QuantumCircuit, Schedule, str, List[Union[QuantumCircuit, Schedule, str]]
         ],
         dynamic: bool = None,
         job_tags: Optional[List[str]] = None,
@@ -823,11 +823,13 @@ class IBMBackend(Backend):
         for circ in circuits:
             if isinstance(circ, Schedule):
                 raise IBMBackendValueError(schedule_error_msg)
-            if circ.num_qubits > self._configuration.num_qubits:
-                raise IBMBackendValueError(
-                    f"Circuit contains {circ.num_qubits} qubits, but backend has only {self.num_qubits}."
-                )
-            self._check_faulty(circ)
+            if isinstance(circ, QuantumCircuit):
+                if circ.num_qubits > self._configuration.num_qubits:
+                    raise IBMBackendValueError(
+                        f"Circuit contains {circ.num_qubits} qubits, "
+                        f"but backend has only {self.num_qubits}."
+                    )
+                self._check_faulty(circ)
 
     def _check_faulty(self, circuit: QuantumCircuit) -> None:
         """Check if the input circuit uses faulty qubits or edges.
