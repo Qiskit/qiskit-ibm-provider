@@ -53,10 +53,7 @@ class ProgramJob(RestAdapterBase):
         Returns:
             JSON response.
         """
-        try:
-            return self.session.get(self.get_url("self")).json(cls=RuntimeDecoder)
-        except:
-            return self.session.get(self.get_url("self")).json()
+        return self.session.get(self.get_url("self")).json(cls=RuntimeDecoder)
 
     def job_type(self) -> str:
         """Return job type:

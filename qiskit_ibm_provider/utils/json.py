@@ -261,6 +261,7 @@ class RuntimeDecoder(json.JSONDecoder):
     """JSON Decoder used by runtime service."""
 
     def __init__(self, *args: Any, **kwargs: Any):
+        kwargs.pop("encoding", None)
         super().__init__(object_hook=self.object_hook, *args, **kwargs)
         self.__parameter_vectors: Dict[str, Tuple[ParameterVector, set]] = {}
         self.__read_parameter_expression = (
