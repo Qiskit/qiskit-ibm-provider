@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Fixed bug where set elements were removed inside a loop that iterates
+    over the set elements.
