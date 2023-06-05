@@ -212,7 +212,9 @@ class RuntimeEncoder(json.JSONEncoder):
         if isinstance(obj, QuantumCircuit):
             value = _serialize_and_encode(
                 data=obj,
-                serializer=lambda buff, data: dump(data, buff),  # type: ignore[no-untyped-call]
+                serializer=lambda buff, data: dump(
+                    data, buff, RuntimeEncoder
+                ),  # type: ignore[no-untyped-call]
             )
             return {"__type__": "QuantumCircuit", "__value__": value}
         if isinstance(obj, Parameter):
@@ -261,6 +263,7 @@ class RuntimeDecoder(json.JSONDecoder):
     """JSON Decoder used by runtime service."""
 
     def __init__(self, *args: Any, **kwargs: Any):
+        kwargs.pop("encoding", None)
         super().__init__(object_hook=self.object_hook, *args, **kwargs)
         self.__parameter_vectors: Dict[str, Tuple[ParameterVector, set]] = {}
         self.__read_parameter_expression = (
