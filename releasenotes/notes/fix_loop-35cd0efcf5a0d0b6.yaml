@@ -2,4 +2,5 @@
 fixes:
   - |
     Fixed bug where set elements were removed inside a loop that iterates
-    over the set elements.
+    over the set elements.In addition, if a gate is defined in the supported instructions
+    but not in the 'properties', skip that gate.
