@@ -11,7 +11,7 @@
 # that they have been altered from the originals.
 
 """Tests for the backend functions."""
-
+import copy
 from datetime import datetime
 from unittest import mock
 import warnings
@@ -318,3 +318,9 @@ class TestBackend(IBMTestCase):
             backend.run(circuits=qasm3_circs, dynamic=True)
 
         mock_run.assert_called_once()
+
+    def test_deepcopy(self):
+        """Test that deepcopy of a backend works properly"""
+        backend = self._create_dc_test_backend()
+        backend_copy = copy.deepcopy(backend)
+        self.assertEqual(backend_copy.name, backend.name)
