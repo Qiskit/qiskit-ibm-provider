@@ -1,0 +1,6 @@
+---
+features:
+  - |
+    When retrieving a job with :meth:`~qiskit_ibm_provider.IBMBackendService.retrieve_job` the ``params``
+    will no longer be returned from the API. They will instead be loaded lazily 
+    when they are actually needed.
