@@ -92,7 +92,7 @@ def target_from_server_data(
 ) -> Target:
     """Decode transpiler target from backend data set.
 
-    This function directly generate ``Target`` instance without generate
+    This function directly generates ``Target`` instance without generating
     intermediate legacy objects such as ``BackendProperties`` and ``PulseDefaults``.
 
     Args:
@@ -130,6 +130,7 @@ def target_from_server_data(
     all_instructions = set.union(supported_instructions, basis_gates, set(required))
     faulty_qubits = set()
     faulty_ops = set()
+    unsupported_instructions = []
 
     # Create name to Qiskit instruction object repr mapping
     for name in all_instructions:
@@ -155,8 +156,10 @@ def target_from_server_data(
                 "Please add new gate class to Qiskit or provide GateConfig for this name.",
                 name,
             )
-            all_instructions.remove(name)
-            continue
+            unsupported_instructions.append(name)
+
+    for name in unsupported_instructions:
+        all_instructions.remove(name)
 
     # Create empty inst properties from gate configs
     for name, spec in gate_configs.items():
@@ -224,9 +227,11 @@ def target_from_server_data(
         for cmd in map(Command.from_dict, pulse_defaults["cmd_def"]):
             name = cmd.name
             qubits = tuple(cmd.qubits)
-            if (name, qubits) in faulty_ops:
-                continue
-            if name not in all_instructions or qubits not in prop_name_map[name]:
+            if (
+                name not in all_instructions
+                or name not in prop_name_map
+                or qubits not in prop_name_map[name]
+            ):
                 logger.info(
                     "Gate calibration for instruction %s on qubits %s is found "
                     "in the PulseDefaults payload. However, this entry is not defined in "
@@ -235,6 +240,10 @@ def target_from_server_data(
                     qubits,
                 )
                 continue
+
+            if (name, qubits) in faulty_ops:
+                continue
+
             entry = PulseQobjDef(converter=converter, name=cmd.name)
             entry.define(cmd.sequence)
             try:

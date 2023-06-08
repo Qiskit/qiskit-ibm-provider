@@ -639,7 +639,9 @@ class IBMBackendService:
                 legacy = True
                 job_info = self._default_hgp._api_client.job_get(job_id)
             else:
-                job_info = self._provider._runtime_client.job_get(job_id)
+                job_info = self._provider._runtime_client.job_get(
+                    job_id, exclude_params=True
+                )
                 if job_info.get("program", {}).get("id") not in [
                     "circuit-runner",
                     "qasm3-runner",
