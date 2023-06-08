@@ -226,16 +226,12 @@ def target_from_server_data(
         converter = QobjToInstructionConverter(pulse_lib)
         for cmd in map(Command.from_dict, pulse_defaults["cmd_def"]):
             name = cmd.name
-            if name not in all_instructions or name not in prop_name_map:
-                logger.info(
-                    "Gate calibration for instruction %s is found "
-                    "in the PulseDefaults payload. However, this entry is not defined in "
-                    "the properties of Target. This calibration is ignored.",
-                    name,
-                )
-                continue
             qubits = tuple(cmd.qubits)
-            if qubits not in prop_name_map[name]:
+            if (
+                name not in all_instructions
+                or name not in prop_name_map
+                or qubits not in prop_name_map[name]
+            ):
                 logger.info(
                     "Gate calibration for instruction %s on qubits %s is found "
                     "in the PulseDefaults payload. However, this entry is not defined in "
