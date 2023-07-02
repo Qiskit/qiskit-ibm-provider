@@ -46,7 +46,7 @@ author = 'Qiskit Development Team'
 # The short X.Y version
 version = ''
 # The full version, including alpha/beta/rc tags
-release = '0.5.4'
+release = '0.6.2'
 
 # -- General configuration ---------------------------------------------------
 
@@ -69,14 +69,9 @@ extensions = [
     'sphinx_autodoc_typehints',
     'reno.sphinxext',
     'nbsphinx',
-    "sphinxcontrib.jquery",  # Remove when changing html_theme to qiskit_ecosystem
+    "qiskit_sphinx_theme",
 ]
-html_static_path = ['_static']
 templates_path = ['_templates']
-html_css_files = [
-    'style.css',
-    'gallery.css'
-]
 
 nbsphinx_timeout = 300
 nbsphinx_execute = "never"
