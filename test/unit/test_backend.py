@@ -21,6 +21,7 @@ from qiskit.providers.fake_provider import FakeManila
 from qiskit.providers.models import BackendStatus, BackendProperties
 
 from qiskit_ibm_provider.ibm_backend import IBMBackend
+from qiskit_ibm_provider.exceptions import IBMBackendValueError
 
 from ..ibm_test_case import IBMTestCase
 
@@ -324,3 +325,26 @@ class TestBackend(IBMTestCase):
         backend = self._create_dc_test_backend()
         backend_copy = copy.deepcopy(backend)
         self.assertEqual(backend_copy.name, backend.name)
+
+    def test_too_many_circuits(self):
+        """Test exception when number of circuits exceeds backend._max_circuits"""
+        model_backend = FakeManila()
+        backend = IBMBackend(
+            configuration=model_backend.configuration(),
+            provider=mock.MagicMock(),
+            api_client=None,
+            instance=None,
+        )
+        max_circs = backend.configuration().max_experiments
+
+        circs = []
+        for _ in range(max_circs + 1):
+            circ = QuantumCircuit(1)
+            circ.x(0)
+            circs.append(circ)
+        with self.assertRaises(IBMBackendValueError) as err:
+            backend.run(circs)
+        self.assertIn(
+            f"Number of circuits {max_circs+1} exceeds backend._max_circuits",
+            str(err.exception),
+        )
