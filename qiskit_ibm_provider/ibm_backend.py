@@ -820,6 +820,11 @@ class IBMBackend(Backend):
             "https://qiskit.org/documentation/tutorials/circuits_advanced/05_pulse_gates.html` "
             "on how to use pulse gates."
         )
+        if len(circuits) > self._max_circuits:
+            raise IBMBackendValueError(
+                f"Number of circuits, {len(circuits)} exceeds the "
+                f"maximum for this backend, {self._max_circuits})"
+            )
         for circ in circuits:
             if isinstance(circ, Schedule):
                 raise IBMBackendValueError(schedule_error_msg)

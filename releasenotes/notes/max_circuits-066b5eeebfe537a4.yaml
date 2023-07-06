@@ -1,0 +1,5 @@
+---
+features:
+  - |
+    Raise an exception if the number of circuits passed to IBMBackend.run() exceeds
+    IBMBackend._max_circuits.
