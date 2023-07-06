@@ -345,6 +345,6 @@ class TestBackend(IBMTestCase):
         with self.assertRaises(IBMBackendValueError) as err:
             backend.run(circs)
         self.assertIn(
-            f"Number of circuits {max_circs+1} exceeds backend._max_circuits",
+            f"Number of circuits, {max_circs+1} exceeds the maximum for this backend, {max_circs}",
             str(err.exception),
         )
