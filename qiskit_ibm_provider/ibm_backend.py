@@ -822,7 +822,7 @@ class IBMBackend(Backend):
         )
         if len(circuits) > self._max_circuits:
             raise IBMBackendValueError(
-                f"Number of circuits {len(circuits)} exceeds backend._max_circuits({self._max_circuits})"
+                f"Number of circuits, {len(circuits)} exceeds the the maximum for this backend, {self._max_circuits})"
             )
         for circ in circuits:
             if isinstance(circ, Schedule):
