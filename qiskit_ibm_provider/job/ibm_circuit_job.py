@@ -603,6 +603,11 @@ class IBMCircuitJob(IBMJob):
         """Retrieve job parameters"""
         if not self._params:
             with api_to_job_error():
+                if self._provider._runtime_client.job_type(self.job_id()) == "IQX":
+                    raise IBMJobError(
+                        f"{self.job_id()} is a legacy job. Retrieving parameters of legacy "
+                        f"jobs is not supported from qiskit-ibm-provider"
+                    ) from None
                 api_response = self._runtime_client.job_get(self.job_id())
                 self._params = api_response.get("params", {})
 
