@@ -1,8 +1,6 @@
-# -*- coding: utf-8 -*-
-
 # This code is part of Qiskit.
 #
-# (C) Copyright IBM 2021.
+# (C) Copyright IBM 2021, 2023.
 #
 # This code is licensed under the Apache License, Version 2.0. You may
 # obtain a copy of this license in the LICENSE.txt file in the root directory
@@ -94,19 +92,17 @@ link_str = f" https://github.com/Qiskit/qiskit-ibm-provider/blob/stable/{vers[0]
 nbsphinx_prolog += link_str + "{{ docname }}"
 
 # -----------------------------------------------------------------------------
-# Autosummary
+# Autosummary & autodoc
 # -----------------------------------------------------------------------------
 
 autosummary_generate = True
-
-# -----------------------------------------------------------------------------
-# Autodoc
-# -----------------------------------------------------------------------------
 
 autodoc_default_options = {
     'inherited-members': None,
     'exclude-members': 'with_traceback'
 }
+
+autoclass_content = 'both'
 
 
 # If true, figures, tables and code-blocks are automatically numbered if they
@@ -145,24 +141,11 @@ add_module_names = False
 # package. Works only for the HTML builder currently.
 modindex_common_prefix = ['qiskit.']
 
-# -- Configuration for extlinks extension ------------------------------------
-# Refer to https://www.sphinx-doc.org/en/master/usage/extensions/extlinks.html
-
-
 # -- Options for HTML output -------------------------------------------------
 
-html_theme = 'qiskit_sphinx_theme'
+html_theme = 'qiskit'
 
 html_logo = 'images/logo.png'
 html_last_updated_fmt = '%Y/%m/%d'
 
-html_theme_options = {
-    'logo_only': True,
-    'display_version': True,
-    'prev_next_buttons_location': 'bottom',
-    'style_external_links': True,
-}
-
 html_sourcelink_suffix = ''
-
-autoclass_content = 'both'
