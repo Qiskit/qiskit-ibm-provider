@@ -130,6 +130,8 @@ class RuntimeClient(BaseClient):
         Returns:
             JSON response.
         """
+        print("session id = "+str(session_id))
+        print("start session = "+ str(start_session))
         hgp_dict = {}
         if hgp:
             hub, group, project = from_instance_format(hgp)

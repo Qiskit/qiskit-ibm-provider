@@ -39,6 +39,7 @@ from .ibm_backend_service import IBMBackendService  # pylint: disable=cyclic-imp
 from .job import IBMJob  # pylint: disable=cyclic-import
 from .proxies.configuration import ProxyConfiguration
 from .utils.hgp import to_instance_format, from_instance_format
+from .session import Session
 
 logger = logging.getLogger(__name__)
 
@@ -131,6 +132,7 @@ class IBMProvider(Provider):
         instance: Optional[str] = None,
         proxies: Optional[dict] = None,
         verify: Optional[bool] = None,
+        session: Optional[Session] = None,
     ) -> None:
         """IBMProvider constructor
 
@@ -180,6 +182,7 @@ class IBMProvider(Provider):
 
         self._hgps = self._initialize_hgps(self._auth_client)
         self._initialize_services()
+        self._session = session
 
     @staticmethod
     def _discover_account(
