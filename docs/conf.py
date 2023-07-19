@@ -55,7 +55,6 @@ extensions = [
     'sphinx.ext.mathjax',
     'sphinx.ext.viewcode',
     'sphinx.ext.extlinks',
-    'sphinx_tabs.tabs',
     'jupyter_sphinx',
     'sphinx_autodoc_typehints',
     'reno.sphinxext',
