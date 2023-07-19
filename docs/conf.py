@@ -141,7 +141,7 @@ modindex_common_prefix = ['qiskit.']
 html_theme = "qiskit-ecosystem"
 html_title = f"{project} {release}"
 
-html_logo = "ibm-quantum-logo.png"
+html_logo = "images/ibm-quantum-logo.png"
 
 html_theme_options = {
     # Because this is an IBM-focused project, we use a blue color scheme.
