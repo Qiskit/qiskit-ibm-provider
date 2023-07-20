@@ -19,6 +19,8 @@ from contextvars import ContextVar
 
 from qiskit.circuit import QuantumCircuit
 
+from qiskit_ibm_provider.utils.converters import hms_to_seconds
+
 
 def _active_session(func):  # type: ignore
     """Decorator used to ensure the session is active."""
@@ -94,13 +96,11 @@ class Session:
         self._active = True
         self._circuits_map: Dict[str, QuantumCircuit] = {}
 
-        # for now ignore hms_to_seconds in order not to copy it from qiskit_ibm_runtime
-        # self._max_time = (
-        #     max_time
-        #     if max_time is None or isinstance(max_time, int)
-        #     else hms_to_seconds(max_time, "Invalid max_time value: ")
-        # )
-        self._max_time = max_time
+        self._max_time = (
+            max_time
+            if max_time is None or isinstance(max_time, int)
+            else hms_to_seconds(max_time, "Invalid max_time value: ")
+        )
 
     # def close(self) -> None:
     #     """Close the session."""

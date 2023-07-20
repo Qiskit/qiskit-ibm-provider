@@ -548,7 +548,7 @@ class IBMBackend(Backend):
                 job_tags=job_tags,
                 session_id=session_id,
                 start_session=start_session,
-                max_execution_time=max_execution_time
+                max_execution_time=max_execution_time,
             )
         except RequestsApiError as ex:
             raise IBMBackendApiError("Error submitting job: {}".format(str(ex))) from ex
