@@ -182,3 +182,11 @@ class Runtime(RestAdapterBase):
         if all([hub, group, project]):
             payload["provider"] = f"{hub}/{group}/{project}"
         return self.session.get(url, params=payload).json()
+
+    def close_session(self, session_id: str) -> None:
+        """Close session
+
+        Args:
+            session_id (str): the id of the session to close
+        """
+        print(f"temporary placeholder for closing session {session_id}")

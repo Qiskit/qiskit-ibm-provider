@@ -53,5 +53,5 @@ class TestSession(IBMTestCase):
             self.assertEqual(session.session_id, job1.job_id())
             _ = provider.backends(name=backend)[0].run(circuit)
             self.assertEqual(session.session_id, session_id)
-            # session.close()
-            # self.assertFalse(session._active)
+            provider.close_session(session_id=session_id)
+            self.assertFalse(session._active)

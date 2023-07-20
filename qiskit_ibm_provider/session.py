@@ -12,12 +12,10 @@
 
 """Qiskit Runtime flexible session."""
 
-from typing import Dict, Optional, Type, Union
+from typing import Optional, Type, Union
 from types import TracebackType
 from functools import wraps
 from contextvars import ContextVar
-
-from qiskit.circuit import QuantumCircuit
 
 from qiskit_ibm_provider.utils.converters import hms_to_seconds
 
@@ -65,7 +63,6 @@ class Session:
 
     def __init__(
         self,
-        # provider: "qiskit_ibm_provider.IBMProvider",
         backend_name: Optional[str] = None,
         max_time: Optional[Union[int, str]] = None,
     ):  # pylint: disable=line-too-long
@@ -94,19 +91,13 @@ class Session:
         self._backend = backend_name
         self._session_id: Optional[str] = None
         self._active = True
-        self._circuits_map: Dict[str, QuantumCircuit] = {}
+        # self._circuits_map: Dict[str, QuantumCircuit] = {}
 
         self._max_time = (
             max_time
             if max_time is None or isinstance(max_time, int)
             else hms_to_seconds(max_time, "Invalid max_time value: ")
         )
-
-    # def close(self) -> None:
-    #     """Close the session."""
-    #     self._active = False
-    #     if self._session_id:
-    #         self._service._api_client.close_session(self._session_id)
 
     def backend(self) -> Optional[str]:
         """Return backend for this session.
