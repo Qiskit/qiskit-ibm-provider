@@ -534,6 +534,11 @@ class IBMBackend(Backend):
             if self.provider._session
             else None
         )
+        max_execution_time = (
+            self.provider._session._max_time
+            if self.provider._session._max_time
+            else None
+        )
         try:
             response = self.provider._runtime_client.program_run(
                 program_id=program_id,
@@ -543,6 +548,7 @@ class IBMBackend(Backend):
                 job_tags=job_tags,
                 session_id=session_id,
                 start_session=start_session,
+                max_execution_time=max_execution_time
             )
         except RequestsApiError as ex:
             raise IBMBackendApiError("Error submitting job: {}".format(str(ex))) from ex
