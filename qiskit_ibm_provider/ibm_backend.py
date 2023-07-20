@@ -46,8 +46,7 @@ from qiskit.tools.events.pubsub import Publisher
 from qiskit.transpiler.passmanager import PassManager
 from qiskit.transpiler.target import Target
 
-from qiskit_ibm_provider import ibm_provider # pylint: disable=unused-import
-from qiskit_ibm_provider.session import Session
+from qiskit_ibm_provider import ibm_provider  # pylint: disable=unused-import
 from .api.clients import AccountClient
 from .exceptions import (
     IBMBackendError,
@@ -196,7 +195,7 @@ class IBMBackend(Backend):
         provider: "ibm_provider.IBMProvider",
         api_client: AccountClient,
         instance: Optional[str] = None,
-     ) -> None:
+    ) -> None:
         """IBMBackend constructor.
 
         Args:
@@ -527,8 +526,14 @@ class IBMBackend(Backend):
     ) -> IBMCircuitJob:
         """Runs the runtime program and returns the corresponding job object"""
         hgp_name = self._instance or self.provider._get_hgp().name
-        session_id = self.provider._session.session_id if self.provider._session else None
-        start_session = self.provider._session.session_id is None if self.provider._session else None
+        session_id = (
+            self.provider._session.session_id if self.provider._session else None
+        )
+        start_session = (
+            self.provider._session.session_id is None
+            if self.provider._session
+            else None
+        )
         try:
             response = self.provider._runtime_client.program_run(
                 program_id=program_id,
@@ -536,10 +541,9 @@ class IBMBackend(Backend):
                 params=inputs,
                 hgp=hgp_name,
                 job_tags=job_tags,
-                session_id = session_id,
-                start_session = start_session
+                session_id=session_id,
+                start_session=start_session,
             )
-
         except RequestsApiError as ex:
             raise IBMBackendApiError("Error submitting job: {}".format(str(ex))) from ex
         try:
@@ -551,7 +555,6 @@ class IBMBackend(Backend):
                 job_id=job_id,
             )
             logger.debug("Job %s was successfully submitted.", job.job_id())
-
         except TypeError as err:
             logger.debug("Invalid job data received: %s", response)
             raise IBMBackendApiProtocolError(

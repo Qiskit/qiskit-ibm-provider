@@ -12,24 +12,12 @@
 
 """Qiskit Runtime flexible session."""
 
-from typing import Dict, Optional, Type, Union, Callable, List
+from typing import Dict, Optional, Type, Union
 from types import TracebackType
 from functools import wraps
 from contextvars import ContextVar
 
 from qiskit.circuit import QuantumCircuit
-
-#from qiskit_ibm_provider import IBMProvider  # pylint:disable=cyclic-import
-from qiskit_ibm_provider.job import IBMJob
-
-#from qiskit_ibm_runtime import QiskitRuntimeService
-# from .runtime_job import RuntimeJob
-# from .runtime_program import ParameterNamespace
-# from .program.result_decoder import ResultDecoder
-# pylint: disable=unused-import,cyclic-import
-#from .ibm_backend import IBMBackend
-#from .utils.converters import hms_to_seconds
-from .exceptions import IBMInputValueError
 
 
 def _active_session(func):  # type: ignore
@@ -75,7 +63,7 @@ class Session:
 
     def __init__(
         self,
-        #provider: "qiskit_ibm_provider.IBMProvider",
+        # provider: "qiskit_ibm_provider.IBMProvider",
         backend_name: Optional[str] = None,
         max_time: Optional[Union[int, str]] = None,
     ):  # pylint: disable=line-too-long
@@ -101,15 +89,12 @@ class Session:
             ValueError: If an input value is invalid.
         """
         self._instance = None
-
         self._backend = backend_name
-
         self._session_id: Optional[str] = None
         self._active = True
-
         self._circuits_map: Dict[str, QuantumCircuit] = {}
 
-        #for now ignore hms_to_seconds in order not to copy it from qiskit_ibm_runtime
+        # for now ignore hms_to_seconds in order not to copy it from qiskit_ibm_runtime
         # self._max_time = (
         #     max_time
         #     if max_time is None or isinstance(max_time, int)
@@ -117,74 +102,11 @@ class Session:
         # )
         self._max_time = max_time
 
-    @_active_session
-    def run(
-        self,
-        backend_name: Optional[str],
-        program_id: str,
-        inputs: Dict,
-        options: Optional[Dict] = None,
-        job_tags: Optional[List[str]] = None,
-        #callback: Optional[Callable] = None,
-        #result_decoder: Optional[Type[ResultDecoder]] = None,
-    ) -> IBMJob:
-        """Run a program in the session.
-
-        Args:
-            program_id: Program ID.
-            inputs: Program input parameters. These input values are passed
-                to the runtime program.
-            options: Runtime options that control the execution environment.
-                See :class:`qiskit_ibm_runtime.RuntimeOptions` for all available options,
-                EXCEPT ``backend``, which should be specified during session initialization.
-            callback: Callback function to be invoked for any interim results and final result.
-
-        Returns:
-            Submitted job.
-
-        Raises:
-            IBMInputValueError: If a backend is passed in through options that does not match
-                the current session backend.
-        """
-
-        options = options or {}
-
-        if "instance" not in options:
-            options["instance"] = self._instance
-
-        options["backend"] = self._backend
-
-        if not self._session_id:
-            # TODO: What happens if session max time != first job max time?
-            # Use session max time if this is first job.
-            options["session_time"] = self._max_time
-
-        print("in Session.run")
-
-        #job = self._backend.run()
-        # job = self._service.run(
-        #     program_id=program_id,
-        #     options=options,
-        #     inputs=inputs,
-        #     session_id=self._session_id,
-        #     start_session=self._session_id is None,
-        #     callback=callback,
-        #     result_decoder=result_decoder,
-        # )
-
-        # if self._session_id is None:
-        #     self._session_id = job.job_id()
-        #
-        # if self._backend is None:
-        #     self._backend = job.backend().name
-        #
-        # return job
-
-    def close(self) -> None:
-        """Close the session."""
-        self._active = False
-        if self._session_id:
-            self._service._api_client.close_session(self._session_id)
+    # def close(self) -> None:
+    #     """Close the session."""
+    #     self._active = False
+    #     if self._session_id:
+    #         self._service._api_client.close_session(self._session_id)
 
     def backend(self) -> Optional[str]:
         """Return backend for this session.
@@ -203,7 +125,6 @@ class Session:
         """
         return self._session_id
 
-
     def __enter__(self) -> "Session":
         set_cm_session(self)
         return self
@@ -218,7 +139,9 @@ class Session:
 
 
 # Default session
-_DEFAULT_SESSION: ContextVar[Optional[Session]] = ContextVar("_DEFAULT_SESSION", default=None)
+_DEFAULT_SESSION: ContextVar[Optional[Session]] = ContextVar(
+    "_DEFAULT_SESSION", default=None
+)
 _IN_SESSION_CM: ContextVar[bool] = ContextVar("_IN_SESSION_CM", default=False)
 
 
