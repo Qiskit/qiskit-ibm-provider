@@ -816,7 +816,8 @@ def _write_registers(file_obj, in_circ_regs, full_bits):  # type: ignore[no-unty
 
     return len(in_circ_regs) + len(out_circ_regs)
 
-def _write_layout(file_obj, circuit):
+
+def _write_layout(file_obj, circuit):  # type: ignore[no-untyped-def]
     if circuit.layout is None:
         # Write a null header if there is no layout present
         file_obj.write(struct.pack(formats.LAYOUT_PACK, False, -1, -1, -1, 0))
@@ -873,10 +874,14 @@ def _write_layout(file_obj, circuit):
         )
     )
     _write_registers(
-        file_obj, list(extra_registers), [x for bits in extra_registers.values() for x in bits]
+        file_obj,
+        list(extra_registers),
+        [x for bits in extra_registers.values() for x in bits],
     )
     for index, register in initial_layout_array:
-        reg_name_bytes = None if register is None else register.name.encode(common.ENCODE)
+        reg_name_bytes = (
+            None if register is None else register.name.encode(common.ENCODE)
+        )
         file_obj.write(
             struct.pack(
                 formats.INITIAL_LAYOUT_BIT_PACK,
@@ -892,7 +897,7 @@ def _write_layout(file_obj, circuit):
         file_obj.write(struct.pack("!I", i))
 
 
-def _read_layout(file_obj, circuit):
+def _read_layout(file_obj, circuit):  # type: ignore[no-untyped-def]
     header = formats.LAYOUT._make(
         struct.unpack(formats.LAYOUT_PACK, file_obj.read(formats.LAYOUT_SIZE))
     )
@@ -914,11 +919,15 @@ def _read_layout(file_obj, circuit):
         if virtual_bit.index == -1 and virtual_bit.register_size == -1:
             qubit = Qubit()
         else:
-            register_name = file_obj.read(virtual_bit.register_size).decode(common.ENCODE)
+            register_name = file_obj.read(virtual_bit.register_size).decode(
+                common.ENCODE
+            )
             if register_name in registers:
                 qubit = registers[register_name][virtual_bit.index]
             else:
-                register = next(filter(lambda x, name=register_name: x.name == name, circuit.qregs))
+                register = next(
+                    filter(lambda x, name=register_name: x.name == name, circuit.qregs)
+                )
                 qubit = register[virtual_bit.index]
         initial_layout_virtual_bits.append(qubit)
     if initial_layout_virtual_bits:
@@ -937,10 +946,14 @@ def _read_layout(file_obj, circuit):
     final_layout = None
     final_layout_array = []
     for _ in range(header.final_layout_size):
-        final_layout_array.append(struct.unpack("!I", file_obj.read(struct.calcsize("!I")))[0])
+        final_layout_array.append(
+            struct.unpack("!I", file_obj.read(struct.calcsize("!I")))[0]
+        )
 
     if final_layout_array:
-        layout_dict = {circuit.qubits[bit]: index for index, bit in enumerate(final_layout_array)}
+        layout_dict = {
+            circuit.qubits[bit]: index for index, bit in enumerate(final_layout_array)
+        }
         final_layout = Layout(layout_dict)
 
     circuit._layout = TranspileLayout(initial_layout, input_qubit_mapping, final_layout)

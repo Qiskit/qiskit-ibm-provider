@@ -278,7 +278,13 @@ MAP_ITEM_SIZE = struct.calcsize(MAP_ITEM_PACK)
 
 LAYOUT = namedtuple(
     "LAYOUT",
-    ["exists", "initial_layout_size", "input_mapping_size", "final_layout_size", "extra_registers"],
+    [
+        "exists",
+        "initial_layout_size",
+        "input_mapping_size",
+        "final_layout_size",
+        "extra_registers",
+    ],
 )
 LAYOUT_PACK = "!?iiiI"
 LAYOUT_SIZE = struct.calcsize(LAYOUT_PACK)
