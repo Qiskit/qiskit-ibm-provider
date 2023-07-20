@@ -11,31 +11,31 @@
 # that they have been altered from the originals.
 
 """Custom JSON decoder."""
-from typing import Dict, Tuple, Union, List, Any, Optional
 import json
 import logging
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import dateutil.parser
+from qiskit.circuit.controlflow import ForLoopOp, IfElseOp, SwitchCaseOp, WhileLoopOp
+from qiskit.circuit.gate import Gate, Instruction
+from qiskit.circuit.library.standard_gates import get_standard_gate_name_mapping
+from qiskit.circuit.parameter import Parameter
 from qiskit.providers.models import (
-    QasmBackendConfiguration,
-    PulseBackendConfiguration,
-    PulseDefaults,
     BackendProperties,
     Command,
+    PulseBackendConfiguration,
+    PulseDefaults,
+    QasmBackendConfiguration,
 )
 from qiskit.providers.models.backendproperties import Gate as GateSchema
-from qiskit.circuit.controlflow import IfElseOp, WhileLoopOp, ForLoopOp
-from qiskit.circuit.gate import Gate, Instruction
-from qiskit.circuit.parameter import Parameter
-from qiskit.circuit.library.standard_gates import get_standard_gate_name_mapping
 from qiskit.pulse.calibration_entries import PulseQobjDef
-from qiskit.transpiler.target import Target, InstructionProperties
-from qiskit.qobj.pulse_qobj import PulseLibraryItem
 from qiskit.qobj.converters.pulse_instruction import QobjToInstructionConverter
+from qiskit.qobj.pulse_qobj import PulseLibraryItem
+from qiskit.transpiler.target import InstructionProperties, Target
 from qiskit.utils import apply_prefix
 
-from .converters import utc_to_local, utc_to_local_all
 from ..ibm_qubit_properties import IBMQubitProperties
+from .converters import utc_to_local, utc_to_local_all
 
 logger = logging.getLogger(__name__)
 
@@ -111,6 +111,7 @@ def target_from_server_data(
         "if_else": IfElseOp,
         "while_loop": WhileLoopOp,
         "for_loop": ForLoopOp,
+        "switch_case": SwitchCaseOp,
     }
 
     in_data = {"num_qubits": configuration.n_qubits}
