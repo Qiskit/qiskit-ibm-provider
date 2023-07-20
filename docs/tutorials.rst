@@ -4,9 +4,6 @@
 Tutorials
 =========
 
-How-to guides
-=================================
-
 .. nbgallery::
 
    tutorials/1_the_ibm_quantum_account
