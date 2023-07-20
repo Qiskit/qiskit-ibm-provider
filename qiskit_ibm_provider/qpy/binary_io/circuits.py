@@ -300,6 +300,7 @@ def _read_instruction(  # type: ignore[no-untyped-def]
             "UCRXGate",
             "UCRYGate",
             "UCRZGate",
+            "DiagonalGate",
         }:
             gate = gate_class(params)
         else:
