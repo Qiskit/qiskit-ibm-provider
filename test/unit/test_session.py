@@ -12,12 +12,9 @@
 
 """IBMBackend Test."""
 
-from qiskit import QuantumCircuit
-from qiskit.test.reference_circuits import ReferenceCircuits
 
 from qiskit_ibm_provider import IBMProvider
 from qiskit_ibm_provider.session import Session
-from qiskit_ibm_provider.exceptions import IBMInputValueError
 
 from ..ibm_test_case import IBMTestCase
 

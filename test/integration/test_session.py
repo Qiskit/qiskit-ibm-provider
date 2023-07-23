@@ -13,9 +13,12 @@
 """IBMBackend Test."""
 
 from qiskit import QuantumCircuit
+from qiskit.test.reference_circuits import ReferenceCircuits
+from qiskit.result import Result
 
 from qiskit_ibm_provider import IBMProvider
 from qiskit_ibm_provider.session import Session
+
 
 from ..decorators import (
     IntegrationTestDependencies,
@@ -53,5 +56,37 @@ class TestSession(IBMTestCase):
             self.assertEqual(session.session_id, job1.job_id())
             _ = provider.backends(name=backend)[0].run(circuit)
             self.assertEqual(session.session_id, session_id)
-            provider.close_session(session_id=session_id)
-            self.assertFalse(session._active)
+
+    def test_backend_run(self):
+        """Test that session_id is updated correctly and maintained throughout the session"""
+        backend_name = "ibmq_qasm_simulator"
+        circuit = ReferenceCircuits.bell()
+        shots = 1000
+
+        with Session(backend_name=backend_name) as session:
+            provider = IBMProvider(
+                self.dependencies.token, self.dependencies.url, session=session
+            )
+            backend = provider.get_backend(name=backend_name)
+            result = backend.run(circuit, shots=shots).result()
+            self.assertIsInstance(result, Result)
+            self.assertEqual(result.results[0].shots, shots)
+            self.assertAlmostEqual(
+                result.get_counts()["00"], result.get_counts()["11"], delta=shots / 10
+            )
+
+    def test_using_correct_instance(self):
+        """Test the instance used when filtering backends is honored."""
+        backend_name = "ibmq_qasm_simulator"
+        instance = self.dependencies.instance
+        with Session(backend_name=backend_name) as session:
+            provider = IBMProvider(
+                self.dependencies.token,
+                self.dependencies.url,
+                session=session,
+                instance=instance,
+            )
+            backend = provider.get_backend(name=backend_name)
+            job = backend.run(ReferenceCircuits.bell())
+            self.assertEqual(instance, backend._instance)
+            self.assertEqual(instance, job.backend()._instance)

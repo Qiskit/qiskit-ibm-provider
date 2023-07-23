@@ -536,7 +536,7 @@ class IBMBackend(Backend):
         )
         max_execution_time = (
             self.provider._session._max_time
-            if self.provider._session._max_time
+            if self.provider._session and self.provider._session._max_time
             else None
         )
         try:
