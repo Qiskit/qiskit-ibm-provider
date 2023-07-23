@@ -27,11 +27,10 @@ class TestSession(IBMTestCase):
 
     def test_provider_and_no_backend(self):
         """Test missing backend."""
-        circ = ReferenceCircuits.bell()
         backend = "ibmq_qasm_simulator"
         session = Session()
         provider = IBMProvider(session=session)
-        _ = provider.backends(name=backend)[0]
+        _ = provider.get_backend(name=backend)
         self.assertTrue(session.backend() is None)
         self.assertEqual(provider._session, session)
 
@@ -53,3 +52,21 @@ class TestSession(IBMTestCase):
             with self.subTest(max_time=max_t):
                 session = Session(backend_name="ibm_gotham", max_time=max_t)
                 self.assertEqual(session._max_time, expected)
+
+    # def test_run_after_close(self):
+    #     """Test running after session is closed."""
+    #     backend_name = "ibm_gotham"
+    #     with Session(backend_name=backend_name) as session:
+    #         provider = IBMProvider(session=session)
+    #         backend = provider.get_backend(name=backend_name)
+    #         session.close()
+    #         with self.assertRaises(RuntimeError):
+    #             backend.run(program_id="program_id", inputs={})
+
+    def test_session_close(self):
+        """Test closing a session"""
+        backend_name = "ibmq_qasm_simulator"
+        with Session(backend_name=backend_name) as session:
+            provider = IBMProvider(session=session)
+            provider.close_session(session_id=session.session_id)
+        self.assertFalse(session._active)
