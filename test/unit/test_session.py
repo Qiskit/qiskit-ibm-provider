@@ -15,7 +15,7 @@
 
 from qiskit_ibm_provider import IBMProvider
 from qiskit_ibm_provider.session import Session
-
+from .mock.fake_provider import FakeProvider
 from ..ibm_test_case import IBMTestCase
 
 
@@ -24,10 +24,8 @@ class TestSession(IBMTestCase):
 
     def test_provider_and_no_backend(self):
         """Test missing backend."""
-        backend = "ibmq_qasm_simulator"
         session = Session()
-        provider = IBMProvider(session=session)
-        _ = provider.get_backend(name=backend)
+        provider = FakeProvider(session=session)
         self.assertTrue(session.backend() is None)
         self.assertEqual(provider._session, session)
 
@@ -64,6 +62,6 @@ class TestSession(IBMTestCase):
         """Test closing a session"""
         backend_name = "ibmq_qasm_simulator"
         with Session(backend_name=backend_name) as session:
-            provider = IBMProvider(session=session)
+            provider = FakeProvider(session=session)
             provider.close_session(session_id=session.session_id)
         self.assertFalse(session._active)
