@@ -145,3 +145,26 @@ class TestSession(IBMTestCase):
                     program_id="program_id",
                     inputs={},
                 )
+
+    def test_provider_has_correct_session(self):
+        """Test that the provider uses or doesn't use session correctly"""
+        backend = "ibmq_qasm_simulator"
+        circuit = QuantumCircuit(2, 2)
+        circuit.measure_all()
+
+        with Session(backend_name=backend) as session:
+            provider = IBMProvider(
+                self.dependencies.token, self.dependencies.url, session=session
+            )
+            _ = provider.get_backend(name=backend).run(circuit)
+            session1_id = session.session_id
+
+        provider = IBMProvider(self.dependencies.token, self.dependencies.url)
+        self.assertEqual(provider._session, None)
+
+        with Session(backend_name=backend) as session:
+            provider = IBMProvider(
+                self.dependencies.token, self.dependencies.url, session=session
+            )
+            _ = provider.get_backend(name=backend).run(circuit)
+            self.assertFalse(session.session_id == session1_id)
