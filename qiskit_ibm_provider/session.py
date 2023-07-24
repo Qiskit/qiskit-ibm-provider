@@ -28,8 +28,8 @@ class Session:
     Data used within a session, such as transpiled circuits, is also cached to avoid
     unnecessary overhead.
 
-    You can open a Qiskit Runtime session using this ``Session`` class and submit jobs
-    to one or more primitives.
+    You can open a Qiskit Runtime session using this ``Session`` class
+    and submit one or more jobs.
 
     For example::
 
@@ -46,24 +46,20 @@ class Session:
         print(f"Result: {job.result()}")
         # Close the session only if all jobs are finished and
         # you don't need to run more in the session.
-        provider.close_session(session.session_id)
+        provider.close_session()
     """
 
     def __init__(
         self,
         backend_name: Optional[str] = None,
         max_time: Optional[Union[int, str]] = None,
-    ):  # pylint: disable=line-too-long
+    ):
         """Session constructor.
 
         Args:
-            service: Optional instance of the ``QiskitRuntimeService`` class.
-                If ``None``, the service associated with the backend, if known, is used.
-                Otherwise ``QiskitRuntimeService()`` is used to initialize
-                your default saved account.
-            backend: Optional instance of :class:`qiskit_ibm_runtime.IBMBackend` class or
-                string name of backend. An instance of :class:`qiskit_ibm_provider.IBMBackend` will not work.
-                If not specified, a backend will be selected automatically (IBM Cloud channel only).
+            backend_name: string name of backend.
+                If not specified, a backend will be selected automatically
+                by the IBMProvider(IBM Cloud channel only).
 
             max_time: (EXPERIMENTAL setting, can break between releases without warning)
                 Maximum amount of time, a runtime session can be open before being

@@ -29,8 +29,6 @@ from qiskit.providers.models import (
     QasmBackendConfiguration,
     PulseBackendConfiguration,
 )
-
-
 from qiskit.providers.options import Options
 from qiskit.pulse import Schedule, LoConfig
 from qiskit.pulse.channels import (

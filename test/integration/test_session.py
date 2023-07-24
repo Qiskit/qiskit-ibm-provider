@@ -60,14 +60,14 @@ class TestSession(IBMTestCase):
             self.assertEqual(session.session_id, None)
             self.assertTrue(session._active)
             self.assertEqual(session._backend, backend)
-            job1 = provider.backends(name=backend)[0].run(circuit)
+            job1 = provider.get_backend(name=backend).run(circuit)
             session_id = session.session_id
             self.assertEqual(session.session_id, job1.job_id())
-            _ = provider.backends(name=backend)[0].run(circuit)
+            _ = provider.get_backend(name=backend).run(circuit)
             self.assertEqual(session.session_id, session_id)
 
     def test_backend_run(self):
-        """Test that session_id is updated correctly and maintained throughout the session"""
+        """Test that 'shots' parameter is transferred correctly"""
         backend_name = "ibmq_qasm_simulator"
         circuit = ReferenceCircuits.bell()
         shots = 1000
