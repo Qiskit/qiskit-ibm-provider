@@ -38,6 +38,15 @@ class TestSession(IBMTestCase):
         super().setUpClass()
         cls.dependencies = dependencies
 
+    def test_provider_and_no_backend(self):
+        """Test missing backend."""
+        session = Session()
+        provider = IBMProvider(
+            self.dependencies.token, self.dependencies.url, session=session
+        )
+        self.assertTrue(session.backend() is None)
+        self.assertEqual(provider._session, session)
+
     def test_session_id(self):
         """Test that session_id is updated correctly and maintained throughout the session"""
         backend = "ibmq_qasm_simulator"
@@ -90,6 +99,18 @@ class TestSession(IBMTestCase):
             job = backend.run(ReferenceCircuits.bell())
             self.assertEqual(instance, backend._instance)
             self.assertEqual(instance, job.backend()._instance)
+
+    def test_session_close(self):
+        """Test closing a session"""
+        backend_name = "ibmq_qasm_simulator"
+        with Session(backend_name=backend_name) as session:
+            provider = IBMProvider(
+                self.dependencies.token,
+                self.dependencies.url,
+                session=session,
+            )
+            provider.close_session()
+        self.assertFalse(session._active)
 
     def test_run_after_close(self):
         """Test running after session is closed."""

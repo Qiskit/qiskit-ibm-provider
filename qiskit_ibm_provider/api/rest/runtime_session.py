@@ -39,5 +39,4 @@ class RuntimeSession(RestAdapterBase):
     def close(self) -> None:
         """Close this session."""
         url = self.get_url("close")
-        print("url = " + str(url))
         self.session.delete(url)

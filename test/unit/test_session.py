@@ -20,13 +20,6 @@ from ..ibm_test_case import IBMTestCase
 class TestSession(IBMTestCase):
     """Test Session module."""
 
-    def test_provider_and_no_backend(self):
-        """Test missing backend."""
-        session = Session()
-        provider = FakeProvider(session=session)
-        self.assertTrue(session.backend() is None)
-        self.assertEqual(provider._session, session)
-
     def test_passing_ibm_backend(self):
         """Test passing in IBMBackend instance."""
         backend_name = "ibm_gotham"
@@ -45,11 +38,3 @@ class TestSession(IBMTestCase):
             with self.subTest(max_time=max_t):
                 session = Session(backend_name="ibm_gotham", max_time=max_t)
                 self.assertEqual(session._max_time, expected)
-
-    def test_session_close(self):
-        """Test closing a session"""
-        backend_name = "ibmq_qasm_simulator"
-        with Session(backend_name=backend_name) as session:
-            provider = FakeProvider(session=session)
-            provider.close_session()
-        self.assertFalse(session._active)
