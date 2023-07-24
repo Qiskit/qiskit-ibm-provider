@@ -20,6 +20,7 @@ import json
 from .backend import Backend
 from .base import RestAdapterBase
 from .program_job import ProgramJob
+from .runtime_session import RuntimeSession
 from ...utils import RuntimeEncoder
 from ...utils.converters import local_to_utc
 
@@ -55,6 +56,17 @@ class Runtime(RestAdapterBase):
             The program job adapter.
         """
         return ProgramJob(self.session, job_id)
+
+    def runtime_session(self, session_id: str) -> "RuntimeSession":
+        """Return an adapter for the session.
+
+        Args:
+            session_id: Job ID of the first job in a session.
+
+        Returns:
+            The session adapter.
+        """
+        return RuntimeSession(self.session, session_id)
 
     def program_run(
         self,
@@ -182,11 +194,3 @@ class Runtime(RestAdapterBase):
         if all([hub, group, project]):
             payload["provider"] = f"{hub}/{group}/{project}"
         return self.session.get(url, params=payload).json()
-
-    def close_session(self, session_id: str) -> None:
-        """Close session
-
-        Args:
-            session_id (str): the id of the session to close
-        """
-        print(f"temporary placeholder for closing session {session_id}")

@@ -316,4 +316,4 @@ class RuntimeClient(BaseClient):
         Args:
             session_id (str): the id of the session to close
         """
-        self._api.close_session(session_id)
+        self._api.runtime_session(session_id=session_id).close()

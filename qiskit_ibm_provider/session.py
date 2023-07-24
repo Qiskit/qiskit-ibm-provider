@@ -20,18 +20,6 @@ from contextvars import ContextVar
 from qiskit_ibm_provider.utils.converters import hms_to_seconds
 
 
-def _active_session(func):  # type: ignore
-    """Decorator used to ensure the session is active."""
-
-    @wraps(func)
-    def _wrapper(self, *args, **kwargs):  # type: ignore
-        if not self._active:
-            raise RuntimeError("The session is closed.")
-        return func(self, *args, **kwargs)
-
-    return _wrapper
-
-
 class Session:
     """Class for creating a flexible Qiskit Runtime session.
 
@@ -115,6 +103,13 @@ class Session:
             Session ID. None until a job runs in the session.
         """
         return self._session_id
+
+    @property
+    def active(self):
+        return self._active
+
+    def close(self):
+        self._active = False
 
     def __enter__(self) -> "Session":
         set_cm_session(self)

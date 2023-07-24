@@ -526,19 +526,18 @@ class IBMBackend(Backend):
     ) -> IBMCircuitJob:
         """Runs the runtime program and returns the corresponding job object"""
         hgp_name = self._instance or self.provider._get_hgp().name
-        session_id = (
-            self.provider._session.session_id if self.provider._session else None
-        )
-        start_session = (
-            self.provider._session.session_id is None
-            if self.provider._session
-            else None
-        )
-        max_execution_time = (
-            self.provider._session._max_time
-            if self.provider._session and self.provider._session._max_time
-            else None
-        )
+
+        session = self.provider._session
+        if session:
+            if not session.active:
+                raise RuntimeError(f"The session {session.session_id} is closed.")
+            session_id = session.session_id
+            max_execution_time = session._max_time
+        else:
+            session_id = None
+            max_execution_time = None
+        start_session = session_id is None
+
         try:
             response = self.provider._runtime_client.program_run(
                 program_id=program_id,

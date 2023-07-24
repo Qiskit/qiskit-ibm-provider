@@ -665,14 +665,15 @@ class IBMProvider(Provider):
             raise QiskitBackendNotFoundError("No backend matches the criteria")
         return backends[0]
 
-    def close_session(self, session_id: str) -> None:
+    def close_session(self) -> None:
         """Close session
 
         Args:
             session_id (str): the id of the session to close
         """
-        self._session._active = False
-        self._runtime_client.close_session(session_id)
+        self._session.close()
+        if self._session.session_id:
+            self._runtime_client.close_session(self._session.session_id)
 
     def __repr__(self) -> str:
         return "<{}>".format(self.__class__.__name__)

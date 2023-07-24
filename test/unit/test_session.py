@@ -48,16 +48,6 @@ class TestSession(IBMTestCase):
                 session = Session(backend_name="ibm_gotham", max_time=max_t)
                 self.assertEqual(session._max_time, expected)
 
-    # def test_run_after_close(self):
-    #     """Test running after session is closed."""
-    #     backend_name = "ibm_gotham"
-    #     with Session(backend_name=backend_name) as session:
-    #         provider = IBMProvider(session=session)
-    #         backend = provider.get_backend(name=backend_name)
-    #         session.close()
-    #         with self.assertRaises(RuntimeError):
-    #             backend.run(program_id="program_id", inputs={})
-
     def test_session_close(self):
         """Test closing a session"""
         backend_name = "ibmq_qasm_simulator"
