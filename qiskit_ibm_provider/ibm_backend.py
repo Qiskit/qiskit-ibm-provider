@@ -471,8 +471,7 @@ class IBMBackend(Backend):
         else:
             run_config.pop("program_id", None)
 
-        image: Optional[str] = run_config.get("image", None)
-        # type: ignore
+        image: Optional[str] = run_config.get("image", None) # type: ignore
         if image is not None:
             image = str(image)
 
