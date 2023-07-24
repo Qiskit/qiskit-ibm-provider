@@ -14,7 +14,6 @@
 
 from typing import Optional, Type, Union
 from types import TracebackType
-from functools import wraps
 from contextvars import ContextVar
 
 from qiskit_ibm_provider.utils.converters import hms_to_seconds
@@ -105,10 +104,16 @@ class Session:
         return self._session_id
 
     @property
-    def active(self):
+    def active(self) -> bool:
+        """Return the status of the session.
+
+        Returns:
+            True if the session is active, False otherwise.
+        """
         return self._active
 
-    def close(self):
+    def close(self) -> None:
+        """Set the session._active status to False"""
         self._active = False
 
     def __enter__(self) -> "Session":

@@ -102,9 +102,13 @@ class TestSession(IBMTestCase):
             )
             backend = provider.get_backend(name=backend_name)
             _ = backend.run(ReferenceCircuits.bell())
-            provider.close_session()    # with session_id
+            provider.close_session()  # with session_id
             with self.assertRaises(RuntimeError):
-                backend.run(circuits=ReferenceCircuits.bell(), program_id="program_id", inputs={})
+                backend.run(
+                    circuits=ReferenceCircuits.bell(),
+                    program_id="program_id",
+                    inputs={},
+                )
 
         with Session(backend_name=backend_name) as session:
             provider = IBMProvider(
@@ -113,6 +117,10 @@ class TestSession(IBMTestCase):
                 session=session,
             )
             backend = provider.get_backend(name=backend_name)
-            provider.close_session()     # no session_id
+            provider.close_session()  # no session_id
             with self.assertRaises(RuntimeError):
-                backend.run(circuits=ReferenceCircuits.bell(), program_id="program_id", inputs={})
+                backend.run(
+                    circuits=ReferenceCircuits.bell(),
+                    program_id="program_id",
+                    inputs={},
+                )

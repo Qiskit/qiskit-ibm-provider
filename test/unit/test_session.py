@@ -12,8 +12,6 @@
 
 """IBMBackend Test."""
 
-
-from qiskit_ibm_provider import IBMProvider
 from qiskit_ibm_provider.session import Session
 from .mock.fake_provider import FakeProvider
 from ..ibm_test_case import IBMTestCase
@@ -53,5 +51,5 @@ class TestSession(IBMTestCase):
         backend_name = "ibmq_qasm_simulator"
         with Session(backend_name=backend_name) as session:
             provider = FakeProvider(session=session)
-            provider.close_session(session_id=session.session_id)
+            provider.close_session()
         self.assertFalse(session._active)
