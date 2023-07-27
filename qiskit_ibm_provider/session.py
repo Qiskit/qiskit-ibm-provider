@@ -47,6 +47,7 @@ class Session:
             # Close the session only if all jobs are finished and
             # you don't need to run more in the session.
             provider.close_session()
+
     """
 
     def __init__(
