@@ -33,20 +33,20 @@ class Session:
 
     For example::
 
-    from qiskit.test.reference_circuits import ReferenceCircuits
-    from qiskit_ibm_provider import IBMProvider
-    from qiskit_ibm_provider.session import Session
+        from qiskit.test.reference_circuits import ReferenceCircuits
+        from qiskit_ibm_provider import IBMProvider
+        from qiskit_ibm_provider.session import Session
 
-    circ = ReferenceCircuits.bell()
-    backend = "ibmq_qasm_simulator"
-    with Session(backend_name=backend) as session:
-        provider = IBMProvider(session=session)
-        job = provider.get_backend(name=backend).run(circ)
-        print(f"Job ID: {job.job_id()}")
-        print(f"Result: {job.result()}")
-        # Close the session only if all jobs are finished and
-        # you don't need to run more in the session.
-        provider.close_session()
+        circ = ReferenceCircuits.bell()
+        backend = "ibmq_qasm_simulator"
+        with Session(backend_name=backend) as session:
+            provider = IBMProvider(session=session)
+            job = provider.get_backend(name=backend).run(circ)
+            print(f"Job ID: {job.job_id()}")
+            print(f"Result: {job.result()}")
+            # Close the session only if all jobs are finished and
+            # you don't need to run more in the session.
+            provider.close_session()
     """
 
     def __init__(
