@@ -1,0 +1,6 @@
+---
+features:
+  - |
+    Support has been added to select the Qiskit runtime image to invoke
+    the program with for testing purposes with the ``image`` option
+    to ``backend.run``, eg., ``backend.run(circuits, image="test-image")``
