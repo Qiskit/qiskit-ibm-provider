@@ -12,7 +12,7 @@
 
 """IBMBackend Test."""
 
-from qiskit_ibm_provider.session import Session
+from qiskit_ibm_provider import Session
 from ..ibm_test_case import IBMTestCase
 
 

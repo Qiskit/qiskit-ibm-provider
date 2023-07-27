@@ -37,9 +37,9 @@ from .hub_group_project import HubGroupProject  # pylint: disable=cyclic-import
 from .ibm_backend import IBMBackend  # pylint: disable=cyclic-import
 from .ibm_backend_service import IBMBackendService  # pylint: disable=cyclic-import
 from .job import IBMJob  # pylint: disable=cyclic-import
+from .session import Session
 from .proxies.configuration import ProxyConfiguration
 from .utils.hgp import to_instance_format, from_instance_format
-from .session import Session
 
 logger = logging.getLogger(__name__)
 

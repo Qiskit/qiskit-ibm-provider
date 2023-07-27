@@ -16,8 +16,7 @@ from qiskit import QuantumCircuit
 from qiskit.test.reference_circuits import ReferenceCircuits
 from qiskit.result import Result
 
-from qiskit_ibm_provider import IBMProvider
-from qiskit_ibm_provider.session import Session
+from qiskit_ibm_provider import IBMProvider, Session
 
 
 from ..decorators import (

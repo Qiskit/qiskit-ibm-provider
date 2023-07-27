@@ -56,6 +56,7 @@ Classes
     IBMProvider
     IBMBackend
     IBMBackendService
+    Session
 
 Exceptions
 ==========
@@ -80,6 +81,7 @@ from qiskit.providers import Backend  # type: ignore[attr-defined]
 
 from .ibm_provider import IBMProvider
 from .ibm_backend import IBMBackend
+from .session import Session
 from .job.ibm_job import IBMJob
 from .exceptions import *
 from .ibm_backend_service import IBMBackendService
