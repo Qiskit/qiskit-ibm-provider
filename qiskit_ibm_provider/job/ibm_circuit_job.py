@@ -168,6 +168,7 @@ class IBMCircuitJob(IBMJob):
             self._status = api_status_to_job_status(status)
         self._client_version = self._extract_client_version(client_info)
         self._set_result(result)
+        self._cost_estimation: Dict[str, Any] = {}
 
         # Properties used for caching.
         self._cancelled = False
@@ -513,6 +514,19 @@ class IBMCircuitJob(IBMJob):
             self.refresh()
         return self._client_version
 
+    @property
+    def cost_estimation(self) -> Dict[str, Any]:
+        """Return cost estimation infromation for this job.
+
+        Returns:
+            Cost estimation information in dictionary format, with the estimated
+            running time and estimated max running time in seconds.
+        """
+        if not self._cost_estimation:
+            self.refresh()
+
+        return self._cost_estimation
+
     def refresh(self) -> None:
         """Obtain the latest job information from the server.
 
@@ -536,6 +550,14 @@ class IBMCircuitJob(IBMJob):
             raise IBMJobApiError(
                 "Unexpected return value received " "from the server: {}".format(err)
             ) from err
+        self._cost_estimation = {
+            "estimated_running_time_seconds": api_response.pop(
+                "estimated_running_time_seconds", None
+            ),
+            "estimated_max_running_time_seconds": api_response.pop(
+                "estimated_max_running_time_seconds", None
+            ),
+        }
         self._time_per_step = api_metadata.get("timestamps", None)
         self._tags = api_response.pop("tags", [])
         self._status = api_status_to_job_status(self._api_status)
