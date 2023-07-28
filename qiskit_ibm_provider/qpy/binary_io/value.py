@@ -285,7 +285,7 @@ def _read_parameter_expression(file_obj):  # type: ignore[no-untyped-def]
     return ParameterExpression(symbol_map, expr_)
 
 
-# pylint: disable=too-many-return-statements 
+# pylint: disable=too-many-return-statements
 def _read_expr(
     file_obj,
     clbits: collections.abc.Sequence[Clbit],
@@ -294,20 +294,20 @@ def _read_expr(
     type_key = file_obj.read(formats.EXPRESSION_DISCRIMINATOR_SIZE)  # type: ignore[attr-defined]
     type_ = _read_expr_type(file_obj)
     if type_key == type_keys.Expression.VAR:
-        var_type_key = file_obj.read(formats.EXPR_VAR_DISCRIMINATOR_SIZE) # type: ignore[attr-defined]
+        var_type_key = file_obj.read(formats.EXPR_VAR_DISCRIMINATOR_SIZE)  # type: ignore[attr-defined]
         if var_type_key == type_keys.ExprVar.CLBIT:
-            payload = formats.EXPR_VAR_CLBIT._make( # type: ignore[attr-defined]
+            payload = formats.EXPR_VAR_CLBIT._make(  # type: ignore[attr-defined]
                 struct.unpack(
-                    formats.EXPR_VAR_CLBIT_PACK, # type: ignore[attr-defined]
-                    file_obj.read(formats.EXPR_VAR_CLBIT_SIZE), # type: ignore[attr-defined]
+                    formats.EXPR_VAR_CLBIT_PACK,  # type: ignore[attr-defined]
+                    file_obj.read(formats.EXPR_VAR_CLBIT_SIZE),  # type: ignore[attr-defined]
                 )
             )
             return expr.Var(clbits[payload.index], type_)
         if var_type_key == type_keys.ExprVar.REGISTER:
-            payload = formats.EXPR_VAR_REGISTER._make( # type: ignore[attr-defined]
+            payload = formats.EXPR_VAR_REGISTER._make(  # type: ignore[attr-defined]
                 struct.unpack(
-                    formats.EXPR_VAR_REGISTER_PACK, # type: ignore[attr-defined]
-                    file_obj.read(formats.EXPR_VAR_REGISTER_SIZE), # type: ignore[attr-defined]
+                    formats.EXPR_VAR_REGISTER_PACK,  # type: ignore[attr-defined]
+                    file_obj.read(formats.EXPR_VAR_REGISTER_SIZE),  # type: ignore[attr-defined]
                 )
             )
             name = file_obj.read(payload.reg_name_size).decode(common.ENCODE)
@@ -316,20 +316,20 @@ def _read_expr(
             "Invalid classical-expression Var key '{var_type_key}'"
         )
     if type_key == type_keys.Expression.VALUE:
-        value_type_key = file_obj.read(formats.EXPR_VALUE_DISCRIMINATOR_SIZE) # type: ignore[attr-defined]
+        value_type_key = file_obj.read(formats.EXPR_VALUE_DISCRIMINATOR_SIZE)  # type: ignore[attr-defined]
         if value_type_key == type_keys.ExprValue.BOOL:
-            payload = formats.EXPR_VALUE_BOOL._make( # type: ignore[attr-defined]
+            payload = formats.EXPR_VALUE_BOOL._make(  # type: ignore[attr-defined]
                 struct.unpack(
-                    formats.EXPR_VALUE_BOOL_PACK, # type: ignore[attr-defined]
-                    file_obj.read(formats.EXPR_VALUE_BOOL_SIZE), # type: ignore[attr-defined]
+                    formats.EXPR_VALUE_BOOL_PACK,  # type: ignore[attr-defined]
+                    file_obj.read(formats.EXPR_VALUE_BOOL_SIZE),  # type: ignore[attr-defined]
                 )
             )
             return expr.Value(payload.value, type_)
         if value_type_key == type_keys.ExprValue.INT:
-            payload = formats.EXPR_VALUE_INT._make( # type: ignore[attr-defined]
+            payload = formats.EXPR_VALUE_INT._make(  # type: ignore[attr-defined]
                 struct.unpack(
-                    formats.EXPR_VALUE_INT_PACK, # type: ignore[attr-defined]
-                    file_obj.read(formats.EXPR_VALUE_INT_SIZE), # type: ignore[attr-defined]
+                    formats.EXPR_VALUE_INT_PACK,  # type: ignore[attr-defined]
+                    file_obj.read(formats.EXPR_VALUE_INT_SIZE),  # type: ignore[attr-defined]
                 )
             )
             return expr.Value(
@@ -340,10 +340,10 @@ def _read_expr(
             "Invalid classical-expression Value key '{value_type_key}'"
         )
     if type_key == type_keys.Expression.CAST:
-        payload = formats.EXPRESSION_CAST._make( # type: ignore[attr-defined]
+        payload = formats.EXPRESSION_CAST._make(  # type: ignore[attr-defined]
             struct.unpack(
-                formats.EXPRESSION_CAST_PACK, # type: ignore[attr-defined]
-                file_obj.read(formats.EXPRESSION_CAST_SIZE), # type: ignore[attr-defined]
+                formats.EXPRESSION_CAST_PACK,  # type: ignore[attr-defined]
+                file_obj.read(formats.EXPRESSION_CAST_SIZE),  # type: ignore[attr-defined]
             )
         )
         return expr.Cast(
@@ -376,14 +376,14 @@ def _read_expr(
 
 
 def _read_expr_type(file_obj) -> types.Type:
-    type_key = file_obj.read(formats.EXPR_TYPE_DISCRIMINATOR_SIZE) # type: ignore[no-untyped-def]
+    type_key = file_obj.read(formats.EXPR_TYPE_DISCRIMINATOR_SIZE)  # type: ignore[no-untyped-def]
     if type_key == type_keys.ExprType.BOOL:
         return types.Bool()
-    if type_key == type_keys.ExprType.UINT: # type: ignore[no-untyped-def]
-        elem = formats.EXPR_TYPE_UINT._make( # type: ignore[no-untyped-def]
-            struct.unpack( # type: ignore[no-untyped-def]
-                formats.EXPR_TYPE_UINT_PACK, file_obj.read(formats.EXPR_TYPE_UINT_SIZE) # type: ignore[no-untyped-def]
-            ) # type: ignore[no-untyped-def]
+    if type_key == type_keys.ExprType.UINT:  # type: ignore[no-untyped-def]
+        elem = formats.EXPR_TYPE_UINT._make(  # type: ignore[no-untyped-def]
+            struct.unpack(  # type: ignore[no-untyped-def]
+                formats.EXPR_TYPE_UINT_PACK, file_obj.read(formats.EXPR_TYPE_UINT_SIZE)  # type: ignore[no-untyped-def]
+            )  # type: ignore[no-untyped-def]
         )
         return types.Uint(elem.width)
     raise exceptions.QpyError(f"Invalid classical-expression Type key '{type_key}'")
@@ -507,7 +507,7 @@ def write_value(file_obj, obj, *, index_map=None):  # type: ignore[no-untyped-de
 
 
 def loads_value(
-    type_key, binary_data, version, vectors, *, clbits=(), cregs=None # type: ignore[no-untyped-def]
+    type_key, binary_data, version, vectors, *, clbits=(), cregs=None  # type: ignore[no-untyped-def]
 ):  # type: ignore[no-untyped-def]
     """Deserialize input binary data to value object.
     Args:

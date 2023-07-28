@@ -319,7 +319,7 @@ EXPR_TYPE_BOOL = namedtuple("EXPR_TYPE_BOOL", [])
 EXPR_TYPE_BOOL_PACK = "!"
 EXPR_TYPE_BOOL_SIZE = struct.calcsize(EXPR_TYPE_BOOL_PACK)
 
-EXPR_TYPE_UINT = namedtuple("EXPR_TYPE_UINT", ["width"]) # type: ignore[no-untyped-def]
+EXPR_TYPE_UINT = namedtuple("EXPR_TYPE_UINT", ["width"])  # type: ignore[no-untyped-def]
 EXPR_TYPE_UINT_PACK = "!L"
 EXPR_TYPE_UINT_SIZE = struct.calcsize(EXPR_TYPE_UINT_PACK)
 
@@ -328,7 +328,7 @@ EXPR_TYPE_UINT_SIZE = struct.calcsize(EXPR_TYPE_UINT_PACK)
 
 EXPR_VAR_DISCRIMINATOR_SIZE = 1
 
-EXPR_VAR_CLBIT = namedtuple("EXPR_VAR_CLBIT", ["index"]) 
+EXPR_VAR_CLBIT = namedtuple("EXPR_VAR_CLBIT", ["index"])
 EXPR_VAR_CLBIT_PACK = "!L"
 EXPR_VAR_CLBIT_SIZE = struct.calcsize(EXPR_VAR_CLBIT_PACK)
 
