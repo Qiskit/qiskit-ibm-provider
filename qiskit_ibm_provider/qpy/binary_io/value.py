@@ -316,7 +316,7 @@ def _read_expr(
             "Invalid classical-expression Var key '{var_type_key}'"
         )
     if type_key == type_keys.Expression.VALUE:
-        value_type_key = file_obj.read(formats.EXPR_VALUE_DISCRIMINATOR_SIZE)  # type: ignore[attr-defined]
+        value_type_key = file_obj.read(formats.EXPR_VALUE_DISCRIMINATOR_SIZE)
         if value_type_key == type_keys.ExprValue.BOOL:
             payload = formats.EXPR_VALUE_BOOL._make(  # type: ignore[attr-defined]
                 struct.unpack(
@@ -382,7 +382,7 @@ def _read_expr_type(file_obj) -> types.Type:
     if type_key == type_keys.ExprType.UINT:  # type: ignore[no-untyped-def]
         elem = formats.EXPR_TYPE_UINT._make(  # type: ignore[no-untyped-def]
             struct.unpack(  # type: ignore[no-untyped-def]
-                formats.EXPR_TYPE_UINT_PACK, file_obj.read(formats.EXPR_TYPE_UINT_SIZE)  # type: ignore[no-untyped-def]
+                formats.EXPR_TYPE_UINT_PACK, file_obj.read(formats.EXPR_TYPE_UINT_SIZE)
             )  # type: ignore[no-untyped-def]
         )
         return types.Uint(elem.width)
