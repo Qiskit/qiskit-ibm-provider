@@ -10,6 +10,7 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 """Binary IO for any value objects, such as numbers, string, parameters."""
+# pylint: disable=line-too-long
 
 from __future__ import annotations
 
@@ -17,6 +18,7 @@ import collections.abc
 import struct
 import uuid
 
+from typing import Any
 import numpy as np
 
 from qiskit.circuit import CASE_DEFAULT, Clbit, ClassicalRegister
@@ -183,9 +185,9 @@ class _ExprWriter(expr.ExprVisitor[None]):
         node.right.accept(self)
 
 
-def _write_expr(
+def _write_expr(  # type: ignore[no-untyped-def]
     file_obj, node: expr.Expr, clbit_indices: collections.abc.Mapping[Clbit, int]
-) -> None:  # type: ignore[no-untyped-def]
+) -> None:
     node.accept(_ExprWriter(file_obj, clbit_indices))  # type: ignore[no-untyped-call]
 
 
@@ -196,7 +198,8 @@ def _write_expr_type(file_obj, type_: types.Type):  # type: ignore[no-untyped-de
         file_obj.write(type_keys.ExprType.UINT)
         file_obj.write(
             struct.pack(
-                formats.EXPR_TYPE_UINT_PACK, *formats.EXPR_TYPE_UINT(type_.width)
+                formats.EXPR_TYPE_UINT_PACK,  # type: ignore[attr-defined]
+                *formats.EXPR_TYPE_UINT(type_.width),  # type: ignore[attr-defined]
             )
         )
     else:
@@ -286,7 +289,7 @@ def _read_parameter_expression(file_obj):  # type: ignore[no-untyped-def]
 
 
 # pylint: disable=too-many-return-statements
-def _read_expr(
+def _read_expr(  # type: ignore[no-untyped-def]
     file_obj,
     clbits: collections.abc.Sequence[Clbit],
     cregs: collections.abc.Mapping[str, ClassicalRegister],
@@ -316,7 +319,7 @@ def _read_expr(
             "Invalid classical-expression Var key '{var_type_key}'"
         )
     if type_key == type_keys.Expression.VALUE:
-        value_type_key = file_obj.read(formats.EXPR_VALUE_DISCRIMINATOR_SIZE)
+        value_type_key = file_obj.read(formats.EXPR_VALUE_DISCRIMINATOR_SIZE)  # type: ignore[attr-defined]
         if value_type_key == type_keys.ExprValue.BOOL:
             payload = formats.EXPR_VALUE_BOOL._make(  # type: ignore[attr-defined]
                 struct.unpack(
@@ -350,20 +353,20 @@ def _read_expr(
             _read_expr(file_obj, clbits, cregs), type_, implicit=payload.implicit
         )
     if type_key == type_keys.Expression.UNARY:
-        payload = formats.EXPRESSION_UNARY._make(
+        payload = formats.EXPRESSION_UNARY._make(  # type: ignore[attr-defined]
             struct.unpack(
-                formats.EXPRESSION_UNARY_PACK,
-                file_obj.read(formats.EXPRESSION_UNARY_SIZE),
+                formats.EXPRESSION_UNARY_PACK,  # type: ignore[attr-defined]
+                file_obj.read(formats.EXPRESSION_UNARY_SIZE),  # type: ignore[attr-defined]
             )
         )
         return expr.Unary(
             expr.Unary.Op(payload.opcode), _read_expr(file_obj, clbits, cregs), type_
         )
     if type_key == type_keys.Expression.BINARY:
-        payload = formats.EXPRESSION_BINARY._make(
+        payload = formats.EXPRESSION_BINARY._make(  # type: ignore[attr-defined]
             struct.unpack(
-                formats.EXPRESSION_BINARY_PACK,
-                file_obj.read(formats.EXPRESSION_BINARY_SIZE),
+                formats.EXPRESSION_BINARY_PACK,  # type: ignore[attr-defined]
+                file_obj.read(formats.EXPRESSION_BINARY_SIZE),  # type: ignore[attr-defined]
             )
         )
         return expr.Binary(
@@ -375,15 +378,16 @@ def _read_expr(
     raise exceptions.QpyError("Invalid classical-expression Expr key '{type_key}'")
 
 
-def _read_expr_type(file_obj) -> types.Type:
-    type_key = file_obj.read(formats.EXPR_TYPE_DISCRIMINATOR_SIZE)  # type: ignore[no-untyped-def]
+def _read_expr_type(file_obj) -> types.Type:  # type: ignore[no-untyped-def]
+    type_key = file_obj.read(formats.EXPR_TYPE_DISCRIMINATOR_SIZE)  # type: ignore[no-untyped-def, attr-defined]
     if type_key == type_keys.ExprType.BOOL:
         return types.Bool()
-    if type_key == type_keys.ExprType.UINT:  # type: ignore[no-untyped-def]
-        elem = formats.EXPR_TYPE_UINT._make(  # type: ignore[no-untyped-def]
+    if type_key == type_keys.ExprType.UINT:  # type: ignore[no-untyped-def, attr-defined]
+        elem = formats.EXPR_TYPE_UINT._make(  # type: ignore[no-untyped-def, attr-defined]
             struct.unpack(  # type: ignore[no-untyped-def]
-                formats.EXPR_TYPE_UINT_PACK, file_obj.read(formats.EXPR_TYPE_UINT_SIZE)
-            )  # type: ignore[no-untyped-def]
+                formats.EXPR_TYPE_UINT_PACK,  # type: ignore[attr-defined]
+                file_obj.read(formats.EXPR_TYPE_UINT_SIZE),  # type: ignore[no-untyped-def, attr-defined]
+            )
         )
         return types.Uint(elem.width)
     raise exceptions.QpyError(f"Invalid classical-expression Type key '{type_key}'")
@@ -506,9 +510,9 @@ def write_value(file_obj, obj, *, index_map=None):  # type: ignore[no-untyped-de
     common.write_generic_typed_data(file_obj, type_key, data)
 
 
-def loads_value(
-    type_key, binary_data, version, vectors, *, clbits=(), cregs=None  # type: ignore[no-untyped-def]
-):  # type: ignore[no-untyped-def]
+def loads_value(  # type: ignore[no-untyped-def]
+    type_key, binary_data, version, vectors, *, clbits=(), cregs=None
+) -> Any:
     """Deserialize input binary data to value object.
     Args:
         type_key (ValueTypeKey): Type enum information.
@@ -532,7 +536,7 @@ def loads_value(
     if type_key == type_keys.Value.FLOAT:
         return struct.unpack("!d", binary_data)[0]
     if type_key == type_keys.Value.COMPLEX:
-        return complex(*struct.unpack(formats.COMPLEX_PACK, binary_data))
+        return complex(*struct.unpack(formats.COMPLEX_PACK, binary_data))  # type: ignore[attr-defined]
     if type_key == type_keys.Value.NUMPY_OBJ:
         return common.data_from_binary(binary_data, np.load)
     if type_key == type_keys.Value.STRING:
