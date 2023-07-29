@@ -13,12 +13,13 @@
 """Test serializing and deserializing data sent to the server."""
 
 import json
-
+import numpy as np
 from qiskit import assemble
 from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister
 from qiskit.circuit import Parameter
 
 from qiskit_ibm_provider.utils.json_encoder import IBMJsonEncoder
+from qiskit_ibm_provider.utils.json import RuntimeEncoder
 from ..ibm_test_case import IBMTestCase
 
 
@@ -26,7 +27,7 @@ class TestSerialization(IBMTestCase):
     """Test data serialization."""
 
     def test_exception_message(self):
-        """Test executing job with Parameter in methadata."""
+        """Test executing job with Parameter in metadata."""
         quantum_register = QuantumRegister(1)
         classical_register = ClassicalRegister(1)
         my_circ_str = "test_metadata"
@@ -65,3 +66,12 @@ class TestSerialization(IBMTestCase):
             '{"t1": 1, "null": null, "a": 0.2, "list": [1, 2, {"ld": 1, "2": 3, "alfa": 0.1}]}',
             IBMJsonEncoder().encode(test_dir),
         )
+
+    def test_circuit_metadata(self):
+        """Test serializing circuit metadata."""
+
+        circ = QuantumCircuit(1)
+        circ.metadata = {"test": np.arange(0, 10)}
+        payload = {"circuits": [circ]}
+
+        self.assertTrue(json.dumps(payload, cls=RuntimeEncoder))

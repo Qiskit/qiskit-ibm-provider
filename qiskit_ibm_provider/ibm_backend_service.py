@@ -168,7 +168,8 @@ class IBMBackendService:
                 self._backends[name] = self._create_backend_obj(
                     self._backend_configs[name], instance, self._provider._get_hgps()
                 )
-            backends.append(self._backends[name])
+            if self._backends[name]:
+                backends.append(self._backends[name])
         elif instance:
             hgp = self._provider._get_hgp(instance=instance)
             for backend_name in hgp.backends.keys():
@@ -180,7 +181,8 @@ class IBMBackendService:
                     self._backends[backend_name] = self._create_backend_obj(
                         self._backend_configs[backend_name], instance
                     )
-                backends.append(self._backends[backend_name])
+                if self._backends[backend_name]:
+                    backends.append(self._backends[backend_name])
         else:
             hgps = self._provider._get_hgps()
             for backend_name, backend_config in self._backends.items():
@@ -189,7 +191,8 @@ class IBMBackendService:
                     self._backends[backend_name] = self._create_backend_obj(
                         self._backend_configs[backend_name], hgps=hgps
                     )
-                backends.append(self._backends[backend_name])
+                if self._backends[backend_name]:
+                    backends.append(self._backends[backend_name])
         # Special handling of the `name` parameter, to support alias resolution.
         if name:
             aliases = self._aliased_backend_names()
@@ -637,7 +640,9 @@ class IBMBackendService:
                 legacy = True
                 job_info = self._default_hgp._api_client.job_get(job_id)
             else:
-                job_info = self._provider._runtime_client.job_get(job_id)
+                job_info = self._provider._runtime_client.job_get(
+                    job_id, exclude_params=True
+                )
                 if job_info.get("program", {}).get("id") not in [
                     "circuit-runner",
                     "qasm3-runner",
@@ -689,27 +694,31 @@ class IBMBackendService:
         Raises:
             QiskitBackendNotFoundError: if the backend is not in the hgp passed in.
         """
-        if not instance:
-            for hgp in hgps:
-                if config.backend_name in hgp.backends:
-                    instance = to_instance_format(hgp._hub, hgp._group, hgp._project)
-                    break
+        if config:
+            if not instance:
+                for hgp in hgps:
+                    if config.backend_name in hgp.backends:
+                        instance = to_instance_format(
+                            hgp._hub, hgp._group, hgp._project
+                        )
+                        break
 
-        elif (
-            config.backend_name
-            not in self._provider._get_hgp(instance=instance).backends
-        ):
-            raise QiskitBackendNotFoundError(
-                f"Backend {config.backend_name} is not in "
-                f"{instance}: please try a different hub/group/project."
+            elif (
+                config.backend_name
+                not in self._provider._get_hgp(instance=instance).backends
+            ):
+                raise QiskitBackendNotFoundError(
+                    f"Backend {config.backend_name} is not in "
+                    f"{instance}: please try a different hub/group/project."
+                )
+
+            return ibm_backend.IBMBackend(
+                instance=instance,
+                configuration=config,
+                api_client=AccountClient(self._provider._client_params),
+                provider=self._provider,
             )
-
-        return ibm_backend.IBMBackend(
-            instance=instance,
-            configuration=config,
-            api_client=AccountClient(self._provider._client_params),
-            provider=self._provider,
-        )
+        return None
 
     @staticmethod
     def _deprecated_backend_names() -> Dict[str, str]:

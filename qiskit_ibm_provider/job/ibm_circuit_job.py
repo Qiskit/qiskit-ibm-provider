@@ -495,7 +495,9 @@ class IBMCircuitJob(IBMJob):
         if self._time_per_step:
             time_per_step_local = {}
             for step_name, time_data_utc in self._time_per_step.items():
-                time_per_step_local[step_name] = utc_to_local(time_data_utc)
+                time_per_step_local[step_name] = (
+                    utc_to_local(time_data_utc) if time_data_utc else None
+                )
 
         return time_per_step_local
 
@@ -601,6 +603,11 @@ class IBMCircuitJob(IBMJob):
         """Retrieve job parameters"""
         if not self._params:
             with api_to_job_error():
+                if self._provider._runtime_client.job_type(self.job_id()) == "IQX":
+                    raise IBMJobError(
+                        f"{self.job_id()} is a legacy job. Retrieving parameters of legacy "
+                        f"jobs is not supported from qiskit-ibm-provider"
+                    ) from None
                 api_response = self._runtime_client.job_get(self.job_id())
                 self._params = api_response.get("params", {})
 
@@ -662,7 +669,7 @@ class IBMCircuitJob(IBMJob):
             result_url_json = json.loads(response)
             if "url" in result_url_json:
                 url = result_url_json["url"]
-                result_response = requests.get(url)
+                result_response = requests.get(url, timeout=10)
                 return result_response.content
             return response
         except json.JSONDecodeError:

@@ -228,7 +228,6 @@ class TestIBMJobAttributes(IBMTestCase):
         # Cancel job so it doesn't consume more resources.
         cancel_job(job)
 
-    @skip("not supported by api")
     def test_esp_readout_not_enabled(self):
         """Test that an error is thrown is ESP readout is used and the backend does not support it."""
         saved_api = self.sim_backend._api_client

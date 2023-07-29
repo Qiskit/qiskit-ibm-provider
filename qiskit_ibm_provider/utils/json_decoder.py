@@ -11,31 +11,31 @@
 # that they have been altered from the originals.
 
 """Custom JSON decoder."""
-from typing import Dict, Tuple, Union, List, Any, Optional
 import json
 import logging
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import dateutil.parser
+from qiskit.circuit.controlflow import ForLoopOp, IfElseOp, SwitchCaseOp, WhileLoopOp
+from qiskit.circuit.gate import Gate, Instruction
+from qiskit.circuit.library.standard_gates import get_standard_gate_name_mapping
+from qiskit.circuit.parameter import Parameter
 from qiskit.providers.models import (
-    QasmBackendConfiguration,
-    PulseBackendConfiguration,
-    PulseDefaults,
     BackendProperties,
     Command,
+    PulseBackendConfiguration,
+    PulseDefaults,
+    QasmBackendConfiguration,
 )
 from qiskit.providers.models.backendproperties import Gate as GateSchema
-from qiskit.circuit.controlflow import IfElseOp, WhileLoopOp, ForLoopOp
-from qiskit.circuit.gate import Gate, Instruction
-from qiskit.circuit.parameter import Parameter
-from qiskit.circuit.library.standard_gates import get_standard_gate_name_mapping
 from qiskit.pulse.calibration_entries import PulseQobjDef
-from qiskit.transpiler.target import Target, InstructionProperties
-from qiskit.qobj.pulse_qobj import PulseLibraryItem
 from qiskit.qobj.converters.pulse_instruction import QobjToInstructionConverter
+from qiskit.qobj.pulse_qobj import PulseLibraryItem
+from qiskit.transpiler.target import InstructionProperties, Target
 from qiskit.utils import apply_prefix
 
-from .converters import utc_to_local, utc_to_local_all
 from ..ibm_qubit_properties import IBMQubitProperties
+from .converters import utc_to_local, utc_to_local_all
 
 logger = logging.getLogger(__name__)
 
@@ -92,7 +92,7 @@ def target_from_server_data(
 ) -> Target:
     """Decode transpiler target from backend data set.
 
-    This function directly generate ``Target`` instance without generate
+    This function directly generates ``Target`` instance without generating
     intermediate legacy objects such as ``BackendProperties`` and ``PulseDefaults``.
 
     Args:
@@ -111,6 +111,7 @@ def target_from_server_data(
         "if_else": IfElseOp,
         "while_loop": WhileLoopOp,
         "for_loop": ForLoopOp,
+        "switch_case": SwitchCaseOp,
     }
 
     in_data = {"num_qubits": configuration.n_qubits}
@@ -128,6 +129,9 @@ def target_from_server_data(
     inst_name_map = {}  # type: Dict[str, Instruction]
     prop_name_map = {}  # type: Dict[str, Dict[Tuple[int, ...], InstructionProperties]]
     all_instructions = set.union(supported_instructions, basis_gates, set(required))
+    faulty_qubits = set()
+    faulty_ops = set()
+    unsupported_instructions = []
 
     # Create name to Qiskit instruction object repr mapping
     for name in all_instructions:
@@ -153,25 +157,27 @@ def target_from_server_data(
                 "Please add new gate class to Qiskit or provide GateConfig for this name.",
                 name,
             )
-            all_instructions.remove(name)
-            continue
+            unsupported_instructions.append(name)
 
-    # Create placeholder for the instruction properties
+    for name in unsupported_instructions:
+        all_instructions.remove(name)
+
+    # Create empty inst properties from gate configs
     for name, spec in gate_configs.items():
         if hasattr(spec, "coupling_map"):
             coupling_map = spec.coupling_map
             prop_name_map[name] = dict.fromkeys(map(tuple, coupling_map))
         else:
             prop_name_map[name] = None
-    if "delay" not in prop_name_map:
-        # Case for real IBM backend. They don't have delay in gate configuration.
-        prop_name_map["delay"] = {(q,): None for q in range(configuration.n_qubits)}
 
     # Populate instruction properties
     if properties:
-        in_data["qubit_properties"] = list(
-            map(_decode_qubit_property, properties["qubits"])
+        qubit_properties = list(map(_decode_qubit_property, properties["qubits"]))
+        in_data["qubit_properties"] = qubit_properties
+        faulty_qubits = set(
+            q for q, prop in enumerate(qubit_properties) if not prop.operational
         )
+
         for gate_spec in map(GateSchema.from_dict, properties["gates"]):
             name = gate_spec.gate
             qubits = tuple(gate_spec.qubits)
@@ -185,7 +191,14 @@ def target_from_server_data(
                     qubits,
                 )
                 continue
-            inst_prop = _decode_instruction_property(gate_spec)
+            inst_prop, operational = _decode_instruction_property(gate_spec)
+            if set.intersection(faulty_qubits, qubits) or not operational:
+                faulty_ops.add((name, qubits))
+                try:
+                    del prop_name_map[name][qubits]
+                except KeyError:
+                    pass
+                continue
             if prop_name_map[name] is None:
                 prop_name_map[name] = {}
             prop_name_map[name][qubits] = inst_prop
@@ -193,8 +206,18 @@ def target_from_server_data(
         measure_props = list(map(_decode_measure_property, properties["qubits"]))
         prop_name_map["measure"] = {}
         for qubit, measure_prop in enumerate(measure_props):
+            if qubit in faulty_qubits:
+                continue
             qubits = (qubit,)
             prop_name_map["measure"][qubits] = measure_prop
+
+    # Special case for real IBM backend. They don't have delay in gate configuration.
+    if "delay" not in prop_name_map:
+        prop_name_map["delay"] = {
+            (q,): None
+            for q in range(configuration.num_qubits)
+            if q not in faulty_qubits
+        }
 
     # Define pulse qobj converter and command sequence for lazy conversion
     if pulse_defaults:
@@ -205,7 +228,11 @@ def target_from_server_data(
         for cmd in map(Command.from_dict, pulse_defaults["cmd_def"]):
             name = cmd.name
             qubits = tuple(cmd.qubits)
-            if name not in all_instructions or qubits not in prop_name_map[name]:
+            if (
+                name not in all_instructions
+                or name not in prop_name_map
+                or qubits not in prop_name_map[name]
+            ):
                 logger.info(
                     "Gate calibration for instruction %s on qubits %s is found "
                     "in the PulseDefaults payload. However, this entry is not defined in "
@@ -214,6 +241,10 @@ def target_from_server_data(
                     qubits,
                 )
                 continue
+
+            if (name, qubits) in faulty_ops:
+                continue
+
             entry = PulseQobjDef(converter=converter, name=cmd.name)
             entry.define(cmd.sequence)
             try:
@@ -268,9 +299,9 @@ def decode_backend_configuration(config: Dict) -> None:
     config["online_date"] = dateutil.parser.isoparse(config["online_date"])
 
     if "u_channel_lo" in config:
-        for u_channle_list in config["u_channel_lo"]:
-            for u_channle_lo in u_channle_list:
-                u_channle_lo["scale"] = _to_complex(u_channle_lo["scale"])
+        for u_channel_list in config["u_channel_lo"]:
+            for u_channel_lo in u_channel_list:
+                u_channel_lo["scale"] = _to_complex(u_channel_lo["scale"])
 
 
 def decode_result(result: str, result_decoder: Any) -> Dict:
@@ -344,30 +375,38 @@ def _decode_qubit_property(qubit_specs: List[Dict]) -> IBMQubitProperties:
     """
     in_data = {}
     for spec in qubit_specs:
-        name = spec["name"]
-        if name in IBMQubitProperties.__slots__:
+        name = (spec["name"]).lower()
+        if name == "operational":
+            in_data[name] = bool(spec["value"])
+        elif name in IBMQubitProperties.__slots__:
             in_data[name] = apply_prefix(
                 value=spec["value"], unit=spec.get("unit", None)
             )
     return IBMQubitProperties(**in_data)  # type: ignore[no-untyped-call]
 
 
-def _decode_instruction_property(gate_spec: GateSchema) -> InstructionProperties:
+def _decode_instruction_property(
+    gate_spec: GateSchema,
+) -> Tuple[InstructionProperties, bool]:
     """Decode gate property data to generate InstructionProperties instance.
 
     Args:
         gate_spec: List of gate property dictionary.
 
     Returns:
-        An ``InstructionProperties`` instance.
+        An ``InstructionProperties`` instance and a boolean value representing
+        if this gate is operational.
     """
     in_data = {}
+    operational = True
     for param in gate_spec.parameters:
         if param.name == "gate_error":
             in_data["error"] = param.value
         if param.name == "gate_length":
             in_data["duration"] = apply_prefix(value=param.value, unit=param.unit)
-    return InstructionProperties(**in_data)
+        if param.name == "operational" and not param.value:
+            operational = bool(param.value)
+    return InstructionProperties(**in_data), operational
 
 
 def _decode_measure_property(qubit_specs: List[Dict]) -> InstructionProperties:

@@ -251,15 +251,15 @@ def _job_summary(
             parents=parents,
             values=values,
             branchvalues="total",
-            textfont=dict(size=18),
-            outsidetextfont=dict(size=20),
+            textfont={"size": 18},
+            outsidetextfont={"size": 20},
             maxdepth=2,
             hoverinfo="text",
             hovertext=hover_text,
-            marker=dict(colors=wedge_colors),
+            marker={"colors": wedge_colors},
         )
     )
-    fig.update_layout(margin=dict(t=10, l=10, r=10, b=10))
+    fig.update_layout(margin={"t": 10, "l": 10, "r": 10, "b": 10})
     sun_wid = PlotlyWidget(fig)
     sun_wid._active = 0
     sun_wid._job_index = index_jobs

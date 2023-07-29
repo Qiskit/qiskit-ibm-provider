@@ -11,15 +11,17 @@
 # that they have been altered from the originals.
 
 """Tests for the backend functions."""
-
+import copy
 from datetime import datetime
 from unittest import mock
+import warnings
 
-from qiskit import transpile, QuantumCircuit
+from qiskit import transpile, qasm3, QuantumCircuit
 from qiskit.providers.fake_provider import FakeManila
 from qiskit.providers.models import BackendStatus, BackendProperties
 
 from qiskit_ibm_provider.ibm_backend import IBMBackend
+from qiskit_ibm_provider.exceptions import IBMBackendValueError
 
 from ..ibm_test_case import IBMTestCase
 
@@ -178,3 +180,187 @@ class TestBackend(IBMTestCase):
         )
         out_backend.properties = lambda: BackendProperties.from_dict(properties)
         return out_backend
+
+    def test_dynamic_circuits_warning(self):
+        """Test warning when user defines dynamic==False and circuits are dynamic"""
+        # pylint: disable=not-context-manager
+
+        # backend is not faulty because no faulty parameters given
+        backend = self._create_faulty_backend(model_backend=FakeManila())
+
+        circuits = []
+        circ = QuantumCircuit(2, 2)
+        circ.h(0)
+        circ.measure(0, 0)
+        with circ.if_test((0, False)):
+            circ.x(1)
+        circuits.append(circ)
+
+        circ = QuantumCircuit(3, 2)
+        with circ.for_loop(range(4)):
+            circ.h(0)
+        circuits.append(circ)
+
+        circ = QuantumCircuit(2, 2)
+        circ.h(0)
+        circ.measure([0], [0])
+        with circ.switch(target=0) as case:
+            with case(0):
+                circ.x(0)
+            with case(case.DEFAULT):
+                circ.cx(0, 1)
+        circuits.append(circ)
+
+        for circuit in circuits:
+            # using warnings to catch multiple warnings
+            with warnings.catch_warnings(record=True) as warn:
+                with mock.patch.object(IBMBackend, "_runtime_run"):
+                    backend.run(circuits=circuit, dynamic=False)
+            self.assertIn(
+                "Parameter 'dynamic' is False, but the circuit "
+                "contains dynamic constructs.",
+                str(warn[0].message),
+            )
+            self.assertIn(
+                f"The backend {backend.name} does not support dynamic circuits.",
+                str(warn[1].message),
+            )
+
+    def _create_dc_test_backend(self):
+        """Create a test backend with an IfElseOp enables."""
+        model_backend = FakeManila()
+        properties = model_backend.properties()
+
+        out_backend = IBMBackend(
+            configuration=model_backend.configuration(),
+            provider=mock.MagicMock(),
+            api_client=None,
+            instance=None,
+        )
+
+        out_backend.status = lambda: BackendStatus(
+            backend_name="foo",
+            backend_version="1.0",
+            operational=True,
+            pending_jobs=0,
+            status_msg="",
+        )
+        out_backend.properties = lambda: properties
+
+        return out_backend
+
+    def test_single_dynamic_circuit_submission(self):
+        """Test submitting single circuit with dynamic=True"""
+        # pylint: disable=not-context-manager
+
+        backend = self._create_dc_test_backend()
+
+        circ = QuantumCircuit(2, 2)
+        circ.measure(0, 0)
+        with circ.if_test((0, False)):
+            circ.x(1)
+
+        with mock.patch.object(IBMBackend, "_runtime_run") as mock_run:
+            backend.run(circuits=circ, dynamic=True)
+
+        mock_run.assert_called_once()
+
+    def test_multi_dynamic_circuit_submission(self):
+        """Test submitting multiple circuits with dynamic=True"""
+        # pylint: disable=not-context-manager
+
+        backend = self._create_dc_test_backend()
+
+        circ = QuantumCircuit(2, 2)
+        circ.measure(0, 0)
+        with circ.if_test((0, False)):
+            circ.x(1)
+
+        circuits = [circ, circ]
+
+        with mock.patch.object(IBMBackend, "_runtime_run") as mock_run:
+            backend.run(circuits=circuits, dynamic=True)
+
+        mock_run.assert_called_once()
+
+    def test_single_openqasm3_submission(self):
+        """Test submitting a single openqasm3 strings with dynamic=True"""
+        # pylint: disable=not-context-manager
+
+        backend = self._create_dc_test_backend()
+
+        circ = QuantumCircuit(2, 2)
+        circ.measure(0, 0)
+        with circ.if_test((0, False)):
+            circ.x(1)
+
+        qasm3_circ = qasm3.dumps(circ, disable_constants=True)
+
+        with mock.patch.object(IBMBackend, "_runtime_run") as mock_run:
+            backend.run(circuits=qasm3_circ, dynamic=True)
+
+        mock_run.assert_called_once()
+
+    def test_runtime_image_selection_submission(self):
+        """Test image selection from runtime"""
+        # pylint: disable=not-context-manager
+
+        backend = self._create_dc_test_backend()
+
+        circ = QuantumCircuit(2, 2)
+        circ.measure(0, 0)
+        with circ.if_test((0, False)):
+            circ.x(1)
+
+        with mock.patch.object(IBMBackend, "_runtime_run") as mock_run:
+            backend.run(circuits=circ, dynamic=True)
+
+        mock_run.assert_called_once()
+
+    def test_multi_openqasm3_submission(self):
+        """Test submitting multiple openqasm3 strings with dynamic=True"""
+        # pylint: disable=not-context-manager
+
+        backend = self._create_dc_test_backend()
+
+        circ = QuantumCircuit(2, 2)
+        circ.measure(0, 0)
+        with circ.if_test((0, False)):
+            circ.x(1)
+
+        image = "test-image"
+
+        with mock.patch.object(IBMBackend, "_runtime_run") as mock_run:
+            backend.run(circuits=circ, dynamic=True, image=image)
+
+        mock_run.assert_called_once()
+        self.assertEqual(mock_run.call_args.kwargs["image"], image)
+
+    def test_deepcopy(self):
+        """Test that deepcopy of a backend works properly"""
+        backend = self._create_dc_test_backend()
+        backend_copy = copy.deepcopy(backend)
+        self.assertEqual(backend_copy.name, backend.name)
+
+    def test_too_many_circuits(self):
+        """Test exception when number of circuits exceeds backend._max_circuits"""
+        model_backend = FakeManila()
+        backend = IBMBackend(
+            configuration=model_backend.configuration(),
+            provider=mock.MagicMock(),
+            api_client=None,
+            instance=None,
+        )
+        max_circs = backend.configuration().max_experiments
+
+        circs = []
+        for _ in range(max_circs + 1):
+            circ = QuantumCircuit(1)
+            circ.x(0)
+            circs.append(circ)
+        with self.assertRaises(IBMBackendValueError) as err:
+            backend.run(circs)
+        self.assertIn(
+            f"Number of circuits, {max_circs+1} exceeds the maximum for this backend, {max_circs}",
+            str(err.exception),
+        )

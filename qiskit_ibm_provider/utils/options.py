@@ -28,6 +28,8 @@ class CommonOptions:
     meas_level: Union[int, MeasLevel] = MeasLevel.CLASSIFIED
     init_qubits: bool = True
     rep_delay: Optional[float] = None
+    memory: bool = False
+    meas_return: Union[str, MeasReturnType] = MeasReturnType.AVERAGE
 
     def to_transport_dict(self) -> Dict[str, Any]:
         """Remove None values so runtime defaults are used."""
@@ -51,7 +53,6 @@ class QASM2Options(CommonOptions):
     """Options for the QASM2 path."""
 
     header: Optional[Dict] = None
-    memory: bool = False
     qubit_lo_freq: Optional[List[int]] = None
     meas_lo_freq: Optional[List[int]] = None
     schedule_los: Optional[
@@ -60,7 +61,6 @@ class QASM2Options(CommonOptions):
             Union[Dict[PulseChannel, float], LoConfig],
         ]
     ] = None
-    meas_return: Union[str, MeasReturnType] = MeasReturnType.AVERAGE
     init_qubits: bool = True
     use_measure_esp: Optional[bool] = None
     # Simulator only
