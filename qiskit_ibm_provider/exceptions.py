@@ -28,7 +28,7 @@ class IBMAccountError(IBMError):
 
 
 class IBMProviderError(IBMError):
-    """Base class for rrrors raise by IBMProvider."""
+    """Base class for errors raise by IBMProvider."""
 
     pass
 
