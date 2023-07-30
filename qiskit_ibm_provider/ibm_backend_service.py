@@ -323,7 +323,6 @@ class IBMBackendService:
             )
         )
         job_list = []
-        job_count = 0
         while True:
             job_responses = self._get_jobs(
                 api_filter=api_filter,
@@ -363,10 +362,9 @@ class IBMBackendService:
                         )
                         continue
                     job_list.append(job)
-                    job_count += 1
                     if limit and len(job_list) == limit:
                         return job_list
-            skip += limit if limit else job_count
+            skip += len(job_responses)
         return job_list
 
     def _get_jobs(
