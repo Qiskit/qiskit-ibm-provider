@@ -481,7 +481,6 @@ class IBMBackend(Backend):
             shots = int(shots)
         if not self.configuration().simulator:
             circuits = self._deprecate_id_instruction(circuits)
-        options = {"backend": self.name}
 
         run_config_dict = self._get_run_config(
             program_id=program_id,
@@ -511,7 +510,7 @@ class IBMBackend(Backend):
         return self._runtime_run(
             program_id=program_id,
             inputs=run_config_dict,
-            options=options,
+            backend_name=self.name,
             job_tags=job_tags,
         )
 
@@ -519,7 +518,7 @@ class IBMBackend(Backend):
         self,
         program_id: str,
         inputs: Dict,
-        options: Dict,
+        backend_name: str,
         job_tags: Optional[List[str]] = None,
     ) -> IBMCircuitJob:
         """Runs the runtime program and returns the corresponding job object"""
@@ -527,7 +526,7 @@ class IBMBackend(Backend):
         try:
             response = self.provider._runtime_client.program_run(
                 program_id=program_id,
-                backend_name=options["backend"],
+                backend_name=backend_name,
                 params=inputs,
                 hgp=hgp_name,
                 job_tags=job_tags,
