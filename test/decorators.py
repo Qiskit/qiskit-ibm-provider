@@ -16,7 +16,6 @@ import os
 from dataclasses import dataclass
 from functools import wraps
 from typing import Callable, Optional
-from unittest.mock import patch
 
 from qiskit_ibm_provider import IBMProvider, least_busy
 from .unit.mock.fake_provider import FakeProvider

@@ -212,7 +212,7 @@ class TestIBMProviderServices(IBMTestCase):
 
         start_time = datetime.now()
         for _ in range(num_jobs):
-            job = backend.run(circuit, job_tags=["ibm-provider-test"], shots=1)
+            backend.run(circuit, job_tags=["ibm-provider-test"], shots=1)
         end_time = datetime.now()
 
         recent_jobs_small_limit = self.dependencies.provider.jobs(
