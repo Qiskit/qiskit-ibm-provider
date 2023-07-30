@@ -141,33 +141,6 @@ def integration_test_setup(
     return _decorator
 
 
-def mock_a_function(
-    function_string: str,
-    mocked_behavior: Callable,
-) -> Callable:
-    """Returns a decorator for mocking a function using unittesting.mock.patch.
-
-    Args:
-        function_string: a string that represents the function whose behavior is
-            to be mocked.
-        mocked_behavior: a function that performs the desired mock behavior.
-
-    Returns:
-        A decorator that causes the wrapped function to mock the behavior of the
-        function passed in the function string.
-    """
-
-    def _decorator(func):
-        @wraps(func)
-        def _wrapper(self, *args, **kwargs):
-            with patch(function_string, mocked_behavior):
-                func(self, *args, **kwargs)
-
-        return _wrapper
-
-    return _decorator
-
-
 @dataclass
 class IntegrationTestDependencies:
     """Integration test dependencies."""
