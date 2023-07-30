@@ -301,6 +301,22 @@ class TestBackend(IBMTestCase):
 
         mock_run.assert_called_once()
 
+    def test_runtime_image_selection_submission(self):
+        """Test image selection from runtime"""
+        # pylint: disable=not-context-manager
+
+        backend = self._create_dc_test_backend()
+
+        circ = QuantumCircuit(2, 2)
+        circ.measure(0, 0)
+        with circ.if_test((0, False)):
+            circ.x(1)
+
+        with mock.patch.object(IBMBackend, "_runtime_run") as mock_run:
+            backend.run(circuits=circ, dynamic=True)
+
+        mock_run.assert_called_once()
+
     def test_multi_openqasm3_submission(self):
         """Test submitting multiple openqasm3 strings with dynamic=True"""
         # pylint: disable=not-context-manager
@@ -312,13 +328,13 @@ class TestBackend(IBMTestCase):
         with circ.if_test((0, False)):
             circ.x(1)
 
-        qasm3_circ = qasm3.dumps(circ, disable_constants=True)
-        qasm3_circs = [qasm3_circ, qasm3_circ]
+        image = "test-image"
 
         with mock.patch.object(IBMBackend, "_runtime_run") as mock_run:
-            backend.run(circuits=qasm3_circs, dynamic=True)
+            backend.run(circuits=circ, dynamic=True, image=image)
 
         mock_run.assert_called_once()
+        self.assertEqual(mock_run.call_args.kwargs["image"], image)
 
     def test_deepcopy(self):
         """Test that deepcopy of a backend works properly"""

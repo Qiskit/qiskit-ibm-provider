@@ -471,6 +471,10 @@ class IBMBackend(Backend):
         else:
             run_config.pop("program_id", None)
 
+        image: Optional[str] = run_config.get("image", None)  # type: ignore
+        if image is not None:
+            image = str(image)
+
         if isinstance(init_circuit, bool):
             warnings.warn(
                 "init_circuit does not accept boolean values. "
@@ -512,6 +516,7 @@ class IBMBackend(Backend):
             inputs=run_config_dict,
             backend_name=self.name,
             job_tags=job_tags,
+            image=image,
         )
 
     def _runtime_run(
@@ -520,6 +525,7 @@ class IBMBackend(Backend):
         inputs: Dict,
         backend_name: str,
         job_tags: Optional[List[str]] = None,
+        image: Optional[str] = None,
     ) -> IBMCircuitJob:
         """Runs the runtime program and returns the corresponding job object"""
         hgp_name = self._instance or self.provider._get_hgp().name
@@ -530,6 +536,7 @@ class IBMBackend(Backend):
                 params=inputs,
                 hgp=hgp_name,
                 job_tags=job_tags,
+                image=image,
             )
         except RequestsApiError as ex:
             raise IBMBackendApiError("Error submitting job: {}".format(str(ex))) from ex
