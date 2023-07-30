@@ -201,7 +201,7 @@ class TestIBMProviderServices(IBMTestCase):
         self.assertEqual(backend.name, self.backend_name)
 
     def test_jobs_filter(self):
-        """Test limit filters when accessing jobs from the provider."""
+        """Test limit filters when accessing jobs from the provider. """
         num_jobs = PAGE_SIZE + 1
         small_limit = PAGE_SIZE // 2
         large_limit = PAGE_SIZE * 2
