@@ -29,7 +29,7 @@ Before pushing your contribution please ensure that:
 1. The code follows the code style of this repository. For convenience, you can 
    check [Style guide](#style-guide)
 2. If it makes sense, add tests that cover the changes. 
-3. All tests pass. For convenience, you can verify the [Test Types](#test-types).
+3. Make sure all tests pass. For convenience, you can verify the [Test Types](#test-types).
 4. The documentation has been updated accordingly. In particular, if a
    function or class has been modified during your contribution, please update
    the *docstring* accordingly. For convenience, you can check [Building the 
