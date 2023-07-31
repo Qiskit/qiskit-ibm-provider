@@ -193,7 +193,7 @@ release and the output will be submitted as a pull request to the documentation
 repository's [release notes file](
 https://github.com/Qiskit/qiskit/blob/master/docs/release_notes.rst)
 
-### Building documentation locally
+### Building documentation and release notes locally
 
 Building The release notes are part of the standard qiskit-ibm-provider
 documentation builds. To check what the rendered html output of the release
