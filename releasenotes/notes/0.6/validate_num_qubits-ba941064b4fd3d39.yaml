@@ -1,0 +1,5 @@
+---
+upgrade:
+  - |
+    Added error message if the circuit contains more qubits than supported on the backend.
+    Previously, this validation was done on the server side.

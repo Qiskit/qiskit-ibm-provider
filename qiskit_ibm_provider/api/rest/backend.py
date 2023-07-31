@@ -105,8 +105,8 @@ class Backend(RestAdapterBase):
         }
 
         # 'pending_jobs' is required, and should be >= 0.
-        if "lengthQueue" in response:
-            ret["pending_jobs"] = max(response["lengthQueue"], 0)
+        if "length_queue" in response:
+            ret["pending_jobs"] = max(response["length_queue"], 0)
         else:
             ret["pending_jobs"] = 0
 

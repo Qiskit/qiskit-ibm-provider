@@ -20,9 +20,18 @@ from typing_extensions import Literal
 from qiskit.providers.exceptions import QiskitBackendNotFoundError
 from qiskit.providers.jobstatus import JobStatus
 from qiskit.providers.providerutils import filter_backends
+from qiskit.providers.models import (
+    PulseBackendConfiguration,
+    QasmBackendConfiguration,
+)
 
-from qiskit_ibm_provider import ibm_provider  # pylint: disable=unused-import
+# pylint: disable=unused-import
+from qiskit_ibm_provider import (
+    ibm_backend,
+    ibm_provider,
+)
 from .api.exceptions import ApiError
+from .api.clients import AccountClient
 from .apiconstants import ApiJobStatus
 from .exceptions import (
     IBMBackendValueError,
@@ -35,6 +44,7 @@ from .ibm_backend import IBMBackend, IBMRetiredBackend
 from .job import IBMJob, IBMCircuitJob
 from .job.exceptions import IBMJobNotFoundError
 from .utils.hgp import from_instance_format
+from .utils.backend_decoder import configuration_from_server_data
 from .utils.converters import local_to_utc
 from .utils.utils import (
     to_python_identifier,
@@ -45,6 +55,7 @@ from .utils.utils import (
 from .utils.hgp import to_instance_format
 
 logger = logging.getLogger(__name__)
+PAGE_SIZE = 50
 
 
 class IBMBackendService:
@@ -83,17 +94,17 @@ class IBMBackendService:
         self._provider = provider
         self._default_hgp = hgp
         self._backends: Dict[str, IBMBackend] = {}
+        self._backend_configs: Dict[str, Any] = {}
         self._initialize_backends()
-        self._discover_backends()
 
     def _initialize_backends(self) -> None:
         """Initialize the internal list of backends."""
         # Add backends from user selected hgp followed by backends
         # from other hgps if not already added
         for hgp in self._provider._get_hgps():
-            for name, backend in hgp.backends.items():
+            for name in hgp.backends:
                 if name not in self._backends:
-                    self._backends[name] = backend
+                    self._backends[name] = None
 
     def _discover_backends(self) -> None:
         """Discovers the remote backends for this account, if not already known."""
@@ -147,13 +158,42 @@ class IBMBackendService:
         Raises:
             IBMBackendValueError: If only one or two parameters from `hub`, `group`,
                 `project` are specified.
+            QiskitBackendNotFoundError: If the backend is not found in any instance.
         """
         backends: List[IBMBackend] = []
-        if instance:
+        if name:
+            if name not in self._backends:
+                raise QiskitBackendNotFoundError("No backend matches the criteria")
+            if not self._backends[name] or instance != self._backends[name]._instance:
+                self._set_backend_config(name)
+                self._backends[name] = self._create_backend_obj(
+                    self._backend_configs[name], instance, self._provider._get_hgps()
+                )
+            if self._backends[name]:
+                backends.append(self._backends[name])
+        elif instance:
             hgp = self._provider._get_hgp(instance=instance)
-            backends = list(hgp.backends.values())
+            for backend_name in hgp.backends.keys():
+                if (
+                    not self._backends[backend_name]
+                    or instance != self._backends[backend_name]._instance
+                ):
+                    self._set_backend_config(backend_name, instance)
+                    self._backends[backend_name] = self._create_backend_obj(
+                        self._backend_configs[backend_name], instance
+                    )
+                if self._backends[backend_name]:
+                    backends.append(self._backends[backend_name])
         else:
-            backends = list(self._backends.values())
+            hgps = self._provider._get_hgps()
+            for backend_name, backend_config in self._backends.items():
+                if not backend_config:
+                    self._set_backend_config(backend_name)
+                    self._backends[backend_name] = self._create_backend_obj(
+                        self._backend_configs[backend_name], hgps=hgps
+                    )
+                if self._backends[backend_name]:
+                    backends.append(self._backends[backend_name])
         # Special handling of the `name` parameter, to support alias resolution.
         if name:
             aliases = self._aliased_backend_names()
@@ -283,7 +323,6 @@ class IBMBackendService:
             )
         )
         job_list = []
-        original_limit = limit
         while True:
             job_responses = self._get_jobs(
                 api_filter=api_filter,
@@ -323,9 +362,9 @@ class IBMBackendService:
                         )
                         continue
                     job_list.append(job)
-                    if len(job_list) == original_limit:
+                    if limit and len(job_list) == limit:
                         return job_list
-            skip += limit
+            skip += len(job_responses)
         return job_list
 
     def _get_jobs(
@@ -352,7 +391,9 @@ class IBMBackendService:
         # Retrieve the requested number of jobs, using pagination. The server
         # might limit the number of jobs per request.
         job_responses: List[Dict[str, Any]] = []
-        current_page_limit = limit if (limit is not None and limit <= 50) else 50
+        current_page_limit = (
+            limit if (limit is not None and limit <= PAGE_SIZE) else PAGE_SIZE
+        )
         while True:
             if legacy:
                 job_page = self._default_hgp._api_client.list_jobs(
@@ -381,7 +422,7 @@ class IBMBackendService:
                     break
                 current_page_limit = limit - len(job_responses)
             else:
-                current_page_limit = 50
+                current_page_limit = PAGE_SIZE
             skip = len(job_responses)
         return job_responses
 
@@ -600,7 +641,9 @@ class IBMBackendService:
                 legacy = True
                 job_info = self._default_hgp._api_client.job_get(job_id)
             else:
-                job_info = self._provider._runtime_client.job_get(job_id)
+                job_info = self._provider._runtime_client.job_get(
+                    job_id, exclude_params=True
+                )
                 if job_info.get("program", {}).get("id") not in [
                     "circuit-runner",
                     "qasm3-runner",
@@ -617,6 +660,66 @@ class IBMBackendService:
             ) from ex
         job = self._restore_circuit_job(job_info, raise_error=True, legacy=legacy)
         return job
+
+    def _set_backend_config(
+        self, backend_name: str, instance: Optional[str] = None
+    ) -> None:
+        """Retrieve backend configuration and add to backend_configs.
+
+        Args:
+            backend_name: backend name that will be returned.
+            instance: the current h/g/p.
+        """
+        if backend_name not in self._backend_configs:
+            raw_config = self._provider._runtime_client.backend_configuration(
+                backend_name
+            )
+            config = configuration_from_server_data(
+                raw_config=raw_config, instance=instance
+            )
+            self._backend_configs[backend_name] = config
+
+    def _create_backend_obj(
+        self,
+        config: Union[QasmBackendConfiguration, PulseBackendConfiguration],
+        instance: Optional[str] = None,
+        hgps: Optional[List] = None,
+    ) -> IBMBackend:
+        """Given a backend configuration return the backend object.
+
+        Args:
+            config: backend configuration.
+            instance: the current h/g/p.
+        Returns:
+            A backend object.
+        Raises:
+            QiskitBackendNotFoundError: if the backend is not in the hgp passed in.
+        """
+        if config:
+            if not instance:
+                for hgp in hgps:
+                    if config.backend_name in hgp.backends:
+                        instance = to_instance_format(
+                            hgp._hub, hgp._group, hgp._project
+                        )
+                        break
+
+            elif (
+                config.backend_name
+                not in self._provider._get_hgp(instance=instance).backends
+            ):
+                raise QiskitBackendNotFoundError(
+                    f"Backend {config.backend_name} is not in "
+                    f"{instance}: please try a different hub/group/project."
+                )
+
+            return ibm_backend.IBMBackend(
+                instance=instance,
+                configuration=config,
+                api_client=AccountClient(self._provider._client_params),
+                provider=self._provider,
+            )
+        return None
 
     @staticmethod
     def _deprecated_backend_names() -> Dict[str, str]:

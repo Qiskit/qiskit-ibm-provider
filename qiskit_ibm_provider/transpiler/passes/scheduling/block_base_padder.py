@@ -12,7 +12,7 @@
 
 """Padding pass to fill timeslots for IBM (dynamic circuit) backends."""
 
-from typing import Any, Dict, Iterable, List, Optional, Union, Set
+from typing import Dict, Iterable, List, Optional, Union, Set
 
 from qiskit.circuit import (
     Qubit,
@@ -133,7 +133,12 @@ class BlockBasePadder(TransformationPass):
         self._prev_node = None
         self._wire_map = {}
 
-    def _empty_dag_like(self, dag: DAGCircuit, pad_wires: bool = True) -> DAGCircuit:
+    def _empty_dag_like(
+        self,
+        dag: DAGCircuit,
+        pad_wires: bool = True,
+        wire_map: Optional[Dict[Qubit, Qubit]] = None,
+    ) -> DAGCircuit:
         """Create an empty dag like the input dag."""
         new_dag = DAGCircuit()
 
@@ -152,11 +157,14 @@ class BlockBasePadder(TransformationPass):
 
         source_wire_dag = self._root_dag if pad_wires else dag
 
+        # trivial wire map if not provided, or if the top-level dag is used
+        if not wire_map or pad_wires:
+            wire_map = {wire: wire for wire in source_wire_dag.wires}
         if dag.qregs:
             for qreg in source_wire_dag.qregs.values():
                 new_dag.add_qreg(qreg)
         else:
-            new_dag.add_qubits(source_wire_dag.qubits)
+            new_dag.add_qubits([wire_map[qubit] for qubit in source_wire_dag.qubits])
 
         # Don't add root cargs as these will not be padded.
         # Just focus on current block dag.
@@ -316,7 +324,9 @@ class BlockBasePadder(TransformationPass):
         prev_wire_map, self._wire_map = self._wire_map, wire_map
 
         prev_block_dag = self._block_dag
-        self._block_dag = new_block_dag = self._empty_dag_like(block, pad_wires)
+        self._block_dag = new_block_dag = self._empty_dag_like(
+            block, pad_wires, wire_map=wire_map
+        )
 
         self._block_duration = 0
         self._conditional_block = False

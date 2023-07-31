@@ -45,7 +45,6 @@ from qiskit.circuit import (
     QuantumCircuit,
     QuantumRegister,
 )
-from qiskit.circuit.library import BlueprintCircuit
 from qiskit.result import Result
 from qiskit.version import __version__ as _terra_version_string
 
@@ -204,6 +203,8 @@ class RuntimeEncoder(json.JSONEncoder):
                 return {"__type__": "ndarray", "__value__": obj.tolist()}
             value = _serialize_and_encode(obj, np.save, allow_pickle=False)
             return {"__type__": "ndarray", "__value__": value}
+        if isinstance(obj, np.int64):
+            return {"__type__": "int", "__value__": int(obj)}
         if isinstance(obj, set):
             return {"__type__": "set", "__value__": list(obj)}
         if isinstance(obj, Result):
@@ -211,12 +212,11 @@ class RuntimeEncoder(json.JSONEncoder):
         if hasattr(obj, "to_json"):
             return {"__type__": "to_json", "__value__": obj.to_json()}
         if isinstance(obj, QuantumCircuit):
-            # TODO Remove the decompose when terra 6713 is released.
-            if isinstance(obj, BlueprintCircuit):
-                obj = obj.decompose()
             value = _serialize_and_encode(
                 data=obj,
-                serializer=lambda buff, data: dump(data, buff),  # type: ignore[no-untyped-call]
+                serializer=lambda buff, data: dump(
+                    data, buff, RuntimeEncoder
+                ),  # type: ignore[no-untyped-call]
             )
             return {"__type__": "QuantumCircuit", "__value__": value}
         if isinstance(obj, Parameter):
@@ -265,6 +265,7 @@ class RuntimeDecoder(json.JSONDecoder):
     """JSON Decoder used by runtime service."""
 
     def __init__(self, *args: Any, **kwargs: Any):
+        kwargs.pop("encoding", None)
         super().__init__(object_hook=self.object_hook, *args, **kwargs)
         self.__parameter_vectors: Dict[str, Tuple[ParameterVector, set]] = {}
         self.__read_parameter_expression = (

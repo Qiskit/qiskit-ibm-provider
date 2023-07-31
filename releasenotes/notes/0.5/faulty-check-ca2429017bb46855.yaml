@@ -1,0 +1,5 @@
+---
+features:
+  - |
+    :meth:`~qiskit_ibm_provider.IBMBackend.run` now checks if the input
+    circuits use a faulty qubit or a faulty edge.

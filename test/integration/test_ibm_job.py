@@ -82,14 +82,14 @@ class TestIBMJob(IBMTestCase):
         timeout = 30
         start_time = time.time()
         while True:
-            check = sum([job.status() is JobStatus.RUNNING for job in job_array])
+            check = sum(job.status() is JobStatus.RUNNING for job in job_array)
             if check >= 2:
                 self.log.info("found %d simultaneous jobs", check)
                 break
             if all((job.status() is JobStatus.DONE for job in job_array)):
                 # done too soon? don't generate error
                 self.log.warning(
-                    "all jobs completed before simultaneous jobs " "could be detected"
+                    "all jobs completed before simultaneous jobs could be detected"
                 )
                 break
             for job in job_array:
@@ -153,7 +153,6 @@ class TestIBMJob(IBMTestCase):
             backend_name=backend_name,
             limit=5,
             skip=0,
-            legacy=True,
         )
         job_ids = [job.job_id() for job in job_list]
         self.assertTrue(job1.job_id() in job_ids)
@@ -239,8 +238,8 @@ class TestIBMJob(IBMTestCase):
         if not backend_2:
             raise SkipTest("Skipping test that requires multiple backends")
 
-        job_1 = backend_1.run(transpile(ReferenceCircuits.bell(), backend_1))
-        job_2 = backend_2.run(transpile(ReferenceCircuits.bell(), backend_2))
+        job_1 = backend_1.run(transpile(ReferenceCircuits.bell()))
+        job_2 = backend_2.run(transpile(ReferenceCircuits.bell()))
 
         # test a retrieved job's backend is the same as the queried backend
         self.assertEqual(
@@ -516,3 +515,12 @@ class TestIBMJob(IBMTestCase):
         job = self.sim_backend.run(self.bell, header=custom_header)
         self.assertEqual(custom_header["test"], job.header()["test"])
         self.assertLessEqual(custom_header.items(), job.header().items())
+
+    def test_lazy_loading_params(self):
+        """Test lazy loading job params."""
+        job = self.sim_backend.run(self.bell)
+        job.wait_for_final_state()
+
+        rjob = self.provider.backend.retrieve_job(job.job_id())
+        self.assertFalse(rjob._params)
+        self.assertTrue(rjob.circuits)

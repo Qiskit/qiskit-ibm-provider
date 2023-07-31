@@ -9,7 +9,6 @@
 # Any modifications or derivative works of this code must retain this
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
-
 """User interface of qpy serializer."""
 
 from json import JSONEncoder, JSONDecoder
@@ -23,7 +22,7 @@ from qiskit.circuit import QuantumCircuit
 from qiskit.pulse import ScheduleBlock
 from qiskit.exceptions import QiskitError
 from qiskit.version import __version__
-from qiskit.utils.deprecation import deprecate_arguments
+from qiskit.utils.deprecation import deprecate_arg
 
 from . import formats, common, binary_io, type_keys
 from .exceptions import QpyError
@@ -74,7 +73,7 @@ VERSION_PATTERN = (
 VERSION_PATTERN_REGEX = re.compile(VERSION_PATTERN, re.VERBOSE | re.IGNORECASE)
 
 
-@deprecate_arguments({"circuits": "programs"})
+@deprecate_arg("circuits", new_alias="programs", since="0.21.0")
 def dump(  # type: ignore[no-untyped-def]
     programs: Union[List[QPY_SUPPORTED_TYPES], QPY_SUPPORTED_TYPES],
     file_obj: BinaryIO,

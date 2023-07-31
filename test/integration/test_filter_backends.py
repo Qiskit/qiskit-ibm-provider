@@ -128,3 +128,19 @@ class TestBackendFilters(IBMTestCase):
         filtered = self.dependencies.provider.backends(dynamic_circuits=True)
         for backend in filtered:
             self.assertTrue("qasm3" in backend.configuration().supported_features)
+
+    def test_backends_no_config(self):
+        """Test retrieving backends when a config is missing."""
+        backends = self.dependencies.provider.backends(
+            instance=self.dependencies.instance
+        )
+        configs = self.dependencies.provider.backend._backend_configs
+        configs["test_backend"] = None
+        backend_names = [backend.name for backend in backends]
+
+        for config in configs.values():
+            backend = self.dependencies.provider.backend._create_backend_obj(
+                config, instance=self.dependencies.instance
+            )
+            if backend:
+                self.assertTrue(backend.name in backend_names)

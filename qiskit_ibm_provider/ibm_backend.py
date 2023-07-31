@@ -56,13 +56,14 @@ from .job import IBMJob, IBMCircuitJob
 from .transpiler.passes.basis.convert_id_to_delay import (
     ConvertIdToDelay,
 )
-from .utils import validate_job_tags
+from .utils import validate_job_tags, are_circuits_dynamic
 from .utils.options import QASM2Options, QASM3Options
-from .utils.backend_converter import (
-    convert_to_target,
-)
 from .utils.converters import local_to_utc
-from .utils.json_decoder import defaults_from_server_data, properties_from_server_data
+from .utils.json_decoder import (
+    defaults_from_server_data,
+    properties_from_server_data,
+    target_from_server_data,
+)
 from .api.exceptions import RequestsApiError
 
 
@@ -78,8 +79,7 @@ class IBMBackend(Backend):
 
     You can run experiments on a backend using the :meth:`run()` method. The
     :meth:`run()` method takes one or more :class:`~qiskit.circuit.QuantumCircuit`
-    or :class:`~qiskit.pulse.Schedule` and returns
-    an :class:`~qiskit_ibm_provider.job.IBMJob`
+    and returns an :class:`~qiskit_ibm_provider.job.IBMJob`
     instance that represents the submitted job. Each job has a unique job ID, which
     can later be used to retrieve the job. An example of this flow::
 
@@ -97,7 +97,7 @@ class IBMBackend(Backend):
     Note:
 
         * Unlike :meth:`qiskit.execute`, the :meth:`run` method does not transpile
-          the circuits/schedules for you, so be sure to do so before submitting them.
+          the circuits for you, so be sure to do so before submitting them.
 
         * You should not instantiate the ``IBMBackend`` class directly. Instead, use
           the methods provided by an :class:`IBMProvider` instance to retrieve and handle
@@ -231,17 +231,12 @@ class IBMBackend(Backend):
         does not yet exist on IBMBackend class.
         """
         # Prevent recursion since these properties are accessed within __getattr__
-        if name in ["_properties", "_defaults", "_target"]:
+        if name in ["_properties", "_defaults", "_target", "_configuration"]:
             raise AttributeError(
                 "'{}' object has no attribute '{}'".format(
                     self.__class__.__name__, name
                 )
             )
-        # Lazy load properties and pulse defaults and construct the target object.
-        self._get_properties()
-        self._get_defaults()
-        self._convert_to_target()
-        # Check if the attribute now is available on IBMBackend class due to above steps
         try:
             return super().__getattribute__(name)
         except AttributeError:
@@ -257,35 +252,32 @@ class IBMBackend(Backend):
                 )
             )
 
-    def _get_properties(self, datetime: Optional[python_datetime] = None) -> None:
-        """Gets backend properties and decodes it"""
-        if not self._properties:
-            if datetime:
-                datetime = local_to_utc(datetime)
-            api_properties = self.provider._runtime_client.backend_properties(
-                self.name, datetime=datetime
-            )
-            if api_properties:
-                backend_properties = properties_from_server_data(api_properties)
-                self._properties = backend_properties
+    def _get_target(
+        self,
+        *,
+        datetime: Optional[python_datetime] = None,
+        refresh: bool = False,
+    ) -> Target:
+        """Gets target from configuration, properties and pulse defaults."""
+        if datetime:
+            if not isinstance(datetime, python_datetime):
+                raise TypeError("'{}' is not of type 'datetime'.")
+            datetime = local_to_utc(datetime)
 
-    def _get_defaults(self) -> None:
-        """Gets defaults if pulse backend and decodes it"""
-        if not self._defaults:
-            api_defaults = self.provider._runtime_client.backend_pulse_defaults(
-                self.name
-            )
-            if api_defaults:
-                self._defaults = defaults_from_server_data(api_defaults)
-
-    def _convert_to_target(self) -> None:
-        """Converts backend configuration, properties and defaults to Target object"""
-        if not self._target:
-            self._target = convert_to_target(
+        if datetime or refresh or self._target is None:
+            client = getattr(self.provider, "_runtime_client")
+            api_properties = client.backend_properties(self.name, datetime=datetime)
+            api_pulse_defaults = client.backend_pulse_defaults(self.name)
+            target = target_from_server_data(
                 configuration=self._configuration,
-                properties=self._properties,
-                defaults=self._defaults,
+                pulse_defaults=api_pulse_defaults,
+                properties=api_properties,
             )
+            if datetime:
+                # Don't cache result.
+                return target
+            self._target = target
+        return self._target
 
     @classmethod
     def _default_options(cls) -> Options:
@@ -303,7 +295,7 @@ class IBMBackend(Backend):
     @property
     def max_circuits(self) -> int:
         """The maximum number of circuits
-        The maximum number of circuits (or Pulse schedules) that can be
+        The maximum number of circuits that can be
         run in a single job. If there is no limit this will return None.
         """
         return self._max_circuits
@@ -324,27 +316,21 @@ class IBMBackend(Backend):
         Returns:
             Target
         """
-        self._get_properties()
-        self._get_defaults()
-        self._convert_to_target()
-        return self._target
+        return self._get_target()
 
     def target_history(self, datetime: Optional[python_datetime] = None) -> Target:
         """A :class:`qiskit.transpiler.Target` object for the backend.
         Returns:
             Target with properties found on `datetime`
         """
-        self._get_properties(datetime=datetime)
-        self._get_defaults()
-        self._convert_to_target()
-        return self._target
+        return self._get_target(datetime=datetime)
 
     def run(
         self,
         circuits: Union[
-            QuantumCircuit, Schedule, List[Union[QuantumCircuit, Schedule]]
+            QuantumCircuit, Schedule, str, List[Union[QuantumCircuit, Schedule, str]]
         ],
-        dynamic: bool = False,
+        dynamic: bool = None,
         job_tags: Optional[List[str]] = None,
         init_circuit: Optional[QuantumCircuit] = None,
         init_num_resets: Optional[int] = None,
@@ -374,8 +360,11 @@ class IBMBackend(Backend):
 
         Args:
             circuits: An individual or a
-                list of :class:`~qiskit.circuits.QuantumCircuit` or
-                :class:`~qiskit.pulse.Schedule` object to run on the backend.
+                list of :class:`~qiskit.circuits.QuantumCircuit`.
+                :class:`~qiskit.pulse.Schedule` is no longer supported. Use ``pulse gates`` instead.
+                See `tutorial
+                <https://qiskit.org/documentation/tutorials/circuits_advanced/05_pulse_gates.html>`_
+                on how to use pulse gates.
             dynamic: Whether the circuit is dynamic (uses in-circuit conditionals)
             job_tags: Tags to be assigned to the job. The tags can subsequently be used
                 as a filter in the :meth:`jobs()` function call.
@@ -400,12 +389,19 @@ class IBMBackend(Backend):
             meas_lo_freq: List of default measurement LO frequencies in Hz. Will be overridden
                 by ``schedule_los`` if set.
             schedule_los: Experiment LO configurations, frequencies are given in Hz.
-            meas_level: Set the appropriate level of the measurement output for pulse experiments.
-            meas_return: Level of measurement data for the backend to return.
+            meas_level: Level of the measurement output for pulse experiments. See
+                `OpenPulse specification <https://arxiv.org/pdf/1809.03452.pdf>`_ for details:
 
-                For ``meas_level`` 0 and 1:
+                * ``0``, measurements of the raw signal (the measurement output pulse envelope)
+                * ``1``, measurement kernel is selected (a complex number obtained after applying the
+                  measurement kernel to the measurement output signal)
+                * ``2`` (default), a discriminator is selected and the qubit state is stored (0 or 1)
+
+            meas_return: Level of measurement data for the backend to return. For ``meas_level`` 0 and 1:
+
                 * ``single`` returns information from every shot.
                 * ``avg`` returns average measurement output (averaged over number of shots).
+
             rep_delay: Delay between programs in seconds. Only supported on certain
                 backends (if ``backend.configuration().dynamic_reprate_enabled=True``).
                 If supported, ``rep_delay`` must be from the range supplied
@@ -437,8 +433,30 @@ class IBMBackend(Backend):
                 - If ESP readout is used and the backend does not support this.
         """
         # pylint: disable=arguments-differ
-
         validate_job_tags(job_tags, IBMBackendValueError)
+        if not isinstance(circuits, List):
+            circuits = [circuits]
+        self._check_circuits_attributes(circuits)
+
+        if (
+            use_measure_esp
+            and getattr(self.configuration(), "measure_esp_enabled", False) is False
+        ):
+            raise IBMBackendValueError(
+                "ESP readout not supported on this device. Please make sure the flag "
+                "'use_measure_esp' is unset or set to 'False'."
+            )
+        actually_dynamic = are_circuits_dynamic(circuits)
+        if dynamic is False and actually_dynamic:
+            warnings.warn(
+                "Parameter 'dynamic' is False, but the circuit contains dynamic constructs."
+            )
+        dynamic = dynamic or actually_dynamic
+
+        if dynamic and "qasm3" not in getattr(
+            self.configuration(), "supported_features", []
+        ):
+            warnings.warn(f"The backend {self.name} does not support dynamic circuits.")
 
         status = self.status()
         if status.operational is True and status.status_msg != "active":
@@ -452,6 +470,10 @@ class IBMBackend(Backend):
                 program_id = QOBJRUNNERPROGRAMID
         else:
             run_config.pop("program_id", None)
+
+        image: Optional[str] = run_config.get("image", None)  # type: ignore
+        if image is not None:
+            image = str(image)
 
         if isinstance(init_circuit, bool):
             warnings.warn(
@@ -495,6 +517,7 @@ class IBMBackend(Backend):
             inputs=run_config_dict,
             options=options,
             job_tags=job_tags,
+            image=image,
         )
 
     def _runtime_run(
@@ -503,6 +526,7 @@ class IBMBackend(Backend):
         inputs: Dict,
         options: Dict,
         job_tags: Optional[List[str]] = None,
+        image: Optional[str] = None,
     ) -> IBMCircuitJob:
         """Runs the runtime program and returns the corresponding job object"""
         hgp_name = self._instance or self.provider._get_hgp().name
@@ -513,6 +537,7 @@ class IBMBackend(Backend):
                 params=inputs,
                 hgp=hgp_name,
                 job_tags=job_tags,
+                image=image,
             )
         except RequestsApiError as ex:
             raise IBMBackendApiError("Error submitting job: {}".format(str(ex))) from ex
@@ -720,11 +745,8 @@ class IBMBackend(Backend):
         return "<{}('{}')>".format(self.__class__.__name__, self.name)
 
     def _deprecate_id_instruction(
-        self,
-        circuits: Union[
-            QuantumCircuit, Schedule, List[Union[QuantumCircuit, Schedule]]
-        ],
-    ) -> Union[QuantumCircuit, Schedule, List[Union[QuantumCircuit, Schedule]]]:
+        self, circuits: List[Union[QuantumCircuit, Schedule]]
+    ) -> List[Union[QuantumCircuit, Schedule]]:
         """Raise a DeprecationWarning if any circuit contains an 'id' instruction.
 
         Additionally, if 'delay' is a 'supported_instruction', replace each 'id'
@@ -749,19 +771,14 @@ class IBMBackend(Backend):
         if not delay_support:
             return circuits
 
-        if not isinstance(circuits, List):
-            circuits = [circuits]
-
         circuit_has_id = any(
             instr.name == "id"
             for circuit in circuits
             if isinstance(circuit, QuantumCircuit)
             for instr, qargs, cargs in circuit.data
         )
-
         if not circuit_has_id:
             return circuits
-
         if not self.id_warning_issued:
             if id_support and delay_support:
                 warnings.warn(
@@ -788,7 +805,7 @@ class IBMBackend(Backend):
         circuits = copy.deepcopy(circuits)
         # Convert id gates to delays.
         pm = PassManager(  # pylint: disable=invalid-name
-            ConvertIdToDelay(self._target.durations())
+            ConvertIdToDelay(self.target.durations())
         )
         circuits = pm.run(circuits)
 
@@ -797,6 +814,70 @@ class IBMBackend(Backend):
     def get_translation_stage_plugin(self) -> str:
         """Return the default translation stage plugin name for IBM backends."""
         return "ibm_dynamic_circuits"
+
+    def _check_circuits_attributes(self, circuits: List[QuantumCircuit]) -> None:
+        """Check that circuits can be executed on backend.
+        Raises:
+            IBMBackendValueError:
+                - If Schedule is given as an input circuit.
+                - If one of the circuits contains more qubits than on the backend."""
+        schedule_error_msg = (
+            "Class 'Schedule' is no longer supported as an input circuit. "
+            "Use 'pulse gates' instead. See `tutorial "
+            "https://qiskit.org/documentation/tutorials/circuits_advanced/05_pulse_gates.html` "
+            "on how to use pulse gates."
+        )
+        if len(circuits) > self._max_circuits:
+            raise IBMBackendValueError(
+                f"Number of circuits, {len(circuits)} exceeds the "
+                f"maximum for this backend, {self._max_circuits})"
+            )
+        for circ in circuits:
+            if isinstance(circ, Schedule):
+                raise IBMBackendValueError(schedule_error_msg)
+            if isinstance(circ, QuantumCircuit):
+                if circ.num_qubits > self._configuration.num_qubits:
+                    raise IBMBackendValueError(
+                        f"Circuit contains {circ.num_qubits} qubits, "
+                        f"but backend has only {self.num_qubits}."
+                    )
+                self._check_faulty(circ)
+
+    def _check_faulty(self, circuit: QuantumCircuit) -> None:
+        """Check if the input circuit uses faulty qubits or edges.
+
+        Args:
+            circuit: Circuit to check.
+
+        Raises:
+            ValueError: If an instruction operating on a faulty qubit or edge is found.
+        """
+        if not self.properties():
+            return
+
+        faulty_qubits = self.properties().faulty_qubits()
+        faulty_gates = self.properties().faulty_gates()
+        faulty_edges = [
+            tuple(gate.qubits) for gate in faulty_gates if len(gate.qubits) > 1
+        ]
+
+        for instr in circuit.data:
+            if instr.operation.name == "barrier":
+                continue
+            qubit_indices = tuple(circuit.find_bit(x).index for x in instr.qubits)
+
+            for circ_qubit in qubit_indices:
+                if circ_qubit in faulty_qubits:
+                    raise ValueError(
+                        f"Circuit {circuit.name} contains instruction "
+                        f"{instr} operating on a faulty qubit {circ_qubit}."
+                    )
+
+            if len(qubit_indices) == 2 and qubit_indices in faulty_edges:
+                raise ValueError(
+                    f"Circuit {circuit.name} contains instruction "
+                    f"{instr} operating on a faulty edge {qubit_indices}"
+                )
 
 
 class IBMRetiredBackend(IBMBackend):

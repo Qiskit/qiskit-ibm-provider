@@ -29,6 +29,7 @@ class TestDynamicCircuitInstructionDurations(QiskitTestCase):
         durations = DynamicCircuitInstructionDurations(
             [
                 ("x", None, 200),
+                ("sx", (0,), 200),
                 ("measure", None, 1000),
                 ("measure", (0, 1), 1200),
                 ("reset", None, 800),
@@ -39,6 +40,17 @@ class TestDynamicCircuitInstructionDurations(QiskitTestCase):
         self.assertEqual(durations.get("measure", (0,)), 1160)
         self.assertEqual(durations.get("measure", (0, 1)), 1360)
         self.assertEqual(durations.get("reset", (0,)), 1160)
+
+        short_odd_durations = DynamicCircuitInstructionDurations(
+            [
+                ("sx", (0,), 112),
+                ("measure", None, 1000),
+                ("reset", None, 800),
+            ]
+        )
+
+        self.assertEqual(short_odd_durations.get("measure", (0,)), 1224)
+        self.assertEqual(short_odd_durations.get("reset", (0,)), 1224)
 
     def test_patch_disable(self):
         """Test if schedules circuits with c_if after measure with a common clbit.

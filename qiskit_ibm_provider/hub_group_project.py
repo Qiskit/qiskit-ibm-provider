@@ -22,7 +22,6 @@ from qiskit_ibm_provider import (  # pylint: disable=unused-import
 )
 
 from .api.clients import AccountClient
-from .utils.backend_decoder import configuration_from_server_data
 from .api.client_parameters import ClientParameters
 from .utils.hgp import from_instance_format
 
@@ -77,24 +76,11 @@ class HubGroupProject:
         Returns:
             A dict of the remote backend instances, keyed by backend name.
         """
-        ret = OrderedDict()
+        ret: OrderedDict[str, Any] = OrderedDict()
         backends = self._provider._runtime_client.list_backends(self.name)
         if backends:
             for backend in backends:
-                raw_config = self._provider._runtime_client.backend_configuration(
-                    backend
-                )
-                config = configuration_from_server_data(
-                    raw_config=raw_config, instance=self.name
-                )
-                if not config:
-                    continue
-                ret[config.backend_name] = ibm_backend.IBMBackend(
-                    instance=self.name,
-                    configuration=config,
-                    api_client=self._api_client,
-                    provider=self._provider,
-                )
+                ret[backend] = None
         return ret
 
     def backend(self, name: str) -> Optional["ibm_backend.IBMBackend"]:

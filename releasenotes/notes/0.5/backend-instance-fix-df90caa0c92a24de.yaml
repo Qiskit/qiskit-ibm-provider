@@ -1,0 +1,6 @@
+---
+fixes:
+  - |
+    Fixed an issue where instances were not being set when backend configurations
+    were loaded in :meth:`~qiskit_ibm_provider.IBMProvider.get_backend` and
+    :meth:`~qiskit_ibm_provider.IBMProvider.backends`.
