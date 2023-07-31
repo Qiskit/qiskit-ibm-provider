@@ -69,7 +69,6 @@ class ConvertIdToDelay(TransformationPass):
                 )
             elif isinstance(node.op, IGate):
                 delay_op = Delay(self._get_duration(qubit_index_map[node.qargs[0]]))
-                delay_op.condition = node.op.condition
                 dag.substitute_node(node, delay_op, inplace=True)
 
                 modified = True
