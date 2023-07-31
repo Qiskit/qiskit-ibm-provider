@@ -237,10 +237,14 @@ QISKIT_IBM_URL=https://auth.quantum-computing.ibm.com/api       # IBM Quantum AP
 QISKIT_IBM_INSTANCE=ibm-q/open/main                             # IBM Quantum provider to use (hub/group/project)
 ```
 
-To enable test cases against external system in your private fork, make sure to set above values as
+To enable test cases against external system in your private fork's CI workflow, make sure to set above values as
 [encrypted environment secrets](https://docs.github.com/en/actions/security-guides/encrypted-secrets#creating-encrypted-secrets-for-an-environment).
 The names of the environments must match the ones that the [CI workflow](.github/workflows/ci.yml) relies
 upon.
+
+To run integration and E2E tests locally, set environment variables in your terminal.
+In Linux or MacOS, this is accomplished using the `export` command.
+In Windows, the method will depend on which console you are using.
 
 ### Style guide
 

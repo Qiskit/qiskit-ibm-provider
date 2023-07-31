@@ -19,9 +19,10 @@ Common functions across several serialization and deserialization modules.
 import io
 import struct
 
+from typing import Any
 from . import formats
 
-QPY_VERSION = 7
+QPY_VERSION = 9
 ENCODE = "utf8"
 
 
@@ -253,7 +254,7 @@ def mapping_to_binary(mapping, serializer, **kwargs):  # type: ignore[no-untyped
     return binary_data
 
 
-def data_from_binary(binary_data, deserializer, **kwargs):  # type: ignore[no-untyped-def]
+def data_from_binary(binary_data, deserializer, **kwargs) -> Any:  # type: ignore[no-untyped-def]
     """Load object from binary data with specified deserializer.
 
     Args:

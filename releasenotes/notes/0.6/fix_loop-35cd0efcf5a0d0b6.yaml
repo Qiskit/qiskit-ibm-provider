@@ -1,0 +1,6 @@
+---
+fixes:
+  - |
+    A bug that the backend target generation fails with an error 
+    in some edge cases is fixed. See Qiskit/qiskit-ibm-provider/#650
+    for more details.

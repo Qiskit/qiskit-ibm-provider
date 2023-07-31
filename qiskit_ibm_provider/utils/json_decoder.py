@@ -11,31 +11,31 @@
 # that they have been altered from the originals.
 
 """Custom JSON decoder."""
-from typing import Dict, Tuple, Union, List, Any, Optional
 import json
 import logging
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import dateutil.parser
+from qiskit.circuit.controlflow import ForLoopOp, IfElseOp, SwitchCaseOp, WhileLoopOp
+from qiskit.circuit.gate import Gate, Instruction
+from qiskit.circuit.library.standard_gates import get_standard_gate_name_mapping
+from qiskit.circuit.parameter import Parameter
 from qiskit.providers.models import (
-    QasmBackendConfiguration,
-    PulseBackendConfiguration,
-    PulseDefaults,
     BackendProperties,
     Command,
+    PulseBackendConfiguration,
+    PulseDefaults,
+    QasmBackendConfiguration,
 )
 from qiskit.providers.models.backendproperties import Gate as GateSchema
-from qiskit.circuit.controlflow import IfElseOp, WhileLoopOp, ForLoopOp
-from qiskit.circuit.gate import Gate, Instruction
-from qiskit.circuit.parameter import Parameter
-from qiskit.circuit.library.standard_gates import get_standard_gate_name_mapping
 from qiskit.pulse.calibration_entries import PulseQobjDef
-from qiskit.transpiler.target import Target, InstructionProperties
-from qiskit.qobj.pulse_qobj import PulseLibraryItem
 from qiskit.qobj.converters.pulse_instruction import QobjToInstructionConverter
+from qiskit.qobj.pulse_qobj import PulseLibraryItem
+from qiskit.transpiler.target import InstructionProperties, Target
 from qiskit.utils import apply_prefix
 
-from .converters import utc_to_local, utc_to_local_all
 from ..ibm_qubit_properties import IBMQubitProperties
+from .converters import utc_to_local, utc_to_local_all
 
 logger = logging.getLogger(__name__)
 
@@ -92,7 +92,7 @@ def target_from_server_data(
 ) -> Target:
     """Decode transpiler target from backend data set.
 
-    This function directly generate ``Target`` instance without generate
+    This function directly generates ``Target`` instance without generating
     intermediate legacy objects such as ``BackendProperties`` and ``PulseDefaults``.
 
     Args:
@@ -111,6 +111,7 @@ def target_from_server_data(
         "if_else": IfElseOp,
         "while_loop": WhileLoopOp,
         "for_loop": ForLoopOp,
+        "switch_case": SwitchCaseOp,
     }
 
     in_data = {"num_qubits": configuration.n_qubits}
@@ -130,6 +131,7 @@ def target_from_server_data(
     all_instructions = set.union(supported_instructions, basis_gates, set(required))
     faulty_qubits = set()
     faulty_ops = set()
+    unsupported_instructions = []
 
     # Create name to Qiskit instruction object repr mapping
     for name in all_instructions:
@@ -155,8 +157,10 @@ def target_from_server_data(
                 "Please add new gate class to Qiskit or provide GateConfig for this name.",
                 name,
             )
-            all_instructions.remove(name)
-            continue
+            unsupported_instructions.append(name)
+
+    for name in unsupported_instructions:
+        all_instructions.remove(name)
 
     # Create empty inst properties from gate configs
     for name, spec in gate_configs.items():
@@ -224,9 +228,11 @@ def target_from_server_data(
         for cmd in map(Command.from_dict, pulse_defaults["cmd_def"]):
             name = cmd.name
             qubits = tuple(cmd.qubits)
-            if (name, qubits) in faulty_ops:
-                continue
-            if name not in all_instructions or qubits not in prop_name_map[name]:
+            if (
+                name not in all_instructions
+                or name not in prop_name_map
+                or qubits not in prop_name_map[name]
+            ):
                 logger.info(
                     "Gate calibration for instruction %s on qubits %s is found "
                     "in the PulseDefaults payload. However, this entry is not defined in "
@@ -235,6 +241,10 @@ def target_from_server_data(
                     qubits,
                 )
                 continue
+
+            if (name, qubits) in faulty_ops:
+                continue
+
             entry = PulseQobjDef(converter=converter, name=cmd.name)
             entry.define(cmd.sequence)
             try:

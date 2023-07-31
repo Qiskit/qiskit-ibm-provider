@@ -231,7 +231,7 @@ class IBMBackend(Backend):
         does not yet exist on IBMBackend class.
         """
         # Prevent recursion since these properties are accessed within __getattr__
-        if name in ["_properties", "_defaults", "_target"]:
+        if name in ["_properties", "_defaults", "_target", "_configuration"]:
             raise AttributeError(
                 "'{}' object has no attribute '{}'".format(
                     self.__class__.__name__, name
@@ -471,6 +471,10 @@ class IBMBackend(Backend):
         else:
             run_config.pop("program_id", None)
 
+        image: Optional[str] = run_config.get("image", None)  # type: ignore
+        if image is not None:
+            image = str(image)
+
         if isinstance(init_circuit, bool):
             warnings.warn(
                 "init_circuit does not accept boolean values. "
@@ -513,6 +517,7 @@ class IBMBackend(Backend):
             inputs=run_config_dict,
             options=options,
             job_tags=job_tags,
+            image=image,
         )
 
     def _runtime_run(
@@ -521,6 +526,7 @@ class IBMBackend(Backend):
         inputs: Dict,
         options: Dict,
         job_tags: Optional[List[str]] = None,
+        image: Optional[str] = None,
     ) -> IBMCircuitJob:
         """Runs the runtime program and returns the corresponding job object"""
         hgp_name = self._instance or self.provider._get_hgp().name
@@ -531,6 +537,7 @@ class IBMBackend(Backend):
                 params=inputs,
                 hgp=hgp_name,
                 job_tags=job_tags,
+                image=image,
             )
         except RequestsApiError as ex:
             raise IBMBackendApiError("Error submitting job: {}".format(str(ex))) from ex
@@ -820,6 +827,11 @@ class IBMBackend(Backend):
             "https://qiskit.org/documentation/tutorials/circuits_advanced/05_pulse_gates.html` "
             "on how to use pulse gates."
         )
+        if len(circuits) > self._max_circuits:
+            raise IBMBackendValueError(
+                f"Number of circuits, {len(circuits)} exceeds the "
+                f"maximum for this backend, {self._max_circuits})"
+            )
         for circ in circuits:
             if isinstance(circ, Schedule):
                 raise IBMBackendValueError(schedule_error_msg)
