@@ -1,0 +1,9 @@
+---
+upgrade:
+  - |
+    For each qubit, add the ability to select one of two different sets of spacings between dynamical decoupling pulses, 
+    based on the input coupling map. 
+fixes:
+  - |
+    Staggered inter-pulse spacings allow the user to disable certain interactions between neighboring qubits by
+    Refer to `#539 <https://github.com/Qiskit/qiskit-ibm-provider/issues/539>` for more details
