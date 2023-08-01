@@ -28,6 +28,7 @@ from qiskit.transpiler.exceptions import TranspilerError
 from qiskit.transpiler.instruction_durations import InstructionDurations
 from qiskit.transpiler.passes.optimization import Optimize1qGates
 from qiskit.transpiler import CouplingMap
+from qiskit.circuit.parameterexpression import ParameterExpression
 
 from .block_base_padder import BlockBasePadder
 
@@ -555,9 +556,13 @@ class PadDynamicalDecoupling(BlockBasePadder):
                     idle_after += gate_length
                     dd_ind += 1
 
-            self._block_dag.global_phase = self._mod_2pi(
+            self._block_dag.global_phase = (
                 self._block_dag.global_phase + sequence_gphase
             )
+            if not isinstance(self._block_dag.global_phase, ParameterExpression):
+                self._block_dag.global_phase = self._mod_2pi(
+                    self.block_dag._global_phase
+                )
             return
 
         # DD could not be applied, delay instead
