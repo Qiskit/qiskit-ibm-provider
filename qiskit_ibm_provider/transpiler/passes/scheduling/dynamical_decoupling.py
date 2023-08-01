@@ -28,7 +28,6 @@ from qiskit.transpiler.exceptions import TranspilerError
 from qiskit.transpiler.instruction_durations import InstructionDurations
 from qiskit.transpiler.passes.optimization import Optimize1qGates
 from qiskit.transpiler import CouplingMap
-from qiskit.circuit.parameterexpression import ParameterExpression
 
 from .block_base_padder import BlockBasePadder
 
@@ -559,10 +558,6 @@ class PadDynamicalDecoupling(BlockBasePadder):
             self._block_dag.global_phase = (
                 self._block_dag.global_phase + sequence_gphase
             )
-            if not isinstance(self._block_dag.global_phase, ParameterExpression):
-                self._block_dag.global_phase = self._mod_2pi(
-                    self.block_dag._global_phase
-                )
             return
 
         # DD could not be applied, delay instead
@@ -570,11 +565,3 @@ class PadDynamicalDecoupling(BlockBasePadder):
             block_idx, t_start, Delay(time_interval, self._block_dag.unit), qubit
         )
         return
-
-    @staticmethod
-    def _mod_2pi(angle: float, atol: float = 0) -> float:
-        """Wrap angle into interval [-π,π). If within atol of the endpoint, clamp to -π"""
-        wrapped = (angle + np.pi) % (2 * np.pi) - np.pi
-        if abs(wrapped - np.pi) < atol:
-            wrapped = -np.pi
-        return wrapped
