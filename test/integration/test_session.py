@@ -167,3 +167,16 @@ class TestSession(IBMTestCase):
             )
             _ = provider.get_backend(name=backend).run(circuit)
             self.assertFalse(session.session_id == session1_id)
+
+    def test_session_as_parameter(self):
+        """Testing using session as a parameter to IBMProvider"""
+        backend = "ibmq_qasm_simulator"
+        circuit = QuantumCircuit(2, 2)
+        circuit.measure_all()
+
+        session = Session()
+        provider = IBMProvider(session=session)
+        job1 = provider.get_backend(name=backend).run(circuit)
+        job2 = provider.get_backend(name=backend).run(circuit)
+        self.assertEqual(session.session_id, job1.job_id())
+        self.assertFalse(session.session_id == job2.job_id())
