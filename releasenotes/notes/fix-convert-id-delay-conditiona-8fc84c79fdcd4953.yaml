@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    A transpilation error will no longer occur when attempting to transpile a circuit containing a
+    conditional :class:`~qiskit.circuit.library.IGate` with Qiskit 0.44.
