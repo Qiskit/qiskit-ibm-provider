@@ -516,7 +516,7 @@ class IBMCircuitJob(IBMJob):
 
     @property
     def usage_estimation(self) -> Dict[str, Any]:
-        """Return usage estimation infromation for this job.
+        """Return usage estimation information for this job.
 
         Returns:
             ``quantum_seconds`` which is the estimated running
