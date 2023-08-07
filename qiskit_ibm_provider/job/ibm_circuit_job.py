@@ -377,7 +377,7 @@ class IBMCircuitJob(IBMJob):
         # If there is a meaningful reason, return it
         if reason is not None and reason != "Error":
             if reason_code:
-                self._job_error_msg = f"Error code - {reason_code}; {reason}"
+                self._job_error_msg = f"Error code {reason_code}; {reason}"
             else:
                 self._job_error_msg = reason
             return self._job_error_msg
