@@ -168,6 +168,7 @@ class IBMCircuitJob(IBMJob):
             self._status = api_status_to_job_status(status)
         self._client_version = self._extract_client_version(client_info)
         self._set_result(result)
+        self._usage_estimation: Dict[str, Any] = {}
 
         # Properties used for caching.
         self._cancelled = False
@@ -517,6 +518,20 @@ class IBMCircuitJob(IBMJob):
             self.refresh()
         return self._client_version
 
+    @property
+    def usage_estimation(self) -> Dict[str, Any]:
+        """Return usage estimation information for this job.
+
+        Returns:
+            ``quantum_seconds`` which is the estimated quantum time
+            of the job in seconds. Quantum time represents the time that
+            the QPU complex is occupied exclusively by the job.
+        """
+        if not self._usage_estimation:
+            self.refresh()
+
+        return self._usage_estimation
+
     def refresh(self) -> None:
         """Obtain the latest job information from the server.
 
@@ -540,6 +555,9 @@ class IBMCircuitJob(IBMJob):
             raise IBMJobApiError(
                 "Unexpected return value received " "from the server: {}".format(err)
             ) from err
+        self._usage_estimation = {
+            "quantum_seconds": api_response.pop("estimated_running_time_seconds", None),
+        }
         self._time_per_step = api_metadata.get("timestamps", None)
         self._tags = api_response.pop("tags", [])
         self._status = api_status_to_job_status(self._api_status)
