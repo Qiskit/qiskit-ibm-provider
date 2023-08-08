@@ -373,9 +373,13 @@ class IBMCircuitJob(IBMJob):
         if api_status_to_job_status(response["state"]["status"]) != JobStatus.ERROR:
             return None
         reason = response["state"].get("reason")
+        reason_code = response["state"].get("reason_code")
         # If there is a meaningful reason, return it
         if reason is not None and reason != "Error":
-            self._job_error_msg = reason
+            if reason_code:
+                self._job_error_msg = f"Error code {reason_code}; {reason}"
+            else:
+                self._job_error_msg = reason
             return self._job_error_msg
 
         # Now try parsing a meaningful reason from the results, if possible
