@@ -55,6 +55,7 @@ extensions = [
     'sphinx.ext.mathjax',
     'sphinx.ext.viewcode',
     'sphinx.ext.extlinks',
+    'sphinx.ext.intersphinx',
     'jupyter_sphinx',
     'sphinx_autodoc_typehints',
     'reno.sphinxext',
@@ -62,6 +63,10 @@ extensions = [
     "qiskit_sphinx_theme",
 ]
 templates_path = ['_templates']
+
+intersphinx_mapping = {
+    "qiskit": ("https://qiskit.org/documentation/", None),
+}
 
 nbsphinx_timeout = 300
 nbsphinx_execute = "never"
