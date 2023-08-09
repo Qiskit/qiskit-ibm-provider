@@ -231,7 +231,7 @@ class IBMBackend(Backend):
         does not yet exist on IBMBackend class.
         """
         # Prevent recursion since these properties are accessed within __getattr__
-        if name in ["_properties", "_defaults", "_target"]:
+        if name in ["_properties", "_defaults", "_target", "_configuration"]:
             raise AttributeError(
                 "'{}' object has no attribute '{}'".format(
                     self.__class__.__name__, name
@@ -328,7 +328,7 @@ class IBMBackend(Backend):
     def run(
         self,
         circuits: Union[
-            QuantumCircuit, Schedule, List[Union[QuantumCircuit, Schedule]]
+            QuantumCircuit, Schedule, str, List[Union[QuantumCircuit, Schedule, str]]
         ],
         dynamic: bool = None,
         job_tags: Optional[List[str]] = None,
@@ -431,22 +431,13 @@ class IBMBackend(Backend):
             IBMBackendValueError:
                 - If an input parameter value is not valid.
                 - If ESP readout is used and the backend does not support this.
-                - If Schedule is given as an input circuit.
         """
         # pylint: disable=arguments-differ
         validate_job_tags(job_tags, IBMBackendValueError)
-        if isinstance(circuits, (QuantumCircuit, Schedule)):
+        if not isinstance(circuits, List):
             circuits = [circuits]
+        self._check_circuits_attributes(circuits)
 
-        schedule_error_msg = (
-            "Class 'Schedule' is no longer supported as an input circuit. "
-            "Use 'pulse gates' instead. See `tutorial "
-            "https://qiskit.org/documentation/tutorials/circuits_advanced/05_pulse_gates.html` "
-            "on how to use pulse gates."
-        )
-        for circ in circuits:
-            if isinstance(circ, Schedule):
-                raise IBMBackendValueError(schedule_error_msg)
         if (
             use_measure_esp
             and getattr(self.configuration(), "measure_esp_enabled", False) is False
@@ -480,6 +471,10 @@ class IBMBackend(Backend):
         else:
             run_config.pop("program_id", None)
 
+        image: Optional[str] = run_config.get("image", None)  # type: ignore
+        if image is not None:
+            image = str(image)
+
         if isinstance(init_circuit, bool):
             warnings.warn(
                 "init_circuit does not accept boolean values. "
@@ -490,7 +485,6 @@ class IBMBackend(Backend):
             shots = int(shots)
         if not self.configuration().simulator:
             circuits = self._deprecate_id_instruction(circuits)
-        options = {"backend": self.name}
 
         run_config_dict = self._get_run_config(
             program_id=program_id,
@@ -517,32 +511,32 @@ class IBMBackend(Backend):
             # Transpiling in circuit-runner is deprecated.
             run_config_dict["skip_transpilation"] = True
 
-        for circ in circuits:
-            self.check_faulty(circ)
-
         return self._runtime_run(
             program_id=program_id,
             inputs=run_config_dict,
-            options=options,
+            backend_name=self.name,
             job_tags=job_tags,
+            image=image,
         )
 
     def _runtime_run(
         self,
         program_id: str,
         inputs: Dict,
-        options: Dict,
+        backend_name: str,
         job_tags: Optional[List[str]] = None,
+        image: Optional[str] = None,
     ) -> IBMCircuitJob:
         """Runs the runtime program and returns the corresponding job object"""
         hgp_name = self._instance or self.provider._get_hgp().name
         try:
             response = self.provider._runtime_client.program_run(
                 program_id=program_id,
-                backend_name=options["backend"],
+                backend_name=backend_name,
                 params=inputs,
                 hgp=hgp_name,
                 job_tags=job_tags,
+                image=image,
             )
         except RequestsApiError as ex:
             raise IBMBackendApiError("Error submitting job: {}".format(str(ex))) from ex
@@ -750,8 +744,7 @@ class IBMBackend(Backend):
         return "<{}('{}')>".format(self.__class__.__name__, self.name)
 
     def _deprecate_id_instruction(
-        self,
-        circuits: List[Union[QuantumCircuit, Schedule]],
+        self, circuits: List[Union[QuantumCircuit, Schedule]]
     ) -> List[Union[QuantumCircuit, Schedule]]:
         """Raise a DeprecationWarning if any circuit contains an 'id' instruction.
 
@@ -821,7 +814,35 @@ class IBMBackend(Backend):
         """Return the default translation stage plugin name for IBM backends."""
         return "ibm_dynamic_circuits"
 
-    def check_faulty(self, circuit: QuantumCircuit) -> None:
+    def _check_circuits_attributes(self, circuits: List[QuantumCircuit]) -> None:
+        """Check that circuits can be executed on backend.
+        Raises:
+            IBMBackendValueError:
+                - If Schedule is given as an input circuit.
+                - If one of the circuits contains more qubits than on the backend."""
+        schedule_error_msg = (
+            "Class 'Schedule' is no longer supported as an input circuit. "
+            "Use 'pulse gates' instead. See `tutorial "
+            "https://qiskit.org/documentation/tutorials/circuits_advanced/05_pulse_gates.html` "
+            "on how to use pulse gates."
+        )
+        if len(circuits) > self._max_circuits:
+            raise IBMBackendValueError(
+                f"Number of circuits, {len(circuits)} exceeds the "
+                f"maximum for this backend, {self._max_circuits})"
+            )
+        for circ in circuits:
+            if isinstance(circ, Schedule):
+                raise IBMBackendValueError(schedule_error_msg)
+            if isinstance(circ, QuantumCircuit):
+                if circ.num_qubits > self._configuration.num_qubits:
+                    raise IBMBackendValueError(
+                        f"Circuit contains {circ.num_qubits} qubits, "
+                        f"but backend has only {self.num_qubits}."
+                    )
+                self._check_faulty(circ)
+
+    def _check_faulty(self, circuit: QuantumCircuit) -> None:
         """Check if the input circuit uses faulty qubits or edges.
 
         Args:

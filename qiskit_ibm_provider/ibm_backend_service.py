@@ -55,6 +55,7 @@ from .utils.utils import (
 from .utils.hgp import to_instance_format
 
 logger = logging.getLogger(__name__)
+PAGE_SIZE = 50
 
 
 class IBMBackendService:
@@ -168,7 +169,8 @@ class IBMBackendService:
                 self._backends[name] = self._create_backend_obj(
                     self._backend_configs[name], instance, self._provider._get_hgps()
                 )
-            backends.append(self._backends[name])
+            if self._backends[name]:
+                backends.append(self._backends[name])
         elif instance:
             hgp = self._provider._get_hgp(instance=instance)
             for backend_name in hgp.backends.keys():
@@ -180,7 +182,8 @@ class IBMBackendService:
                     self._backends[backend_name] = self._create_backend_obj(
                         self._backend_configs[backend_name], instance
                     )
-                backends.append(self._backends[backend_name])
+                if self._backends[backend_name]:
+                    backends.append(self._backends[backend_name])
         else:
             hgps = self._provider._get_hgps()
             for backend_name, backend_config in self._backends.items():
@@ -189,7 +192,8 @@ class IBMBackendService:
                     self._backends[backend_name] = self._create_backend_obj(
                         self._backend_configs[backend_name], hgps=hgps
                     )
-                backends.append(self._backends[backend_name])
+                if self._backends[backend_name]:
+                    backends.append(self._backends[backend_name])
         # Special handling of the `name` parameter, to support alias resolution.
         if name:
             aliases = self._aliased_backend_names()
@@ -319,7 +323,6 @@ class IBMBackendService:
             )
         )
         job_list = []
-        original_limit = limit
         while True:
             job_responses = self._get_jobs(
                 api_filter=api_filter,
@@ -359,9 +362,9 @@ class IBMBackendService:
                         )
                         continue
                     job_list.append(job)
-                    if len(job_list) == original_limit:
+                    if limit and len(job_list) == limit:
                         return job_list
-            skip += limit
+            skip += len(job_responses)
         return job_list
 
     def _get_jobs(
@@ -388,7 +391,9 @@ class IBMBackendService:
         # Retrieve the requested number of jobs, using pagination. The server
         # might limit the number of jobs per request.
         job_responses: List[Dict[str, Any]] = []
-        current_page_limit = limit if (limit is not None and limit <= 50) else 50
+        current_page_limit = (
+            limit if (limit is not None and limit <= PAGE_SIZE) else PAGE_SIZE
+        )
         while True:
             if legacy:
                 job_page = self._default_hgp._api_client.list_jobs(
@@ -417,7 +422,7 @@ class IBMBackendService:
                     break
                 current_page_limit = limit - len(job_responses)
             else:
-                current_page_limit = 50
+                current_page_limit = PAGE_SIZE
             skip = len(job_responses)
         return job_responses
 
@@ -636,7 +641,9 @@ class IBMBackendService:
                 legacy = True
                 job_info = self._default_hgp._api_client.job_get(job_id)
             else:
-                job_info = self._provider._runtime_client.job_get(job_id)
+                job_info = self._provider._runtime_client.job_get(
+                    job_id, exclude_params=True
+                )
                 if job_info.get("program", {}).get("id") not in [
                     "circuit-runner",
                     "qasm3-runner",

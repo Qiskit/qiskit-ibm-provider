@@ -16,6 +16,7 @@ import warnings
 from typing import Dict, List, Optional, Union
 
 import numpy as np
+import rustworkx as rx
 from qiskit.circuit import Qubit, Gate
 from qiskit.circuit.delay import Delay
 from qiskit.circuit.library.standard_gates import IGate, UGate, U3Gate
@@ -26,6 +27,7 @@ from qiskit.quantum_info.synthesis import OneQubitEulerDecomposer
 from qiskit.transpiler.exceptions import TranspilerError
 from qiskit.transpiler.instruction_durations import InstructionDurations
 from qiskit.transpiler.passes.optimization import Optimize1qGates
+from qiskit.transpiler import CouplingMap
 
 from .block_base_padder import BlockBasePadder
 
@@ -117,6 +119,8 @@ class PadDynamicalDecoupling(BlockBasePadder):
         extra_slack_distribution: str = "middle",
         sequence_min_length_ratios: Optional[Union[int, List[int]]] = None,
         insert_multiple_cycles: bool = False,
+        coupling_map: CouplingMap = None,
+        alt_spacings: Optional[Union[List[List[float]], List[float]]] = None,
     ):
         """Dynamical decoupling initializer.
 
@@ -133,7 +137,9 @@ class PadDynamicalDecoupling(BlockBasePadder):
                 The available slack will be divided according to this.
                 The list length must be one more than the length of dd_sequence,
                 and the elements must sum to 1. If None, a balanced spacing
-                will be used [d/2, d, d, ..., d, d, d/2].
+                will be used [d/2, d, d, ..., d, d, d/2]. This spacing only
+                applies to the first subcircuit, if a ``coupling_map`` is
+                specified
             skip_reset_qubits: If True, does not insert DD on idle periods that
                 immediately follow initialized/reset qubits
                 (as qubits in the ground state are less susceptible to decoherence).
@@ -161,14 +167,22 @@ class PadDynamicalDecoupling(BlockBasePadder):
             insert_multiple_cycles: If the available duration exceeds
                 2*sequence_min_length_ratio*duration(dd_sequence) enable the insertion of multiple
                 rounds of the dynamical decoupling sequence in that delay.
+            coupling_map: directed graph representing the coupling map for the device. Specifying a
+                coupling map partitions the device into subcircuits, in order to apply DD sequences
+                with different pulse spacings within each. Currently support 2 subcircuits.
+            alt_spacings: A list of lists of spacings between the DD gates, for the second subcircuit,
+                as determined by the coupling map. If None, a balanced spacing that is staggered with
+                respect to the first subcircuit will be used [d, d, d, ..., d, d, 0].
         Raises:
             TranspilerError: When invalid DD sequence is specified.
             TranspilerError: When pulse gate with the duration which is
                 non-multiple of the alignment constraint value is found.
+            TranspilerError: When the coupling map is not supported (i.e., if degree > 3)
         """
 
         super().__init__()
         self._durations = durations
+
         # Enforce list of DD sequences
         if dd_sequences:
             try:
@@ -179,18 +193,36 @@ class PadDynamicalDecoupling(BlockBasePadder):
         self._qubits = qubits
         self._skip_reset_qubits = skip_reset_qubits
         self._alignment = pulse_alignment
+        self._coupling_map = coupling_map
+        self._coupling_coloring = None
 
         if spacings is not None:
             try:
                 iter(spacings[0])  # type: ignore
             except TypeError:
                 spacings = [spacings]  # type: ignore
+        if alt_spacings is not None:
+            try:
+                iter(alt_spacings[0])  # type: ignore
+            except TypeError:
+                alt_spacings = [alt_spacings]  # type: ignore
         self._spacings = spacings
+        self._alt_spacings = alt_spacings
 
         if self._spacings and len(self._spacings) != len(self._dd_sequences):
             raise TranspilerError(
                 "Number of sequence spacings must equal number of DD sequences."
             )
+
+        if self._alt_spacings:
+            if not self._coupling_map:
+                warnings.warn(
+                    "Alternate spacings are ignored because a coupling map was not provided"
+                )
+            elif len(self._alt_spacings) != len(self._dd_sequences):
+                raise TranspilerError(
+                    "Number of alternate sequence spacings must equal number of DD sequences."
+                )
 
         self._extra_slack_distribution = extra_slack_distribution
 
@@ -217,9 +249,26 @@ class PadDynamicalDecoupling(BlockBasePadder):
     def _pre_runhook(self, dag: DAGCircuit) -> None:
         super()._pre_runhook(dag)
 
+        if self._coupling_map:
+            physical_qubits = [dag.qubits.index(q) for q in dag.qubits]
+            sub_coupling_map = self._coupling_map.reduce(physical_qubits)
+            self._coupling_coloring = rx.graph_greedy_color(
+                sub_coupling_map.graph.to_undirected()
+            )
+            if any(c > 1 for c in self._coupling_coloring.values()):
+                raise TranspilerError(
+                    "This circuit topology is not supported for staggered dynamical decoupling."
+                    "The maximum connectivity is 3 nearest neighbors per qubit."
+                )
+
         spacings_required = self._spacings is None
         if spacings_required:
             self._spacings = []  # type: ignore
+        alt_spacings_required = (
+            self._alt_spacings is None and self._coupling_map is not None
+        )
+        if alt_spacings_required:
+            self._alt_spacings = []  # type: ignore
 
         for seq_idx, seq in enumerate(self._dd_sequences):
             num_pulses = len(self._dd_sequences[seq_idx])
@@ -241,6 +290,19 @@ class PadDynamicalDecoupling(BlockBasePadder):
                         "The spacings must be given in terms of fractions "
                         "of the slack period and sum to 1."
                     )
+
+            if self._coupling_map:
+                if alt_spacings_required:
+                    mid = 1 / num_pulses
+                    self._alt_spacings.append([mid] * num_pulses + [0])  # type: ignore
+                else:
+                    if sum(self._alt_spacings[seq_idx]) != 1 or any(  # type: ignore
+                        a < 0 for a in self._alt_spacings[seq_idx]  # type: ignore
+                    ):
+                        raise TranspilerError(
+                            "The spacings must be given in terms of fractions "
+                            "of the slack period and sum to 1."
+                        )
 
             # Check if DD sequence is identity
             if num_pulses != 1:
@@ -363,6 +425,11 @@ class PadDynamicalDecoupling(BlockBasePadder):
             seq_length = np.sum(seq_lengths)
             seq_ratio = self._sequence_min_length_ratios[sequence_idx]
             spacings = self._spacings[sequence_idx]
+            alt_spacings = (
+                np.asarray(self._alt_spacings[sequence_idx])
+                if self._coupling_map
+                else None
+            )
 
             # Verify the delay duration exceeds the minimum time to insert
             if time_interval / seq_length <= seq_ratio:
@@ -383,9 +450,9 @@ class PadDynamicalDecoupling(BlockBasePadder):
             # multiple dd sequences may be inserted
             if num_sequences > 1:
                 dd_sequence = list(dd_sequence) * num_sequences
-                spacings = spacings * num_sequences
                 seq_lengths = seq_lengths * num_sequences
                 seq_length = np.sum(seq_lengths)
+                spacings = spacings * num_sequences
 
             spacings = np.asarray(spacings) / num_sequences
             slack = time_interval - seq_length
@@ -431,8 +498,16 @@ class PadDynamicalDecoupling(BlockBasePadder):
             def _constrained_length(values: np.array) -> np.array:
                 return self._alignment * np.floor(values / self._alignment)
 
+            if self._coupling_map:
+                if self._coupling_coloring[qubit.index] == 0:
+                    sub_spacings = spacings
+                else:
+                    sub_spacings = alt_spacings
+            else:
+                sub_spacings = spacings
+
             # (1) Compute DD intervals satisfying the constraint
-            taus = _constrained_length(slack * spacings)
+            taus = _constrained_length(slack * sub_spacings)
             extra_slack = slack - np.sum(taus)
             # (2) Distribute extra slack
             if self._extra_slack_distribution == "middle":
@@ -480,7 +555,7 @@ class PadDynamicalDecoupling(BlockBasePadder):
                     idle_after += gate_length
                     dd_ind += 1
 
-            self._block_dag.global_phase = self._mod_2pi(
+            self._block_dag.global_phase = (
                 self._block_dag.global_phase + sequence_gphase
             )
             return
@@ -490,11 +565,3 @@ class PadDynamicalDecoupling(BlockBasePadder):
             block_idx, t_start, Delay(time_interval, self._block_dag.unit), qubit
         )
         return
-
-    @staticmethod
-    def _mod_2pi(angle: float, atol: float = 0) -> float:
-        """Wrap angle into interval [-π,π). If within atol of the endpoint, clamp to -π"""
-        wrapped = (angle + np.pi) % (2 * np.pi) - np.pi
-        if abs(wrapped - np.pi) < atol:
-            wrapped = -np.pi
-        return wrapped
