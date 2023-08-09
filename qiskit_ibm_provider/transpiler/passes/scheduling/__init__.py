@@ -25,15 +25,17 @@ of measurement results.
 .. warning::
     You should not mix these scheduling passes with Qiskit's builtin scheduling
     passes as they will negatively interact with the scheduling routines for
-    dynamic circuits. This includes setting ``scheduling_method`` in ``transpile``.
+    dynamic circuits. This includes setting ``scheduling_method`` in
+    :func:`~qiskit.compiler.transpile` or
+    :func:`~qiskit.transpiler.preset_passmanagers.generate_preset_pass_manager`.
 
 Below we demonstrate how to schedule and pad a teleportation circuit with delays
 for a dynamic circuit backend's execution model:
 
 .. jupyter-execute::
 
-    from qiskit import transpile
     from qiskit.circuit import ClassicalRegister, QuantumCircuit, QuantumRegister
+    from qiskit.transpiler.preset_passmanagers import generate_preset_pass_manager
     from qiskit.transpiler.passmanager import PassManager
 
     from qiskit_ibm_provider.transpiler.passes.scheduling import DynamicCircuitInstructionDurations
@@ -51,8 +53,10 @@ for a dynamic circuit backend's execution model:
     # Use this duration class to get appropriate durations for dynamic
     # circuit backend scheduling
     durations = DynamicCircuitInstructionDurations.from_backend(backend)
+    # Generate the main Qiskit transpile passes.
+    pm = generate_preset_pass_manager(optimization_level=1, backend=backend)
     # Configure the as-late-as-possible scheduling pass
-    pm = PassManager([ALAPScheduleAnalysis(durations), PadDelay()])
+    pm.scheduling = PassManager([ALAPScheduleAnalysis(durations), PadDelay()])
 
     qr = QuantumRegister(3)
     crz = ClassicalRegister(1, name="crz")
@@ -73,9 +77,7 @@ for a dynamic circuit backend's execution model:
         teleport.x(qr[2])
     teleport.measure(qr[2], result)
 
-
-    teleport = transpile(teleport, backend)
-
+    # Transpile.
     scheduled_teleport = pm.run(teleport)
 
     scheduled_teleport.draw(output="mpl")
@@ -93,7 +95,8 @@ using the :class:`PadDynamicalDecoupling` pass as shown below:
 
     dd_sequence = [XGate(), XGate()]
 
-    pm = PassManager(
+    pm = generate_preset_pass_manager(optimization_level=1, backend=backend)
+    pm.scheduling = PassManager(
         [
             ALAPScheduleAnalysis(durations),
             PadDynamicalDecoupling(durations, dd_sequence),
@@ -103,6 +106,12 @@ using the :class:`PadDynamicalDecoupling` pass as shown below:
     dd_teleport = pm.run(teleport)
 
     dd_teleport.draw(output="mpl")
+
+When compiling a circuit with Qiskit, it is more efficient and more robust to perform all the
+transformations in a single transpilation.  This has been done above by extending Qiskit's preset
+pass managers.  For example, Qiskit's :func:`~qiskit.compiler.transpile` function internally builds
+its pass set by using :func:`~qiskit.transpiler.preset_passmanagers.generate_preset_pass_manager`.
+This returns instances of :class:`~qiskit.transpiler.StagedPassManager`, which can be extended.
 
 
 Scheduling old format ``c_if`` conditioned gates
@@ -121,26 +130,22 @@ The :class:`.IBMBackend` configures a translation plugin
 apply transformations and optimizations for IBM hardware backends when invoking
 :func:`~qiskit.compiler.transpile`. This will automatically convert all old style ``c_if``
 conditioned gates to new-style control-flow.
+We may then schedule the transpiled circuit without further modification.
 
 .. jupyter-execute::
 
     # Temporary workaround for mock backends. For real backends this is not required.
     backend.get_translation_stage_plugin = lambda: "ibm_dynamic_circuits"
 
-    qc_c_if_transpiled = transpile(qc_c_if, backend)
-
-We may then schedule the transpiled circuit without further modification.
-
-.. jupyter-execute::
-
-    pm = PassManager(
+    pm = generate_preset_pass_manager(optimization_level=1, backend=backend)
+    pm.scheduling = PassManager(
         [
             ALAPScheduleAnalysis(durations),
             PadDynamicalDecoupling(durations, dd_sequence),
         ]
     )
 
-    qc_if_dd = pm.run(qc_c_if_transpiled)
+    qc_if_dd = pm.run(qc_c_if, backend)
     qc_if_dd.draw(output="mpl")
 
 
@@ -153,7 +158,8 @@ prior to your scheduling pass.
 
     from qiskit.transpiler.passes import ConvertConditionsToIfOps
 
-    pm = PassManager(
+    pm = generate_preset_pass_manager(optimization_level=1, backend=backend)
+    pm.scheduling = PassManager(
           [
               ConvertConditionsToIfOps(),
               ALAPScheduleAnalysis(durations),
