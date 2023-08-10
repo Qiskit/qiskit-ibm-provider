@@ -27,7 +27,7 @@ class TestBackendFilters(IBMTestCase):
     """Qiskit Backend Filtering Tests."""
 
     @classmethod
-    @integration_test_setup_with_backend()
+    @integration_test_setup_with_backend(staging=False)
     def setUpClass(
         cls, backend: IBMBackend, dependencies: IntegrationTestDependencies
     ) -> None:

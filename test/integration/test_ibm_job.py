@@ -171,6 +171,7 @@ class TestIBMJob(IBMTestCase):
 
     def test_retrieve_running_error_jobs(self):
         """Test client side filtering with running and error jobs."""
+        self.sim_job.wait_for_final_state()
         statuses = ["RUNNING", JobStatus.ERROR]
         job_list = self.provider.backend.jobs(
             backend_name=self.sim_backend.name, limit=3, status=statuses
