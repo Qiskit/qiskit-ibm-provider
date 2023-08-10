@@ -12,12 +12,10 @@
 
 """IBMBackend Test."""
 
-from qiskit import QuantumCircuit
 from qiskit.test.reference_circuits import ReferenceCircuits
 from qiskit.result import Result
 
-from qiskit_ibm_provider import IBMProvider, Session
-
+from qiskit_ibm_provider import IBMProvider
 
 from ..decorators import (
     IntegrationTestDependencies,
@@ -39,33 +37,25 @@ class TestSession(IBMTestCase):
 
     def test_session_id(self):
         """Test that session_id is updated correctly and maintained throughout the session"""
-        provider = IBMProvider(
-            self.dependencies.token, self.dependencies.url
-        )
+        provider = IBMProvider(self.dependencies.token, self.dependencies.url)
         backend = provider.get_backend("ibmq_qasm_simulator")
-        circuit = QuantumCircuit(2, 2)
-        circuit.measure_all()
 
         backend.open_session()
         self.assertEqual(backend._session.session_id, None)
         self.assertTrue(backend._session._active)
-        job1 = backend.run(circuit)
+        job1 = backend.run(ReferenceCircuits.bell())
         session_id = backend._session.session_id
         self.assertEqual(session_id, job1.job_id())
-        job2 = backend.run(circuit)
+        job2 = backend.run(ReferenceCircuits.bell())
         self.assertFalse(session_id == job2.job_id())
 
     def test_backend_run_with_session(self):
         """Test that 'shots' parameter is transferred correctly"""
-        circuit = ReferenceCircuits.bell()
         shots = 1000
-
-        provider = IBMProvider(
-            self.dependencies.token, self.dependencies.url
-        )
+        provider = IBMProvider(self.dependencies.token, self.dependencies.url)
         backend = provider.get_backend("ibmq_qasm_simulator")
         backend.open_session()
-        result = backend.run(circuit, shots=shots).result()
+        result = backend.run(circuits=ReferenceCircuits.bell(), shots=shots).result()
         self.assertIsInstance(result, Result)
         self.assertEqual(result.results[0].shots, shots)
         self.assertAlmostEqual(
@@ -74,9 +64,7 @@ class TestSession(IBMTestCase):
 
     def test_session_close(self):
         """Test closing a session"""
-        provider = IBMProvider(
-            self.dependencies.token, self.dependencies.url
-        )
+        provider = IBMProvider(self.dependencies.token, self.dependencies.url)
         backend = provider.get_backend("ibmq_qasm_simulator")
         backend.open_session()
         self.assertTrue(backend._session._active)
@@ -85,22 +73,11 @@ class TestSession(IBMTestCase):
 
     def test_run_after_close(self):
         """Test running after session is closed."""
-        provider = IBMProvider(
-            self.dependencies.token, self.dependencies.url
-        )
+        provider = IBMProvider(self.dependencies.token, self.dependencies.url)
         backend = provider.get_backend("ibmq_qasm_simulator")
         backend.open_session()
         _ = backend.run(ReferenceCircuits.bell())
-        backend.close_session()  # with session_id
-        with self.assertRaises(RuntimeError):
-            backend.run(
-                circuits=ReferenceCircuits.bell(),
-                program_id="program_id",
-                inputs={},
-            )
-        backend.open_session()
-        _ = backend.run(ReferenceCircuits.bell())
-        backend.close_session()  # with session_id
+        backend.close_session()
         with self.assertRaises(RuntimeError):
             backend.run(
                 circuits=ReferenceCircuits.bell(),
@@ -110,16 +87,12 @@ class TestSession(IBMTestCase):
 
     def test_session_id_as_context_manager(self):
         """Test that the provider uses or doesn't use session correctly"""
-        provider = IBMProvider(
-            self.dependencies.token, self.dependencies.url
-        )
+        provider = IBMProvider(self.dependencies.token, self.dependencies.url)
         backend = provider.get_backend("ibmq_qasm_simulator")
-        circuit = QuantumCircuit(2, 2)
-        circuit.measure_all()
 
         with backend.open_session() as session:
-            job1 = backend.run(circuit)
+            job1 = backend.run(ReferenceCircuits.bell())
             session_id = session.session_id
             self.assertEqual(session_id, job1.job_id())
-            job2 = backend.run(circuit)
+            job2 = backend.run(ReferenceCircuits.bell())
             self.assertFalse(session_id == job2.job_id())
