@@ -126,6 +126,8 @@ class TestIBMBackend(IBMTestCase):
 
     def test_paused_backend_warning(self):
         """Test that a warning is given when running jobs on a paused backend."""
+        if "dev" in self.dependencies.url:
+            raise SkipTest("Not supported in staging.")
         backend = self.dependencies.provider.get_backend("ibmq_qasm_simulator")
         paused_status = backend.status()
         paused_status.status_msg = "internal"

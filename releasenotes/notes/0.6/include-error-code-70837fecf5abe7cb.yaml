@@ -1,0 +1,5 @@
+---
+upgrade:
+  - |
+    Job error messages now include the error code. Error codes can be found in
+    https://quantum-computing.ibm.com/lab/docs/iql/manage/errors.
