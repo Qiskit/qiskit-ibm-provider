@@ -896,11 +896,10 @@ class IBMBackend(Backend):
                     f"{instr} operating on a faulty edge {qubit_indices}"
                 )
 
-    def open_session(self, max_time: Optional[Union[int, str]]=None) -> Session:
+    def open_session(self, max_time: Optional[Union[int, str]] = None) -> Session:
         """Open session"""
         self._session = Session(max_time)
         return self._session
-
 
     def close_session(self) -> None:
         """Close session"""
@@ -908,6 +907,7 @@ class IBMBackend(Backend):
             self._session.close()
             if self._session.session_id:
                 self.provider._runtime_client.close_session(self._session.session_id)
+
 
 class IBMRetiredBackend(IBMBackend):
     """Backend class interfacing with an IBM Quantum device no longer available."""
