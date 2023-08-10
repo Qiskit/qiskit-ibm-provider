@@ -1002,3 +1002,4 @@ class TestPadDynamicalDecoupling(ControlFlowTestCase):
         self.assertNotEqual(delay_dict[0], delay_dict[1])
         self.assertNotEqual(delay_dict[1], delay_dict[2])
         self.assertNotEqual(delay_dict[3], delay_dict[4])
+        self.assertEqual(delay_dict[0], delay_dict[2])
