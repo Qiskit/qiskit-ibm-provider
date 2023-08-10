@@ -102,3 +102,33 @@ class Session:
     def close(self) -> None:
         """Set the session._active status to False"""
         self._active = False
+
+    def __enter__(self) -> "Session":
+        set_cm_session(self)
+        return self
+
+    def __exit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_val: Optional[BaseException],
+        exc_tb: Optional[TracebackType],
+    ) -> None:
+        set_cm_session(None)
+
+
+# Default session
+_DEFAULT_SESSION: ContextVar[Optional[Session]] = ContextVar(
+    "_DEFAULT_SESSION", default=None
+)
+_IN_SESSION_CM: ContextVar[bool] = ContextVar("_IN_SESSION_CM", default=False)
+
+
+def set_cm_session(session: Optional[Session]) -> None:
+    """Set the context manager session."""
+    _DEFAULT_SESSION.set(session)
+    _IN_SESSION_CM.set(session is not None)
+
+
+def get_cm_session() -> Session:
+    """Return the context managed session."""
+    return _DEFAULT_SESSION.get()
