@@ -44,7 +44,7 @@ from qiskit.tools.events.pubsub import Publisher
 from qiskit.transpiler.passmanager import PassManager
 from qiskit.transpiler.target import Target
 
-from qiskit_ibm_provider.session import Session  # pylint: disable=cyclic-import
+from .session import Session
 from .api.clients import AccountClient
 from .exceptions import (
     IBMBackendError,
