@@ -35,18 +35,22 @@ class Session:
 
         from qiskit.test.reference_circuits import ReferenceCircuits
         from qiskit_ibm_provider import IBMProvider
-        from qiskit_ibm_provider.session import Session
 
         circ = ReferenceCircuits.bell()
-        backend = "ibmq_qasm_simulator"
-        with Session(backend_name=backend) as session:
-            provider = IBMProvider(session=session)
-            job = provider.get_backend(name=backend).run(circ)
-            print(f"Job ID: {job.job_id()}")
-            print(f"Result: {job.result()}")
-            # Close the session only if all jobs are finished and
-            # you don't need to run more in the session.
-            provider.close_session()
+        backend = IBMProvider().get_backend("ibmq_qasm_simulator")
+        backend.open_session()
+        job = backend.run(circ)
+        print(f"Job ID: {job.job_id()}")
+        print(f"Result: {job.result()}")
+        # Close the session only if all jobs are finished and
+        # you don't need to run more in the session.
+        backend.close_session()
+
+    Session can also be used as a context manager::
+
+        with backend.open_session() as session:
+            job = backend.run(ReferenceCircuits.bell())
+            assert job.job_id() == session.session_id
 
     """
 
