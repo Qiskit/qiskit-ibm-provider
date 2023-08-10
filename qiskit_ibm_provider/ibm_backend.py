@@ -901,6 +901,10 @@ class IBMBackend(Backend):
         self._session = Session(max_time)
         return self._session
 
+    @property
+    def session(self):
+        return self._session
+
     def close_session(self) -> None:
         """Close session"""
         if self._session:

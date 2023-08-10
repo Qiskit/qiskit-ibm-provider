@@ -24,7 +24,7 @@ class TestSession(IBMTestCase):
         provider = IBMProvider()
         backend = provider.get_backend("ibmq_qasm_simulator")
         backend.open_session()
-        self.assertFalse(backend._session is None)
+        self.assertFalse(backend.session is None)
 
     def test_session_max_time(self):
         """Test max time parameter."""
@@ -39,4 +39,4 @@ class TestSession(IBMTestCase):
         for max_t, expected in max_times:
             with self.subTest(max_time=max_t):
                 backend.open_session(max_time=max_t)
-                self.assertEqual(backend._session._max_time, expected)
+                self.assertEqual(backend.session._max_time, expected)

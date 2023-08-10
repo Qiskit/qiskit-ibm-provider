@@ -41,10 +41,10 @@ class TestSession(IBMTestCase):
         backend = provider.get_backend("ibmq_qasm_simulator")
 
         backend.open_session()
-        self.assertEqual(backend._session.session_id, None)
-        self.assertTrue(backend._session._active)
+        self.assertEqual(backend.session.session_id, None)
+        self.assertTrue(backend.session._active)
         job1 = backend.run(ReferenceCircuits.bell())
-        session_id = backend._session.session_id
+        session_id = backend.session.session_id
         self.assertEqual(session_id, job1.job_id())
         job2 = backend.run(ReferenceCircuits.bell())
         self.assertFalse(session_id == job2.job_id())
@@ -67,9 +67,9 @@ class TestSession(IBMTestCase):
         provider = IBMProvider(self.dependencies.token, self.dependencies.url)
         backend = provider.get_backend("ibmq_qasm_simulator")
         backend.open_session()
-        self.assertTrue(backend._session._active)
+        self.assertTrue(backend.session._active)
         backend.close_session()
-        self.assertFalse(backend._session._active)
+        self.assertFalse(backend.session._active)
 
     def test_run_after_close(self):
         """Test running after session is closed."""
