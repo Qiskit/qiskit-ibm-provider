@@ -52,6 +52,9 @@ from .exceptions import (
     IBMBackendApiError,
     IBMBackendApiProtocolError,
 )
+from qiskit_ibm_provider import (  # pylint: disable=unused-import
+    ibm_provider,
+)
 from .job import IBMJob, IBMCircuitJob
 from .transpiler.passes.basis.convert_id_to_delay import (
     ConvertIdToDelay,
@@ -190,7 +193,7 @@ class IBMBackend(Backend):
     def __init__(
         self,
         configuration: Union[QasmBackendConfiguration, PulseBackendConfiguration],
-        provider: "qiskit_ibm_provider.IBMProvider",
+        provider: "ibm_provider.IBMProvider",
         api_client: AccountClient,
         instance: Optional[str] = None,
     ) -> None:
@@ -902,7 +905,7 @@ class IBMBackend(Backend):
         return self._session
 
     @property
-    def session(self):
+    def session(self)-> Session:
         return self._session
 
     def close_session(self) -> None:
@@ -919,7 +922,7 @@ class IBMRetiredBackend(IBMBackend):
     def __init__(
         self,
         configuration: Union[QasmBackendConfiguration, PulseBackendConfiguration],
-        provider: "qiskit_ibm_provider.IBMProvider",
+        provider: "ibm_provider.IBMProvider",
         api_client: AccountClient,
     ) -> None:
         """IBMRetiredBackend constructor.
@@ -969,7 +972,7 @@ class IBMRetiredBackend(IBMBackend):
     def from_name(
         cls,
         backend_name: str,
-        provider: "qiskit_ibm_provider.IBMProvider",
+        provider: "ibm_provider.IBMProvider",
         api: AccountClient,
     ) -> "IBMRetiredBackend":
         """Return a retired backend from its name."""
