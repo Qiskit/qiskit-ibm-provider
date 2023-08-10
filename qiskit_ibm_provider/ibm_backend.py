@@ -44,7 +44,7 @@ from qiskit.tools.events.pubsub import Publisher
 from qiskit.transpiler.passmanager import PassManager
 from qiskit.transpiler.target import Target
 
-from qiskit_ibm_provider import ibm_provider  # pylint: disable=unused-import
+from qiskit_ibm_provider.session import Session  # pylint: disable=cyclic-import
 from .api.clients import AccountClient
 from .exceptions import (
     IBMBackendError,
@@ -214,6 +214,7 @@ class IBMBackend(Backend):
         self._defaults = None
         self._target = None
         self._max_circuits = configuration.max_experiments
+        self._session = None
         if not self._configuration.simulator:
             self.options.set_validator("noise_model", type(None))
             self.options.set_validator("seed_simulator", type(None))
@@ -530,7 +531,7 @@ class IBMBackend(Backend):
         """Runs the runtime program and returns the corresponding job object"""
         hgp_name = self._instance or self.provider._get_hgp().name
 
-        session = self.provider._session
+        session = self._session
         if session:
             if not session.active:
                 raise RuntimeError(f"The session {session.session_id} is closed.")
@@ -571,8 +572,8 @@ class IBMBackend(Backend):
                 "when submitting job: {}".format(str(err))
             ) from err
         Publisher().publish("ibm.job.start", job)
-        if self.provider._session and self.provider._session.session_id is None:
-            self.provider._session._session_id = job.job_id()
+        if self._session and self._session.session_id is None:
+            self._session._session_id = job.job_id()
         return job
 
     def _get_run_config(self, program_id: str, **kwargs: Any) -> Dict:
@@ -895,6 +896,18 @@ class IBMBackend(Backend):
                     f"{instr} operating on a faulty edge {qubit_indices}"
                 )
 
+    def open_session(self, max_time: Optional[Union[int, str]]=None) -> Session:
+        """Open session"""
+        self._session = Session(max_time)
+        return self._session
+
+
+    def close_session(self) -> None:
+        """Close session"""
+        if self._session:
+            self._session.close()
+            if self._session.session_id:
+                self.provider._runtime_client.close_session(self._session.session_id)
 
 class IBMRetiredBackend(IBMBackend):
     """Backend class interfacing with an IBM Quantum device no longer available."""

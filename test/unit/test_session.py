@@ -12,21 +12,24 @@
 
 """IBMBackend Test."""
 
-from qiskit_ibm_provider import Session
+from qiskit_ibm_provider import IBMProvider
 from ..ibm_test_case import IBMTestCase
 
 
 class TestSession(IBMTestCase):
     """Test Session module."""
 
-    def test_passing_ibm_backend(self):
-        """Test passing in IBMBackend instance."""
-        backend_name = "ibm_gotham"
-        session = Session(backend_name=backend_name)
-        self.assertEqual(session.backend(), "ibm_gotham")
+    def test_open_session(self):
+        """Test opening a session instance."""
+        provider = IBMProvider()
+        backend = provider.get_backend("ibmq_qasm_simulator")
+        backend.open_session()
+        self.assertFalse(backend._session is None)
 
-    def test_max_time(self):
-        """Test max time."""
+    def test_session_max_time(self):
+        """Test max time parameter."""
+        provider = IBMProvider()
+        backend = provider.get_backend("ibmq_qasm_simulator")
         max_times = [
             (42, 42),
             ("1h", 1 * 60 * 60),
@@ -35,5 +38,5 @@ class TestSession(IBMTestCase):
         ]
         for max_t, expected in max_times:
             with self.subTest(max_time=max_t):
-                session = Session(backend_name="ibm_gotham", max_time=max_t)
-                self.assertEqual(session._max_time, expected)
+                backend.open_session(max_time=max_t)
+                self.assertEqual(backend._session._max_time, expected)

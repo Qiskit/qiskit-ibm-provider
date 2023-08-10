@@ -52,16 +52,11 @@ class Session:
 
     def __init__(
         self,
-        backend_name: Optional[str] = None,
         max_time: Optional[Union[int, str]] = None,
     ):
         """Session constructor.
 
         Args:
-            backend_name: string name of backend.
-                If not specified, a backend will be selected automatically
-                by the IBMProvider(IBM Cloud channel only).
-
             max_time: (EXPERIMENTAL setting, can break between releases without warning)
                 Maximum amount of time, a runtime session can be open before being
                 forcibly closed. Can be specified as seconds (int) or a string like "2h 30m 40s".
@@ -73,7 +68,6 @@ class Session:
             ValueError: If an input value is invalid.
         """
         self._instance = None
-        self._backend = backend_name
         self._session_id: Optional[str] = None
         self._active = True
 
@@ -82,14 +76,6 @@ class Session:
             if max_time is None or isinstance(max_time, int)
             else hms_to_seconds(max_time, "Invalid max_time value: ")
         )
-
-    def backend(self) -> Optional[str]:
-        """Return backend for this session.
-
-        Returns:
-            Backend for this session. None if unknown.
-        """
-        return self._backend
 
     @property
     def session_id(self) -> str:
