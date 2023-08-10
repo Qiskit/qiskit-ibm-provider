@@ -23,6 +23,7 @@ from qiskit.quantum_info import Operator
 from qiskit.transpiler.passmanager import PassManager
 from qiskit.transpiler.exceptions import TranspilerError
 from qiskit.transpiler.coupling import CouplingMap
+from qiskit.converters import circuit_to_dag
 
 from qiskit_ibm_provider.transpiler.passes.scheduling.dynamical_decoupling import (
     PadDynamicalDecoupling,
@@ -972,6 +973,13 @@ class TestPadDynamicalDecoupling(ControlFlowTestCase):
 
     def test_disjoint_coupling_map(self):
         """Test staggered DD with disjoint coupling map."""
+        qc = QuantumCircuit(5)
+        for q in range(5):
+            qc.x(q)
+        qc.barrier()
+        for q in range(5):
+            qc.delay(1600, q)
+        qc.barrier()
         dd_sequence = [XGate(), XGate()]
         pm = PassManager(
             [
@@ -979,8 +987,18 @@ class TestPadDynamicalDecoupling(ControlFlowTestCase):
                 PadDynamicalDecoupling(
                     self.durations,
                     dd_sequence,
-                    coupling_map=CouplingMap([[0, 1], [1, 2], [2, 3], [4, 5]]),
+                    coupling_map=CouplingMap([[0, 1], [1, 2], [3, 4]]),
                 ),
             ]
         )
-        pm.run(self.ghz4)
+        dd_qc = pm.run(qc)
+
+        # ensure that delays for nearest neighbors are staggered
+        dag = circuit_to_dag(dd_qc)
+        delays = dag.op_nodes(Delay)
+        delay_dict = {q_ind: [] for q_ind in range(5)}
+        for delay in delays:
+            delay_dict[dag.find_bit(delay.qargs[0]).index] += [delay.op.duration]
+        self.assertNotEqual(delay_dict[0], delay_dict[1])
+        self.assertNotEqual(delay_dict[1], delay_dict[2])
+        self.assertNotEqual(delay_dict[3], delay_dict[4])
