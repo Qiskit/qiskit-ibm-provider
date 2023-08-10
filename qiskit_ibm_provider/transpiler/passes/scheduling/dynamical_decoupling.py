@@ -251,10 +251,8 @@ class PadDynamicalDecoupling(BlockBasePadder):
 
         if self._coupling_map:
             physical_qubits = [dag.qubits.index(q) for q in dag.qubits]
-            sub_coupling_map = self._coupling_map.reduce(physical_qubits)
-            self._coupling_coloring = rx.graph_greedy_color(
-                sub_coupling_map.graph.to_undirected()
-            )
+            subgraph = self._coupling_map.graph.subgraph(physical_qubits)
+            self._coupling_coloring = rx.graph_greedy_color(subgraph.to_undirected())
             if any(c > 1 for c in self._coupling_coloring.values()):
                 raise TranspilerError(
                     "This circuit topology is not supported for staggered dynamical decoupling."

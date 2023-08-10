@@ -969,3 +969,18 @@ class TestPadDynamicalDecoupling(ControlFlowTestCase):
 
         with self.assertRaises(TranspilerError):
             pm.run(self.ghz4)
+
+    def test_disjoint_coupling_map(self):
+        """Test staggered DD with disjoint coupling map."""
+        dd_sequence = [XGate(), XGate()]
+        pm = PassManager(
+            [
+                ASAPScheduleAnalysis(self.durations),
+                PadDynamicalDecoupling(
+                    self.durations,
+                    dd_sequence,
+                    coupling_map=CouplingMap([[0, 1], [1, 2], [2, 3], [4, 5]]),
+                ),
+            ]
+        )
+        pm.run(self.ghz4)
