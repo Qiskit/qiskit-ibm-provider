@@ -44,7 +44,7 @@ author = 'Qiskit Development Team'
 # The short X.Y version
 version = ''
 # The full version, including alpha/beta/rc tags
-release = '0.6.3'
+release = '0.6.4'
 
 # -- General configuration ---------------------------------------------------
 
@@ -55,6 +55,7 @@ extensions = [
     'sphinx.ext.mathjax',
     'sphinx.ext.viewcode',
     'sphinx.ext.extlinks',
+    'sphinx.ext.intersphinx',
     'jupyter_sphinx',
     'sphinx_autodoc_typehints',
     'reno.sphinxext',
@@ -62,6 +63,10 @@ extensions = [
     "qiskit_sphinx_theme",
 ]
 templates_path = ['_templates']
+
+intersphinx_mapping = {
+    "qiskit": ("https://qiskit.org/documentation/", None),
+}
 
 nbsphinx_timeout = 300
 nbsphinx_execute = "never"

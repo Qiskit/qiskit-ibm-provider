@@ -355,6 +355,11 @@ class TestIBMJobAttributes(IBMTestCase):
             job_tags=[1, 2, 3],
         )
 
+    def test_cost_estimation(self):
+        """Test cost estimation is returned correctly."""
+        self.assertTrue(self.sim_job.usage_estimation)
+        self.assertIn("quantum_seconds", self.sim_job.usage_estimation)
+
     @skip("TODO refactor fake client")
     def test_missing_required_fields(self):
         """Test response data is missing required fields."""
