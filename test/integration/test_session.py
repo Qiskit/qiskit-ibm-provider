@@ -24,7 +24,7 @@ from ..decorators import (
 from ..ibm_test_case import IBMTestCase
 
 
-class TestSession(IBMTestCase):
+class TestIntegrationSession(IBMTestCase):
     """Test Session module."""
 
     @classmethod
@@ -42,7 +42,7 @@ class TestSession(IBMTestCase):
 
         backend.open_session()
         self.assertEqual(backend.session.session_id, None)
-        self.assertTrue(backend.session._active)
+        self.assertTrue(backend.session.active)
         job1 = backend.run(ReferenceCircuits.bell())
         session_id = backend.session.session_id
         self.assertEqual(session_id, job1.job_id())
@@ -67,9 +67,9 @@ class TestSession(IBMTestCase):
         provider = IBMProvider(self.dependencies.token, self.dependencies.url)
         backend = provider.get_backend("ibmq_qasm_simulator")
         backend.open_session()
-        self.assertTrue(backend.session._active)
+        self.assertTrue(backend.session.active)
         backend.close_session()
-        self.assertFalse(backend.session._active)
+        self.assertFalse(backend.session.active)
 
     def test_run_after_close(self):
         """Test running after session is closed."""
@@ -78,15 +78,18 @@ class TestSession(IBMTestCase):
         backend.open_session()
         _ = backend.run(ReferenceCircuits.bell())
         backend.close_session()
-        with self.assertRaises(RuntimeError):
+        with self.assertRaises(RuntimeError) as err:
             backend.run(
                 circuits=ReferenceCircuits.bell(),
                 program_id="program_id",
                 inputs={},
             )
+        self.assertIn(
+            f"The session {backend.session.session_id} is closed.", str(err.exception)
+        )
 
-    def test_session_id_as_context_manager(self):
-        """Test that the provider uses or doesn't use session correctly"""
+    def test_session_as_context_manager(self):
+        """Test session as a context manager"""
         provider = IBMProvider(self.dependencies.token, self.dependencies.url)
         backend = provider.get_backend("ibmq_qasm_simulator")
 
@@ -96,3 +99,21 @@ class TestSession(IBMTestCase):
             self.assertEqual(session_id, job1.job_id())
             job2 = backend.run(ReferenceCircuits.bell())
             self.assertFalse(session_id == job2.job_id())
+
+    def test_run_after_close_as_context_manager(self):
+        """Test run after close in context manager"""
+        provider = IBMProvider(self.dependencies.token, self.dependencies.url)
+        backend = provider.get_backend("ibmq_qasm_simulator")
+
+        with backend.open_session() as session:
+            _ = backend.run(ReferenceCircuits.bell())
+        backend.close_session()
+        with self.assertRaises(RuntimeError) as err:
+            backend.run(
+                circuits=ReferenceCircuits.bell(),
+                program_id="program_id",
+                inputs={},
+            )
+        self.assertIn(
+            f"The session {session.session_id} is closed.", str(err.exception)
+        )
