@@ -12,7 +12,11 @@
 
 """IBMBackend Test."""
 
-from qiskit_ibm_provider import IBMProvider
+from qiskit_ibm_provider import IBMProvider, IBMBackend
+from .mock.fake_provider import FakeProvider
+from qiskit.providers.fake_provider import FakeManila
+from qiskit.providers.models import BackendStatus, BackendProperties
+
 from ..ibm_test_case import IBMTestCase
 
 
@@ -21,15 +25,27 @@ class TestSession(IBMTestCase):
 
     def test_open_session(self):
         """Test opening a session instance."""
-        provider = IBMProvider()
-        backend = provider.get_backend("ibmq_qasm_simulator")
+        provider = FakeProvider()
+        model_backend = FakeManila()
+        backend = IBMBackend(
+            configuration=model_backend.configuration(),
+            provider=provider,
+            api_client=None,
+        )
+
         backend.open_session()
         self.assertFalse(backend.session is None)
 
     def test_session_max_time(self):
         """Test max time parameter."""
-        provider = IBMProvider()
-        backend = provider.get_backend("ibmq_qasm_simulator")
+        provider = FakeProvider()
+        model_backend = FakeManila()
+        backend = IBMBackend(
+            configuration=model_backend.configuration(),
+            provider=provider,
+            api_client=None,
+        )
+
         max_times = [
             (42, 42),
             ("1h", 1 * 60 * 60),
