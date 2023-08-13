@@ -12,6 +12,7 @@
 
 """IBMBackend Test."""
 
+from unittest import mock
 from qiskit.providers.fake_provider import FakeManila
 from qiskit_ibm_provider import IBMBackend
 from .mock.fake_provider import FakeProvider
@@ -24,11 +25,10 @@ class TestSession(IBMTestCase):
 
     def test_open_session(self):
         """Test opening a session instance."""
-        provider = FakeProvider()
         model_backend = FakeManila()
         backend = IBMBackend(
             configuration=model_backend.configuration(),
-            provider=provider,
+            provider=mock.MagicMock(),
             api_client=None,
         )
 
@@ -37,11 +37,10 @@ class TestSession(IBMTestCase):
 
     def test_session_max_time(self):
         """Test max time parameter."""
-        provider = FakeProvider()
         model_backend = FakeManila()
         backend = IBMBackend(
             configuration=model_backend.configuration(),
-            provider=provider,
+            provider=mock.MagicMock(),
             api_client=None,
         )
 
