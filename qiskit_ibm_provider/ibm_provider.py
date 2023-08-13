@@ -109,6 +109,10 @@ class IBMProvider(Provider):
 
         simulator_backend = provider.get_backend('ibmq_qasm_simulator')
 
+    IBMBackend's are uniquely identified by their name. If you invoke :meth:`get_backend()` twice,
+    you will get the same IBMBackend instance, and any previously updated options will be reset
+    to the default values.
+
     It is also possible to use the ``backend`` attribute to reference a backend.
     As an example, to retrieve the same backend from the example above::
 
@@ -660,6 +664,7 @@ class IBMProvider(Provider):
             )
         if not backends:
             raise QiskitBackendNotFoundError("No backend matches the criteria")
+        backends[0]._options = IBMBackend._default_options()
         return backends[0]
 
     def __repr__(self) -> str:
