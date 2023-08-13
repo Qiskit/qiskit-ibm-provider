@@ -142,6 +142,8 @@ class TestIBMProviderHubGroupProject(IBMTestCase):
 
     def test_active_account_with_saved_instance(self):
         """Test active_account with a saved instance."""
+        if "dev" in self.dependencies.url:
+            self.skipTest("Test not supported on staging")
         hgp = self.provider._get_hgp()
         name = "foo"
         with temporary_account_config_file(
