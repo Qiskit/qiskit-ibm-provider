@@ -15,7 +15,6 @@
 from unittest import mock
 from qiskit.providers.fake_provider import FakeManila
 from qiskit_ibm_provider import IBMBackend
-from .mock.fake_provider import FakeProvider
 
 from ..ibm_test_case import IBMTestCase
 
