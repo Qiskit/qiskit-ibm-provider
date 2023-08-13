@@ -204,14 +204,16 @@ class TestIBMProviderServices(IBMTestCase):
 
     def test_get_backend_options(self):
         """Test resetting backend options when calling get_backend."""
+        default_shots = 4000
         backend1 = self.dependencies.provider.get_backend(name=self.backend_name)
-        self.assertEqual(backend1.options.shots, 4000)
+        self.assertEqual(backend1.options.shots, default_shots)
         backend1.options.shots = 100
         self.assertEqual(backend1.options.shots, 100)
         backend2 = self.dependencies.provider.get_backend(name=self.backend_name)
-        # When getting a backend, it has the default options. backend1 and backend2 are the same instance.
-        self.assertEqual(backend2.options.shots, 4000)
-        self.assertEqual(backend1.options.shots, 4000)
+        # When getting a backend, it has the default options.
+        # backend1 and backend2 are the same instance.
+        self.assertEqual(backend2.options.shots, default_shots)
+        self.assertEqual(backend1.options.shots, default_shots)
 
     def test_jobs_filter(self):
         """Test limit filters when accessing jobs from the provider."""
