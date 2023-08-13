@@ -44,6 +44,9 @@ from qiskit.tools.events.pubsub import Publisher
 from qiskit.transpiler.passmanager import PassManager
 from qiskit.transpiler.target import Target
 
+from qiskit_ibm_provider import (  # pylint: disable=unused-import
+    ibm_provider,
+)
 from .session import Session
 from .api.clients import AccountClient
 from .exceptions import (
@@ -52,9 +55,7 @@ from .exceptions import (
     IBMBackendApiError,
     IBMBackendApiProtocolError,
 )
-from qiskit_ibm_provider import (  # pylint: disable=unused-import
-    ibm_provider,
-)
+
 from .job import IBMJob, IBMCircuitJob
 from .transpiler.passes.basis.convert_id_to_delay import (
     ConvertIdToDelay,
@@ -217,7 +218,7 @@ class IBMBackend(Backend):
         self._defaults = None
         self._target = None
         self._max_circuits = configuration.max_experiments
-        self._session = None
+        self._session: Session = None
         if not self._configuration.simulator:
             self.options.set_validator("noise_model", type(None))
             self.options.set_validator("seed_simulator", type(None))
@@ -831,7 +832,8 @@ class IBMBackend(Backend):
 
         return circuits
 
-    def get_translation_stage_plugin(self) -> str:
+    @classmethod
+    def get_translation_stage_plugin(cls) -> str:
         """Return the default translation stage plugin name for IBM backends."""
         return "ibm_dynamic_circuits"
 
@@ -905,7 +907,8 @@ class IBMBackend(Backend):
         return self._session
 
     @property
-    def session(self)-> Session:
+    def session(self) -> Session:
+        """Return session"""
         return self._session
 
     def close_session(self) -> None:
