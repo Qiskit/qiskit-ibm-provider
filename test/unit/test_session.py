@@ -12,10 +12,9 @@
 
 """IBMBackend Test."""
 
-from qiskit_ibm_provider import IBMProvider, IBMBackend
-from .mock.fake_provider import FakeProvider
 from qiskit.providers.fake_provider import FakeManila
-from qiskit.providers.models import BackendStatus, BackendProperties
+from qiskit_ibm_provider import IBMBackend
+from .mock.fake_provider import FakeProvider
 
 from ..ibm_test_case import IBMTestCase
 
