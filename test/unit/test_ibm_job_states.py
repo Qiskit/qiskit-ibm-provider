@@ -21,7 +21,7 @@ from datetime import datetime
 from concurrent import futures
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import suppress
-from unittest import mock, skip
+from unittest import mock
 from unittest.mock import MagicMock
 from typing import List, Any, Dict
 
@@ -39,9 +39,8 @@ from qiskit_ibm_provider.api.exceptions import (
 )
 from qiskit_ibm_provider.apiconstants import API_JOB_FINAL_STATES, ApiJobStatus
 
-# from qiskit_ibm_provider.exceptions import IBMBackendError
 from qiskit_ibm_provider.ibm_backend import IBMBackend
-from qiskit_ibm_provider.job.exceptions import IBMJobApiError, IBMJobInvalidStateError
+from qiskit_ibm_provider.job.exceptions import IBMJobInvalidStateError
 from ..jobtestcase import JobTestCase
 
 MOCKED_ERROR_RESULT: Dict[str, Any] = {
@@ -118,12 +117,6 @@ class TestIBMJobStates(JobTestCase):
         super().setUp()
         self._current_api = None
         self._current_qjob = None
-
-    @skip("TODO refactor this case")
-    def test_unrecognized_status(self):
-        """Test unrecognized job state."""
-        with self.assertRaises(ValueError):
-            self.run_with_api(UnknownStatusAPI())
 
     def test_done_status(self):
         """Test job status progresses to done."""
@@ -218,53 +211,10 @@ class TestIBMJobStates(JobTestCase):
         self._current_api.progress()
         self.assertEqual(job.status(), JobStatus.CANCELLED)
 
-    @skip("TODO refactor this case")
-    def test_status_flow_for_non_cancellable_job(self):
-        """Test job cannot be cancelled."""
-        job = self.run_with_api(NonCancellableAPI())
-
-        self.wait_for_initialization(job)
-        self.assertEqual(job.status(), JobStatus.RUNNING)
-
-        can_cancel = job.cancel()
-        self.assertFalse(can_cancel)
-
-        self._current_api.progress()
-        self.assertEqual(job.status(), JobStatus.RUNNING)
-
-    @skip("TODO refactor this case")
-    def test_status_flow_for_errored_cancellation(self):
-        """Test job cancel encounters an error."""
-        job = self.run_with_api(ErroredCancellationAPI())
-
-        self.wait_for_initialization(job)
-        self.assertEqual(job.status(), JobStatus.RUNNING)
-        can_cancel = job.cancel()
-        self.assertFalse(can_cancel)
-        self.assertEqual(job.status(), JobStatus.RUNNING)
-
     def test_status_flow_for_unable_to_run_valid_qobj(self):
         """Test API error while running a job."""
         with self.assertRaises(ApiError):
             self.run_with_api(UnavailableRunAPI())
-
-    @skip("TODO - fix test")
-    def test_api_throws_temporarily_but_job_is_finished(self):
-        """Test job finishes after encountering API error."""
-        job = self.run_with_api(ThrowingNonJobRelatedErrorAPI(errors_before_success=2))
-
-        # First time we query the server...
-        with self.assertRaises(ApiError):
-            # The error happens inside wait_for_initialization, the first time
-            # it calls to status() after INITIALIZING.
-            self.wait_for_initialization(job)
-
-        # Also an explicit second time...
-        with self.assertRaises(ApiError):
-            job.status()
-
-        # Now the API gets fixed and doesn't throw anymore.
-        self.assertEqual(job.status(), JobStatus.DONE)
 
     # TODO fix test case
     def test_error_while_running_job(self):
@@ -289,14 +239,6 @@ class TestIBMJobStates(JobTestCase):
         with self.assertRaises(IBMJobInvalidStateError):
             _ = job.result()
             self.assertEqual(job.status(), JobStatus.CANCELLED)
-
-    @skip("TODO - fix test")
-    def test_errored_result(self):
-        """Test getting results for a failed job."""
-        job = self.run_with_api(ThrowingGetJobAPI())
-        self.wait_for_initialization(job)
-        with self.assertRaises(IBMJobApiError):
-            job.result()
 
     def test_completed_result(self):
         """Test getting results for a completed job."""
@@ -329,18 +271,6 @@ class TestIBMJobStates(JobTestCase):
             job.result()
 
         self.assertEqual(job.status(), JobStatus.CANCELLED)
-
-    @skip("TODO - fix test")
-    def test_block_on_result_waiting_until_exception(self):
-        """Test getting API error while waiting for job results."""
-
-        job = self.run_with_api(ThrowingAPI())
-
-        with ThreadPoolExecutor() as executor:
-            executor.submit(_auto_progress_api, self._current_api)
-
-        with self.assertRaises(IBMJobApiError):
-            job.result()
 
     def test_never_complete_result_with_timeout(self):
         """Test timing out while waiting for job results."""
@@ -377,14 +307,6 @@ class TestIBMJobStates(JobTestCase):
                         self.assertTrue(self._current_api.job_get.called)
                     else:
                         self.assertFalse(self._current_api.job_get.called)
-
-    @skip("TODO - fix test")
-    def test_no_kind_job(self):
-        """Test a job without the kind field."""
-        job = self.run_with_api(NoKindJobAPI())
-        with self.assertRaises(IBMJobInvalidStateError):
-            job.result()
-        self.assertFalse(job.circuits())
 
     def test_transpiling_status(self):
         """Test transpiling job state."""

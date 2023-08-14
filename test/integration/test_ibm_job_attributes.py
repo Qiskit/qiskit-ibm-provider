@@ -26,14 +26,13 @@ from qiskit.test.reference_circuits import ReferenceCircuits
 from qiskit_ibm_provider.api.clients.runtime import RuntimeClient
 from qiskit_ibm_provider.exceptions import (
     IBMBackendValueError,
-    IBMBackendApiProtocolError,
 )
 from qiskit_ibm_provider.job.exceptions import IBMJobFailureError
 from ..decorators import (
     IntegrationTestDependencies,
     integration_test_setup,
 )
-from ..fake_account_client import BaseFakeAccountClient, MissingFieldFakeJob
+from ..fake_account_client import BaseFakeAccountClient
 from ..ibm_test_case import IBMTestCase
 from ..utils import (
     most_busy_backend,
@@ -275,19 +274,6 @@ class TestIBMJobAttributes(IBMTestCase):
             delattr(self.sim_backend._configuration, "measure_esp_enabled")
             self.sim_backend._api_client = saved_api
 
-    @skip("not supported by api")
-    def test_esp_readout_enabled_not_used(self):
-        """Test that ESP readout is not used if user sets to ``False``, even if backend supports it."""
-        saved_api = self.sim_backend._api_client
-        try:
-            self.sim_backend._api_client = BaseFakeAccountClient()
-            setattr(self.sim_backend._configuration, "measure_esp_enabled", True)
-            job = self.sim_backend.run(self.bell, use_measure_esp=False)
-            self.assertEqual(job.backend_options()["use_measure_esp"], False)
-        finally:
-            delattr(self.sim_backend._configuration, "measure_esp_enabled")
-            self.sim_backend._api_client = saved_api
-
     def test_job_tags(self):
         """Test using job tags."""
         # Use a unique tag.
@@ -359,23 +345,3 @@ class TestIBMJobAttributes(IBMTestCase):
         """Test cost estimation is returned correctly."""
         self.assertTrue(self.sim_job.usage_estimation)
         self.assertIn("quantum_seconds", self.sim_job.usage_estimation)
-
-    @skip("TODO refactor fake client")
-    def test_missing_required_fields(self):
-        """Test response data is missing required fields."""
-        saved_api = self.sim_backend._api_client
-        try:
-            self.sim_backend._api_client = BaseFakeAccountClient(
-                job_class=MissingFieldFakeJob
-            )
-            self.assertRaises(
-                IBMBackendApiProtocolError, self.sim_backend.run, self.bell
-            )
-        finally:
-            self.sim_backend._api_client = saved_api
-
-    @skip("not supported by api")
-    def test_client_version(self):
-        """Test job client version information."""
-        self.assertIsNotNone(self.sim_job.result().client_version)
-        self.assertIsNotNone(self.sim_job.client_version)

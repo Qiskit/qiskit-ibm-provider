@@ -22,6 +22,20 @@ from qiskit_ibm_provider import IBMProvider, least_busy
 from .unit.mock.fake_provider import FakeProvider
 
 
+def production_only(func):
+    """Decorator that runs a test only on production services."""
+
+    @wraps(func)
+    def _wrapper(self, *args, **kwargs):
+        if "dev" in self.dependencies.url:
+            raise SkipTest(
+                f"Skipping integration test. {self} is not supported on staging."
+            )
+        func(self, *args, **kwargs)
+
+    return _wrapper
+
+
 def run_fake_provider(func):
     """Decorator that runs a test using a fake provider."""
 
