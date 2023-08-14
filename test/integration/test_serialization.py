@@ -21,7 +21,11 @@ from qiskit.circuit import Parameter
 from qiskit.test.reference_circuits import ReferenceCircuits
 from qiskit_ibm_provider import least_busy
 from qiskit_ibm_provider.utils.json_encoder import IBMJsonEncoder
-from ..decorators import IntegrationTestDependencies, integration_test_setup
+from ..decorators import (
+    IntegrationTestDependencies,
+    integration_test_setup,
+    production_only,
+)
 from ..ibm_test_case import IBMTestCase
 from ..utils import cancel_job
 
@@ -110,6 +114,7 @@ class TestSerialization(IBMTestCase):
             with self.subTest(backend=backend):
                 self._verify_data(backend.defaults().to_dict(), good_keys)
 
+    @production_only
     def test_backend_properties(self):
         """Test deserializing backend properties."""
         backends = self.dependencies.provider.backends(
