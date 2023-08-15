@@ -34,6 +34,7 @@ from ..decorators import (
     IntegrationTestDependencies,
     integration_test_setup,
     integration_test_setup_with_backend,
+    production_only,
 )
 from ..ibm_test_case import IBMTestCase
 
@@ -140,10 +141,9 @@ class TestIBMProviderHubGroupProject(IBMTestCase):
         )
         self.assertEqual(hgp.name, provider.active_account()["instance"])
 
+    @production_only
     def test_active_account_with_saved_instance(self):
         """Test active_account with a saved instance."""
-        if "dev" in self.dependencies.url:
-            self.skipTest("Test not supported on staging")
         hgp = self.provider._get_hgp()
         name = "foo"
         with temporary_account_config_file(
