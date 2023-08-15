@@ -103,7 +103,9 @@ class IBMDashboard(Subscriber):
         ibm_backends = {}
         for backend in self.provider.backends():
             if not backend.configuration().simulator:
-                ibm_backends[backend.name] = backend
+                ibm_backends[backend.name] = BackendWithProviders(
+                    backend=backend, providers=[backend._instance]
+                )
 
         self.backend_dict = ibm_backends
 
