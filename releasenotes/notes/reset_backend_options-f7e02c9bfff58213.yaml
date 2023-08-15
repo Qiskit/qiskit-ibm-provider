@@ -1,7 +1,7 @@
 ---
 fixes:
   - |
-    ``IBMProvidef.get_backend()`` returns the backend with its default options. At the end of this
+    ``IBMProvider.get_backend()`` returns the backend with its default options. At the end of this
     .. code-block::
     
       backend1 = provider.get_backend("xxx")
