@@ -35,8 +35,8 @@ def make_backend_widget(backend_item: BackendWithProviders) -> wid.HBox:
     Returns:
         The widget with backend information.
     """
-    backend = backend_item.backend
-    backend_providers = backend_item.providers
+    backend = backend_item
+    backend_providers = backend_item._instance
 
     status = backend.status()
     config = backend.configuration()
