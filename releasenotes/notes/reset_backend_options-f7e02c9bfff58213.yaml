@@ -2,7 +2,7 @@
 fixes:
   - |
     ``IBMProvidef.get_backend()`` returns the backend with its default options. At the end of this
-    example::
+    .. code-block::
     
       backend1 = provider.get_backend("xxx")
       backend1.options.shots = 100
