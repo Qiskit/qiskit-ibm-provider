@@ -101,20 +101,11 @@ class IBMDashboard(Subscriber):
         """Get all the backends accessible with this account."""
 
         ibm_backends = {}
-        for hgp in self.provider._get_hgps():
-            hgp_name = "{hub}/{group}/{project}".format(
-                hub=hgp._hub,
-                group=hgp._group,
-                project=hgp._project,
-            )
-            for backend in hgp.backends.values():
-                if not backend.configuration().simulator:
-                    if backend.name not in ibm_backends:
-                        ibm_backends[backend.name] = BackendWithProviders(
-                            backend=backend, providers=[hgp_name]
-                        )
-                    else:
-                        ibm_backends[backend.name].providers.append(hgp_name)
+        for backend in self.provider.backends():
+            if not backend.configuration().simulator:
+                ibm_backends[backend.name] = BackendWithProviders(
+                    backend=backend, providers=[backend._instance]
+                )
 
         self.backend_dict = ibm_backends
 
