@@ -103,6 +103,7 @@ class TestIntegrationSession(IBMTestCase):
         backend = provider.get_backend("ibmq_qasm_simulator")
         with backend.open_session() as session:
             _ = backend.run(ReferenceCircuits.bell())
+        self.assertEqual(backend.session, session)
         backend.close_session()
         backend.run(circuits=ReferenceCircuits.bell())
         self.assertIsNone(backend.session)
