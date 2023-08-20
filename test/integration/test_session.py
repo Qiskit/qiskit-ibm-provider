@@ -69,24 +69,21 @@ class TestIntegrationSession(IBMTestCase):
         backend.open_session()
         self.assertTrue(backend.session.active)
         backend.close_session()
-        self.assertFalse(backend.session.active)
+        self.assertIsNone(backend.session)
 
     def test_run_after_close(self):
         """Test running after session is closed."""
         provider = IBMProvider(self.dependencies.token, self.dependencies.url)
         backend = provider.get_backend("ibmq_qasm_simulator")
+        backend.run(circuits=ReferenceCircuits.bell())
+        self.assertIsNone(backend.session)
+
         backend.open_session()
         _ = backend.run(ReferenceCircuits.bell())
         backend.close_session()
-        with self.assertRaises(RuntimeError) as err:
-            backend.run(
-                circuits=ReferenceCircuits.bell(),
-                program_id="program_id",
-                inputs={},
-            )
-        self.assertIn(
-            f"The session {backend.session.session_id} is closed.", str(err.exception)
-        )
+
+        backend.run(circuits=ReferenceCircuits.bell())
+        self.assertIsNone(backend.session)
 
     def test_session_as_context_manager(self):
         """Test session as a context manager"""
@@ -104,16 +101,8 @@ class TestIntegrationSession(IBMTestCase):
         """Test run after close in context manager"""
         provider = IBMProvider(self.dependencies.token, self.dependencies.url)
         backend = provider.get_backend("ibmq_qasm_simulator")
-
         with backend.open_session() as session:
             _ = backend.run(ReferenceCircuits.bell())
         backend.close_session()
-        with self.assertRaises(RuntimeError) as err:
-            backend.run(
-                circuits=ReferenceCircuits.bell(),
-                program_id="program_id",
-                inputs={},
-            )
-        self.assertIn(
-            f"The session {session.session_id} is closed.", str(err.exception)
-        )
+        backend.run(circuits=ReferenceCircuits.bell())
+        self.assertIsNone(backend.session)
