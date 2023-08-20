@@ -10,7 +10,9 @@ features:
       with backend.open_session() as session:
         job = backend.run(ReferenceCircuits.bell())
     
-    And here is an example of session not as a context manager::
+    And here is an example of session not as a context manager:
+    
+    .. code-block::
     
       backend = IBMProvider().get_backend("ibmq_qasm_simulator")
       backend.open_session()
