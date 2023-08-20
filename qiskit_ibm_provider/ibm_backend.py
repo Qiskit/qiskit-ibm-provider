@@ -917,6 +917,7 @@ class IBMBackend(Backend):
             self._session.close()
             if self._session.session_id:
                 self.provider._runtime_client.close_session(self._session.session_id)
+        self._session = None
 
 
 class IBMRetiredBackend(IBMBackend):
