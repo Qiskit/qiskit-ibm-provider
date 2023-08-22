@@ -1,0 +1,12 @@
+---
+fixes:
+  - |
+    ``IBMProvider.get_backend()`` returns the backend with its default options. At the end of this
+    .. code-block::
+    
+      backend1 = provider.get_backend("xxx")
+      backend1.options.shots = 100
+      backend2 = provider.get_backend("xxx")
+    
+    ``backend2.options.shots`` has the default value (4000). ``backend1.options.shots`` 
+    also has the default value, because backend1 and backend2 are the same instance.
