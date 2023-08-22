@@ -562,13 +562,16 @@ class IBMBackend(Backend):
             )
         except RequestsApiError as ex:
             raise IBMBackendApiError("Error submitting job: {}".format(str(ex))) from ex
+        session_id = response.get("session_id")
+        if self._session:
+            self._session._session_id = session_id
         try:
-            job_id = response["id"]
             job = IBMCircuitJob(
                 backend=self,
                 api_client=self._api_client,
                 runtime_client=self.provider._runtime_client,
-                job_id=job_id,
+                job_id=response["id"],
+                session_id=session_id
             )
             logger.debug("Job %s was successfully submitted.", job.job_id())
         except TypeError as err:
@@ -578,8 +581,6 @@ class IBMBackend(Backend):
                 "when submitting job: {}".format(str(err))
             ) from err
         Publisher().publish("ibm.job.start", job)
-        if self._session and self._session.session_id is None:
-            self._session._session_id = job.job_id()
         return job
 
     def _get_run_config(self, program_id: str, **kwargs: Any) -> Dict:

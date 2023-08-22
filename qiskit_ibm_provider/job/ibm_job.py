@@ -42,6 +42,7 @@ class IBMJob(Job, ABC):
         api_client: AccountClient,
         job_id: str,
         name: Optional[str] = None,
+        session_id: Optional[str] = None,
         tags: Optional[List[str]] = None,
         **kwargs: Any
     ) -> None:
@@ -52,12 +53,14 @@ class IBMJob(Job, ABC):
             api_client: Object for connecting to the server.
             job_id: Job ID.
             name: Job name.
+            session_id: Job ID of the first job in a runtime session.
             tags: Job tags.
             kwargs: Additional job attributes.
         """
         Job.__init__(self, backend, job_id)
         self._api_client = api_client
         self._name = name
+        self._session_id = session_id
         self._tags = tags or []
         self._provider = backend.provider
 

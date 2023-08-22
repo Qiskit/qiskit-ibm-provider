@@ -125,6 +125,7 @@ class IBMCircuitJob(IBMJob):
         time_per_step: Optional[dict] = None,
         result: Optional[dict] = None,
         error: Optional[dict] = None,
+        session_id: Optional[str] = None,
         tags: Optional[List[str]] = None,
         run_mode: Optional[str] = None,
         client_info: Optional[Dict[str, str]] = None,
@@ -150,7 +151,12 @@ class IBMCircuitJob(IBMJob):
             kwargs: Additional job attributes.
         """
         super().__init__(
-            backend=backend, api_client=api_client, job_id=job_id, name=name, tags=tags
+            backend=backend,
+            api_client=api_client,
+            job_id=job_id,
+            name=name,
+            session_id=session_id,
+            tags=tags,
         )
         self._runtime_client = runtime_client
         self._creation_date = None

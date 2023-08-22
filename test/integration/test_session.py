@@ -44,10 +44,9 @@ class TestIntegrationSession(IBMTestCase):
         self.assertEqual(backend.session.session_id, None)
         self.assertTrue(backend.session.active)
         job1 = backend.run(ReferenceCircuits.bell())
-        session_id = backend.session.session_id
-        self.assertEqual(session_id, job1.job_id())
+        self.assertEqual(job1._session_id, job1.job_id())
         job2 = backend.run(ReferenceCircuits.bell())
-        self.assertFalse(session_id == job2.job_id())
+        self.assertFalse(job2._session_id == job2.job_id())
 
     def test_backend_run_with_session(self):
         """Test that 'shots' parameter is transferred correctly"""
@@ -75,15 +74,18 @@ class TestIntegrationSession(IBMTestCase):
         """Test running after session is closed."""
         provider = IBMProvider(self.dependencies.token, self.dependencies.url)
         backend = provider.get_backend("ibmq_qasm_simulator")
-        backend.run(circuits=ReferenceCircuits.bell())
+        job1 = backend.run(circuits=ReferenceCircuits.bell())
         self.assertIsNone(backend.session)
+        self.assertIsNone(job1._session_id)
 
         backend.open_session()
-        _ = backend.run(ReferenceCircuits.bell())
+        job2 = backend.run(ReferenceCircuits.bell())
+        self.assertIsNotNone(job2._session_id)
         backend.close_session()
 
-        backend.run(circuits=ReferenceCircuits.bell())
+        job3 = backend.run(circuits=ReferenceCircuits.bell())
         self.assertIsNone(backend.session)
+        self.assertIsNone(job3._session_id)
 
     def test_session_as_context_manager(self):
         """Test session as a context manager"""
@@ -105,5 +107,6 @@ class TestIntegrationSession(IBMTestCase):
             _ = backend.run(ReferenceCircuits.bell())
         self.assertEqual(backend.session, session)
         backend.close_session()
-        backend.run(circuits=ReferenceCircuits.bell())
+        job = backend.run(circuits=ReferenceCircuits.bell())
         self.assertIsNone(backend.session)
+        self.assertIsNone(job._session_id)
