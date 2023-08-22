@@ -571,7 +571,7 @@ class IBMBackend(Backend):
                 api_client=self._api_client,
                 runtime_client=self.provider._runtime_client,
                 job_id=response["id"],
-                session_id=session_id
+                session_id=session_id,
             )
             logger.debug("Job %s was successfully submitted.", job.job_id())
         except TypeError as err:
