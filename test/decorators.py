@@ -16,9 +16,24 @@ import os
 from dataclasses import dataclass
 from functools import wraps
 from typing import Callable, Optional
+from unittest import SkipTest
 
 from qiskit_ibm_provider import IBMProvider, least_busy
 from .unit.mock.fake_provider import FakeProvider
+
+
+def production_only(func):
+    """Decorator that runs a test only on production services."""
+
+    @wraps(func)
+    def _wrapper(self, *args, **kwargs):
+        if "dev" in self.dependencies.url:
+            raise SkipTest(
+                f"Skipping integration test. {self} is not supported on staging."
+            )
+        func(self, *args, **kwargs)
+
+    return _wrapper
 
 
 def run_fake_provider(func):
@@ -49,6 +64,7 @@ def integration_test_setup_with_backend(
     backend_name: Optional[str] = None,
     simulator: Optional[bool] = True,
     min_num_qubits: Optional[int] = None,
+    staging: Optional[bool] = True,
 ) -> Callable:
     """Returns a decorator that retrieves the appropriate backend to use for testing.
 
@@ -70,6 +86,8 @@ def integration_test_setup_with_backend(
         def _wrapper(self, *args, **kwargs):
             dependencies: IntegrationTestDependencies = kwargs["dependencies"]
             provider: IBMProvider = dependencies.provider
+            if not staging:
+                raise SkipTest("Tests not supported on staging.")
             if backend_name:
                 _backend = provider.get_backend(
                     name=backend_name, instance=dependencies.instance

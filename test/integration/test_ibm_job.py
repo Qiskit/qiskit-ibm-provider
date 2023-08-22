@@ -32,6 +32,7 @@ from qiskit_ibm_provider.job.exceptions import IBMJobTimeoutError
 from ..decorators import (
     IntegrationTestDependencies,
     integration_test_setup_with_backend,
+    production_only,
 )
 from ..fake_account_client import BaseFakeAccountClient, CancelableFakeJob
 from ..ibm_test_case import IBMTestCase
@@ -169,8 +170,10 @@ class TestIBMJob(IBMTestCase):
         for job in pending_job_list:
             self.assertTrue(job.status() in [JobStatus.QUEUED, JobStatus.RUNNING])
 
+    @production_only
     def test_retrieve_running_error_jobs(self):
         """Test client side filtering with running and error jobs."""
+        self.sim_job.wait_for_final_state()
         statuses = ["RUNNING", JobStatus.ERROR]
         job_list = self.provider.backend.jobs(
             backend_name=self.sim_backend.name, limit=3, status=statuses

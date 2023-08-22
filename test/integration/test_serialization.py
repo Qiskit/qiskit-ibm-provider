@@ -13,17 +13,19 @@
 """Test serializing and deserializing data sent to the server."""
 
 from typing import Set, Any, Dict, Optional
-from unittest import SkipTest, skipIf, skip
+from unittest import SkipTest, skip
 
 import dateutil.parser
 from qiskit import transpile, schedule, QuantumCircuit
 from qiskit.circuit import Parameter
 from qiskit.test.reference_circuits import ReferenceCircuits
-from qiskit.version import VERSION as terra_version
-
 from qiskit_ibm_provider import least_busy
 from qiskit_ibm_provider.utils.json_encoder import IBMJsonEncoder
-from ..decorators import IntegrationTestDependencies, integration_test_setup
+from ..decorators import (
+    IntegrationTestDependencies,
+    integration_test_setup,
+    production_only,
+)
 from ..ibm_test_case import IBMTestCase
 from ..utils import cancel_job
 
@@ -112,6 +114,7 @@ class TestSerialization(IBMTestCase):
             with self.subTest(backend=backend):
                 self._verify_data(backend.defaults().to_dict(), good_keys)
 
+    @production_only
     def test_backend_properties(self):
         """Test deserializing backend properties."""
         backends = self.dependencies.provider.backends(
@@ -185,7 +188,6 @@ class TestSerialization(IBMTestCase):
                 }
         self.assertFalse(suspect_keys)
 
-    @skipIf(terra_version < "0.17", "Need Terra >= 0.17")
     def test_convert_complex(self):
         """Verify that real and complex ParameterExpressions are supported."""
         param = Parameter("test")

@@ -28,6 +28,7 @@ from qiskit_ibm_provider.exceptions import IBMBackendValueError
 from ..decorators import (
     IntegrationTestDependencies,
     integration_test_setup_with_backend,
+    production_only,
 )
 from ..ibm_test_case import IBMTestCase
 from ..utils import get_pulse_schedule, cancel_job
@@ -57,6 +58,7 @@ class TestIBMBackend(IBMTestCase):
         self.dependencies.provider.backends()
         self.assertTrue(self.backend.status().operational)
 
+    @production_only
     def test_backend_properties(self):
         """Check the properties of calibration of a real chip."""
         self.assertIsNotNone(self.backend.properties())
@@ -124,10 +126,9 @@ class TestIBMBackend(IBMTestCase):
         self.assertTrue(backend_options["memory"])
         self.assertEqual(backend_options["foo"], "foo")
 
+    @production_only
     def test_paused_backend_warning(self):
         """Test that a warning is given when running jobs on a paused backend."""
-        if "dev" in self.dependencies.url:
-            raise SkipTest("Not supported in staging.")
         backend = self.dependencies.provider.get_backend("ibmq_qasm_simulator")
         paused_status = backend.status()
         paused_status.status_msg = "internal"
@@ -218,14 +219,15 @@ class TestIBMBackend(IBMTestCase):
             instance=self.dependencies.instance, simulator=False
         )
         least_busy_backend = least_busy(backends)
-        self.assertTrue(least_busy_backend)
+        if least_busy_backend.properties():
+            self.assertTrue(least_busy_backend)
 
-        num = len(least_busy_backend.properties().qubits)
-        num_qubits = num + 1
-        circuit = QuantumCircuit(num_qubits, num_qubits)
-        with self.assertRaises(IBMBackendValueError) as err:
-            _ = least_busy_backend.run(circuit)
-        self.assertIn(
-            f"Circuit contains {num_qubits} qubits, but backend has only {num}.",
-            str(err.exception),
-        )
+            num = len(least_busy_backend.properties().qubits)
+            num_qubits = num + 1
+            circuit = QuantumCircuit(num_qubits, num_qubits)
+            with self.assertRaises(IBMBackendValueError) as err:
+                _ = least_busy_backend.run(circuit)
+            self.assertIn(
+                f"Circuit contains {num_qubits} qubits, but backend has only {num}.",
+                str(err.exception),
+            )

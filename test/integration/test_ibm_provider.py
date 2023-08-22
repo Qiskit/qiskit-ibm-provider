@@ -34,6 +34,7 @@ from ..decorators import (
     IntegrationTestDependencies,
     integration_test_setup,
     integration_test_setup_with_backend,
+    production_only,
 )
 from ..ibm_test_case import IBMTestCase
 
@@ -140,6 +141,7 @@ class TestIBMProviderHubGroupProject(IBMTestCase):
         )
         self.assertEqual(hgp.name, provider.active_account()["instance"])
 
+    @production_only
     def test_active_account_with_saved_instance(self):
         """Test active_account with a saved instance."""
         hgp = self.provider._get_hgp()
@@ -199,6 +201,19 @@ class TestIBMProviderServices(IBMTestCase):
         """Test getting a backend from the provider."""
         backend = self.dependencies.provider.get_backend(name=self.backend_name)
         self.assertEqual(backend.name, self.backend_name)
+
+    def test_get_backend_options(self):
+        """Test resetting backend options when calling get_backend."""
+        default_shots = 4000
+        backend1 = self.dependencies.provider.get_backend(name=self.backend_name)
+        self.assertEqual(backend1.options.shots, default_shots)
+        backend1.options.shots = 100
+        self.assertEqual(backend1.options.shots, 100)
+        backend2 = self.dependencies.provider.get_backend(name=self.backend_name)
+        # When getting a backend, it has the default options.
+        # backend1 and backend2 are the same instance.
+        self.assertEqual(backend2.options.shots, default_shots)
+        self.assertEqual(backend1.options.shots, default_shots)
 
     def test_jobs_filter(self):
         """Test limit filters when accessing jobs from the provider."""
