@@ -536,15 +536,17 @@ class IBMBackend(Backend):
         hgp_name = self._instance or self.provider._get_hgp().name
 
         session = self._session
+
         if session:
             if not session.active:
                 raise RuntimeError(f"The session {session.session_id} is closed.")
             session_id = session.session_id
             max_execution_time = session._max_time
+            start_session = session_id is None
         else:
             session_id = None
             max_execution_time = None
-        start_session = session_id is None
+            start_session = False
 
         try:
             response = self.provider._runtime_client.program_run(
