@@ -16,8 +16,9 @@ from datetime import datetime, timedelta, timezone
 from math import ceil
 from typing import Union, Tuple, Any, Optional
 
-import dateutil.parser
-from dateutil import tz
+from dateutil import tz, parser
+
+from qiskit_ibm_provider.exceptions import IBMInputValueError
 
 
 def utc_to_local(utc_dt: Union[datetime, str]) -> datetime:
@@ -33,7 +34,7 @@ def utc_to_local(utc_dt: Union[datetime, str]) -> datetime:
         TypeError: If the input parameter value is not valid.
     """
     if isinstance(utc_dt, str):
-        utc_dt = dateutil.parser.parse(utc_dt)
+        utc_dt = parser.parse(utc_dt)
     if not isinstance(utc_dt, datetime):
         raise TypeError("Input `utc_dt` is not string or datetime.")
     utc_dt = utc_dt.replace(tzinfo=timezone.utc)  # type: ignore[arg-type]
@@ -54,7 +55,7 @@ def local_to_utc(local_dt: Union[datetime, str]) -> datetime:
         TypeError: If the input parameter value is not valid.
     """
     if isinstance(local_dt, str):
-        local_dt = dateutil.parser.parse(local_dt)
+        local_dt = parser.parse(local_dt)
     if not isinstance(local_dt, datetime):
         raise TypeError("Input `local_dt` is not string or datetime.")
 
@@ -131,7 +132,7 @@ def str_to_utc(utc_dt: Optional[str]) -> Optional[datetime]:
     """
     if not utc_dt:
         return None
-    parsed_dt = dateutil.parser.isoparse(utc_dt)
+    parsed_dt = parser.isoparse(utc_dt)
     return parsed_dt.replace(tzinfo=timezone.utc)
 
 
@@ -184,3 +185,28 @@ def duration_difference(date_time: datetime) -> str:
     elif time_tuple[3]:
         time_str += "{} sec".format(time_tuple[3])
     return time_str
+
+
+def hms_to_seconds(hms: str, msg_prefix: str = "") -> int:
+    """Convert duration specified as hours minutes seconds to seconds.
+
+    Args:
+        hms: The string input duration (in hours minutes seconds). Ex: 2h 10m 20s
+        msg_prefix: Additional message to prefix the error.
+
+    Returns:
+        Total seconds (int) in the duration.
+
+    Raises:
+        IBMInputValueError: when the given hms string is in an invalid format
+    """
+    try:
+        date_time = parser.parse(hms)
+        hours = date_time.hour
+        minutes = date_time.minute
+        seconds = date_time.second
+        return int(
+            timedelta(hours=hours, minutes=minutes, seconds=seconds).total_seconds()
+        )
+    except parser.ParserError as parser_error:
+        raise IBMInputValueError(msg_prefix + str(parser_error))

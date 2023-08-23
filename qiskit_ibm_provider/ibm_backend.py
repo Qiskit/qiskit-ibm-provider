@@ -44,7 +44,10 @@ from qiskit.tools.events.pubsub import Publisher
 from qiskit.transpiler.passmanager import PassManager
 from qiskit.transpiler.target import Target
 
-from qiskit_ibm_provider import ibm_provider  # pylint: disable=unused-import
+from qiskit_ibm_provider import (  # pylint: disable=unused-import
+    ibm_provider,
+)
+from .session import Session
 from .api.clients import AccountClient
 from .exceptions import (
     IBMBackendError,
@@ -52,6 +55,7 @@ from .exceptions import (
     IBMBackendApiError,
     IBMBackendApiProtocolError,
 )
+
 from .job import IBMJob, IBMCircuitJob
 from .transpiler.passes.basis.convert_id_to_delay import (
     ConvertIdToDelay,
@@ -214,6 +218,7 @@ class IBMBackend(Backend):
         self._defaults = None
         self._target = None
         self._max_circuits = configuration.max_experiments
+        self._session: Session = None
         if not self._configuration.simulator:
             self.options.set_validator("noise_model", type(None))
             self.options.set_validator("seed_simulator", type(None))
@@ -529,6 +534,20 @@ class IBMBackend(Backend):
     ) -> IBMCircuitJob:
         """Runs the runtime program and returns the corresponding job object"""
         hgp_name = self._instance or self.provider._get_hgp().name
+
+        session = self._session
+
+        if session:
+            if not session.active:
+                raise RuntimeError(f"The session {session.session_id} is closed.")
+            session_id = session.session_id
+            max_execution_time = session._max_time
+            start_session = session_id is None
+        else:
+            session_id = None
+            max_execution_time = None
+            start_session = False
+
         try:
             response = self.provider._runtime_client.program_run(
                 program_id=program_id,
@@ -536,17 +555,23 @@ class IBMBackend(Backend):
                 params=inputs,
                 hgp=hgp_name,
                 job_tags=job_tags,
+                session_id=session_id,
+                start_session=start_session,
+                max_execution_time=max_execution_time,
                 image=image,
             )
         except RequestsApiError as ex:
             raise IBMBackendApiError("Error submitting job: {}".format(str(ex))) from ex
+        session_id = response.get("session_id")
+        if self._session:
+            self._session._session_id = session_id
         try:
-            job_id = response["id"]
             job = IBMCircuitJob(
                 backend=self,
                 api_client=self._api_client,
                 runtime_client=self.provider._runtime_client,
-                job_id=job_id,
+                job_id=response["id"],
+                session_id=session_id,
             )
             logger.debug("Job %s was successfully submitted.", job.job_id())
         except TypeError as err:
@@ -810,7 +835,8 @@ class IBMBackend(Backend):
 
         return circuits
 
-    def get_translation_stage_plugin(self) -> str:
+    @classmethod
+    def get_translation_stage_plugin(cls) -> str:
         """Return the default translation stage plugin name for IBM backends."""
         return "ibm_dynamic_circuits"
 
@@ -877,6 +903,24 @@ class IBMBackend(Backend):
                     f"Circuit {circuit.name} contains instruction "
                     f"{instr} operating on a faulty edge {qubit_indices}"
                 )
+
+    def open_session(self, max_time: Optional[Union[int, str]] = None) -> Session:
+        """Open session"""
+        self._session = Session(max_time)
+        return self._session
+
+    @property
+    def session(self) -> Session:
+        """Return session"""
+        return self._session
+
+    def close_session(self) -> None:
+        """Close session"""
+        if self._session:
+            self._session.close()
+            if self._session.session_id:
+                self.provider._runtime_client.close_session(self._session.session_id)
+        self._session = None
 
 
 class IBMRetiredBackend(IBMBackend):

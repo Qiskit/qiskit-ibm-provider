@@ -1,0 +1,20 @@
+---
+features:
+  - |
+    Added support for using session. The syntax here is slightly different than that
+    in ``qiskit-ibm-runtime``, but the functionality is similar.
+    Here is an example using session as a context manager:
+    
+    .. code-block::
+    
+      with backend.open_session() as session:
+        job = backend.run(ReferenceCircuits.bell())
+    
+    And here is an example of session not as a context manager:
+    
+    .. code-block::
+    
+      backend = IBMProvider().get_backend("ibmq_qasm_simulator")
+      backend.open_session()
+      job = backend.run(circ)
+      backend.close_session()

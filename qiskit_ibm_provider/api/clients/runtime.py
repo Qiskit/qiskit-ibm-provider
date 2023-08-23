@@ -309,3 +309,11 @@ class RuntimeClient(BaseClient):
             API Response.
         """
         return self._api.program_job(job_id).update_tags(tags)
+
+    def close_session(self, session_id: str) -> None:
+        """Close session
+
+        Args:
+            session_id (str): the id of the session to close
+        """
+        self._api.runtime_session(session_id=session_id).close()

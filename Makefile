@@ -40,7 +40,8 @@ integration-test-2:
 	python -m unittest -v test/integration/test_ibm_job.py test/integration/test_ibm_job_attributes.py
 
 integration-test-3:
-	python -m unittest -v test/integration/test_serialization.py test/integration/test_ibm_qasm_simulator.py 
+	python -m unittest -v test/integration/test_serialization.py test/integration/test_ibm_qasm_simulator.py \
+	test/integration/test_session.py
 
 e2e-test:
 	python -m unittest discover --verbose --top-level-directory . --start-directory test/e2e
