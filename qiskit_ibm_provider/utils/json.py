@@ -300,7 +300,9 @@ class RuntimeDecoder(json.JSONDecoder):
                     deserializer=lambda buff: load(
                         buff, metadata_deserializer=RuntimeDecoder
                     ),
-                )[0]  # type: ignore[no-untyped-call]
+                )[
+                    0
+                ]  # type: ignore[no-untyped-call]
             if obj_type == "Parameter":
                 return _decode_and_deserialize(obj_val, _read_parameter, False)
             if obj_type == "ParameterExpression":
