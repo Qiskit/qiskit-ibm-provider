@@ -99,7 +99,7 @@ class Session:
         """
         return self._active
 
-    def close(self) -> None:
+    def cancel(self) -> None:
         """Set the session._active status to False"""
         self._active = False
 

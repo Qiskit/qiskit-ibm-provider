@@ -17,4 +17,4 @@ features:
       backend = IBMProvider().get_backend("ibmq_qasm_simulator")
       backend.open_session()
       job = backend.run(circ)
-      backend.close_session()
+      backend.cancel_session()

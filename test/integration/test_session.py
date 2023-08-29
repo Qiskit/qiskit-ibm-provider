@@ -61,17 +61,17 @@ class TestIntegrationSession(IBMTestCase):
             result.get_counts()["00"], result.get_counts()["11"], delta=shots / 10
         )
 
-    def test_session_close(self):
+    def test_session_cancel(self):
         """Test closing a session"""
         provider = IBMProvider(self.dependencies.token, self.dependencies.url)
         backend = provider.get_backend("ibmq_qasm_simulator")
         backend.open_session()
         self.assertTrue(backend.session.active)
-        backend.close_session()
+        backend.cancel_session()
         self.assertIsNone(backend.session)
 
-    def test_run_after_close(self):
-        """Test running after session is closed."""
+    def test_run_after_cancel(self):
+        """Test running after session is cancelled."""
         provider = IBMProvider(self.dependencies.token, self.dependencies.url)
         backend = provider.get_backend("ibmq_qasm_simulator")
         job1 = backend.run(circuits=ReferenceCircuits.bell())
@@ -81,7 +81,7 @@ class TestIntegrationSession(IBMTestCase):
         backend.open_session()
         job2 = backend.run(ReferenceCircuits.bell())
         self.assertIsNotNone(job2._session_id)
-        backend.close_session()
+        backend.cancel_session()
 
         job3 = backend.run(circuits=ReferenceCircuits.bell())
         self.assertIsNone(backend.session)
@@ -99,14 +99,14 @@ class TestIntegrationSession(IBMTestCase):
             job2 = backend.run(ReferenceCircuits.bell())
             self.assertFalse(session_id == job2.job_id())
 
-    def test_run_after_close_as_context_manager(self):
-        """Test run after close in context manager"""
+    def test_run_after_cancel_as_context_manager(self):
+        """Test run after cancel in context manager"""
         provider = IBMProvider(self.dependencies.token, self.dependencies.url)
         backend = provider.get_backend("ibmq_qasm_simulator")
         with backend.open_session() as session:
             _ = backend.run(ReferenceCircuits.bell())
         self.assertEqual(backend.session, session)
-        backend.close_session()
+        backend.cancel_session()
         job = backend.run(circuits=ReferenceCircuits.bell())
         self.assertIsNone(backend.session)
         self.assertIsNone(job._session_id)
