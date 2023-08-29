@@ -44,7 +44,7 @@ class Session:
         print(f"Result: {job.result()}")
         # Close the session only if all jobs are finished and
         # you don't need to run more in the session.
-        backend.close_session()
+        backend.cancel_session()
 
     Session can also be used as a context manager::
 
@@ -99,7 +99,7 @@ class Session:
         """
         return self._active
 
-    def close(self) -> None:
+    def cancel(self) -> None:
         """Set the session._active status to False"""
         self._active = False
 
