@@ -567,8 +567,8 @@ class BlockBasePadder(TransformationPass):
         block_idx: int,
         t_start: int,
         oper: Instruction,
-        qubits: Union[Qubit, List[Qubit]],
-        clbits: Optional[Union[Clbit, List[Clbit]]] = None,
+        qubits: Union[Qubit, Iterable[Qubit]],
+        clbits: Union[Clbit, Iterable[Clbit]] = (),
     ) -> DAGNode:
         """Add new operation to DAG with scheduled information.
 
@@ -589,9 +589,7 @@ class BlockBasePadder(TransformationPass):
         if isinstance(clbits, Clbit):
             clbits = [clbits]
 
-        new_node = self._block_dag.apply_operation_back(
-            oper, qargs=qubits, cargs=clbits
-        )
+        new_node = self._block_dag.apply_operation_back(oper, qubits, clbits)
         self.property_set["node_start_time"][new_node] = (block_idx, t_start)
         return new_node
 
