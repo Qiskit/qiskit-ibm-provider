@@ -1,6 +1,6 @@
 ---
 fixes:
   - |
-    Replace coupling_map.reduce(nodes) with coupling_map.graph.subgraph(nodes
+    Replace ``coupling_map.reduce(nodes)`` with ``coupling_map.graph.subgraph(nodes)``
     to apply DD on a disjoint coupling map. See discussion in
     https://github.com/Qiskit/qiskit-terra/pull/9710

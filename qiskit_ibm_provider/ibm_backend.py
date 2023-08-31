@@ -914,10 +914,10 @@ class IBMBackend(Backend):
         """Return session"""
         return self._session
 
-    def close_session(self) -> None:
-        """Close session"""
+    def cancel_session(self) -> None:
+        """Cancel session. All pending jobs will be cancelled."""
         if self._session:
-            self._session.close()
+            self._session.cancel()
             if self._session.session_id:
                 self.provider._runtime_client.close_session(self._session.session_id)
         self._session = None
