@@ -12,8 +12,8 @@
 
 """Tests for the methods utils.converters file."""
 
-from qiskit_ibm_runtime.exceptions import IBMInputValueError
-from qiskit_ibm_runtime.utils.converters import hms_to_seconds
+from qiskit_ibm_provider.exceptions import IBMInputValueError
+from qiskit_ibm_provider.utils.converters import hms_to_seconds
 from ..ibm_test_case import IBMTestCase
 
 
