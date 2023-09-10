@@ -141,6 +141,8 @@ class IBMBackend(Backend):
         * n_uchannels: Number of u-channels.
         * u_channel_lo: U-channel relationship on device los.
         * meas_levels: Supported measurement levels.
+        * qubit_lo_range: Qubit lo ranges for each qubit with form (min, max) in GHz.
+        * meas_lo_range: Measurement lo ranges for each qubit with form (min, max) in GHz.
         * dt: Qubit drive channel timestep in nanoseconds.
         * dtm: Measurement drive channel timestep in nanoseconds.
         * rep_times: Supported repetition times (program execution time) for backend in μs.
