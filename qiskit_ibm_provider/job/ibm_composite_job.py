@@ -30,7 +30,6 @@ from qiskit.circuit.quantumcircuit import QuantumCircuit
 from qiskit.compiler import assemble
 from qiskit.providers.jobstatus import JOB_FINAL_STATES, JobStatus
 from qiskit.providers.models import BackendProperties
-from qiskit.pulse import Schedule
 from qiskit.qobj import QasmQobj, PulseQobj
 from qiskit.result import Result
 from qiskit.result.models import ExperimentResult
@@ -126,7 +125,7 @@ class IBMCompositeJob(IBMJob):
         creation_date: Optional[datetime] = None,
         jobs: Optional[List[IBMCircuitJob]] = None,
         circuits_list: Optional[
-            List[Union[List[QuantumCircuit], List[Schedule]]]
+            List[List[QuantumCircuit]]
         ] = None,
         run_config: Optional[Dict] = None,
         name: Optional[str] = None,
@@ -259,7 +258,7 @@ class IBMCompositeJob(IBMJob):
 
     def _submit_circuits(
         self,
-        circuit_lists: List[Union[List[QuantumCircuit], List[Schedule]]],
+        circuit_lists: List[List[QuantumCircuit]],
         run_config: Dict,
     ) -> None:
         """Assemble and submit circuits.
@@ -873,11 +872,11 @@ class IBMCompositeJob(IBMJob):
             if job.status() not in JOB_FINAL_STATES:
                 job.refresh()
 
-    def circuits(self) -> List[Union[QuantumCircuit, Schedule]]:
-        """Return the circuits or pulse schedules for this job.
+    def circuits(self) -> List[QuantumCircuit]:
+        """Return the circuits for this job.
 
         Returns:
-            The circuits or pulse schedules for this job.
+            The circuits for this job.
         """
         if not self._circuits:
             qobj = self._get_qobj()
