@@ -18,7 +18,7 @@ import time
 import queue
 from concurrent import futures
 from datetime import datetime
-from typing import Dict, Optional, Any, List, Union
+from typing import Dict, Optional, Any, List
 import re
 import requests
 

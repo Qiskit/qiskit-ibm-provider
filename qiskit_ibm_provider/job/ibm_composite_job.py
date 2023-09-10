@@ -124,9 +124,7 @@ class IBMCompositeJob(IBMJob):
         job_id: Optional[str] = None,
         creation_date: Optional[datetime] = None,
         jobs: Optional[List[IBMCircuitJob]] = None,
-        circuits_list: Optional[
-            List[List[QuantumCircuit]]
-        ] = None,
+        circuits_list: Optional[List[List[QuantumCircuit]]] = None,
         run_config: Optional[Dict] = None,
         name: Optional[str] = None,
         tags: Optional[List[str]] = None,

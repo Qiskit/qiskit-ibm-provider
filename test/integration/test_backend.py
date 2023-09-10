@@ -12,7 +12,7 @@
 
 """IBMBackend Test."""
 
-from unittest import SkipTest, mock, skip
+from unittest import mock, skip
 from unittest.mock import patch
 
 from qiskit import QuantumCircuit, transpile
@@ -171,7 +171,6 @@ class TestIBMBackend(IBMTestCase):
         """Test that an error is raised when retrieving a backend that does not exist."""
         with self.assertRaises(QiskitBackendNotFoundError):
             self.dependencies.provider.get_backend("nonexistent_backend")
-
 
     def test_too_many_qubits_in_circuit(self):
         """Check error message if circuit contains more qubits than supported on the backend."""

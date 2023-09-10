@@ -31,7 +31,6 @@ from qiskit.providers.models import (
 )
 from qiskit.providers.options import Options
 from qiskit.pulse.channels import (
-    PulseChannel,
     AcquireChannel,
     ControlChannel,
     DriveChannel,
@@ -329,9 +328,7 @@ class IBMBackend(Backend):
 
     def run(
         self,
-        circuits: Union[
-            QuantumCircuit, str, List[Union[QuantumCircuit, str]]
-        ],
+        circuits: Union[QuantumCircuit, str, List[Union[QuantumCircuit, str]]],
         dynamic: bool = None,
         job_tags: Optional[List[str]] = None,
         init_circuit: Optional[QuantumCircuit] = None,

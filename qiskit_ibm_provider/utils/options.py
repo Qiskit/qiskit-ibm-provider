@@ -13,9 +13,8 @@
 """Backend run options."""
 
 from dataclasses import asdict, dataclass
-from typing import Dict, List, Union, Any, Optional
+from typing import Dict, Union, Any, Optional
 from qiskit.circuit import QuantumCircuit
-from qiskit.pulse.channels import PulseChannel
 from qiskit.qobj.utils import MeasLevel, MeasReturnType
 
 
