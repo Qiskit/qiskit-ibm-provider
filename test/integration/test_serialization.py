@@ -82,6 +82,8 @@ class TestSerialization(IBMTestCase):
         # Known keys that look like a serialized complex number.
         good_keys = (
             "coupling_map",
+            "qubit_lo_range",
+            "meas_lo_range",
             "gates.coupling_map",
             "meas_levels",
             "qubit_channel_mapping",
