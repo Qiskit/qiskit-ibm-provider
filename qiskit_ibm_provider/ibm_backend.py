@@ -371,6 +371,9 @@ class IBMBackend(Backend):
             memory: If ``True``, per-shot measurement bitstrings are returned as well
                 (provided the backend supports it). For OpenPulse jobs, only
                 measurement level 2 supports this option.
+            meas_level: Level of the measurement output for pulse experiments. See
+                `OpenPulse specification <https://arxiv.org/pdf/1809.03452.pdf>`_ for details:
+
                 * ``0``, measurements of the raw signal (the measurement output pulse envelope)
                 * ``1``, measurement kernel is selected (a complex number obtained after applying the
                   measurement kernel to the measurement output signal)
