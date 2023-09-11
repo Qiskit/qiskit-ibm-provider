@@ -30,9 +30,7 @@ from qiskit.providers.models import (
     PulseBackendConfiguration,
 )
 from qiskit.providers.options import Options
-from qiskit.pulse import Schedule, LoConfig
 from qiskit.pulse.channels import (
-    PulseChannel,
     AcquireChannel,
     ControlChannel,
     DriveChannel,
@@ -332,9 +330,7 @@ class IBMBackend(Backend):
 
     def run(
         self,
-        circuits: Union[
-            QuantumCircuit, Schedule, str, List[Union[QuantumCircuit, Schedule, str]]
-        ],
+        circuits: Union[QuantumCircuit, str, List[Union[QuantumCircuit, str]]],
         dynamic: bool = None,
         job_tags: Optional[List[str]] = None,
         init_circuit: Optional[QuantumCircuit] = None,
@@ -342,14 +338,6 @@ class IBMBackend(Backend):
         header: Optional[Dict] = None,
         shots: Optional[Union[int, float]] = None,
         memory: Optional[bool] = None,
-        qubit_lo_freq: Optional[List[int]] = None,
-        meas_lo_freq: Optional[List[int]] = None,
-        schedule_los: Optional[
-            Union[
-                List[Union[Dict[PulseChannel, float], LoConfig]],
-                Union[Dict[PulseChannel, float], LoConfig],
-            ]
-        ] = None,
         meas_level: Optional[Union[int, MeasLevel]] = None,
         meas_return: Optional[Union[str, MeasReturnType]] = None,
         rep_delay: Optional[float] = None,
@@ -366,10 +354,6 @@ class IBMBackend(Backend):
         Args:
             circuits: An individual or a
                 list of :class:`~qiskit.circuits.QuantumCircuit`.
-                :class:`~qiskit.pulse.Schedule` is no longer supported. Use ``pulse gates`` instead.
-                See `tutorial
-                <https://qiskit.org/documentation/tutorials/circuits_advanced/05_pulse_gates.html>`_
-                on how to use pulse gates.
             dynamic: Whether the circuit is dynamic (uses in-circuit conditionals)
             job_tags: Tags to be assigned to the job. The tags can subsequently be used
                 as a filter in the :meth:`jobs()` function call.
@@ -389,11 +373,6 @@ class IBMBackend(Backend):
             memory: If ``True``, per-shot measurement bitstrings are returned as well
                 (provided the backend supports it). For OpenPulse jobs, only
                 measurement level 2 supports this option.
-            qubit_lo_freq: List of default qubit LO frequencies in Hz. Will be overridden by
-                ``schedule_los`` if set.
-            meas_lo_freq: List of default measurement LO frequencies in Hz. Will be overridden
-                by ``schedule_los`` if set.
-            schedule_los: Experiment LO configurations, frequencies are given in Hz.
             meas_level: Level of the measurement output for pulse experiments. See
                 `OpenPulse specification <https://arxiv.org/pdf/1809.03452.pdf>`_ for details:
 
@@ -498,9 +477,6 @@ class IBMBackend(Backend):
             header=header,
             shots=shots,
             memory=memory,
-            qubit_lo_freq=qubit_lo_freq,
-            meas_lo_freq=meas_lo_freq,
-            schedule_los=schedule_los,
             meas_level=meas_level,
             meas_return=meas_return,
             rep_delay=rep_delay,
@@ -769,17 +745,16 @@ class IBMBackend(Backend):
         return "<{}('{}')>".format(self.__class__.__name__, self.name)
 
     def _deprecate_id_instruction(
-        self, circuits: List[Union[QuantumCircuit, Schedule]]
-    ) -> List[Union[QuantumCircuit, Schedule]]:
+        self, circuits: List[QuantumCircuit]
+    ) -> List[QuantumCircuit]:
         """Raise a DeprecationWarning if any circuit contains an 'id' instruction.
 
         Additionally, if 'delay' is a 'supported_instruction', replace each 'id'
         instruction (in-place) with the equivalent ('sx'-length) 'delay' instruction.
 
         Args:
-            circuits: The individual or list of :class:`~qiskit.circuits.QuantumCircuit` or
-                :class:`~qiskit.pulse.Schedule` objects passed to
-                :meth:`IBMBackend.run()<IBMBackend.run>`. Modified in-place.
+            circuits: The individual or list of :class:`~qiskit.circuits.QuantumCircuit`
+                 passed to :meth:`IBMBackend.run()<IBMBackend.run>`. Modified in-place.
 
         Returns:
             A modified copy of the original circuit where 'id' instructions are replaced with
@@ -844,22 +819,14 @@ class IBMBackend(Backend):
         """Check that circuits can be executed on backend.
         Raises:
             IBMBackendValueError:
-                - If Schedule is given as an input circuit.
                 - If one of the circuits contains more qubits than on the backend."""
-        schedule_error_msg = (
-            "Class 'Schedule' is no longer supported as an input circuit. "
-            "Use 'pulse gates' instead. See `tutorial "
-            "https://qiskit.org/documentation/tutorials/circuits_advanced/05_pulse_gates.html` "
-            "on how to use pulse gates."
-        )
+
         if len(circuits) > self._max_circuits:
             raise IBMBackendValueError(
                 f"Number of circuits, {len(circuits)} exceeds the "
                 f"maximum for this backend, {self._max_circuits})"
             )
         for circ in circuits:
-            if isinstance(circ, Schedule):
-                raise IBMBackendValueError(schedule_error_msg)
             if isinstance(circ, QuantumCircuit):
                 if circ.num_qubits > self._configuration.num_qubits:
                     raise IBMBackendValueError(
