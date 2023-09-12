@@ -85,7 +85,7 @@ class BlockBasePadder(TransformationPass):
         self._dirty_qubits: Set[Qubit] = set()
         # Qubits that are dirty in the circuit.
         self._schedule_idle_qubits = schedule_idle_qubits
-        self._idle_qubits = set()
+        self._idle_qubits: Set[Qubit] = set()
         super().__init__()
 
     def run(self, dag: DAGCircuit) -> DAGCircuit:
