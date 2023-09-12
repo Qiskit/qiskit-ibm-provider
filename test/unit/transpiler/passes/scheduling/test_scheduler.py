@@ -2023,5 +2023,4 @@ class TestALAPSchedulingAndPaddingPass(ControlFlowTestCase):
 
         dont_use = scheduled.qubits[-1]
         for op in scheduled.data:
-            if op.operation.name != "barrier":
-                self.assertNotIn(dont_use, op.qubits)
+            self.assertNotIn(dont_use, op.qubits)

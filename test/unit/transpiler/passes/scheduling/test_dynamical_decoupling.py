@@ -1076,10 +1076,7 @@ class TestPadDynamicalDecoupling(ControlFlowTestCase):
         with qc.if_test((0, True)):
             qc.x(0)
         qc.x(1)
-
         qc_dd = pm.run(qc)
-
         dont_use = qc_dd.qubits[-1]
         for op in qc_dd.data:
-            if op.operation.name != "barrier":
-                self.assertNotIn(dont_use, op.qubits)
+            self.assertNotIn(dont_use, op.qubits)

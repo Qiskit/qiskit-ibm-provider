@@ -160,10 +160,13 @@ class BlockBasePadder(TransformationPass):
         # not be equivalent to one written manually as bits will not
         # be defined on registers like in the test case.
 
-        source_wire_dag = self._root_dag if pad_wires else dag
+        if not self._schedule_idle_qubits:
+            source_wire_dag = dag
+        else:
+            source_wire_dag = self._root_dag if pad_wires else dag
 
         # trivial wire map if not provided, or if the top-level dag is used
-        if not wire_map or pad_wires:
+        if not wire_map or (pad_wires and self._schedule_idle_qubits):
             wire_map = {wire: wire for wire in source_wire_dag.wires}
         if dag.qregs:
             for qreg in source_wire_dag.qregs.values():
@@ -311,11 +314,18 @@ class BlockBasePadder(TransformationPass):
 
         if needs_terminating_barrier:
             # Terminate with a barrier to ensure topological ordering does not slide past
+            if self._schedule_idle_qubits:
+                barrier = Barrier(self._block_dag.num_qubits())
+                qubits = self._block_dag.qubits
+            else:
+                barrier = Barrier(self._block_dag.num_qubits() - len(self._idle_qubits))
+                qubits = [x for x in self._block_dag.qubits if x not in self._idle_qubits]
+
             barrier_node = self._apply_scheduled_op(
                 block_idx,
                 time,
-                Barrier(self._block_dag.num_qubits()),
-                self._block_dag.qubits,
+                barrier,
+                qubits,
                 [],
             )
             barrier_node.op.duration = 0
