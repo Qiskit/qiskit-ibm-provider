@@ -319,7 +319,9 @@ class BlockBasePadder(TransformationPass):
                 qubits = self._block_dag.qubits
             else:
                 barrier = Barrier(self._block_dag.num_qubits() - len(self._idle_qubits))
-                qubits = [x for x in self._block_dag.qubits if x not in self._idle_qubits]
+                qubits = [
+                    x for x in self._block_dag.qubits if x not in self._idle_qubits
+                ]
 
             barrier_node = self._apply_scheduled_op(
                 block_idx,
