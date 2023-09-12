@@ -62,7 +62,7 @@ class BlockBasePadder(TransformationPass):
     which may result in violation of hardware alignment constraints.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, schedule_idle_qubits: bool = False) -> None:
         self._node_start_time = None
         self._node_block_dags = None
         self._idle_after: Optional[Dict[Qubit, int]] = None
@@ -84,7 +84,8 @@ class BlockBasePadder(TransformationPass):
 
         self._dirty_qubits: Set[Qubit] = set()
         # Qubits that are dirty in the circuit.
-
+        self._schedule_idle_qubits = schedule_idle_qubits
+        self._idle_qubits = set()
         super().__init__()
 
     def run(self, dag: DAGCircuit) -> DAGCircuit:
@@ -100,6 +101,10 @@ class BlockBasePadder(TransformationPass):
             TranspilerError: When a particular node is not scheduled, likely some transform pass
                 is inserted before this node is called.
         """
+        if not self._schedule_idle_qubits:
+            self._idle_qubits = set(
+                wire for wire in dag.idle_wires() if isinstance(wire, Qubit)
+            )
         self._pre_runhook(dag)
 
         self._init_run(dag)
@@ -420,7 +425,7 @@ class BlockBasePadder(TransformationPass):
         self._add_block_terminating_barrier(block_idx, t0, node)
 
         # Only pad non-fast path nodes
-        fast_path_node = node in self._fast_path_nodes
+        fast_path_node = node in self._fast_path_nodes or not self._schedule_idle_qubits
 
         # TODO: This is a hack required to tie nodes of control-flow
         # blocks across the scheduler and block_base_padder. This is
@@ -503,6 +508,8 @@ class BlockBasePadder(TransformationPass):
         self._block_duration = max(self._block_duration, t1)
 
         for bit in self._map_wires(node.qargs):
+            if bit in self._idle_qubits:
+                continue
             # Fill idle time with some sequence
             if t0 - self._idle_after.get(bit, 0) > 0:
                 # Find previous node on the wire, i.e. always the latest node on the wire
@@ -549,6 +556,8 @@ class BlockBasePadder(TransformationPass):
     def _pad_until_block_end(self, block_duration: int, block_idx: int) -> None:
         # Add delays until the end of circuit.
         for bit in self._block_dag.qubits:
+            if bit in self._idle_qubits:
+                continue
             idle_after = self._idle_after.get(bit, 0)
             if block_duration - idle_after > 0:
                 node = self._block_dag.output_map[bit]

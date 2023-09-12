@@ -121,6 +121,7 @@ class PadDynamicalDecoupling(BlockBasePadder):
         insert_multiple_cycles: bool = False,
         coupling_map: CouplingMap = None,
         alt_spacings: Optional[Union[List[List[float]], List[float]]] = None,
+        schedule_idle_qubits: bool = False,
     ):
         """Dynamical decoupling initializer.
 
@@ -173,6 +174,9 @@ class PadDynamicalDecoupling(BlockBasePadder):
             alt_spacings: A list of lists of spacings between the DD gates, for the second subcircuit,
                 as determined by the coupling map. If None, a balanced spacing that is staggered with
                 respect to the first subcircuit will be used [d, d, d, ..., d, d, 0].
+            schedule_idle_qubits: Set to true if you'd like a delay inserted on idle qubits.
+                This is useful for timeline visualizations, but may cause issues
+                for execution on large backends.
         Raises:
             TranspilerError: When invalid DD sequence is specified.
             TranspilerError: When pulse gate with the duration which is

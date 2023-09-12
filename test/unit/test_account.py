@@ -275,7 +275,6 @@ class TestAccountManager(IBMTestCase):
                 ).to_saved_format(),
             }
         ), self.subTest("filtered list of accounts"):
-
             accounts = list(AccountManager.list(channel="ibm_quantum").keys())
             self.assertEqual(len(accounts), 2)
             self.assertListEqual(accounts, ["key2", _DEFAULT_ACCOUNT_NAME_IBM_QUANTUM])
@@ -320,6 +319,7 @@ class TestAccountManager(IBMTestCase):
 MOCK_PROXY_CONFIG_DICT = {
     "urls": {"https": "127.0.0.1", "username_ntlm": "", "password_ntlm": ""}
 }
+
 
 # TODO: update and reenable test cases to work with qiskit-ibm-provider
 # NamedTemporaryFiles not supported in Windows
