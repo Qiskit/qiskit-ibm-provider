@@ -46,6 +46,7 @@ _TEST_IBM_QUANTUM_ACCOUNT = Account(
     instance="ibm-q/open/main",
 )
 
+
 class TestAccount(IBMTestCase):
     """Tests for Account class."""
 
@@ -251,6 +252,7 @@ class TestAccountManager(IBMTestCase):
             self.assertTrue(AccountManager.delete())
 
         self.assertTrue(len(AccountManager.list()) == 0)
+
 
 MOCK_PROXY_CONFIG_DICT = {
     "urls": {"https": "127.0.0.1", "username_ntlm": "", "password_ntlm": ""}
