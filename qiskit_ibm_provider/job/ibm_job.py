@@ -20,7 +20,6 @@ from typing import Dict, Optional, Any, List, Union
 from qiskit.circuit.quantumcircuit import QuantumCircuit
 from qiskit.providers.job import JobV1 as Job
 from qiskit.providers.models import BackendProperties
-from qiskit.pulse import Schedule
 from qiskit.qobj import QasmQobj, PulseQobj
 from qiskit.result import Result
 
@@ -198,11 +197,11 @@ class IBMJob(Job, ABC):
         """Obtain the latest job information from the server."""
         pass
 
-    def circuits(self) -> List[Union[QuantumCircuit, Schedule]]:
-        """Return the circuits or pulse schedules for this job.
+    def circuits(self) -> List[QuantumCircuit]:
+        """Return the circuits for this job.
 
         Returns:
-            The circuits or pulse schedules for this job. An empty list
+            The circuits for this job. An empty list
             is returned if the circuits cannot be retrieved (for example, if
             the job uses an old format that is no longer supported).
         """
