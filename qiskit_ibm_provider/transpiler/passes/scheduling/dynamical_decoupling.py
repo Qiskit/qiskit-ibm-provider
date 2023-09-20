@@ -353,7 +353,9 @@ class PadDynamicalDecoupling(BlockBasePadder):
                     # Update gate duration.
                     # This is necessary for current timeline drawer, i.e. scheduled.
 
-                    if hasattr(gate, 'to_mutable'):  # TODO this check can be removed after Qiskit 1.0
+                    if hasattr(
+                        gate, "to_mutable"
+                    ):  # TODO this check can be removed after Qiskit 1.0, as it is always True
                         gate = gate.to_mutable()
                         seq[index] = gate
                     gate.duration = gate_length
