@@ -328,7 +328,7 @@ class PadDynamicalDecoupling(BlockBasePadder):
                 if self._qubits and physical_index not in self._qubits:
                     continue
 
-                for gate in seq:
+                for index, gate in enumerate(seq):
                     try:
                         # Check calibration.
                         gate_length = dag.calibrations[gate.name][
@@ -352,6 +352,10 @@ class PadDynamicalDecoupling(BlockBasePadder):
                     seq_length_.append(gate_length)
                     # Update gate duration.
                     # This is necessary for current timeline drawer, i.e. scheduled.
+
+                    if hasattr(gate, 'to_mutable'):  # TODO this check can be removed after Qiskit 1.0
+                        gate = gate.to_mutable()
+                        seq[index] = gate
                     gate.duration = gate_length
                 self._dd_sequence_lengths[qubit].append(seq_length_)
 
