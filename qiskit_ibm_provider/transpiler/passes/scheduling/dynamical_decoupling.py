@@ -497,7 +497,7 @@ class PadDynamicalDecoupling(BlockBasePadder):
                 return self._alignment * np.floor(values / self._alignment)
 
             if self._coupling_map:
-                if self._coupling_coloring[qubit.index] == 0:
+                if self._coupling_coloring[self._dag.qubits.index(qubit)] == 0:
                     sub_spacings = spacings
                 else:
                     sub_spacings = alt_spacings
