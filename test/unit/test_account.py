@@ -46,13 +46,6 @@ _TEST_IBM_QUANTUM_ACCOUNT = Account(
     instance="ibm-q/open/main",
 )
 
-_TEST_LEGACY_ACCOUNT = {
-    "auth": "legacy",
-    "token": "token-x",
-    "url": "https://auth.quantum-computing.ibm.com/api",
-    "instance": "ibm-q/open/main",
-}
-
 
 class TestAccount(IBMTestCase):
     """Tests for Account class."""
@@ -158,44 +151,6 @@ class TestAccountManager(IBMTestCase):
                 channel="ibm_quantum",
                 overwrite=False,
             )
-        # TODO remove test when removing auth parameter
-
-    @temporary_account_config_file(
-        contents={_DEFAULT_ACCOUNT_NAME_LEGACY: _TEST_LEGACY_ACCOUNT}
-    )
-    @no_envs(["QISKIT_IBM_TOKEN"])
-    def test_save_channel_ibm_quantum_over_auth_legacy_without_overwrite(self):
-        """Test to overwrite an existing auth "legacy" account with channel "ibm_quantum"
-        and without setting overwrite=True."""
-        with self.assertRaises(AccountAlreadyExistsError):
-            AccountManager.save(
-                token=_TEST_IBM_QUANTUM_ACCOUNT.token,
-                url=_TEST_IBM_QUANTUM_ACCOUNT.url,
-                instance=_TEST_IBM_QUANTUM_ACCOUNT.instance,
-                channel="ibm_quantum",
-                name=None,
-                overwrite=False,
-            )
-
-    # TODO remove test when removing auth parameter
-    @temporary_account_config_file(
-        contents={_DEFAULT_ACCOUNT_NAME_LEGACY: _TEST_LEGACY_ACCOUNT}
-    )
-    @no_envs(["QISKIT_IBM_TOKEN"])
-    def test_save_channel_ibm_quantum_over_auth_legacy_with_overwrite(self):
-        """Test to overwrite an existing auth "elegacy" account with channel "ibm_quantum"
-        and with setting overwrite=True."""
-        AccountManager.save(
-            token=_TEST_IBM_QUANTUM_ACCOUNT.token,
-            url=_TEST_IBM_QUANTUM_ACCOUNT.url,
-            instance=_TEST_IBM_QUANTUM_ACCOUNT.instance,
-            channel="ibm_quantum",
-            name=None,
-            overwrite=True,
-        )
-        self.assertEqual(
-            _TEST_IBM_QUANTUM_ACCOUNT, AccountManager.get(channel="ibm_quantum")
-        )
 
     @temporary_account_config_file(
         contents={"conflict": _TEST_IBM_QUANTUM_ACCOUNT.to_saved_format()}
@@ -297,24 +252,6 @@ class TestAccountManager(IBMTestCase):
 
         self.assertTrue(len(AccountManager.list()) == 0)
 
-    @temporary_account_config_file(
-        contents={
-            "key1": _TEST_LEGACY_ACCOUNT,
-            _DEFAULT_ACCOUNT_NAME_LEGACY: _TEST_LEGACY_ACCOUNT,
-        }
-    )
-    def test_delete_auth(self):
-        """Test delete accounts already saved using auth."""
-
-        with self.subTest("delete named account"):
-            self.assertTrue(AccountManager.delete(name="key1"))
-            self.assertFalse(AccountManager.delete(name="key1"))
-
-        with self.subTest("delete default auth='legacy' account using channel"):
-            self.assertTrue(AccountManager.delete())
-
-        self.assertTrue(len(AccountManager.list()) == 0)
-
 
 MOCK_PROXY_CONFIG_DICT = {
     "urls": {"https": "127.0.0.1", "username_ntlm": "", "password_ntlm": ""}
@@ -399,8 +336,8 @@ class TestEnableAccount(IBMTestCase):
         self.assertEqual(service._account.url, expected)
         self.assertEqual(service._account.channel, "ibm_quantum")
 
-    def test_enable_account_by_env_auth(self):
-        """Test initializing account by environment variable and auth."""
+    def test_enable_account_by_env(self):
+        """Test initializing account by environment variables."""
 
         token = uuid.uuid4().hex
         url = uuid.uuid4().hex
