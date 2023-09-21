@@ -143,7 +143,7 @@ class BlockBasePadder(TransformationPass):
         dag: DAGCircuit,
         pad_wires: bool = True,
         wire_map: Optional[Dict[Qubit, Qubit]] = None,
-        ignore_idle: bool = False
+        ignore_idle: bool = False,
     ) -> DAGCircuit:
         """Create an empty dag like the input dag."""
         new_dag = DAGCircuit()
@@ -170,7 +170,13 @@ class BlockBasePadder(TransformationPass):
             for qreg in source_wire_dag.qregs.values():
                 new_dag.add_qreg(qreg)
         else:
-            new_dag.add_qubits([wire_map[qubit] for qubit in source_wire_dag.qubits if qubit not in self._idle_qubits or not ignore_idle])
+            new_dag.add_qubits(
+                [
+                    wire_map[qubit]
+                    for qubit in source_wire_dag.qubits
+                    if qubit not in self._idle_qubits or not ignore_idle
+                ]
+            )
 
         # Don't add root cargs as these will not be padded.
         # Just focus on current block dag.
@@ -331,7 +337,11 @@ class BlockBasePadder(TransformationPass):
             barrier_node.op.duration = 0
 
     def _visit_block(
-        self, block: DAGCircuit, wire_map: Dict[Qubit, Qubit], pad_wires: bool = True, ignore_idle: bool = False
+        self,
+        block: DAGCircuit,
+        wire_map: Dict[Qubit, Qubit],
+        pad_wires: bool = True,
+        ignore_idle: bool = False,
     ) -> DAGCircuit:
         # Push the previous block dag onto the stack
         prev_node = self._prev_node
@@ -458,7 +468,10 @@ class BlockBasePadder(TransformationPass):
             }
             new_node_block_dags.append(
                 self._visit_block(
-                    block_dag, pad_wires=not fast_path_node, wire_map=inner_wire_map, ignore_idle=True
+                    block_dag,
+                    pad_wires=not fast_path_node,
+                    wire_map=inner_wire_map,
+                    ignore_idle=True,
                 )
             )
 
@@ -473,7 +486,9 @@ class BlockBasePadder(TransformationPass):
         if fast_path_node:
             padded_qubits = node.qargs
         elif not self._schedule_idle_qubits:
-            padded_qubits = [q for q in self._block_dag.qubits if q not in self._idle_qubits]
+            padded_qubits = [
+                q for q in self._block_dag.qubits if q not in self._idle_qubits
+            ]
         else:
             padded_qubits = self._block_dag.qubits
         self._apply_scheduled_op(
