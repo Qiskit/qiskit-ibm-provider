@@ -160,13 +160,10 @@ class BlockBasePadder(TransformationPass):
         # not be equivalent to one written manually as bits will not
         # be defined on registers like in the test case.
 
-        if not self._schedule_idle_qubits:
-            source_wire_dag = dag
-        else:
-            source_wire_dag = self._root_dag if pad_wires else dag
+        source_wire_dag = self._root_dag if pad_wires else dag
 
         # trivial wire map if not provided, or if the top-level dag is used
-        if not wire_map or (pad_wires and self._schedule_idle_qubits):
+        if not wire_map or pad_wires:
             wire_map = {wire: wire for wire in source_wire_dag.wires}
         if dag.qregs:
             for qreg in source_wire_dag.qregs.values():
@@ -437,7 +434,7 @@ class BlockBasePadder(TransformationPass):
         self._add_block_terminating_barrier(block_idx, t0, node)
 
         # Only pad non-fast path nodes
-        fast_path_node = node in self._fast_path_nodes or not self._schedule_idle_qubits
+        fast_path_node = node in self._fast_path_nodes
 
         # TODO: This is a hack required to tie nodes of control-flow
         # blocks across the scheduler and block_base_padder. This is
@@ -472,11 +469,17 @@ class BlockBasePadder(TransformationPass):
         # Enforce that this control-flow operation contains all wires since it has now been padded
         # such that each qubit is scheduled within each block. Don't added all cargs as these will not
         # be padded.
+        if fast_path_node:
+            padded_qubits = node.qargs
+        elif not self._schedule_idle_qubits:
+            padded_qubits = [q for q in self._block_dag.qubits if q not in self._idle_qubits]
+        else:
+            padded_qubits = self._block_dag.qubits
         self._apply_scheduled_op(
             block_idx,
             t0,
             new_control_flow_op,
-            self._map_wires(node.qargs) if fast_path_node else self._block_dag.qubits,
+            padded_qubits,
             self._map_wires(node.cargs),
         )
 
