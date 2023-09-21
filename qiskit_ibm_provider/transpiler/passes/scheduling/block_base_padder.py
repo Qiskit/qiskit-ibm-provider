@@ -143,6 +143,7 @@ class BlockBasePadder(TransformationPass):
         dag: DAGCircuit,
         pad_wires: bool = True,
         wire_map: Optional[Dict[Qubit, Qubit]] = None,
+        ignore_idle: bool = False
     ) -> DAGCircuit:
         """Create an empty dag like the input dag."""
         new_dag = DAGCircuit()
@@ -165,11 +166,11 @@ class BlockBasePadder(TransformationPass):
         # trivial wire map if not provided, or if the top-level dag is used
         if not wire_map or pad_wires:
             wire_map = {wire: wire for wire in source_wire_dag.wires}
-        if dag.qregs:
+        if dag.qregs and self._schedule_idle_qubits or not ignore_idle:
             for qreg in source_wire_dag.qregs.values():
                 new_dag.add_qreg(qreg)
         else:
-            new_dag.add_qubits([wire_map[qubit] for qubit in source_wire_dag.qubits])
+            new_dag.add_qubits([wire_map[qubit] for qubit in source_wire_dag.qubits if qubit not in self._idle_qubits or not ignore_idle])
 
         # Don't add root cargs as these will not be padded.
         # Just focus on current block dag.
@@ -330,7 +331,7 @@ class BlockBasePadder(TransformationPass):
             barrier_node.op.duration = 0
 
     def _visit_block(
-        self, block: DAGCircuit, wire_map: Dict[Qubit, Qubit], pad_wires: bool = True
+        self, block: DAGCircuit, wire_map: Dict[Qubit, Qubit], pad_wires: bool = True, ignore_idle: bool = False
     ) -> DAGCircuit:
         # Push the previous block dag onto the stack
         prev_node = self._prev_node
@@ -339,7 +340,7 @@ class BlockBasePadder(TransformationPass):
 
         prev_block_dag = self._block_dag
         self._block_dag = new_block_dag = self._empty_dag_like(
-            block, pad_wires, wire_map=wire_map
+            block, pad_wires, wire_map=wire_map, ignore_idle=ignore_idle
         )
 
         self._block_duration = 0
@@ -457,7 +458,7 @@ class BlockBasePadder(TransformationPass):
             }
             new_node_block_dags.append(
                 self._visit_block(
-                    block_dag, pad_wires=not fast_path_node, wire_map=inner_wire_map
+                    block_dag, pad_wires=not fast_path_node, wire_map=inner_wire_map, ignore_idle=True
                 )
             )
 
