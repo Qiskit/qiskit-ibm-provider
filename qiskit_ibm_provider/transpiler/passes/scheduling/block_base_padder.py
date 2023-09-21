@@ -143,6 +143,7 @@ class BlockBasePadder(TransformationPass):
         dag: DAGCircuit,
         pad_wires: bool = True,
         wire_map: Optional[Dict[Qubit, Qubit]] = None,
+        ignore_idle: bool = False
     ) -> DAGCircuit:
         """Create an empty dag like the input dag."""
         new_dag = DAGCircuit()
@@ -160,19 +161,16 @@ class BlockBasePadder(TransformationPass):
         # not be equivalent to one written manually as bits will not
         # be defined on registers like in the test case.
 
-        if not self._schedule_idle_qubits:
-            source_wire_dag = dag
-        else:
-            source_wire_dag = self._root_dag if pad_wires else dag
+        source_wire_dag = self._root_dag if pad_wires else dag
 
         # trivial wire map if not provided, or if the top-level dag is used
-        if not wire_map or (pad_wires and self._schedule_idle_qubits):
+        if not wire_map or pad_wires:
             wire_map = {wire: wire for wire in source_wire_dag.wires}
-        if dag.qregs:
+        if dag.qregs and self._schedule_idle_qubits or not ignore_idle:
             for qreg in source_wire_dag.qregs.values():
                 new_dag.add_qreg(qreg)
         else:
-            new_dag.add_qubits([wire_map[qubit] for qubit in source_wire_dag.qubits])
+            new_dag.add_qubits([wire_map[qubit] for qubit in source_wire_dag.qubits if qubit not in self._idle_qubits or not ignore_idle])
 
         # Don't add root cargs as these will not be padded.
         # Just focus on current block dag.
@@ -333,7 +331,7 @@ class BlockBasePadder(TransformationPass):
             barrier_node.op.duration = 0
 
     def _visit_block(
-        self, block: DAGCircuit, wire_map: Dict[Qubit, Qubit], pad_wires: bool = True
+        self, block: DAGCircuit, wire_map: Dict[Qubit, Qubit], pad_wires: bool = True, ignore_idle: bool = False
     ) -> DAGCircuit:
         # Push the previous block dag onto the stack
         prev_node = self._prev_node
@@ -342,7 +340,7 @@ class BlockBasePadder(TransformationPass):
 
         prev_block_dag = self._block_dag
         self._block_dag = new_block_dag = self._empty_dag_like(
-            block, pad_wires, wire_map=wire_map
+            block, pad_wires, wire_map=wire_map, ignore_idle=ignore_idle
         )
 
         self._block_duration = 0
@@ -437,7 +435,7 @@ class BlockBasePadder(TransformationPass):
         self._add_block_terminating_barrier(block_idx, t0, node)
 
         # Only pad non-fast path nodes
-        fast_path_node = node in self._fast_path_nodes or not self._schedule_idle_qubits
+        fast_path_node = node in self._fast_path_nodes
 
         # TODO: This is a hack required to tie nodes of control-flow
         # blocks across the scheduler and block_base_padder. This is
@@ -460,7 +458,7 @@ class BlockBasePadder(TransformationPass):
             }
             new_node_block_dags.append(
                 self._visit_block(
-                    block_dag, pad_wires=not fast_path_node, wire_map=inner_wire_map
+                    block_dag, pad_wires=not fast_path_node, wire_map=inner_wire_map, ignore_idle=True
                 )
             )
 
@@ -472,11 +470,17 @@ class BlockBasePadder(TransformationPass):
         # Enforce that this control-flow operation contains all wires since it has now been padded
         # such that each qubit is scheduled within each block. Don't added all cargs as these will not
         # be padded.
+        if fast_path_node:
+            padded_qubits = node.qargs
+        elif not self._schedule_idle_qubits:
+            padded_qubits = [q for q in self._block_dag.qubits if q not in self._idle_qubits]
+        else:
+            padded_qubits = self._block_dag.qubits
         self._apply_scheduled_op(
             block_idx,
             t0,
             new_control_flow_op,
-            self._map_wires(node.qargs) if fast_path_node else self._block_dag.qubits,
+            padded_qubits,
             self._map_wires(node.cargs),
         )
 

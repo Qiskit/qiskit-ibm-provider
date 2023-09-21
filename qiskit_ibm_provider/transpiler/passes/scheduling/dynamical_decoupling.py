@@ -184,7 +184,7 @@ class PadDynamicalDecoupling(BlockBasePadder):
             TranspilerError: When the coupling map is not supported (i.e., if degree > 3)
         """
 
-        super().__init__()
+        super().__init__(schedule_idle_qubits=schedule_idle_qubits)
         self._durations = durations
 
         # Enforce list of DD sequences
