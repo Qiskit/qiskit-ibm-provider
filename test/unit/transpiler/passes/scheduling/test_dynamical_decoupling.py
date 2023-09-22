@@ -570,7 +570,7 @@ class TestPadDynamicalDecoupling(ControlFlowTestCase):
                     dd_sequence,
                     pulse_alignment=1,
                     sequence_min_length_ratios=[0.0],
-                    schedule_idle_qubits=True,
+                    schedule_idle_qubits=False,
                 ),
             ]
         )
@@ -587,20 +587,16 @@ class TestPadDynamicalDecoupling(ControlFlowTestCase):
         qc_dd = pm.run(qc)
 
         expected = QuantumCircuit(3, 1)
-        expected.delay(800, 0)
         expected.delay(800, 1)
         expected.delay(800, 2)
-        expected.barrier()
+        expected.barrier([1, 2])
         with expected.if_test((0, True)):
-            expected.delay(50, 0)
             expected.x(1)
             expected.delay(50, 2)
         with expected.if_test((0, True)):
-            expected.delay(50, 0)
             expected.delay(50, 1)
             expected.x(2)
-        expected.barrier()
-        expected.delay(1000, 0)
+        expected.barrier([1, 2])
         expected.x(1)
         expected.delay(212, 1)
         expected.x(1)
@@ -627,7 +623,7 @@ class TestPadDynamicalDecoupling(ControlFlowTestCase):
                     dd_sequence,
                     pulse_alignment=1,
                     sequence_min_length_ratios=[0.0],
-                    schedule_idle_qubits=True,
+                    schedule_idle_qubits=False,
                 ),
             ]
         )
@@ -799,7 +795,7 @@ class TestPadDynamicalDecoupling(ControlFlowTestCase):
                     dd_sequence,
                     pulse_alignment=1,
                     sequence_min_length_ratios=[1.5, 0.0],
-                    schedule_idle_qubits=True,
+                    schedule_idle_qubits=False,
                 ),
             ]
         )
@@ -910,7 +906,7 @@ class TestPadDynamicalDecoupling(ControlFlowTestCase):
                     dd_sequence,
                     coupling_map=self.coupling_map,
                     alt_spacings=[0.1, 0.8, 0.1],
-                    schedule_idle_qubits=True,
+                    schedule_idle_qubits=False,
                 ),
             ]
         )

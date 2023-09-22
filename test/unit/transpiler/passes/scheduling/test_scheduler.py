@@ -720,7 +720,7 @@ class TestASAPSchedulingAndPaddingPass(ControlFlowTestCase):
             [("x", None, 200), ("measure", None, 840)]
         )
         pm = PassManager(
-            [ASAPScheduleAnalysis(durations), PadDelay(schedule_idle_qubits=True)]
+            [ASAPScheduleAnalysis(durations), PadDelay(schedule_idle_qubits=False)]
         )
         scheduled = pm.run(qc)
 
@@ -1455,7 +1455,7 @@ class TestALAPSchedulingAndPaddingPass(ControlFlowTestCase):
         scheduled = PassManager(
             [
                 ALAPScheduleAnalysis(durations),
-                PadDelay(schedule_idle_qubits=True),
+                PadDelay(schedule_idle_qubits=False),
             ]
         ).run(qc)
 
@@ -1530,7 +1530,7 @@ class TestALAPSchedulingAndPaddingPass(ControlFlowTestCase):
             [("x", None, 200), ("measure", None, 840)]
         )
         pm = PassManager(
-            [ALAPScheduleAnalysis(durations), PadDelay(schedule_idle_qubits=True)]
+            [ALAPScheduleAnalysis(durations), PadDelay(schedule_idle_qubits=False)]
         )
         scheduled = pm.run(qc)
 
