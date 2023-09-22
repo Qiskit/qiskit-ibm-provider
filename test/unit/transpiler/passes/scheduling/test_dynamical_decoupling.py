@@ -90,6 +90,7 @@ class TestPadDynamicalDecoupling(ControlFlowTestCase):
                     dd_sequence,
                     pulse_alignment=1,
                     sequence_min_length_ratios=[1.0],
+                    schedule_idle_qubits=True,
                 ),
             ]
         )
@@ -122,7 +123,11 @@ class TestPadDynamicalDecoupling(ControlFlowTestCase):
             [
                 ASAPScheduleAnalysis(self.durations),
                 PadDynamicalDecoupling(
-                    self.durations, dd_sequence, qubits=[0], pulse_alignment=1
+                    self.durations,
+                    dd_sequence,
+                    qubits=[0],
+                    pulse_alignment=1,
+                    schedule_idle_qubits=True,
                 ),
             ]
         )
@@ -158,6 +163,7 @@ class TestPadDynamicalDecoupling(ControlFlowTestCase):
                     skip_reset_qubits=False,
                     pulse_alignment=1,
                     sequence_min_length_ratios=[0.0],
+                    schedule_idle_qubits=True,
                 ),
             ]
         )
@@ -195,6 +201,7 @@ class TestPadDynamicalDecoupling(ControlFlowTestCase):
                     dd_sequence,
                     pulse_alignment=1,
                     sequence_min_length_ratios=[1.0],
+                    schedule_idle_qubits=True,
                 ),
             ]
         )
@@ -234,7 +241,12 @@ class TestPadDynamicalDecoupling(ControlFlowTestCase):
         pm = PassManager(
             [
                 ASAPScheduleAnalysis(self.durations),
-                PadDynamicalDecoupling(self.durations, dd_sequence, pulse_alignment=1),
+                PadDynamicalDecoupling(
+                    self.durations,
+                    dd_sequence,
+                    pulse_alignment=1,
+                    schedule_idle_qubits=True,
+                ),
             ]
         )
 
@@ -291,6 +303,7 @@ class TestPadDynamicalDecoupling(ControlFlowTestCase):
                     spacings=spacing,
                     sequence_min_length_ratios=[0.0],
                     pulse_alignment=1,
+                    schedule_idle_qubits=True,
                 ),
             ]
         )
@@ -332,7 +345,11 @@ class TestPadDynamicalDecoupling(ControlFlowTestCase):
             [
                 ASAPScheduleAnalysis(self.durations),
                 PadDynamicalDecoupling(
-                    self.durations, dd_sequence, pulse_alignment=1, spacings=spacing
+                    self.durations,
+                    dd_sequence,
+                    pulse_alignment=1,
+                    spacings=spacing,
+                    schedule_idle_qubits=True,
                 ),
             ]
         )
@@ -375,6 +392,7 @@ class TestPadDynamicalDecoupling(ControlFlowTestCase):
                     skip_reset_qubits=True,
                     pulse_alignment=1,
                     sequence_min_length_ratios=[0.0],
+                    schedule_idle_qubits=True,
                 ),
             ]
         )
@@ -410,7 +428,9 @@ class TestPadDynamicalDecoupling(ControlFlowTestCase):
         pm = PassManager(
             [
                 ASAPScheduleAnalysis(self.durations),
-                PadDynamicalDecoupling(self.durations, dd_sequence),
+                PadDynamicalDecoupling(
+                    self.durations, dd_sequence, schedule_idle_qubits=True
+                ),
             ]
         )
 
@@ -444,7 +464,9 @@ class TestPadDynamicalDecoupling(ControlFlowTestCase):
         pm = PassManager(
             [
                 ASAPScheduleAnalysis(durations),
-                PadDynamicalDecoupling(durations, dd_sequence),
+                PadDynamicalDecoupling(
+                    durations, dd_sequence, schedule_idle_qubits=True
+                ),
             ]
         )
         dd_circuit = pm.run(circ)
@@ -466,6 +488,7 @@ class TestPadDynamicalDecoupling(ControlFlowTestCase):
                     pulse_alignment=10,
                     extra_slack_distribution="edges",
                     sequence_min_length_ratios=[1.0],
+                    schedule_idle_qubits=True,
                 ),
             ]
         )
@@ -510,8 +533,12 @@ class TestPadDynamicalDecoupling(ControlFlowTestCase):
         pm1 = PassManager(
             [
                 ASAPScheduleAnalysis(self.durations),
-                PadDynamicalDecoupling(self.durations, dd_sequence, qubits=[0]),
-                PadDynamicalDecoupling(self.durations, dd_sequence, qubits=[1]),
+                PadDynamicalDecoupling(
+                    self.durations, dd_sequence, qubits=[0], schedule_idle_qubits=True
+                ),
+                PadDynamicalDecoupling(
+                    self.durations, dd_sequence, qubits=[1], schedule_idle_qubits=True
+                ),
             ]
         )
         circ1 = pm1.run(self.ghz4)
@@ -519,7 +546,12 @@ class TestPadDynamicalDecoupling(ControlFlowTestCase):
         pm2 = PassManager(
             [
                 ASAPScheduleAnalysis(self.durations),
-                PadDynamicalDecoupling(self.durations, dd_sequence, qubits=[0, 1]),
+                PadDynamicalDecoupling(
+                    self.durations,
+                    dd_sequence,
+                    qubits=[0, 1],
+                    schedule_idle_qubits=True,
+                ),
             ]
         )
         circ2 = pm2.run(self.ghz4)
@@ -538,6 +570,7 @@ class TestPadDynamicalDecoupling(ControlFlowTestCase):
                     dd_sequence,
                     pulse_alignment=1,
                     sequence_min_length_ratios=[0.0],
+                    schedule_idle_qubits=True,
                 ),
             ]
         )
@@ -594,6 +627,7 @@ class TestPadDynamicalDecoupling(ControlFlowTestCase):
                     dd_sequence,
                     pulse_alignment=1,
                     sequence_min_length_ratios=[0.0],
+                    schedule_idle_qubits=True,
                 ),
             ]
         )
@@ -677,14 +711,18 @@ class TestPadDynamicalDecoupling(ControlFlowTestCase):
         pm0 = PassManager(
             [
                 ASAPScheduleAnalysis(self.durations),
-                PadDynamicalDecoupling(self.durations, dd_sequence),
+                PadDynamicalDecoupling(
+                    self.durations, dd_sequence, schedule_idle_qubits=True
+                ),
             ]
         )
 
         pm1 = PassManager(
             [
                 ASAPScheduleAnalysis(self.durations),
-                PadDynamicalDecoupling(self.durations, dd_sequence),
+                PadDynamicalDecoupling(
+                    self.durations, dd_sequence, schedule_idle_qubits=True
+                ),
             ]
         )
         qc_dd0 = pm0.run(qc)
@@ -704,6 +742,7 @@ class TestPadDynamicalDecoupling(ControlFlowTestCase):
                     dd_sequence,
                     pulse_alignment=1,
                     sequence_min_length_ratios=[0.0],
+                    schedule_idle_qubits=True,
                 ),
             ]
         )
@@ -760,6 +799,7 @@ class TestPadDynamicalDecoupling(ControlFlowTestCase):
                     dd_sequence,
                     pulse_alignment=1,
                     sequence_min_length_ratios=[1.5, 0.0],
+                    schedule_idle_qubits=True,
                 ),
             ]
         )
@@ -838,6 +878,7 @@ class TestPadDynamicalDecoupling(ControlFlowTestCase):
                     pulse_alignment=1,
                     sequence_min_length_ratios=[10.0],
                     insert_multiple_cycles=True,
+                    schedule_idle_qubits=True,
                 ),
             ]
         )
@@ -869,6 +910,7 @@ class TestPadDynamicalDecoupling(ControlFlowTestCase):
                     dd_sequence,
                     coupling_map=self.coupling_map,
                     alt_spacings=[0.1, 0.8, 0.1],
+                    schedule_idle_qubits=True,
                 ),
             ]
         )
@@ -988,6 +1030,7 @@ class TestPadDynamicalDecoupling(ControlFlowTestCase):
                     self.durations,
                     dd_sequence,
                     coupling_map=CouplingMap([[0, 1], [1, 2], [3, 4]]),
+                    schedule_idle_qubits=True,
                 ),
             ]
         )
@@ -1003,3 +1046,37 @@ class TestPadDynamicalDecoupling(ControlFlowTestCase):
         self.assertNotEqual(delay_dict[1], delay_dict[2])
         self.assertNotEqual(delay_dict[3], delay_dict[4])
         self.assertEqual(delay_dict[0], delay_dict[2])
+
+    def test_no_unused_qubits(self):
+        """Test DD with if_test circuit that unused qubits are untouched and not scheduled.
+
+        This ensures that programs don't have unnecessary information for unused qubits.
+        Which might hurt performance in later executon stages.
+        """
+
+        dd_sequence = [XGate(), XGate()]
+        pm = PassManager(
+            [
+                ASAPScheduleAnalysis(self.durations),
+                PadDynamicalDecoupling(
+                    self.durations,
+                    dd_sequence,
+                    pulse_alignment=1,
+                    sequence_min_length_ratios=[0.0],
+                ),
+            ]
+        )
+
+        qc = QuantumCircuit(3, 1)
+        qc.measure(0, 0)
+        qc.x(1)
+        with qc.if_test((0, True)):
+            qc.x(1)
+        qc.measure(0, 0)
+        with qc.if_test((0, True)):
+            qc.x(0)
+        qc.x(1)
+        qc_dd = pm.run(qc)
+        dont_use = qc_dd.qubits[-1]
+        for op in qc_dd.data:
+            self.assertNotIn(dont_use, op.qubits)
