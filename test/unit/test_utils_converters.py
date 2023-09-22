@@ -30,12 +30,11 @@ class TestUtilsConverters(IBMTestCase):
             ("3h 30m 30s", 12630),
             ("3h 30s", 10830),
             ("3h30m30s", 12630),
+            ("2d", 172800),
+            ("25h", 90000),
+            ("1d 1h 1m 1s", 90061),
         ]
         invalid_strings = [
-            "2d",
-            "24h",
-            "60m",
-            "60s",
             "2w",
         ]
         for valid_string in valid_strings:
