@@ -1,0 +1,20 @@
+---
+features:
+  - |
+    Added a new flag, ``schedule_idle_qubits`` to the constructor for the
+    :class:`.PadDelay` and :class:`.PadDynamicalDecoupling` passes. This
+    flag when set to ``True`` will have the scheduling passes insert a full
+    circuit duration delay on any idle qubits in the circuit.
+upgrade:
+  - |
+    The default behavior of the :class:`.PadDelay` and
+    :class:`.PadDynamicalDecoupling` passes for idle qubits in the circuit
+    have changed. Previously, by default the passes would schedule any idle
+    qubits in the circuit by inserting a delay equal to the full circuit
+    duration. This has been changed so by default only active qubits are
+    scheduled. This change was made because the extra delays were additional
+    overhead in the job payload that were effectively a no-op so they added
+    extra overhead to job submission for no gain. If you need to restore
+    the previous behavior you can instantiate :class:`.PadDelay` or
+    :class:`.PadDynamicalDecoupling` with the keyword argument
+    ``schedule_idle_qubits=True`` which will restore the previous behavior.

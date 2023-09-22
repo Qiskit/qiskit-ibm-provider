@@ -50,13 +50,16 @@ class PadDelay(BlockBasePadder):
     See :class:`BlockBasePadder` pass for details.
     """
 
-    def __init__(self, fill_very_end: bool = True):
+    def __init__(self, fill_very_end: bool = True, schedule_idle_qubits: bool = False):
         """Create new padding delay pass.
 
         Args:
             fill_very_end: Set ``True`` to fill the end of circuit with delay.
+            schedule_idle_qubits: Set to true if you'd like a delay inserted on idle qubits.
+                This is useful for timeline visualizations, but may cause issues for execution
+                on large backends.
         """
-        super().__init__()
+        super().__init__(schedule_idle_qubits=schedule_idle_qubits)
         self.fill_very_end = fill_very_end
 
     def _pad(
