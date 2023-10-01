@@ -378,6 +378,13 @@ class IBMCompositeJob(IBMJob):
     ) -> Optional[Union[List[BackendProperties], BackendProperties]]:
         """Return the backend properties for this job.
 
+         Args:
+            refresh: If ``True``, re-query the server for the backend properties.
+                Otherwise, return a cached version.
+            datetime: By specifying `datetime`, this function returns an instance
+                of the :class:`BackendProperties<qiskit.providers.models.BackendProperties>`
+                whose timestamp is closest to, but older than, the specified `datetime`.
+
         Note:
             This method blocks until all sub-jobs are submitted.
 
