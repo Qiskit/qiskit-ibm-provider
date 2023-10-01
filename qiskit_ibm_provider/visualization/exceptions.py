@@ -14,6 +14,7 @@
 
 from qiskit.visualization.exceptions import VisualizationError
 
+
 class VisualizationValueError(VisualizationError, ValueError):
     """Value errors raised by the visualization modules."""
 
