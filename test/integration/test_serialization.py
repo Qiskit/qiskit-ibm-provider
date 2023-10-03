@@ -205,6 +205,7 @@ class TestSerialization(IBMTestCase):
         self.assertEqual(result.results[0].shots, shots)
         print(result.results[0])
 
+
 def _find_potential_encoded(data: Any, c_key: str, tally: set) -> None:
     """Find data that may be in JSON serialized format.
 
