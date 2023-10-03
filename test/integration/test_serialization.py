@@ -14,6 +14,7 @@
 
 from typing import Set, Any, Dict, Optional
 from unittest import SkipTest, skip
+import numpy as np
 
 import dateutil.parser
 from qiskit import transpile, schedule, QuantumCircuit
@@ -197,6 +198,12 @@ class TestSerialization(IBMTestCase):
         self.assertEqual(val[0], 0.2)
         self.assertEqual(val[1], 0.1)
 
+    def test_np_number(self):
+        """Test using np.number"""
+        shots = 100
+        result = self.sim_backend.run(self.bell, shots=np.int64(shots)).result()
+        self.assertEqual(result.results[0].shots, shots)
+        print(result.results[0])
 
 def _find_potential_encoded(data: Any, c_key: str, tally: set) -> None:
     """Find data that may be in JSON serialized format.
