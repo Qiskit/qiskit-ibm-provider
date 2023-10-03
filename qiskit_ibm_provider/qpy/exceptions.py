@@ -12,10 +12,11 @@
 
 """Exception for errors raised by the pulse module."""
 from typing import Any
-from qiskit.exceptions import QiskitError
+from qiskit.qpy.exceptions import QpyError
+from ..exceptions import IBMError
 
 
-class QpyError(QiskitError):
+class IBMQpyError(QpyError, IBMError):
     """Errors raised by the qpy module."""
 
     def __init__(self, *message: Any):
