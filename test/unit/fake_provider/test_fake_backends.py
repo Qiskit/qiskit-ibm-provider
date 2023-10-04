@@ -16,19 +16,20 @@ import unittest
 
 from qiskit import QuantumRegister, ClassicalRegister, QuantumCircuit, transpile
 from qiskit.test import QiskitTestCase
-from qiskit_ibm_provider.fake_provider import FakeAthens, FakePerth
 from qiskit.utils import optionals
+
+from qiskit_ibm_provider.fake_provider import FakeAthens, FakePerth
 
 
 def get_test_circuit():
     """Generates simple circuit for tests."""
     desired_vector = [1 / math.sqrt(2), 0, 0, 1 / math.sqrt(2)]
-    qr = QuantumRegister(2, "qr")
-    cr = ClassicalRegister(2, "cr")
-    qc = QuantumCircuit(qr, cr)
-    qc.initialize(desired_vector, [qr[0], qr[1]])
-    qc.measure(qr[0], cr[0])
-    qc.measure(qr[1], cr[1])
+    qreg = QuantumRegister(2, "qr")
+    creg = ClassicalRegister(2, "cr")
+    qc = QuantumCircuit(qreg, creg)  # pylint: disable=invalid-name
+    qc.initialize(desired_vector, [qreg[0], qreg[1]])
+    qc.measure(qreg[0], creg[0])
+    qc.measure(qreg[1], creg[1])
     return qc
 
 
@@ -40,7 +41,7 @@ class FakeBackendsTest(QiskitTestCase):
         """Fake backends honor kwargs passed."""
         backend = FakeAthens()
 
-        qc = QuantumCircuit(2)
+        qc = QuantumCircuit(2)  # pylint: disable=invalid-name
         qc.x(range(0, 2))
         qc.measure_all()
 
@@ -53,7 +54,7 @@ class FakeBackendsTest(QiskitTestCase):
     def test_fake_backend_v2_noise_model_always_present(self):
         """Test that FakeBackendV2 instances always run with noise."""
         backend = FakePerth()
-        qc = QuantumCircuit(1)
+        qc = QuantumCircuit(1)  # pylint: disable=invalid-name
         qc.x(0)
         qc.measure_all()
         res = backend.run(qc, shots=1000).result().get_counts()
