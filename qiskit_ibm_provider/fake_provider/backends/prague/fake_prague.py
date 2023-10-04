@@ -1,6 +1,6 @@
 # This code is part of Qiskit.
 #
-# (C) Copyright IBM 2022.
+# (C) Copyright IBM 2022, 2023.
 #
 # This code is licensed under the Apache License, Version 2.0. You may
 # obtain a copy of this license in the LICENSE.txt file in the root directory
@@ -16,7 +16,7 @@ Fake Prague device (33 qubits).
 """
 
 import os
-from qiskit.providers.fake_provider import fake_backend
+from qiskit_ibm_provider.fake_provider import fake_backend
 
 
 class FakePrague(fake_backend.FakeBackendV2):

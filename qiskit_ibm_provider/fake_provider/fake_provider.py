@@ -1,6 +1,6 @@
 # This code is part of Qiskit.
 #
-# (C) Copyright IBM 2019.
+# (C) Copyright IBM 2019, 2023.
 #
 # This code is licensed under the Apache License, Version 2.0. You may
 # obtain a copy of this license in the LICENSE.txt file in the root directory
@@ -21,8 +21,6 @@ from qiskit.providers.exceptions import QiskitBackendNotFoundError
 
 from .backends import *
 from .fake_qasm_simulator import FakeQasmSimulator
-from .fake_openpulse_2q import FakeOpenPulse2Q
-from .fake_openpulse_3q import FakeOpenPulse3Q
 
 
 class FakeProviderFactory:
@@ -69,13 +67,15 @@ class FakeProviderForBackendV2(ProviderV1):
     """Fake provider containing fake V2 backends.
 
     Only filtering backends by name is implemented. This class contains all fake V2 backends
-    available in the :mod:`qiskit.providers.fake_provider`.
+    available in the :mod:`qiskit_ibm_provider.fake_provider`.
     """
 
     def get_backend(self, name=None, **kwargs):
         backend = self._backends[0]
         if name:
-            filtered_backends = [backend for backend in self._backends if backend.name() == name]
+            filtered_backends = [
+                backend for backend in self._backends if backend.name() == name
+            ]
             if not filtered_backends:
                 raise QiskitBackendNotFoundError()
 
@@ -143,13 +143,15 @@ class FakeProvider(ProviderV1):
     """Fake provider containing fake V1 backends.
 
     Only filtering backends by name is implemented. This class contains all fake V1 backends
-    available in the :mod:`qiskit.providers.fake_provider`.
+    available in the :mod:`qiskit_ibm_provider.fake_provider`.
     """
 
     def get_backend(self, name=None, **kwargs):
         backend = self._backends[0]
         if name:
-            filtered_backends = [backend for backend in self._backends if backend.name() == name]
+            filtered_backends = [
+                backend for backend in self._backends if backend.name() == name
+            ]
             if not filtered_backends:
                 raise QiskitBackendNotFoundError()
 
@@ -189,8 +191,6 @@ class FakeProvider(ProviderV1):
             FakeMontreal(),
             FakeMumbai(),
             FakeNairobi(),
-            FakeOpenPulse2Q(),
-            FakeOpenPulse3Q(),
             FakeOurense(),
             FakeParis(),
             FakePoughkeepsie(),

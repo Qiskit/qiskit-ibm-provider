@@ -1,6 +1,6 @@
 # This code is part of Qiskit.
 #
-# (C) Copyright IBM 2019.
+# (C) Copyright IBM 2019, 2023.
 #
 # This code is licensed under the Apache License, Version 2.0. You may
 # obtain a copy of this license in the LICENSE.txt file in the root directory
@@ -19,6 +19,7 @@ from concurrent import futures
 
 from qiskit.providers import JobV1
 from qiskit.providers.jobstatus import JobStatus
+from qiskit_ibm_provider.exceptions import IBMError
 
 
 class FakeJob(JobV1):
@@ -54,7 +55,7 @@ class FakeJob(JobV1):
         elif self._error:
             _status = JobStatus.ERROR
         else:
-            raise Exception(f"Unexpected state of {self.__class__.__name__}")
+            raise IBMError(f"Unexpected state of {self.__class__.__name__}")
         _status_msg = None
         return {"status": _status, "status_msg": _status_msg}
 

@@ -1,6 +1,6 @@
 # This code is part of Qiskit.
 #
-# (C) Copyright IBM 2022.
+# (C) Copyright IBM 2022, 2023.
 #
 # This code is licensed under the Apache License, Version 2.0. You may
 # obtain a copy of this license in the LICENSE.txt file in the root directory
@@ -27,7 +27,9 @@ from qiskit.circuit.reset import Reset
 from qiskit.providers.models.pulsedefaults import PulseDefaults
 
 
-def convert_to_target(conf_dict: dict, props_dict: dict = None, defs_dict: dict = None) -> Target:
+def convert_to_target(
+    conf_dict: dict, props_dict: dict = None, defs_dict: dict = None
+) -> Target:
     """Uses configuration, properties and pulse defaults dicts
     to construct and return Target class.
     """
@@ -43,7 +45,9 @@ def convert_to_target(conf_dict: dict, props_dict: dict = None, defs_dict: dict 
     qubit_props = None
     if props_dict:
         qubit_props = qubit_props_from_props(props_dict)
-    target = Target(qubit_properties=qubit_props, concurrent_measurements=conf_dict.get("meas_map"))
+    target = Target(
+        qubit_properties=qubit_props, concurrent_measurements=conf_dict.get("meas_map")
+    )
     # Parse from properties if it exsits
     if props_dict is not None:
         # Parse instructions
@@ -98,14 +102,16 @@ def convert_to_target(conf_dict: dict, props_dict: dict = None, defs_dict: dict 
         measure_props = {(n,): None for n in range(conf_dict["n_qubits"])}
         target.add_instruction(Measure(), measure_props)
     # parse global configuration properties
-    dt = conf_dict.get("dt")
+    dt = conf_dict.get("dt")  # pylint: disable=invalid-name
     if dt:
         target.dt = dt * 1e-9
     if "timing_constraints" in conf_dict:
         target.granularity = conf_dict["timing_constraints"].get("granularity")
         target.min_length = conf_dict["timing_constraints"].get("min_length")
         target.pulse_alignment = conf_dict["timing_constraints"].get("pulse_alignment")
-        target.acquire_alignment = conf_dict["timing_constraints"].get("acquire_alignment")
+        target.acquire_alignment = conf_dict["timing_constraints"].get(
+            "acquire_alignment"
+        )
     # If pulse defaults exists use that as the source of truth
     if defs_dict is not None:
         # TODO remove the usage of PulseDefaults as it will be deprecated in the future
@@ -141,10 +147,16 @@ def qubit_props_from_props(properties: dict) -> list:
         qubit_properties = {}
         for prop_dict in qubit:
             if prop_dict["name"] == "T1":
-                qubit_properties["t1"] = apply_prefix(prop_dict["value"], prop_dict["unit"])
+                qubit_properties["t1"] = apply_prefix(
+                    prop_dict["value"], prop_dict["unit"]
+                )
             elif prop_dict["name"] == "T2":
-                qubit_properties["t2"] = apply_prefix(prop_dict["value"], prop_dict["unit"])
+                qubit_properties["t2"] = apply_prefix(
+                    prop_dict["value"], prop_dict["unit"]
+                )
             elif prop_dict["name"] == "frequency":
-                qubit_properties["frequency"] = apply_prefix(prop_dict["value"], prop_dict["unit"])
+                qubit_properties["frequency"] = apply_prefix(
+                    prop_dict["value"], prop_dict["unit"]
+                )
         qubit_props.append(QubitProperties(**qubit_properties))
     return qubit_props

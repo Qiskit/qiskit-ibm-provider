@@ -1,6 +1,6 @@
 # This code is part of Qiskit.
 #
-# (C) Copyright IBM 2022.
+# (C) Copyright IBM 2022, 2023.
 #
 # This code is licensed under the Apache License, Version 2.0. You may
 # obtain a copy of this license in the LICENSE.txt file in the root directory
@@ -12,10 +12,10 @@
 
 """
 ======================================================
-Fake Provider (:mod:`qiskit.providers.fake_provider`)
+Fake Provider (:mod:`qiskit_ibm_provider.fake_provider`)
 ======================================================
 
-.. currentmodule:: qiskit.providers.fake_provider
+.. currentmodule:: qiskit_ibm_provider.fake_provider
 
 Overview
 ========
@@ -35,7 +35,7 @@ Here is an example of using a fake backend for transpilation and simulation.
    :include-source:
 
    from qiskit import QuantumCircuit
-   from qiskit.providers.fake_provider import FakeManilaV2
+   from qiskit_ibm_provider.fake_provider import FakeManilaV2
    from qiskit import transpile
    from qiskit.tools.visualization import plot_histogram
 
@@ -65,16 +65,17 @@ Here is an example of using a fake backend for transpilation and simulation.
     Please note that the simulation is done using a noise model generated from system snapshots
     obtained in the past (sometimes a few years ago) and the results are not representative of the
     latest behaviours of the real quantum system which the fake backend is mimicking. If you want to
-    run noisy simulations to compare with the real quantum system, please follow steps below to
-    generate a simulator mimics a real quantum system with the latest calibration results.
+    run noisy simulations to compare with the real quantum system, you should use the ``qiskit_aer``
+    library. After installation, you can follow the steps below to generate a simulator that
+    mimics a real quantum system with the latest calibration results.
 
     .. code-block:: python
 
-        from qiskit.providers.ibmq import IBMQ
+        from qiskit_ibm_provider import IBMProvider
         from qiskit.providers.aer import AerSimulator
 
         # get a real backend from a real provider
-        provider = IBMQ.load_account()
+        provider = IBMProvider()
         backend = provider.get_backend('ibmq_manila')
 
         # generate a simulator that mimics the real quantum system with the latest calibration results
@@ -217,23 +218,16 @@ Special fake backends are fake backends that were created for special testing pu
     :toctree: ../stubs/
 
     FakeQasmSimulator
-    FakeOpenPulse2Q
-    FakeOpenPulse3Q
-    Fake1Q
-    FakeBackendV2
-    FakeBackend5QV2
-    FakeMumbaiFractionalCX
-    ConfigurableFakeBackend
 
 Fake Backend Base Classes
 =========================
 
 The fake backends based on IBM hardware are based on a set of base classes:
 
-.. currentmodule:: qiskit.providers.fake_provider.fake_backend
-.. autoclass:: qiskit.providers.fake_provider.fake_backend.FakeBackendV2
+.. currentmodule:: qiskit_ibm_provider.fake_provider.fake_backend
+.. autoclass:: qiskit_ibm_provider.fake_provider.fake_backend.FakeBackendV2
 
-.. currentmodule:: qiskit.providers.fake_provider
+.. currentmodule:: qiskit_ibm_provider.fake_provider
 .. autoclass:: FakeBackend
 .. autoclass:: FakeQasmBackend
 .. autoclass:: FakePulseBackend
@@ -255,13 +249,5 @@ from .fake_provider import FakeProviderFactory, FakeProviderForBackendV2, FakePr
 # Standard fake backends with IBM Quantum systems snapshots
 from .backends import *
 
-# Special fake backends for special testing perpurposes
+# Special fake backends for special testing purposes
 from .fake_qasm_simulator import FakeQasmSimulator
-from .fake_openpulse_2q import FakeOpenPulse2Q
-from .fake_openpulse_3q import FakeOpenPulse3Q
-from .fake_1q import Fake1Q
-from .fake_backend_v2 import FakeBackendV2, FakeBackend5QV2
-from .fake_mumbai_v2 import FakeMumbaiFractionalCX
-
-# Configurable fake backend
-from .utils.configurable_backend import ConfigurableFakeBackend

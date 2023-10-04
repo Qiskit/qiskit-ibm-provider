@@ -1,6 +1,6 @@
 # This code is part of Qiskit.
 #
-# (C) Copyright IBM 2020.
+# (C) Copyright IBM 2020, 2023.
 #
 # This code is licensed under the Apache License, Version 2.0. You may
 # obtain a copy of this license in the LICENSE.txt file in the root directory
@@ -64,7 +64,7 @@ class FakeQasmBackend(FakeBackend):
         self._properties = BackendProperties.from_dict(props)
 
     def _load_json(self, filename):
-        with open(os.path.join(self.dirname, filename)) as f_json:
+        with open(os.path.join(self.dirname, filename), encoding="utf-8") as f_json:
             the_json = json.load(f_json)
         return the_json
 

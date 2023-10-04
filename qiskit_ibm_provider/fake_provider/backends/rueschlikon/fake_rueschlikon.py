@@ -1,6 +1,6 @@
 # This code is part of Qiskit.
 #
-# (C) Copyright IBM 2019.
+# (C) Copyright IBM 2019, 2023.
 #
 # This code is licensed under the Apache License, Version 2.0. You may
 # obtain a copy of this license in the LICENSE.txt file in the root directory
@@ -15,7 +15,7 @@ Fake Reuschlikon device (16 qubit).
 """
 
 from qiskit.providers.models import GateConfig, QasmBackendConfiguration
-from qiskit.providers.fake_provider.fake_backend import FakeBackend
+from qiskit_ibm_provider.fake_provider.fake_backend import FakeBackend
 
 
 class FakeRueschlikon(FakeBackend):

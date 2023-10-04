@@ -1,6 +1,6 @@
 # This code is part of Qiskit.
 #
-# (C) Copyright IBM 2019.
+# (C) Copyright IBM 2019, 2023.
 #
 # This code is licensed under the Apache License, Version 2.0. You may
 # obtain a copy of this license in the LICENSE.txt file in the root directory
@@ -17,9 +17,13 @@ Fake Melbourne device (14 qubit).
 import os
 import json
 
-from qiskit.providers.models import GateConfig, QasmBackendConfiguration, BackendProperties
-from qiskit.providers.fake_provider.fake_backend import FakeBackend
-from qiskit.providers.fake_provider import fake_backend
+from qiskit.providers.models import (
+    GateConfig,
+    QasmBackendConfiguration,
+    BackendProperties,
+)
+from qiskit_ibm_provider.fake_provider.fake_backend import FakeBackend
+from qiskit_ibm_provider.fake_provider import fake_backend
 
 
 class FakeMelbourneV2(fake_backend.FakeBackendV2):
@@ -86,6 +90,6 @@ class FakeMelbourne(FakeBackend):
         """Returns a snapshot of device properties"""
         dirname = os.path.dirname(__file__)
         filename = "props_melbourne.json"
-        with open(os.path.join(dirname, filename)) as f_prop:
+        with open(os.path.join(dirname, filename), encoding="utf-8") as f_prop:
             props = json.load(f_prop)
         return BackendProperties.from_dict(props)

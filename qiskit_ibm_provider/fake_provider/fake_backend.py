@@ -1,6 +1,6 @@
 # This code is part of Qiskit.
 #
-# (C) Copyright IBM 2019.
+# (C) Copyright IBM 2019, 2023.
 #
 # This code is licensed under the Apache License, Version 2.0. You may
 # obtain a copy of this license in the LICENSE.txt file in the root directory
@@ -25,7 +25,11 @@ import re
 from typing import List, Iterable
 
 from qiskit import circuit
-from qiskit.providers.models import BackendProperties, BackendConfiguration, PulseDefaults
+from qiskit.providers.models import (
+    BackendProperties,
+    BackendConfiguration,
+    PulseDefaults,
+)
 from qiskit.providers import BackendV2, BackendV1
 from qiskit import pulse
 from qiskit.exceptions import QiskitError
@@ -55,13 +59,13 @@ class FakeBackendV2(BackendV2):
     snapshots.
 
     The class inherits :class:`~qiskit.providers.BackendV2` class. This version
-    differs from earlier :class:`~qiskit.providers.fake_provider.FakeBackend` (V1) class in a
+    differs from earlier :class:`~qiskit_ibm_provider.fake_provider.FakeBackend` (V1) class in a
     few aspects. Firstly, configuration attribute no longer exsists. Instead,
     attributes exposing equivalent required immutable properties of the backend
     device are added. For example ``fake_backend.configuration().n_qubits`` is
     accessible from ``fake_backend.num_qubits`` now. Secondly, this version
-    removes extra abstractions :class:`~qiskit.providers.fake_provider.FakeQasmBackend` and
-    :class:`~qiskit.providers.fake_provider.FakePulseBackend` that were present in V1.
+    removes extra abstractions :class:`~qiskit_ibm_provider.fake_provider.FakeQasmBackend` and
+    :class:`~qiskit_ibm_provider.fake_provider.FakePulseBackend` that were present in V1.
     """
 
     # directory and file names for real backend snapshots.
@@ -118,9 +122,11 @@ class FakeBackendV2(BackendV2):
 
     def _setup_sim(self):
         if _optionals.HAS_AER:
-            from qiskit.providers import aer
+            from qiskit_aer import (  # pylint: disable=import-outside-toplevel
+                AerSimulator,
+            )
 
-            self.sim = aer.AerSimulator()
+            self.sim = AerSimulator()
             if self.target and self._props_dict:
                 noise_model = self._get_noise_model_from_backend_v2()
                 self.sim.set_options(noise_model=noise_model)
@@ -152,7 +158,7 @@ class FakeBackendV2(BackendV2):
             self._defs_dict = defs_dict
 
     def _load_json(self, filename: str) -> dict:
-        with open(os.path.join(self.dirname, filename)) as f_json:
+        with open(os.path.join(self.dirname, filename), encoding="utf-8") as f_json:
             the_json = json.load(f_json)
         return the_json
 
@@ -200,9 +206,11 @@ class FakeBackendV2(BackendV2):
                 default values set
         """
         if _optionals.HAS_AER:
-            from qiskit.providers import aer
+            from qiskit_aer import (  # pylint: disable=import-outside-toplevel
+                AerSimulator,
+            )
 
-            return aer.AerSimulator._default_options()
+            return AerSimulator._default_options()
         else:
             return basicaer.QasmSimulatorPy._default_options()
 
@@ -339,7 +347,10 @@ class FakeBackendV2(BackendV2):
             pulse_job = False
         elif isinstance(circuits, list):
             if circuits:
-                if all(isinstance(x, (pulse.Schedule, pulse.ScheduleBlock)) for x in circuits):
+                if all(
+                    isinstance(x, (pulse.Schedule, pulse.ScheduleBlock))
+                    for x in circuits
+                ):
                     pulse_job = True
                 elif all(isinstance(x, circuit.QuantumCircuit) for x in circuits):
                     pulse_job = False
@@ -349,7 +360,9 @@ class FakeBackendV2(BackendV2):
                 "QuantumCircuit, Schedule, or a list of either" % circuits
             )
         if pulse_job:  # pulse job
-            raise QiskitError("Pulse simulation is currently not supported for V2 fake backends.")
+            raise QiskitError(
+                "Pulse simulation is currently not supported for V2 fake backends."
+            )
         # circuit job
         if not _optionals.HAS_AER:
             warnings.warn("Aer not found using BasicAer and no noise", RuntimeWarning)
@@ -373,16 +386,21 @@ class FakeBackendV2(BackendV2):
         This is a temporary fix until qiskit-aer supports building noise model
         from a BackendV2 object.
         """
-
-        from qiskit.circuit import Delay
-        from qiskit.providers.exceptions import BackendPropertyError
-        from qiskit.providers.aer.noise import NoiseModel
-        from qiskit.providers.aer.noise.device.models import (
+        from qiskit.circuit import Delay  # pylint: disable=import-outside-toplevel
+        from qiskit.providers.exceptions import (  # pylint: disable=import-outside-toplevel
+            BackendPropertyError,
+        )
+        from qiskit_aer.noise import (  # pylint: disable=import-outside-toplevel
+            NoiseModel,
+        )
+        from qiskit_aer.noise.device.models import (  # pylint: disable=import-outside-toplevel
             _excited_population,
             basic_device_gate_errors,
             basic_device_readout_errors,
         )
-        from qiskit.providers.aer.noise.passes import RelaxationNoisePass
+        from qiskit_aer.noise.passes import (  # pylint: disable=import-outside-toplevel
+            RelaxationNoisePass,
+        )
 
         if self._props_dict is None:
             self._set_props_dict_from_json()
@@ -390,7 +408,7 @@ class FakeBackendV2(BackendV2):
         properties = BackendProperties.from_dict(self._props_dict)
         basis_gates = self.operation_names
         num_qubits = self.num_qubits
-        dt = self.dt
+        dt = self.dt  # pylint: disable=invalid-name
 
         noise_model = NoiseModel(basis_gates=basis_gates)
 
@@ -403,7 +421,7 @@ class FakeBackendV2(BackendV2):
         with warnings.catch_warnings():
             warnings.filterwarnings(
                 "ignore",
-                module="qiskit.providers.aer.noise.device.models",
+                module="qiskit_aer.noise.device.models",
             )
             gate_errors = basic_device_gate_errors(
                 properties,
@@ -417,10 +435,12 @@ class FakeBackendV2(BackendV2):
             noise_model.add_quantum_error(error, name, qubits)
 
         if thermal_relaxation:
-            # Add delay errors via RelaxationNiose pass
+            # Add delay errors via RelaxationNoise pass
             try:
                 excited_state_populations = [
-                    _excited_population(freq=properties.frequency(q), temperature=temperature)
+                    _excited_population(
+                        freq=properties.frequency(q), temperature=temperature
+                    )
                     for q in range(num_qubits)
                 ]
             except BackendPropertyError:
@@ -459,8 +479,10 @@ class FakeBackend(BackendV1):
 
     def _setup_sim(self):
         if _optionals.HAS_AER:
-            from qiskit.providers import aer
-            from qiskit.providers.aer.noise import NoiseModel
+            import qiskit_aer as aer  # pylint: disable=import-outside-toplevel
+            from qiskit_aer.noise import (  # pylint: disable=import-outside-toplevel
+                NoiseModel,
+            )
 
             self.sim = aer.AerSimulator()
             if self.properties():
@@ -485,8 +507,18 @@ class FakeBackend(BackendV1):
             "last_update_date": "2000-01-01 00:00:00Z",
             "qubits": [
                 [
-                    {"date": "2000-01-01 00:00:00Z", "name": "T1", "unit": "\u00b5s", "value": 0.0},
-                    {"date": "2000-01-01 00:00:00Z", "name": "T2", "unit": "\u00b5s", "value": 0.0},
+                    {
+                        "date": "2000-01-01 00:00:00Z",
+                        "name": "T1",
+                        "unit": "\u00b5s",
+                        "value": 0.0,
+                    },
+                    {
+                        "date": "2000-01-01 00:00:00Z",
+                        "name": "T2",
+                        "unit": "\u00b5s",
+                        "value": 0.0,
+                    },
                     {
                         "date": "2000-01-01 00:00:00Z",
                         "name": "frequency",
@@ -499,7 +531,12 @@ class FakeBackend(BackendV1):
                         "unit": "",
                         "value": 0.0,
                     },
-                    {"date": "2000-01-01 00:00:00Z", "name": "operational", "unit": "", "value": 1},
+                    {
+                        "date": "2000-01-01 00:00:00Z",
+                        "name": "operational",
+                        "unit": "",
+                        "value": 1,
+                    },
                 ]
                 for _ in range(len(unique_qubits))
             ],
@@ -527,9 +564,11 @@ class FakeBackend(BackendV1):
     @classmethod
     def _default_options(cls):
         if _optionals.HAS_AER:
-            from qiskit.providers import aer
+            from qiskit_aer import (  # pylint: disable=import-outside-toplevel
+                QasmSimulator,
+            )
 
-            return aer.QasmSimulator._default_options()
+            return QasmSimulator._default_options()
         else:
             return basicaer.QasmSimulatorPy._default_options()
 
@@ -543,7 +582,10 @@ class FakeBackend(BackendV1):
             pulse_job = False
         elif isinstance(circuits, list):
             if circuits:
-                if all(isinstance(x, (pulse.Schedule, pulse.ScheduleBlock)) for x in circuits):
+                if all(
+                    isinstance(x, (pulse.Schedule, pulse.ScheduleBlock))
+                    for x in circuits
+                ):
                     pulse_job = True
                 elif all(isinstance(x, circuit.QuantumCircuit) for x in circuits):
                     pulse_job = False
@@ -554,19 +596,25 @@ class FakeBackend(BackendV1):
             )
         if pulse_job:
             if _optionals.HAS_AER:
-                from qiskit.providers import aer
-                from qiskit.providers.aer.pulse import PulseSystemModel
+                import qiskit_aer as aer  # pylint: disable=import-outside-toplevel
+                from qiskit_aer.pulse import (  # pylint: disable=import-outside-toplevel
+                    PulseSystemModel,
+                )
 
                 system_model = PulseSystemModel.from_backend(self)
                 sim = aer.Aer.get_backend("pulse_simulator")
                 job = sim.run(circuits, system_model=system_model, **kwargs)
             else:
-                raise QiskitError("Unable to run pulse schedules without qiskit-aer installed")
+                raise QiskitError(
+                    "Unable to run pulse schedules without qiskit-aer installed"
+                )
         else:
             if self.sim is None:
                 self._setup_sim()
             if not _optionals.HAS_AER:
-                warnings.warn("Aer not found using BasicAer and no noise", RuntimeWarning)
+                warnings.warn(
+                    "Aer not found using BasicAer and no noise", RuntimeWarning
+                )
             self.sim._options = self._options
             job = self.sim.run(circuits, **kwargs)
         return job

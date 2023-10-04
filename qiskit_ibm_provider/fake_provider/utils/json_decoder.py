@@ -1,6 +1,6 @@
 # This code is part of Qiskit.
 #
-# (C) Copyright IBM 2020.
+# (C) Copyright IBM 2020, 2023.
 #
 # This code is licensed under the Apache License, Version 2.0. You may
 # obtain a copy of this license in the LICENSE.txt file in the root directory
@@ -40,7 +40,9 @@ def decode_backend_properties(properties: Dict) -> None:
     Args:
         properties: A ``BackendProperties`` in dictionary format.
     """
-    properties["last_update_date"] = dateutil.parser.isoparse(properties["last_update_date"])
+    properties["last_update_date"] = dateutil.parser.isoparse(
+        properties["last_update_date"]
+    )
     for qubit in properties["qubits"]:
         for nduv in qubit:
             nduv["date"] = dateutil.parser.isoparse(nduv["date"])
@@ -106,4 +108,6 @@ def _decode_pulse_qobj_instr(pulse_qobj_instr: Dict) -> None:
     if "val" in pulse_qobj_instr:
         pulse_qobj_instr["val"] = _to_complex(pulse_qobj_instr["val"])
     if "parameters" in pulse_qobj_instr and "amp" in pulse_qobj_instr["parameters"]:
-        pulse_qobj_instr["parameters"]["amp"] = _to_complex(pulse_qobj_instr["parameters"]["amp"])
+        pulse_qobj_instr["parameters"]["amp"] = _to_complex(
+            pulse_qobj_instr["parameters"]["amp"]
+        )
