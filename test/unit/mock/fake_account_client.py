@@ -16,6 +16,7 @@ from datetime import datetime as python_datetime
 from typing import List, Dict, Any, Optional
 
 from qiskit.providers.fake_provider.backends.lima.fake_lima import FakeLima
+from qiskit.providers.exceptions import QiskitBackendNotFoundError
 
 
 class FakeApiBackend:
@@ -81,7 +82,7 @@ class BaseFakeAccountClient:
         for back in self._backends:
             if back.name == backend_name:
                 return back.status.copy()
-        raise ValueError(f"Backend {backend_name} not found")
+        raise QiskitBackendNotFoundError(f"Backend {backend_name} not found")
 
     def backend_properties(
         self, backend_name: str, datetime: Optional[python_datetime] = None
@@ -91,14 +92,14 @@ class BaseFakeAccountClient:
         for back in self._backends:
             if back.name == backend_name:
                 return back.properties.copy()
-        raise ValueError(f"Backend {backend_name} not found")
+        raise QiskitBackendNotFoundError(f"Backend {backend_name} not found")
 
     def backend_pulse_defaults(self, backend_name: str) -> Dict:
         """Return the pulse defaults of the backend."""
         for back in self._backends:
             if back.name == backend_name:
                 return back.defaults.copy()
-        raise ValueError(f"Backend {backend_name} not found")
+        raise QiskitBackendNotFoundError(f"Backend {backend_name} not found")
 
     # Test-only methods.
 
