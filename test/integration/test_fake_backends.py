@@ -682,7 +682,7 @@ class TestGeenratePresetPassManagers(IBMTestCase):
     def test_with_backend(self, optimization_level):
         """Test a passmanager is constructed when only a backend and optimization level."""
         target = FakeTokyo()
-        pm = generate_preset_pass_manager( # pylint: disable=invalid-name
+        pm = generate_preset_pass_manager(  # pylint: disable=invalid-name
             optimization_level, target
         )
         self.assertIsInstance(pm, PassManager)
@@ -691,7 +691,7 @@ class TestGeenratePresetPassManagers(IBMTestCase):
     def test_with_no_backend(self, optimization_level):
         """Test a passmanager is constructed with no backend and optimization level."""
         target = FakeLagosV2()
-        pm = generate_preset_pass_manager( # pylint: disable=invalid-name
+        pm = generate_preset_pass_manager(  # pylint: disable=invalid-name
             optimization_level,
             coupling_map=target.coupling_map,
             basis_gates=target.operation_names,
