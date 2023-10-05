@@ -59,7 +59,7 @@ class TestFakeBackendsWithPresetPassManager(IBMTestCase):
     def test_alignment_constraints_called_with_by_default(self):
         """Test that TimeUnitConversion is not called if there is no delay in the circuit."""
         level = 3
-        q = QuantumRegister(2, name="q")
+        q = QuantumRegister(2, name="q")  # pylint: disable=invalid-name
         circuit = QuantumCircuit(q)
         circuit.h(q[0])
         circuit.cz(q[0], q[1])
@@ -70,7 +70,7 @@ class TestFakeBackendsWithPresetPassManager(IBMTestCase):
     def test_alignment_constraints_called_with_delay_in_circuit(self):
         """Test that TimeUnitConversion is called if there is a delay in the circuit."""
         level = 3
-        q = QuantumRegister(2, name="q")
+        q = QuantumRegister(2, name="q")  # pylint: disable=invalid-name
         circuit = QuantumCircuit(q)
         circuit.h(q[0])
         circuit.cz(q[0], q[1])
@@ -152,8 +152,8 @@ class TestPassesInspection(IBMTestCase):
     @data(0, 1, 2, 3)
     def test_backend(self, level):
         """With backend a layout and a swapper is run"""
-        qr = QuantumRegister(5, "q")
-        qc = QuantumCircuit(qr)
+        qr = QuantumRegister(5, "q")  # pylint: disable=invalid-name
+        qc = QuantumCircuit(qr)  # pylint: disable=invalid-name
         qc.cx(qr[2], qr[4])
         backend = FakeMelbourne()
 
@@ -168,8 +168,8 @@ class TestPassesInspection(IBMTestCase):
         """The parameter layout_method='noise_adaptive' should be honored
         See: https://github.com/Qiskit/qiskit-terra/issues/5409
         """
-        qr = QuantumRegister(5, "q")
-        qc = QuantumCircuit(qr)
+        qr = QuantumRegister(5, "q")  # pylint: disable=invalid-name
+        qc = QuantumCircuit(qr)  # pylint: disable=invalid-name
         qc.cx(qr[2], qr[4])
         backend = FakeMelbourne()
 
@@ -188,7 +188,7 @@ class TestPassesInspection(IBMTestCase):
     def test_level1_runs_vf2post_layout_when_routing_required(self):
         """Test that if we run routing as part of sabre layout VF2PostLayout runs."""
         target = FakeLagosV2()
-        qc = QuantumCircuit(5)
+        qc = QuantumCircuit(5)  # pylint: disable=invalid-name
         qc.h(0)
         qc.cy(0, 1)
         qc.cy(0, 2)
@@ -221,10 +221,10 @@ class TestInitialLayouts(IBMTestCase):
         See: https://github.com/Qiskit/qiskit-terra/issues/1711
         """
         # build a circuit which works as-is on the coupling map, using the initial layout
-        qr = QuantumRegister(3, "q")
-        cr = ClassicalRegister(3)
+        qr = QuantumRegister(3, "q")  # pylint: disable=invalid-name
+        cr = ClassicalRegister(3)  # pylint: disable=invalid-name
         ancilla = QuantumRegister(13, "ancilla")
-        qc = QuantumCircuit(qr, cr)
+        qc = QuantumCircuit(qr, cr)  # pylint: disable=invalid-name
         qc.cx(qr[2], qr[1])
         qc.cx(qr[2], qr[0])
         initial_layout = {0: qr[1], 2: qr[0], 15: qr[2]}
@@ -270,10 +270,10 @@ class TestInitialLayouts(IBMTestCase):
         See: https://github.com/Qiskit/qiskit-terra/issues/2532
         """
         # build a circuit which works as-is on the coupling map, using the initial layout
-        qr = QuantumRegister(5, "q")
-        cr = ClassicalRegister(2)
+        qr = QuantumRegister(5, "q")  # pylint: disable=invalid-name
+        cr = ClassicalRegister(2)  # pylint: disable=invalid-name
         ancilla = QuantumRegister(9, "ancilla")
-        qc = QuantumCircuit(qr, cr)
+        qc = QuantumCircuit(qr, cr)  # pylint: disable=invalid-name
         qc.cx(qr[2], qr[4])
         initial_layout = {
             qr[2]: 11,
@@ -320,11 +320,11 @@ class TestInitialLayouts(IBMTestCase):
         See: https://github.com/Qiskit/qiskit-terra/issues/2503
         """
         # build a circuit which works as-is on the coupling map, using the initial layout
-        qr = QuantumRegister(3, "q")
-        cr = ClassicalRegister(2)
+        qr = QuantumRegister(3, "q")  # pylint: disable=invalid-name
+        cr = ClassicalRegister(2)  # pylint: disable=invalid-name
         ancilla = QuantumRegister(17, "ancilla")
 
-        qc = QuantumCircuit(qr, cr)
+        qc = QuantumCircuit(qr, cr)  # pylint: disable=invalid-name
         qc.append(U3Gate(0.1, 0.2, 0.3), [qr[0]])
         qc.append(U2Gate(0.4, 0.5), [qr[2]])
         qc.barrier()
@@ -380,7 +380,7 @@ class TestFinalLayouts(IBMTestCase):
         """
         qr1 = QuantumRegister(3, "qr1")
         qr2 = QuantumRegister(2, "qr2")
-        qc = QuantumCircuit(qr1, qr2)
+        qc = QuantumCircuit(qr1, qr2)  # pylint: disable=invalid-name
         qc.cx(qr1[0], qr1[1])
         qc.cx(qr1[1], qr1[2])
         qc.cx(qr1[2], qr2[0])
@@ -452,8 +452,8 @@ class TestFinalLayouts(IBMTestCase):
     @data(0, 1, 2, 3)
     def test_layout_tokyo_fully_connected_cx(self, level):
         """Test that final layout in tokyo in a fully connected circuit"""
-        qr = QuantumRegister(5, "qr")
-        qc = QuantumCircuit(qr)
+        qr = QuantumRegister(5, "qr")  # pylint: disable=invalid-name
+        qc = QuantumCircuit(qr)  # pylint: disable=invalid-name
         for qubit_target in qr:
             for qubit_control in qr:
                 if qubit_control != qubit_target:
@@ -573,8 +573,8 @@ class TestFinalLayouts(IBMTestCase):
         """Test that trivial layout is preferred in level 0
         See: https://github.com/Qiskit/qiskit-terra/pull/3657#pullrequestreview-342012465
         """
-        qr = QuantumRegister(10, "qr")
-        qc = QuantumCircuit(qr)
+        qr = QuantumRegister(10, "qr")  # pylint: disable=invalid-name
+        qc = QuantumCircuit(qr)  # pylint: disable=invalid-name
         qc.cx(qr[0], qr[1])
         qc.cx(qr[1], qr[2])
         qc.cx(qr[2], qr[6])
@@ -619,8 +619,8 @@ class TestFinalLayouts(IBMTestCase):
     @data(0, 1, 2, 3)
     def test_initial_layout(self, level):
         """When a user provides a layout (initial_layout), it should be used."""
-        qr = QuantumRegister(10, "qr")
-        qc = QuantumCircuit(qr)
+        qr = QuantumRegister(10, "qr")  # pylint: disable=invalid-name
+        qc = QuantumCircuit(qr)  # pylint: disable=invalid-name
         qc.cx(qr[0], qr[1])
         qc.cx(qr[1], qr[2])
         qc.cx(qr[2], qr[3])
@@ -665,9 +665,9 @@ class TestOptimizationWithCondition(IBMTestCase):
     @data(0, 1, 2, 3)
     def test_optimization_condition(self, level):
         """Test optimization levels with condition in the circuit"""
-        qr = QuantumRegister(2)
-        cr = ClassicalRegister(1)
-        qc = QuantumCircuit(qr, cr)
+        qr = QuantumRegister(2)  # pylint: disable=invalid-name
+        cr = ClassicalRegister(1)  # pylint: disable=invalid-name
+        qc = QuantumCircuit(qr, cr)  # pylint: disable=invalid-name
         qc.cx(0, 1).c_if(cr, 1)
         backend = FakeJohannesburg()
         circ = transpile(qc, backend, optimization_level=level)
@@ -682,14 +682,16 @@ class TestGeenratePresetPassManagers(IBMTestCase):
     def test_with_backend(self, optimization_level):
         """Test a passmanager is constructed when only a backend and optimization level."""
         target = FakeTokyo()
-        pm = generate_preset_pass_manager(optimization_level, target)
+        pm = generate_preset_pass_manager( # pylint: disable=invalid-name
+            optimization_level, target
+        )
         self.assertIsInstance(pm, PassManager)
 
     @data(0, 1, 2, 3)
     def test_with_no_backend(self, optimization_level):
         """Test a passmanager is constructed with no backend and optimization level."""
         target = FakeLagosV2()
-        pm = generate_preset_pass_manager(
+        pm = generate_preset_pass_manager( # pylint: disable=invalid-name
             optimization_level,
             coupling_map=target.coupling_map,
             basis_gates=target.operation_names,
@@ -704,5 +706,7 @@ class TestGeenratePresetPassManagers(IBMTestCase):
     def test_with_no_backend_only_target(self, optimization_level):
         """Test a passmanager is constructed with a manual target and optimization level."""
         target = FakeLagosV2()
-        pm = generate_preset_pass_manager(optimization_level, target=target.target)
+        pm = generate_preset_pass_manager(  # pylint: disable=invalid-name
+            optimization_level, target=target.target
+        )
         self.assertIsInstance(pm, PassManager)
