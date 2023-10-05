@@ -22,7 +22,7 @@ from .fake_backend import FakeBackend
 class FakeQasmSimulator(FakeBackend):
     """A fake simulator backend."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         configuration = QasmBackendConfiguration(
             backend_name="fake_qasm_simulator",
             backend_version="0.0.0",
@@ -56,5 +56,5 @@ class FakeQasmSimulator(FakeBackend):
 
         super().__init__(configuration)
 
-    def properties(self):
+    def properties(self) -> None:
         return None

@@ -37,6 +37,7 @@ from qiskit.utils import optionals as _optionals
 from qiskit.providers import basicaer
 from qiskit.transpiler import Target
 from qiskit.providers.backend_compat import convert_to_target
+from qiskit.providers.options import Options
 
 from .utils.json_decoder import (
     decode_backend_configuration,
@@ -46,7 +47,7 @@ from .utils.json_decoder import (
 
 
 class _Credentials:
-    def __init__(self, token="123456", url="https://"):
+    def __init__(self, token: str = "123456", url: str = "https://") -> None:
         self.token = token
         self.url = url
         self.hub = "hub"
@@ -75,7 +76,7 @@ class FakeBackendV2(BackendV2):
     defs_filename = None
     backend_name = None
 
-    def __init__(self):
+    def __init__(self) -> None:
         """FakeBackendV2 initializer."""
         self._conf_dict = self._get_conf_dict_from_json()
         self._props_dict = None
@@ -93,7 +94,7 @@ class FakeBackendV2(BackendV2):
         if "channels" in self._conf_dict:
             self._parse_channels(self._conf_dict["channels"])
 
-    def _parse_channels(self, channels):
+    def _parse_channels(self, channels: dict) -> None:
         type_map = {
             "acquire": pulse.AcquireChannel,
             "drive": pulse.DriveChannel,
@@ -102,7 +103,7 @@ class FakeBackendV2(BackendV2):
         }
         identifier_pattern = re.compile(r"\D+(?P<index>\d+)")
 
-        channels_map = {
+        channels_map: dict = {
             "acquire": collections.defaultdict(list),
             "drive": collections.defaultdict(list),
             "measure": collections.defaultdict(list),
@@ -120,7 +121,7 @@ class FakeBackendV2(BackendV2):
             channels_map[channel_type][qubit_index].append(chan_obj)
         setattr(self, "channels_map", channels_map)
 
-    def _setup_sim(self):
+    def _setup_sim(self) -> None:
         if _optionals.HAS_AER:
             from qiskit_aer import (  # pylint: disable=import-outside-toplevel
                 AerSimulator,
@@ -128,7 +129,7 @@ class FakeBackendV2(BackendV2):
 
             self.sim = AerSimulator()
             if self.target and self._props_dict:
-                noise_model = self._get_noise_model_from_backend_v2()
+                noise_model = self._get_noise_model_from_backend_v2()  # type: ignore
                 self.sim.set_options(noise_model=noise_model)
                 # Update fake backend default too to avoid overwriting
                 # it when run() is called
@@ -137,23 +138,23 @@ class FakeBackendV2(BackendV2):
         else:
             self.sim = basicaer.QasmSimulatorPy()
 
-    def _get_conf_dict_from_json(self):
+    def _get_conf_dict_from_json(self) -> dict:
         if not self.conf_filename:
             return None
-        conf_dict = self._load_json(self.conf_filename)
+        conf_dict = self._load_json(self.conf_filename)  # type: ignore
         decode_backend_configuration(conf_dict)
         conf_dict["backend_name"] = self.backend_name
         return conf_dict
 
-    def _set_props_dict_from_json(self):
+    def _set_props_dict_from_json(self) -> None:
         if self.props_filename:
-            props_dict = self._load_json(self.props_filename)
+            props_dict = self._load_json(self.props_filename)  # type: ignore
             decode_backend_properties(props_dict)
             self._props_dict = props_dict
 
-    def _set_defs_dict_from_json(self):
+    def _set_defs_dict_from_json(self) -> None:
         if self.defs_filename:
-            defs_dict = self._load_json(self.defs_filename)
+            defs_dict = self._load_json(self.defs_filename)  # type: ignore
             decode_pulse_defaults(defs_dict)
             self._defs_dict = defs_dict
 
@@ -177,10 +178,10 @@ class FakeBackendV2(BackendV2):
             conf = BackendConfiguration.from_dict(self._conf_dict)
             props = None
             if self._props_dict is not None:
-                props = BackendProperties.from_dict(self._props_dict)
+                props = BackendProperties.from_dict(self._props_dict)  # type: ignore
             defaults = None
             if self._defs_dict is not None:
-                defaults = PulseDefaults.from_dict(self._defs_dict)
+                defaults = PulseDefaults.from_dict(self._defs_dict)  # type: ignore
 
             self._target = convert_to_target(
                 conf, props, defaults, add_delay=True, filter_faulty=True
@@ -189,11 +190,11 @@ class FakeBackendV2(BackendV2):
         return self._target
 
     @property
-    def max_circuits(self):
+    def max_circuits(self) -> None:
         return None
 
     @classmethod
-    def _default_options(cls):
+    def _default_options(cls) -> Options:
         """Return the default options
 
         This method will return a :class:`qiskit.providers.Options`
@@ -239,7 +240,7 @@ class FakeBackendV2(BackendV2):
         """
         return self._conf_dict.get("meas_map")
 
-    def drive_channel(self, qubit: int):
+    def drive_channel(self, qubit: int):  # type: ignore
         """Return the drive channel for the given qubit.
 
         This is required to be implemented if the backend supports Pulse
@@ -254,7 +255,7 @@ class FakeBackendV2(BackendV2):
             return drive_channels_map[qubits][0]
         return None
 
-    def measure_channel(self, qubit: int):
+    def measure_channel(self, qubit: int):  # type: ignore
         """Return the measure stimulus channel for the given qubit.
 
         This is required to be implemented if the backend supports Pulse
@@ -269,7 +270,7 @@ class FakeBackendV2(BackendV2):
             return measure_channels_map[qubits][0]
         return None
 
-    def acquire_channel(self, qubit: int):
+    def acquire_channel(self, qubit: int):  # type: ignore
         """Return the acquisition channel for the given qubit.
 
         This is required to be implemented if the backend supports Pulse
@@ -284,7 +285,7 @@ class FakeBackendV2(BackendV2):
             return acquire_channels_map[qubits][0]
         return None
 
-    def control_channel(self, qubits: Iterable[int]):
+    def control_channel(self, qubits: Iterable[int]):  # type: ignore
         """Return the secondary drive channel for the given qubit
 
         This is typically utilized for controlling multiqubit interactions.
@@ -306,7 +307,7 @@ class FakeBackendV2(BackendV2):
             return control_channels_map[qubits]
         return []
 
-    def run(self, run_input, **options):
+    def run(self, run_input, **options):  # type: ignore
         """Run on the fake backend using a simulator.
 
         This method runs circuit jobs (an individual or a list of QuantumCircuit
@@ -372,7 +373,7 @@ class FakeBackendV2(BackendV2):
         job = self.sim.run(circuits, **options)
         return job
 
-    def _get_noise_model_from_backend_v2(
+    def _get_noise_model_from_backend_v2(  # type: ignore
         self,
         gate_error=True,
         readout_error=True,
@@ -465,7 +466,9 @@ class FakeBackendV2(BackendV2):
 class FakeBackend(BackendV1):
     """This is a dummy backend just for testing purposes."""
 
-    def __init__(self, configuration, time_alive=10):
+    def __init__(
+        self, configuration: BackendConfiguration, time_alive: int = 10
+    ) -> None:
         """FakeBackend initializer.
 
         Args:
@@ -477,7 +480,7 @@ class FakeBackend(BackendV1):
         self._credentials = _Credentials()
         self.sim = None
 
-    def _setup_sim(self):
+    def _setup_sim(self) -> None:
         if _optionals.HAS_AER:
             import qiskit_aer as aer  # pylint: disable=import-outside-toplevel
             from qiskit_aer.noise import (  # pylint: disable=import-outside-toplevel
@@ -494,7 +497,7 @@ class FakeBackend(BackendV1):
         else:
             self.sim = basicaer.QasmSimulatorPy()
 
-    def properties(self):
+    def properties(self) -> BackendProperties:
         """Return backend properties"""
         coupling_map = self.configuration().coupling_map
         if coupling_map is None:
@@ -562,7 +565,7 @@ class FakeBackend(BackendV1):
         return BackendProperties.from_dict(properties)
 
     @classmethod
-    def _default_options(cls):
+    def _default_options(cls) -> Options:
         if _optionals.HAS_AER:
             from qiskit_aer import (  # pylint: disable=import-outside-toplevel
                 QasmSimulator,
@@ -572,7 +575,7 @@ class FakeBackend(BackendV1):
         else:
             return basicaer.QasmSimulatorPy._default_options()
 
-    def run(self, run_input, **kwargs):
+    def run(self, run_input, **kwargs):  # type: ignore
         """Main job in simulator"""
         circuits = run_input
         pulse_job = None

@@ -26,11 +26,11 @@ class FakeArmonkV2(fake_backend.FakeBackendV2):
         0
     """
 
-    dirname = os.path.dirname(__file__)
-    conf_filename = "conf_armonk.json"
-    props_filename = "props_armonk.json"
-    defs_filename = "defs_armonk.json"
-    backend_name = "fake_armonk"
+    dirname = os.path.dirname(__file__)  # type: ignore
+    conf_filename = "conf_armonk.json"  # type: ignore
+    props_filename = "props_armonk.json"  # type: ignore
+    defs_filename = "defs_armonk.json"  # type: ignore
+    backend_name = "fake_armonk"  # type: ignore
 
 
 class FakeArmonk(fake_pulse_backend.FakePulseBackend):
@@ -41,8 +41,8 @@ class FakeArmonk(fake_pulse_backend.FakePulseBackend):
         0
     """
 
-    dirname = os.path.dirname(__file__)
-    conf_filename = "conf_armonk.json"
-    props_filename = "props_armonk.json"
-    defs_filename = "defs_armonk.json"
-    backend_name = "fake_armonk"
+    dirname = os.path.dirname(__file__)  # type: ignore
+    conf_filename = "conf_armonk.json"  # type: ignore
+    props_filename = "props_armonk.json"  # type: ignore
+    defs_filename = "defs_armonk.json"  # type: ignore
+    backend_name = "fake_armonk"  # type: ignore

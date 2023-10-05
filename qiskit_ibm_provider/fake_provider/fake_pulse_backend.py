@@ -26,18 +26,18 @@ class FakePulseBackend(FakeQasmBackend):
 
     defs_filename = None
 
-    def defaults(self):
+    def defaults(self) -> PulseDefaults:
         """Returns a snapshot of device defaults"""
         if not self._defaults:
             self._set_defaults_from_json()
         return self._defaults
 
-    def _set_defaults_from_json(self):
+    def _set_defaults_from_json(self) -> None:
         if not self.props_filename:
             raise QiskitError("No properties file has been defined")
-        defs = self._load_json(self.defs_filename)
+        defs = self._load_json(self.defs_filename)  # type: ignore
         decode_pulse_defaults(defs)
         self._defaults = PulseDefaults.from_dict(defs)
 
-    def _get_config_from_dict(self, conf):
+    def _get_config_from_dict(self, conf: dict) -> PulseBackendConfiguration:
         return PulseBackendConfiguration.from_dict(conf)

@@ -21,18 +21,18 @@ from qiskit_ibm_provider.fake_provider import fake_pulse_backend, fake_backend
 class FakeJakartaV2(fake_backend.FakeBackendV2):
     """A fake 7 qubit V2 backend."""
 
-    dirname = os.path.dirname(__file__)
-    conf_filename = "conf_jakarta.json"
-    props_filename = "props_jakarta.json"
-    defs_filename = "defs_jakarta.json"
-    backend_name = "fake_jakarta"
+    dirname = os.path.dirname(__file__)  # type: ignore
+    conf_filename = "conf_jakarta.json"  # type: ignore
+    props_filename = "props_jakarta.json"  # type: ignore
+    defs_filename = "defs_jakarta.json"  # type: ignore
+    backend_name = "fake_jakarta"  # type: ignore
 
 
 class FakeJakarta(fake_pulse_backend.FakePulseBackend):
     """A fake 7 qubit backend."""
 
-    dirname = os.path.dirname(__file__)
-    conf_filename = "conf_jakarta.json"
-    props_filename = "props_jakarta.json"
-    defs_filename = "defs_jakarta.json"
-    backend_name = "fake_jakarta"
+    dirname = os.path.dirname(__file__)  # type: ignore
+    conf_filename = "conf_jakarta.json"  # type: ignore
+    props_filename = "props_jakarta.json"  # type: ignore
+    defs_filename = "defs_jakarta.json"  # type: ignore
+    backend_name = "fake_jakarta"  # type: ignore

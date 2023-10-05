@@ -21,18 +21,18 @@ from qiskit_ibm_provider.fake_provider import fake_pulse_backend, fake_backend
 class FakeCairoV2(fake_backend.FakeBackendV2):
     """A fake 27 qubit backend."""
 
-    dirname = os.path.dirname(__file__)
-    conf_filename = "conf_cairo.json"
-    props_filename = "props_cairo.json"
-    defs_filename = "defs_cairo.json"
-    backend_name = "fake_cairo"
+    dirname = os.path.dirname(__file__)  # type: ignore
+    conf_filename = "conf_cairo.json"  # type: ignore
+    props_filename = "props_cairo.json"  # type: ignore
+    defs_filename = "defs_cairo.json"  # type: ignore
+    backend_name = "fake_cairo"  # type: ignore
 
 
 class FakeCairo(fake_pulse_backend.FakePulseBackend):
     """A fake 27 qubit backend."""
 
-    dirname = os.path.dirname(__file__)
-    conf_filename = "conf_cairo.json"
-    props_filename = "props_cairo.json"
-    defs_filename = "defs_cairo.json"
-    backend_name = "fake_cairo"
+    dirname = os.path.dirname(__file__)  # type: ignore
+    conf_filename = "conf_cairo.json"  # type: ignore
+    props_filename = "props_cairo.json"  # type: ignore
+    defs_filename = "defs_cairo.json"  # type: ignore
+    backend_name = "fake_cairo"  # type: ignore

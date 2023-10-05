@@ -21,18 +21,18 @@ from qiskit_ibm_provider.fake_provider import fake_pulse_backend, fake_backend
 class FakeAthensV2(fake_backend.FakeBackendV2):
     """A fake 5 qubit backend."""
 
-    dirname = os.path.dirname(__file__)
-    conf_filename = "conf_athens.json"
-    props_filename = "props_athens.json"
-    defs_filename = "defs_athens.json"
-    backend_name = "fake_athens"
+    dirname = os.path.dirname(__file__)  # type: ignore
+    conf_filename = "conf_athens.json"  # type: ignore
+    props_filename = "props_athens.json"  # type: ignore
+    defs_filename = "defs_athens.json"  # type: ignore
+    backend_name = "fake_athens"  # type: ignore
 
 
 class FakeAthens(fake_pulse_backend.FakePulseBackend):
     """A fake 5 qubit backend."""
 
-    dirname = os.path.dirname(__file__)
-    conf_filename = "conf_athens.json"
-    props_filename = "props_athens.json"
-    defs_filename = "defs_athens.json"
-    backend_name = "fake_athens"
+    dirname = os.path.dirname(__file__)  # type: ignore
+    conf_filename = "conf_athens.json"  # type: ignore
+    props_filename = "props_athens.json"  # type: ignore
+    defs_filename = "defs_athens.json"  # type: ignore
+    backend_name = "fake_athens"  # type: ignore

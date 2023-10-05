@@ -30,7 +30,7 @@ from .fake_qasm_simulator import FakeQasmSimulator
 class FakeQobj(QasmQobj):
     """A fake `Qobj` instance."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         qobj_id = "test_id"
         config = QasmQobjConfig(shots=1024, memory_slots=1)
         header = QobjHeader(backend_name=FakeQasmSimulator().name())

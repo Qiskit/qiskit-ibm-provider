@@ -27,23 +27,23 @@ class FakeJob(JobV1):
 
     _executor = futures.ThreadPoolExecutor()
 
-    def __init__(self, backend, job_id, fn):
+    def __init__(self, backend, job_id, fn) -> None:  # type: ignore
         super().__init__(backend, job_id)
         self._backend = backend
         self._job_id = job_id
         self._future = None
         self._future_callback = fn
 
-    def submit(self):
-        self._future = self._executor.submit(self._future_callback)
+    def submit(self) -> None:
+        self._future = self._executor.submit(self._future_callback)  # type: ignore
 
-    def result(self, timeout=None):
+    def result(self, timeout=None):  # type: ignore
         return self._future.result(timeout=timeout)
 
-    def cancel(self):
+    def cancel(self):  # type: ignore
         return self._future.cancel()
 
-    def status(self):
+    def status(self):  # type: ignore
         if self._running:
             _status = JobStatus.RUNNING
         elif not self._done:
@@ -59,24 +59,24 @@ class FakeJob(JobV1):
         _status_msg = None
         return {"status": _status, "status_msg": _status_msg}
 
-    def job_id(self):
+    def job_id(self):  # type: ignore
         return self._job_id
 
-    def backend(self):
+    def backend(self):  # type: ignore
         return self._backend
 
     @property
-    def _cancelled(self):
+    def _cancelled(self):  # type: ignore
         return self._future.cancelled()
 
     @property
-    def _done(self):
+    def _done(self):  # type: ignore
         return self._future.done()
 
     @property
-    def _running(self):
+    def _running(self):  # type: ignore
         return self._future.running()
 
     @property
-    def _error(self):
+    def _error(self):  # type: ignore
         return self._future.exception(timeout=0)

@@ -29,16 +29,16 @@ from qiskit_ibm_provider.fake_provider import fake_backend
 class FakeMelbourneV2(fake_backend.FakeBackendV2):
     """A fake 14 qubit backend."""
 
-    dirname = os.path.dirname(__file__)
-    conf_filename = "conf_melbourne.json"
-    props_filename = "props_melbourne.json"
-    backend_name = "fake_melbourne"
+    dirname = os.path.dirname(__file__)  # type: ignore
+    conf_filename = "conf_melbourne.json"  # type: ignore
+    props_filename = "props_melbourne.json"  # type: ignore
+    backend_name = "fake_melbourne"  # type: ignore
 
 
 class FakeMelbourne(FakeBackend):
     """A fake 14 qubit backend."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """
 
         .. code-block:: text
@@ -86,10 +86,10 @@ class FakeMelbourne(FakeBackend):
 
         super().__init__(configuration)
 
-    def properties(self):
+    def properties(self) -> BackendProperties:
         """Returns a snapshot of device properties"""
-        dirname = os.path.dirname(__file__)
-        filename = "props_melbourne.json"
+        dirname = os.path.dirname(__file__)  # type: ignore
+        filename = "props_melbourne.json"  # type: ignore
         with open(os.path.join(dirname, filename), encoding="utf-8") as f_prop:
             props = json.load(f_prop)
         return BackendProperties.from_dict(props)

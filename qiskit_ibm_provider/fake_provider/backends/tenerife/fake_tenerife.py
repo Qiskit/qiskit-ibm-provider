@@ -28,7 +28,7 @@ from qiskit_ibm_provider.fake_provider.fake_backend import FakeBackend
 class FakeTenerife(FakeBackend):
     """A fake 5 qubit backend."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """
 
         .. code-block:: text
@@ -59,10 +59,10 @@ class FakeTenerife(FakeBackend):
 
         super().__init__(configuration)
 
-    def properties(self):
+    def properties(self) -> BackendProperties:
         """Returns a snapshot of device properties as recorded on 8/30/19."""
-        dirname = os.path.dirname(__file__)
-        filename = "props_tenerife.json"
+        dirname = os.path.dirname(__file__)  # type: ignore
+        filename = "props_tenerife.json"  # type: ignore
         with open(os.path.join(dirname, filename), encoding="utf-8") as f_prop:
             props = json.load(f_prop)
         return BackendProperties.from_dict(props)

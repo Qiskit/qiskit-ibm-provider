@@ -21,18 +21,18 @@ from qiskit_ibm_provider.fake_provider import fake_pulse_backend, fake_backend
 class FakeNairobiV2(fake_backend.FakeBackendV2):
     """A fake 7 qubit backend."""
 
-    dirname = os.path.dirname(__file__)
-    conf_filename = "conf_nairobi.json"
-    props_filename = "props_nairobi.json"
-    defs_filename = "defs_nairobi.json"
-    backend_name = "fake_nairobi"
+    dirname = os.path.dirname(__file__)  # type: ignore
+    conf_filename = "conf_nairobi.json"  # type: ignore
+    props_filename = "props_nairobi.json"  # type: ignore
+    defs_filename = "defs_nairobi.json"  # type: ignore
+    backend_name = "fake_nairobi"  # type: ignore
 
 
 class FakeNairobi(fake_pulse_backend.FakePulseBackend):
     """A fake 7 qubit backend."""
 
-    dirname = os.path.dirname(__file__)
-    conf_filename = "conf_nairobi.json"
-    props_filename = "props_nairobi.json"
-    defs_filename = "defs_nairobi.json"
-    backend_name = "fake_nairobi"
+    dirname = os.path.dirname(__file__)  # type: ignore
+    conf_filename = "conf_nairobi.json"  # type: ignore
+    props_filename = "props_nairobi.json"  # type: ignore
+    defs_filename = "defs_nairobi.json"  # type: ignore
+    backend_name = "fake_nairobi"  # type: ignore

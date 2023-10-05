@@ -21,7 +21,7 @@ from qiskit_ibm_provider.fake_provider.fake_backend import FakeBackend
 class FakeRueschlikon(FakeBackend):
     """A fake 16 qubit backend."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """
 
         .. code-block:: text

@@ -21,18 +21,18 @@ from qiskit_ibm_provider.fake_provider import fake_pulse_backend, fake_backend
 class FakeValenciaV2(fake_backend.FakeBackendV2):
     """A fake 5 qubit backend."""
 
-    dirname = os.path.dirname(__file__)
-    conf_filename = "conf_valencia.json"
-    props_filename = "props_valencia.json"
-    defs_filename = "defs_valencia.json"
-    backend_name = "fake_valencia"
+    dirname = os.path.dirname(__file__)  # type: ignore
+    conf_filename = "conf_valencia.json"  # type: ignore
+    props_filename = "props_valencia.json"  # type: ignore
+    defs_filename = "defs_valencia.json"  # type: ignore
+    backend_name = "fake_valencia"  # type: ignore
 
 
 class FakeValencia(fake_pulse_backend.FakePulseBackend):
     """A fake 5 qubit backend."""
 
-    dirname = os.path.dirname(__file__)
-    conf_filename = "conf_valencia.json"
-    props_filename = "props_valencia.json"
-    defs_filename = "defs_valencia.json"
-    backend_name = "fake_valencia"
+    dirname = os.path.dirname(__file__)  # type: ignore
+    conf_filename = "conf_valencia.json"  # type: ignore
+    props_filename = "props_valencia.json"  # type: ignore
+    defs_filename = "defs_valencia.json"  # type: ignore
+    backend_name = "fake_valencia"  # type: ignore

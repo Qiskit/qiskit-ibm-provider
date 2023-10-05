@@ -35,38 +35,38 @@ class FakeQasmBackend(FakeBackend):
     props_filename = None
     backend_name = None
 
-    def __init__(self):
+    def __init__(self) -> None:
         configuration = self._get_conf_from_json()
         self._defaults = None
         self._properties = None
         super().__init__(configuration)
 
-    def properties(self):
+    def properties(self) -> BackendProperties:
         """Returns a snapshot of device properties"""
         if not self._properties:
             self._set_props_from_json()
         return self._properties
 
-    def _get_conf_from_json(self):
+    def _get_conf_from_json(self) -> QasmBackendConfiguration:
         if not self.conf_filename:
             raise QiskitError("No configuration file has been defined")
-        conf = self._load_json(self.conf_filename)
+        conf = self._load_json(self.conf_filename)  # type: ignore
         decode_backend_configuration(conf)
         configuration = self._get_config_from_dict(conf)
         configuration.backend_name = self.backend_name
         return configuration
 
-    def _set_props_from_json(self):
+    def _set_props_from_json(self) -> BackendProperties:
         if not self.props_filename:
             raise QiskitError("No properties file has been defined")
-        props = self._load_json(self.props_filename)
+        props = self._load_json(self.props_filename)  # type: ignore
         decode_backend_properties(props)
         self._properties = BackendProperties.from_dict(props)
 
-    def _load_json(self, filename):
+    def _load_json(self, filename: str) -> dict:
         with open(os.path.join(self.dirname, filename), encoding="utf-8") as f_json:
             the_json = json.load(f_json)
         return the_json
 
-    def _get_config_from_dict(self, conf):
+    def _get_config_from_dict(self, conf: dict) -> QasmBackendConfiguration:
         return QasmBackendConfiguration.from_dict(conf)

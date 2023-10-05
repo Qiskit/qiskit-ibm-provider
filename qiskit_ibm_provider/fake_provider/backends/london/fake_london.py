@@ -30,10 +30,10 @@ class FakeLondonV2(fake_backend.FakeBackendV2):
             4
     """
 
-    dirname = os.path.dirname(__file__)
-    conf_filename = "conf_london.json"
-    props_filename = "props_london.json"
-    backend_name = "fake_london"
+    dirname = os.path.dirname(__file__)  # type: ignore
+    conf_filename = "conf_london.json"  # type: ignore
+    props_filename = "props_london.json"  # type: ignore
+    backend_name = "fake_london"  # type: ignore
 
 
 class FakeLondon(fake_qasm_backend.FakeQasmBackend):
@@ -48,7 +48,7 @@ class FakeLondon(fake_qasm_backend.FakeQasmBackend):
             4
     """
 
-    dirname = os.path.dirname(__file__)
-    conf_filename = "conf_london.json"
-    props_filename = "props_london.json"
-    backend_name = "fake_london"
+    dirname = os.path.dirname(__file__)  # type: ignore
+    conf_filename = "conf_london.json"  # type: ignore
+    props_filename = "props_london.json"  # type: ignore
+    backend_name = "fake_london"  # type: ignore

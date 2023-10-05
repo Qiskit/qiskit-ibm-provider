@@ -34,10 +34,10 @@ class FakeCambridgeV2(fake_backend.FakeBackendV2):
         19 ↔ 20 ↔ 21 ↔ 22 ↔ 23 ↔ 24 ↔ 25 ↔ 26 ↔ 27
     """
 
-    dirname = os.path.dirname(__file__)
-    conf_filename = "conf_cambridge.json"
-    props_filename = "props_cambridge.json"
-    backend_name = "fake_cambridge"
+    dirname = os.path.dirname(__file__)  # type: ignore
+    conf_filename = "conf_cambridge.json"  # type: ignore
+    props_filename = "props_cambridge.json"  # type: ignore
+    backend_name = "fake_cambridge"  # type: ignore
 
 
 class FakeCambridge(fake_qasm_backend.FakeQasmBackend):
@@ -56,17 +56,17 @@ class FakeCambridge(fake_qasm_backend.FakeQasmBackend):
         19 ↔ 20 ↔ 21 ↔ 22 ↔ 23 ↔ 24 ↔ 25 ↔ 26 ↔ 27
     """
 
-    dirname = os.path.dirname(__file__)
-    conf_filename = "conf_cambridge.json"
-    props_filename = "props_cambridge.json"
-    backend_name = "fake_cambridge"
+    dirname = os.path.dirname(__file__)  # type: ignore
+    conf_filename = "conf_cambridge.json"  # type: ignore
+    props_filename = "props_cambridge.json"  # type: ignore
+    backend_name = "fake_cambridge"  # type: ignore
 
 
 class FakeCambridgeAlternativeBasis(FakeCambridge):
     """A fake Cambridge backend with alternate 1q basis gates."""
 
-    props_filename = "props_cambridge_alt.json"
+    props_filename = "props_cambridge_alt.json"  # type: ignore
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self._configuration.basis_gates = ["u", "sx", "p", "cx", "id"]

@@ -26,39 +26,39 @@ from .fake_qasm_simulator import FakeQasmSimulator
 class FakeProviderFactory:
     """Fake provider factory class."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.fake_provider = FakeProvider()
 
-    def load_account(self):
+    def load_account(self) -> None:
         """Fake load_account method to mirror the IBMQ provider."""
         pass
 
-    def enable_account(self, *args, **kwargs):
+    def enable_account(self, *args, **kwargs) -> None:  # type: ignore
         """Fake enable_account method to mirror the IBMQ provider factory."""
         pass
 
-    def disable_account(self):
+    def disable_account(self) -> None:
         """Fake disable_account method to mirror the IBMQ provider factory."""
         pass
 
-    def save_account(self, *args, **kwargs):
+    def save_account(self, *args, **kwargs) -> None:  # type: ignore
         """Fake save_account method to mirror the IBMQ provider factory."""
         pass
 
     @staticmethod
-    def delete_account():
+    def delete_account() -> None:
         """Fake delete_account method to mirror the IBMQ provider factory."""
         pass
 
-    def update_account(self, force=False):
+    def update_account(self, force: bool = False) -> None:
         """Fake update_account method to mirror the IBMQ provider factory."""
         pass
 
-    def providers(self):
+    def providers(self) -> list:
         """Fake providers method to mirror the IBMQ provider."""
         return [self.fake_provider]
 
-    def get_provider(self, hub=None, group=None, project=None):
+    def get_provider(self, hub: str = None, group: str = None, projec: str = None):  # type: ignore
         """Fake get_provider method to mirror the IBMQ provider."""
         return self.fake_provider
 
@@ -70,7 +70,7 @@ class FakeProviderForBackendV2(ProviderV1):
     available in the :mod:`qiskit_ibm_provider.fake_provider`.
     """
 
-    def get_backend(self, name=None, **kwargs):
+    def get_backend(self, name=None, **kwargs):  # type: ignore
         backend = self._backends[0]
         if name:
             filtered_backends = [
@@ -83,57 +83,57 @@ class FakeProviderForBackendV2(ProviderV1):
 
         return backend
 
-    def backends(self, name=None, **kwargs):
+    def backends(self, name=None, **kwargs):  # type: ignore
         return self._backends
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._backends = [
-            FakeAlmadenV2(),
-            FakeArmonkV2(),
-            FakeAthensV2(),
-            FakeAuckland(),
-            FakeBelemV2(),
-            FakeBoeblingenV2(),
-            FakeBogotaV2(),
-            FakeBrooklynV2(),
-            FakeBurlingtonV2(),
-            FakeCairoV2(),
-            FakeCambridgeV2(),
-            FakeCasablancaV2(),
-            FakeEssexV2(),
-            FakeGeneva(),
-            FakeGuadalupeV2(),
-            FakeHanoiV2(),
-            FakeJakartaV2(),
-            FakeJohannesburgV2(),
-            FakeKolkataV2(),
-            FakeLagosV2(),
-            FakeLimaV2(),
-            FakeLondonV2(),
-            FakeManhattanV2(),
-            FakeManilaV2(),
-            FakeMelbourneV2(),
-            FakeMontrealV2(),
-            FakeMumbaiV2(),
-            FakeNairobiV2(),
-            FakeOslo(),
-            FakeOurenseV2(),
-            FakeParisV2(),
-            FakePerth(),
-            FakePrague(),
-            FakePoughkeepsieV2(),
-            FakeQuitoV2(),
-            FakeRochesterV2(),
-            FakeRomeV2(),
-            FakeSantiagoV2(),
-            FakeSherbrooke(),
-            FakeSingaporeV2(),
-            FakeSydneyV2(),
-            FakeTorontoV2(),
-            FakeValenciaV2(),
-            FakeVigoV2(),
-            FakeWashingtonV2(),
-            FakeYorktownV2(),
+            FakeAlmadenV2(),  # type: ignore
+            FakeArmonkV2(),  # type: ignore
+            FakeAthensV2(),  # type: ignore
+            FakeAuckland(),  # type: ignore
+            FakeBelemV2(),  # type: ignore
+            FakeBoeblingenV2(),  # type: ignore
+            FakeBogotaV2(),  # type: ignore
+            FakeBrooklynV2(),  # type: ignore
+            FakeBurlingtonV2(),  # type: ignore
+            FakeCairoV2(),  # type: ignore
+            FakeCambridgeV2(),  # type: ignore
+            FakeCasablancaV2(),  # type: ignore
+            FakeEssexV2(),  # type: ignore
+            FakeGeneva(),  # type: ignore
+            FakeGuadalupeV2(),  # type: ignore
+            FakeHanoiV2(),  # type: ignore
+            FakeJakartaV2(),  # type: ignore
+            FakeJohannesburgV2(),  # type: ignore
+            FakeKolkataV2(),  # type: ignore
+            FakeLagosV2(),  # type: ignore
+            FakeLimaV2(),  # type: ignore
+            FakeLondonV2(),  # type: ignore
+            FakeManhattanV2(),  # type: ignore
+            FakeManilaV2(),  # type: ignore
+            FakeMelbourneV2(),  # type: ignore
+            FakeMontrealV2(),  # type: ignore
+            FakeMumbaiV2(),  # type: ignore
+            FakeNairobiV2(),  # type: ignore
+            FakeOslo(),  # type: ignore
+            FakeOurenseV2(),  # type: ignore
+            FakeParisV2(),  # type: ignore
+            FakePerth(),  # type: ignore
+            FakePrague(),  # type: ignore
+            FakePoughkeepsieV2(),  # type: ignore
+            FakeQuitoV2(),  # type: ignore
+            FakeRochesterV2(),  # type: ignore
+            FakeRomeV2(),  # type: ignore
+            FakeSantiagoV2(),  # type: ignore
+            FakeSherbrooke(),  # type: ignore
+            FakeSingaporeV2(),  # type: ignore
+            FakeSydneyV2(),  # type: ignore
+            FakeTorontoV2(),  # type: ignore
+            FakeValenciaV2(),  # type: ignore
+            FakeVigoV2(),  # type: ignore
+            FakeWashingtonV2(),  # type: ignore
+            FakeYorktownV2(),  # type: ignore
         ]
 
         super().__init__()
@@ -146,7 +146,7 @@ class FakeProvider(ProviderV1):
     available in the :mod:`qiskit_ibm_provider.fake_provider`.
     """
 
-    def get_backend(self, name=None, **kwargs):
+    def get_backend(self, name=None, **kwargs):  # type: ignore
         backend = self._backends[0]
         if name:
             filtered_backends = [
@@ -159,56 +159,56 @@ class FakeProvider(ProviderV1):
 
         return backend
 
-    def backends(self, name=None, **kwargs):
+    def backends(self, name=None, **kwargs):  # type: ignore
         return self._backends
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._backends = [
-            FakeAlmaden(),
-            FakeArmonk(),
-            FakeAthens(),
-            FakeBelem(),
-            FakeBoeblingen(),
-            FakeBogota(),
-            FakeBrooklyn(),
-            FakeBurlington(),
-            FakeCairo(),
-            FakeCambridge(),
-            FakeCambridgeAlternativeBasis(),
-            FakeCasablanca(),
-            FakeEssex(),
-            FakeGuadalupe(),
-            FakeHanoi(),
-            FakeJakarta(),
-            FakeJohannesburg(),
-            FakeKolkata(),
-            FakeLagos(),
-            FakeLima(),
-            FakeLondon(),
-            FakeManila(),
-            FakeManhattan(),
-            FakeMelbourne(),
-            FakeMontreal(),
-            FakeMumbai(),
-            FakeNairobi(),
-            FakeOurense(),
-            FakeParis(),
-            FakePoughkeepsie(),
-            FakeQasmSimulator(),
-            FakeQuito(),
-            FakeRochester(),
-            FakeRome(),
-            FakeRueschlikon(),
-            FakeSantiago(),
-            FakeSingapore(),
-            FakeSydney(),
-            FakeTenerife(),
-            FakeTokyo(),
-            FakeToronto(),
-            FakeValencia(),
-            FakeVigo(),
-            FakeWashington(),
-            FakeYorktown(),
+            FakeAlmaden(),  # type: ignore
+            FakeArmonk(),  # type: ignore
+            FakeAthens(),  # type: ignore
+            FakeBelem(),  # type: ignore
+            FakeBoeblingen(),  # type: ignore
+            FakeBogota(),  # type: ignore
+            FakeBrooklyn(),  # type: ignore
+            FakeBurlington(),  # type: ignore
+            FakeCairo(),  # type: ignore
+            FakeCambridge(),  # type: ignore
+            FakeCambridgeAlternativeBasis(),  # type: ignore
+            FakeCasablanca(),  # type: ignore
+            FakeEssex(),  # type: ignore
+            FakeGuadalupe(),  # type: ignore
+            FakeHanoi(),  # type: ignore
+            FakeJakarta(),  # type: ignore
+            FakeJohannesburg(),  # type: ignore
+            FakeKolkata(),  # type: ignore
+            FakeLagos(),  # type: ignore
+            FakeLima(),  # type: ignore
+            FakeLondon(),  # type: ignore
+            FakeManila(),  # type: ignore
+            FakeManhattan(),  # type: ignore
+            FakeMelbourne(),  # type: ignore
+            FakeMontreal(),  # type: ignore
+            FakeMumbai(),  # type: ignore
+            FakeNairobi(),  # type: ignore
+            FakeOurense(),  # type: ignore
+            FakeParis(),  # type: ignore
+            FakePoughkeepsie(),  # type: ignore
+            FakeQasmSimulator(),  # type: ignore
+            FakeQuito(),  # type: ignore
+            FakeRochester(),  # type: ignore
+            FakeRome(),  # type: ignore
+            FakeRueschlikon(),  # type: ignore
+            FakeSantiago(),  # type: ignore
+            FakeSingapore(),  # type: ignore
+            FakeSydney(),  # type: ignore
+            FakeTenerife(),  # type: ignore
+            FakeTokyo(),  # type: ignore
+            FakeToronto(),  # type: ignore
+            FakeValencia(),  # type: ignore
+            FakeVigo(),  # type: ignore
+            FakeWashington(),  # type: ignore
+            FakeYorktown(),  # type: ignore
         ]
 
         super().__init__()
