@@ -415,6 +415,9 @@ class PadDynamicalDecoupling(BlockBasePadder):
             )
             return
 
+        if self._include_clean_qubits and qubit not in self._dirty_qubits:
+            self._dirty_qubits.update([qubit])
+
         if (
             not isinstance(prev_node, DAGInNode)
             and self._skip_reset_qubits
@@ -423,7 +426,7 @@ class PadDynamicalDecoupling(BlockBasePadder):
         ):
             self._dirty_qubits.remove(qubit)
 
-        if not self._include_clean_qubits and qubit not in self._dirty_qubits:
+        if qubit not in self._dirty_qubits:
             # Previous node is the start edge or reset, i.e. qubit is ground state.
             self._apply_scheduled_op(
                 block_idx, t_start, Delay(time_interval, self._block_dag.unit), qubit

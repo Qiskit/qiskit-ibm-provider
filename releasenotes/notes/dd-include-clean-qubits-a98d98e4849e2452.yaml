@@ -1,0 +1,4 @@
+---
+upgrade:
+  - |
+    Add ``include_clean_qubits`` optional flag to the constructor for :class:`.PadDynamicalDecoupling`. If ``True``, dynamical decoupling is applied on qubits regardless of their state, unless immediately following a reset instruction (if ``skip_reset_qubits`` is ``True``).
