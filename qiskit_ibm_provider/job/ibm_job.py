@@ -68,26 +68,18 @@ class IBMJob(Job, ABC):
             # Append suffix to key to avoid conflicts.
             self._data[key + "_"] = value
 
-    def properties(
-        self, refresh: bool = False, datetime: Optional[python_datetime] = None
-    ) -> Optional[BackendProperties]:
+    def properties(self, refresh: bool = False) -> Optional[BackendProperties]:
         """Return the backend properties for this job.
 
         Args:
             refresh: If ``True``, re-query the server for the backend properties.
                 Otherwise, return a cached version.
-            datetime: By specifying `datetime`, this function returns an instance
-                of the :class:`BackendProperties<qiskit.providers.models.BackendProperties>`
-                whose timestamp is closest to, but older than, the specified `datetime`.
-                If not specified, the datetime of the job creation is used.
 
         Returns:
             The backend properties used for this job, at the time the job was run,
             or ``None`` if properties are not available.
         """
-        if not datetime:
-            datetime = self.creation_date()
-        return self._backend.properties(refresh, datetime)
+        return self._backend.properties(refresh, self.creation_date())
 
     @abstractmethod
     def result(
