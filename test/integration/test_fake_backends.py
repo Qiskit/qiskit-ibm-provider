@@ -211,7 +211,7 @@ class TestFakeBackends(IBMTestCase):
 
     def test_delay_circuit(self):
         backend = FakeMumbaiV2()
-        qc = QuantumCircuit(2)
+        qc = QuantumCircuit(2)  # pylint: disable=invalid-name
         qc.delay(502, 0, unit="ns")
         qc.x(1)
         qc.delay(250, 1, unit="ns")
@@ -235,7 +235,7 @@ class TestFakeBackends(IBMTestCase):
         backend = FakeMumbai()
         backend_v2 = BackendV2Converter(backend, add_delay=True)
         self.assertIsInstance(backend_v2, BackendV2)
-        qc = QuantumCircuit(2)
+        qc = QuantumCircuit(2)  # pylint: disable=invalid-name
         qc.delay(502, 0, unit="ns")
         qc.x(1)
         qc.delay(250, 1, unit="ns")
@@ -395,8 +395,8 @@ class TestFakeBackends(IBMTestCase):
                     base_gate=SwapGate(),
                 )
 
-        from qiskit_aer import AerSimulator
-        from qiskit_aer.library import (
+        from qiskit_aer import AerSimulator  # pylint: disable=import-outside-toplevel
+        from qiskit_aer.library import (  # pylint: disable=import-outside-toplevel
             SaveExpectationValue,
             SaveAmplitudes,
             SaveStatevectorDict,
@@ -419,8 +419,12 @@ class TestFakeBackends(IBMTestCase):
             SaveAmplitudesSquared,
             SaveProbabilitiesDict,
         )
-        from qiskit_aer.noise.errors import ReadoutError
-        from qiskit_aer.noise.noise_model import QuantumErrorLocation
+        from qiskit_aer.noise.errors import (
+            ReadoutError,
+        )  # pylint: disable=import-outside-toplevel
+        from qiskit_aer.noise.noise_model import (
+            QuantumErrorLocation,
+        )  # pylint: disable=import-outside-toplevel
 
         sim = AerSimulator()
         phi = Parameter("phi")
@@ -633,8 +637,10 @@ class TestFakeBackends(IBMTestCase):
                 gate["parameters"].append(non_operational_gate)
         backend._properties = BackendProperties.from_dict(props)
         v2_backend = BackendV2Converter(backend, filter_faulty=True)
-        qc = QuantumCircuit(5)
-        for x, y in itertools.product(range(5), range(5)):
+        qc = QuantumCircuit(5)  # pylint: disable=invalid-name
+        for x, y in itertools.product(
+            range(5), range(5)
+        ):  # pylint: disable=invalid-name
             if x == y:
                 continue
             qc.cx(x, y)
