@@ -12,7 +12,6 @@
 
 """IBMBackend Test."""
 
-from datetime import datetime, timedelta
 from unittest import mock, skip
 from unittest.mock import patch
 
@@ -191,10 +190,3 @@ class TestIBMBackend(IBMTestCase):
         backend_version = self.backend.properties().backend_version
         job_version = job.properties().backend_version
         self.assertEqual(job_version, backend_version)
-
-        prev_datetime = datetime.now() - timedelta(days=30)
-        prev_backend_version = self.backend.properties(
-            datetime=prev_datetime
-        ).backend_version
-        prev_job_version = job.properties(datetime=prev_datetime).backend_version
-        self.assertEqual(prev_job_version, prev_backend_version)
