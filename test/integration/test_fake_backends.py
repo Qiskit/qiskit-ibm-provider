@@ -419,12 +419,12 @@ class TestFakeBackends(IBMTestCase):
             SaveAmplitudesSquared,
             SaveProbabilitiesDict,
         )
-        from qiskit_aer.noise.errors import (
+        from qiskit_aer.noise.errors import (  # pylint: disable=import-outside-toplevel
             ReadoutError,
-        )  # pylint: disable=import-outside-toplevel
-        from qiskit_aer.noise.noise_model import (
+        )
+        from qiskit_aer.noise.noise_model import (  # pylint: disable=import-outside-toplevel
             QuantumErrorLocation,
-        )  # pylint: disable=import-outside-toplevel
+        )
 
         sim = AerSimulator()
         phi = Parameter("phi")
@@ -638,9 +638,9 @@ class TestFakeBackends(IBMTestCase):
         backend._properties = BackendProperties.from_dict(props)
         v2_backend = BackendV2Converter(backend, filter_faulty=True)
         qc = QuantumCircuit(5)  # pylint: disable=invalid-name
-        for x, y in itertools.product(
+        for x, y in itertools.product(  # pylint: disable=invalid-name
             range(5), range(5)
-        ):  # pylint: disable=invalid-name
+        ):
             if x == y:
                 continue
             qc.cx(x, y)
