@@ -374,16 +374,13 @@ class IBMCompositeJob(IBMJob):
 
     @_requires_submit
     def properties(
-        self, refresh: bool = False, datetime: Optional[python_datetime] = None
+        self, refresh: bool = False
     ) -> Optional[Union[List[BackendProperties], BackendProperties]]:
         """Return the backend properties for this job.
 
          Args:
             refresh: If ``True``, re-query the server for the backend properties.
                 Otherwise, return a cached version.
-            datetime: By specifying `datetime`, this function returns an instance
-                of the :class:`BackendProperties<qiskit.providers.models.BackendProperties>`
-                whose timestamp is closest to, but older than, the specified `datetime`.
 
         Note:
             This method blocks until all sub-jobs are submitted.
@@ -401,7 +398,7 @@ class IBMCompositeJob(IBMJob):
             self._properties = []
             properties_ts = []
             for job in self._get_circuit_jobs():
-                props = job.properties(refresh, datetime)
+                props = job.properties(refresh)
                 if props.last_update_date not in properties_ts:
                     self._properties.append(props)
                     properties_ts.append(props.last_update_date)
