@@ -47,6 +47,7 @@ from qiskit.circuit import (
 )
 from qiskit.result import Result
 from qiskit.version import __version__ as _terra_version_string
+from qiskit.qpy import load
 
 from ..qpy import (
     _write_parameter,
@@ -55,7 +56,6 @@ from ..qpy import (
     _read_parameter_expression_v3,
     _read_parameter,
     dump,
-    load,
 )
 
 
