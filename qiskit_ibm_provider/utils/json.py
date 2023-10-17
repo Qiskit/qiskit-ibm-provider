@@ -47,6 +47,7 @@ from qiskit.circuit import (
 )
 from qiskit.result import Result
 from qiskit.version import __version__ as _terra_version_string
+from qiskit.qpy import load
 
 from ..qpy import (
     _write_parameter,
@@ -55,7 +56,6 @@ from ..qpy import (
     _read_parameter_expression_v3,
     _read_parameter,
     dump,
-    load,
 )
 
 
@@ -203,6 +203,8 @@ class RuntimeEncoder(json.JSONEncoder):
                 return {"__type__": "ndarray", "__value__": obj.tolist()}
             value = _serialize_and_encode(obj, np.save, allow_pickle=False)
             return {"__type__": "ndarray", "__value__": value}
+        if isinstance(obj, np.int64):
+            return obj.item()
         if isinstance(obj, np.number):
             # Maybe we should encode the numpy data type here for better accuracy.
             return {"__type__": type(obj.item()).__name__, "__value__": obj.item()}
