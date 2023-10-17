@@ -203,7 +203,6 @@ class TestSerialization(IBMTestCase):
         shots = 100
         result = self.sim_backend.run(self.bell, shots=np.int64(shots)).result()
         self.assertEqual(result.results[0].shots, shots)
-        print(result.results[0])
 
 
 def _find_potential_encoded(data: Any, c_key: str, tally: set) -> None:
