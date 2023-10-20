@@ -110,19 +110,27 @@ def _read_discriminator(file_obj, version):  # type: ignore[no-untyped-def]
     return Discriminator(name=name, **params)
 
 
-def _loads_symbolic_expr(expr_bytes):  # type: ignore[no-untyped-def]
-    from sympy import parse_expr  # pylint: disable=import-outside-toplevel
-
+def _loads_symbolic_expr(expr_bytes, use_symengine=False):  # type: ignore[no-untyped-def]
     if expr_bytes == b"":
         return None
 
-    expr_txt = zlib.decompress(expr_bytes).decode(common.ENCODE)
-    expr = parse_expr(expr_txt)
+    if use_symengine:
+        _optional.HAS_SYMENGINE.require_now("load a symengine expression")
+        from symengine.lib.symengine_wrapper import (  # pylint: disable=import-outside-toplevel, no-name-in-module
+            load_basic,
+        )
 
-    if _optional.HAS_SYMENGINE:
-        from symengine import sympify  # pylint: disable=import-outside-toplevel
+        expr = load_basic(zlib.decompress(expr_bytes))
 
-        return sympify(expr)
+    else:
+        from sympy import parse_expr  # pylint: disable=import-outside-toplevel
+
+        expr_txt = zlib.decompress(expr_bytes).decode(common.ENCODE)
+        expr = parse_expr(expr_txt)
+        if _optional.HAS_SYMENGINE:
+            from symengine import sympify  # pylint: disable=import-outside-toplevel
+
+            return sympify(expr)
     return expr
 
 
@@ -210,7 +218,7 @@ def _read_symbolic_pulse(file_obj, version):  # type: ignore[no-untyped-def]
         raise NotImplementedError(f"Unknown class '{class_name}'")
 
 
-def _read_symbolic_pulse_v6(file_obj, version):  # type: ignore[no-untyped-def]
+def _read_symbolic_pulse_v6(file_obj, version, use_symengine):  # type: ignore[no-untyped-def]
     make = formats.SYMBOLIC_PULSE_V2._make
     pack = formats.SYMBOLIC_PULSE_PACK_V2
     size = formats.SYMBOLIC_PULSE_SIZE_V2
@@ -223,10 +231,12 @@ def _read_symbolic_pulse_v6(file_obj, version):  # type: ignore[no-untyped-def]
     )
     class_name = file_obj.read(header.class_name_size).decode(common.ENCODE)
     pulse_type = file_obj.read(header.type_size).decode(common.ENCODE)
-    envelope = _loads_symbolic_expr(file_obj.read(header.envelope_size))
-    constraints = _loads_symbolic_expr(file_obj.read(header.constraints_size))
+    envelope = _loads_symbolic_expr(file_obj.read(header.envelope_size), use_symengine)
+    constraints = _loads_symbolic_expr(
+        file_obj.read(header.constraints_size), use_symengine
+    )
     valid_amp_conditions = _loads_symbolic_expr(
-        file_obj.read(header.valid_amp_conditions_size)
+        file_obj.read(header.valid_amp_conditions_size), use_symengine
     )
     parameters = common.read_mapping(
         file_obj,
@@ -284,7 +294,7 @@ def _read_alignment_context(file_obj, version):  # type: ignore[no-untyped-def]
 
 
 # pylint: disable=too-many-return-statements
-def _loads_operand(type_key, data_bytes, version):  # type: ignore[no-untyped-def]
+def _loads_operand(type_key, data_bytes, version, use_symengine):  # type: ignore[no-untyped-def]
     if type_key == type_keys.ScheduleOperand.WAVEFORM:
         return common.data_from_binary(data_bytes, _read_waveform, version=version)
     if type_key == type_keys.ScheduleOperand.SYMBOLIC_PULSE:
@@ -294,7 +304,10 @@ def _loads_operand(type_key, data_bytes, version):  # type: ignore[no-untyped-de
             )
         else:
             return common.data_from_binary(
-                data_bytes, _read_symbolic_pulse_v6, version=version
+                data_bytes,
+                _read_symbolic_pulse_v6,
+                version=version,
+                use_symengine=use_symengine,
             )
     if type_key == type_keys.ScheduleOperand.CHANNEL:
         return common.data_from_binary(data_bytes, _read_channel, version=version)
@@ -316,14 +329,21 @@ def _loads_operand(type_key, data_bytes, version):  # type: ignore[no-untyped-de
     return value.loads_value(type_key, data_bytes, version, {})
 
 
-def _read_element(file_obj, version, metadata_deserializer):  # type: ignore[no-untyped-def]
+def _read_element(  # type: ignore[no-untyped-def]
+    file_obj, version, metadata_deserializer, use_symengine
+):
     type_key = common.read_type_key(file_obj)
 
     if type_key == type_keys.Program.SCHEDULE_BLOCK:
-        return read_schedule_block(file_obj, version, metadata_deserializer)
+        return read_schedule_block(
+            file_obj, version, metadata_deserializer, use_symengine
+        )
 
     operands = common.read_sequence(
-        file_obj, deserializer=_loads_operand, version=version
+        file_obj,
+        deserializer=_loads_operand,
+        version=version,
+        use_symengine=use_symengine,
     )
     name = value.read_value(file_obj, version, {})
 
@@ -409,22 +429,28 @@ def _write_discriminator(file_obj, data):  # type: ignore[no-untyped-def]
     value.write_value(file_obj, name)
 
 
-def _dumps_symbolic_expr(expr):  # type: ignore[no-untyped-def]
-    from sympy import srepr, sympify  # pylint: disable=import-outside-toplevel
-
+def _dumps_symbolic_expr(expr, use_symengine):  # type: ignore[no-untyped-def]
     if expr is None:
         return b""
 
-    expr_bytes = srepr(sympify(expr)).encode(common.ENCODE)
+    if use_symengine:
+        _optional.HAS_SYMENGINE.require_now("dump a symengine expression")
+        expr_bytes = expr.__reduce__()[1][0]
+    else:
+        from sympy import srepr, sympify  # pylint: disable=import-outside-toplevel
+
+        expr_bytes = srepr(sympify(expr)).encode(common.ENCODE)
     return zlib.compress(expr_bytes)
 
 
-def _write_symbolic_pulse(file_obj, data):  # type: ignore[no-untyped-def]
+def _write_symbolic_pulse(file_obj, data, use_symengine):  # type: ignore[no-untyped-def]
     class_name_bytes = data.__class__.__name__.encode(common.ENCODE)
     pulse_type_bytes = data.pulse_type.encode(common.ENCODE)
-    envelope_bytes = _dumps_symbolic_expr(data.envelope)
-    constraints_bytes = _dumps_symbolic_expr(data.constraints)
-    valid_amp_conditions_bytes = _dumps_symbolic_expr(data.valid_amp_conditions)
+    envelope_bytes = _dumps_symbolic_expr(data.envelope, use_symengine)
+    constraints_bytes = _dumps_symbolic_expr(data.constraints, use_symengine)
+    valid_amp_conditions_bytes = _dumps_symbolic_expr(
+        data.valid_amp_conditions, use_symengine
+    )
 
     header_bytes = struct.pack(
         formats.SYMBOLIC_PULSE_PACK_V2,
@@ -460,13 +486,15 @@ def _write_alignment_context(file_obj, context):  # type: ignore[no-untyped-def]
     )
 
 
-def _dumps_operand(operand):  # type: ignore[no-untyped-def]
+def _dumps_operand(operand, use_symengine):  # type: ignore[no-untyped-def]
     if isinstance(operand, library.Waveform):
         type_key = type_keys.ScheduleOperand.WAVEFORM
         data_bytes = common.data_to_binary(operand, _write_waveform)
     elif isinstance(operand, library.SymbolicPulse):
         type_key = type_keys.ScheduleOperand.SYMBOLIC_PULSE
-        data_bytes = common.data_to_binary(operand, _write_symbolic_pulse)
+        data_bytes = common.data_to_binary(
+            operand, _write_symbolic_pulse, use_symengine=use_symengine
+        )
     elif isinstance(operand, channels.Channel):
         type_key = type_keys.ScheduleOperand.CHANNEL
         data_bytes = common.data_to_binary(operand, _write_channel)
@@ -485,7 +513,9 @@ def _dumps_operand(operand):  # type: ignore[no-untyped-def]
     return type_key, data_bytes
 
 
-def _write_element(file_obj, element, metadata_serializer):  # type: ignore[no-untyped-def]
+def _write_element(  # type: ignore[no-untyped-def]
+    file_obj, element, metadata_serializer, use_symengine
+):
     if isinstance(element, ScheduleBlock):
         common.write_type_key(file_obj, type_keys.Program.SCHEDULE_BLOCK)
         write_schedule_block(file_obj, element, metadata_serializer)
@@ -496,6 +526,7 @@ def _write_element(file_obj, element, metadata_serializer):  # type: ignore[no-u
             file_obj,
             sequence=element.operands,
             serializer=_dumps_operand,
+            use_symengine=use_symengine,
         )
         value.write_value(file_obj, element.name)
 
@@ -514,7 +545,9 @@ def _dumps_reference_item(schedule, metadata_serializer):  # type: ignore[no-unt
     return type_key, data_bytes
 
 
-def read_schedule_block(file_obj, version, metadata_deserializer=None):  # type: ignore[no-untyped-def]
+def read_schedule_block(  # type: ignore[no-untyped-def]
+    file_obj, version, metadata_deserializer=None, use_symengine=False
+):
     """Read a single ScheduleBlock from the file like object.
 
     Args:
@@ -527,6 +560,11 @@ def read_schedule_block(file_obj, version, metadata_deserializer=None):  # type:
             in the file-like object. If this is not specified the circuit metadata will
             be parsed as JSON with the stdlib ``json.load()`` function using
             the default ``JSONDecoder`` class.
+
+        use_symengine (bool): If True, symbolic objects will be serialized using symengine's
+            native mechanism. This is a faster serialization alternative, but not supported in all
+            platforms. Please check that your target platform is supported by the symengine library
+            before setting this option, as it will be required by qpy to deserialize the payload.
 
     Returns:
         ScheduleBlock: The schedule block object from the file.
@@ -553,7 +591,9 @@ def read_schedule_block(file_obj, version, metadata_deserializer=None):  # type:
         alignment_context=context,
     )
     for _ in range(data.num_elements):
-        block_elm = _read_element(file_obj, version, metadata_deserializer)
+        block_elm = _read_element(
+            file_obj, version, metadata_deserializer, use_symengine
+        )
         block.append(block_elm, inplace=True)
 
     # Load references
@@ -577,7 +617,9 @@ def read_schedule_block(file_obj, version, metadata_deserializer=None):  # type:
     return block
 
 
-def write_schedule_block(file_obj, block, metadata_serializer=None):  # type: ignore[no-untyped-def]
+def write_schedule_block(  # type: ignore[no-untyped-def]
+    file_obj, block, metadata_serializer=None, use_symengine=False
+):
     """Write a single ScheduleBlock object in the file like object.
 
     Args:
@@ -587,6 +629,11 @@ def write_schedule_block(file_obj, block, metadata_serializer=None):  # type: ig
             will be passed the :attr:`.ScheduleBlock.metadata` dictionary for
             ``block`` and will be used as the ``cls`` kwarg
             on the ``json.dump()`` call to JSON serialize that dictionary.
+
+        use_symengine (bool): If True, symbolic objects will be serialized using symengine's
+            native mechanism. This is a faster serialization alternative, but not supported in all
+            platforms. Please check that your target platform is supported by the symengine library
+            before setting this option, as it will be required by qpy to deserialize the payload.
 
     Raises:
         TypeError: If any of the instructions is invalid data format.
@@ -609,7 +656,7 @@ def write_schedule_block(file_obj, block, metadata_serializer=None):  # type: ig
 
     _write_alignment_context(file_obj, block.alignment_context)
     for block_elm in block._blocks:
-        _write_element(file_obj, block_elm, metadata_serializer)
+        _write_element(file_obj, block_elm, metadata_serializer, use_symengine)
 
     # Write references
     flat_key_refdict = {}

@@ -53,10 +53,15 @@ def _write_parameter_vec(file_obj, obj):  # type: ignore[no-untyped-def]
     file_obj.write(name_bytes)
 
 
-def _write_parameter_expression(file_obj, obj):  # type: ignore[no-untyped-def]
-    from sympy import srepr, sympify  # pylint: disable=import-outside-toplevel
+def _write_parameter_expression(file_obj, obj, use_symengine):  # type: ignore[no-untyped-def]
+    if use_symengine:
+        _optional.HAS_SYMENGINE.require_now("write_parameter_expression")
+        expr_bytes = obj._symbol_expr.__reduce__()[1][0]
+    else:
+        from sympy import srepr, sympify  # pylint: disable=import-outside-toplevel
 
-    expr_bytes = srepr(sympify(obj._symbol_expr)).encode(common.ENCODE)
+        expr_bytes = srepr(sympify(obj._symbol_expr)).encode(common.ENCODE)
+
     param_expr_header_raw = struct.pack(
         formats.PARAMETER_EXPR_PACK, len(obj._parameter_symbols), len(expr_bytes)
     )
@@ -77,7 +82,7 @@ def _write_parameter_expression(file_obj, obj):  # type: ignore[no-untyped-def]
             value_key = symbol_key
             value_data = bytes()
         else:
-            value_key, value_data = dumps_value(value)
+            value_key, value_data = dumps_value(value, use_symengine=use_symengine)
 
         elem_header = struct.pack(
             formats.PARAM_EXPR_MAP_ELEM_V3_PACK,
@@ -250,11 +255,9 @@ def _read_parameter_expression(file_obj):  # type: ignore[no-untyped-def]
     from sympy.parsing.sympy_parser import parse_expr
 
     if _optional.HAS_SYMENGINE:
-        import symengine  # pylint: disable=import-outside-toplevel
+        from symengine import sympify  # pylint: disable=import-outside-toplevel
 
-        expr_ = symengine.sympify(
-            parse_expr(file_obj.read(data.expr_size).decode(common.ENCODE))
-        )
+        expr_ = sympify(parse_expr(file_obj.read(data.expr_size).decode(common.ENCODE)))
     else:
         expr_ = parse_expr(file_obj.read(data.expr_size).decode(common.ENCODE))
     symbol_map = {}
@@ -393,7 +396,7 @@ def _read_expr_type(file_obj) -> types.Type:  # type: ignore[no-untyped-def]
     raise exceptions.QpyError(f"Invalid classical-expression Type key '{type_key}'")
 
 
-def _read_parameter_expression_v3(file_obj, vectors):  # type: ignore[no-untyped-def]
+def _read_parameter_expression_v3(file_obj, vectors, use_symengine):  # type: ignore[no-untyped-def]
     data = formats.PARAMETER_EXPR(
         *struct.unpack(
             formats.PARAMETER_EXPR_PACK, file_obj.read(formats.PARAMETER_EXPR_SIZE)
@@ -402,14 +405,23 @@ def _read_parameter_expression_v3(file_obj, vectors):  # type: ignore[no-untyped
     # pylint: disable=import-outside-toplevel
     from sympy.parsing.sympy_parser import parse_expr
 
-    if _optional.HAS_SYMENGINE:
-        import symengine  # pylint: disable=import-outside-toplevel
+    # pylint: disable=import-outside-toplevel
 
-        expr_ = symengine.sympify(
-            parse_expr(file_obj.read(data.expr_size).decode(common.ENCODE))
+    payload = file_obj.read(data.expr_size)
+    if use_symengine:
+        _optional.HAS_SYMENGINE.require_now("read_parameter_expression_v3")
+        from symengine.lib.symengine_wrapper import (  # pylint: disable = no-name-in-module
+            load_basic,
         )
+
+        expr_ = load_basic(payload)
     else:
-        expr_ = parse_expr(file_obj.read(data.expr_size).decode(common.ENCODE))
+        if _optional.HAS_SYMENGINE:
+            from symengine import sympify
+
+            expr_ = sympify(parse_expr(payload.decode(common.ENCODE)))
+        else:
+            expr_ = parse_expr(payload.decode(common.ENCODE))
     symbol_map = {}
     for _ in range(data.map_elements):
         elem_data = formats.PARAM_EXPR_MAP_ELEM_V3(
@@ -441,7 +453,10 @@ def _read_parameter_expression_v3(file_obj, vectors):  # type: ignore[no-untyped
             value = symbol._symbol_expr
         elif elem_key == type_keys.Value.PARAMETER_EXPRESSION:
             value = common.data_from_binary(
-                binary_data, _read_parameter_expression_v3, vectors=vectors
+                binary_data,
+                _read_parameter_expression_v3,
+                vectors=vectors,
+                use_symengine=use_symengine,
             )
         else:
             raise exceptions.QpyError(
@@ -452,13 +467,17 @@ def _read_parameter_expression_v3(file_obj, vectors):  # type: ignore[no-untyped
     return ParameterExpression(symbol_map, expr_)
 
 
-def dumps_value(obj, *, index_map=None):  # type: ignore[no-untyped-def]
+def dumps_value(obj, *, index_map=None, use_symengine=False):  # type: ignore[no-untyped-def]
     """Serialize input value object.
     Args:
         obj (any): Arbitrary value object to serialize.
         index_map (dict): Dictionary with two keys, "q" and "c".  Each key has a value that is a
             dictionary mapping :class:`.Qubit` or :class:`.Clbit` instances (respectively) to their
             integer indices.
+        use_symengine (bool): If True, symbolic objects will be serialized using symengine's
+            native mechanism. This is a faster serialization alternative, but not supported in all
+            platforms. Please check that your target platform is supported by the symengine library
+            before setting this option, as it will be required by qpy to deserialize the payload.
     Returns:
         tuple: TypeKey and binary data.
     Raises:
@@ -484,7 +503,7 @@ def dumps_value(obj, *, index_map=None):  # type: ignore[no-untyped-def]
         binary_data = common.data_to_binary(obj, _write_parameter)
     elif type_key == type_keys.Value.PARAMETER_EXPRESSION:
         binary_data = common.data_to_binary(
-            obj, _write_parameter_expression
+            obj, _write_parameter_expression, use_symengine=use_symengine
         )  # type: ignore[no-untyped-call]
     elif type_key == type_keys.Value.EXPRESSION:
         clbit_indices = {} if index_map is None else index_map["c"]
@@ -499,19 +518,30 @@ def dumps_value(obj, *, index_map=None):  # type: ignore[no-untyped-def]
     return type_key, binary_data
 
 
-def write_value(file_obj, obj, *, index_map=None):  # type: ignore[no-untyped-def]
+def write_value(file_obj, obj, *, index_map=None, use_symengine=False):  # type: ignore[no-untyped-def]
     """Write a value to the file like object.
     Args:
         file_obj (File): A file like object to write data.
         obj (any): Value to write.
         index_map (dict): Dictionary with two keys, "q" and "c".
+        use_symengine (bool): If True, symbolic objects will be serialized using symengine's
+            native mechanism. This is a faster serialization alternative, but not supported in all
+            platforms. Please check that your target platform is supported by the symengine library
+            before setting this option, as it will be required by qpy to deserialize the payload.
     """
-    type_key, data = dumps_value(obj, index_map=index_map)
+    type_key, data = dumps_value(obj, index_map=index_map, use_symengine=use_symengine)
     common.write_generic_typed_data(file_obj, type_key, data)
 
 
 def loads_value(  # type: ignore[no-untyped-def]
-    type_key, binary_data, version, vectors, *, clbits=(), cregs=None
+    type_key,
+    binary_data,
+    version,
+    vectors,
+    *,
+    clbits=(),
+    cregs=None,
+    use_symengine=False,
 ) -> Any:
     """Deserialize input binary data to value object.
     Args:
@@ -521,6 +551,10 @@ def loads_value(  # type: ignore[no-untyped-def]
         vectors (dict): ParameterVector in current scope.
         clbits (Sequence[Clbit]): Clbits in the current scope.
         cregs (Mapping[str, ClassicalRegister]): Classical registers in the current scope.
+        use_symengine (bool): If True, symbolic objects will be de-serialized using symengine's
+            native mechanism. This is a faster serialization alternative, but not supported in all
+            platforms. Please check that your target platform is supported by the symengine library
+            before setting this option, as it will be required by qpy to deserialize the payload.
     Returns:
         any: Deserialized value object.
     Raises:
@@ -556,7 +590,10 @@ def loads_value(  # type: ignore[no-untyped-def]
             return common.data_from_binary(binary_data, _read_parameter_expression)
         else:
             return common.data_from_binary(
-                binary_data, _read_parameter_expression_v3, vectors=vectors
+                binary_data,
+                _read_parameter_expression_v3,
+                vectors=vectors,
+                use_symengine=use_symengine,
             )
     if type_key == type_keys.Value.EXPRESSION:
         return common.data_from_binary(
@@ -568,7 +605,7 @@ def loads_value(  # type: ignore[no-untyped-def]
     )
 
 
-def read_value(file_obj, version, vectors, *, clbits=(), cregs=None):  # type: ignore[no-untyped-def]
+def read_value(file_obj, version, vectors, *, clbits=(), cregs=None, use_symengine=False):  # type: ignore[no-untyped-def]
     """Read a value from the file like object.
     Args:
         file_obj (File): A file like object to write data.
@@ -576,9 +613,21 @@ def read_value(file_obj, version, vectors, *, clbits=(), cregs=None):  # type: i
         vectors (dict): ParameterVector in current scope.
         clbits (Sequence[Clbit]): Clbits in the current scope.
         cregs (Mapping[str, ClassicalRegister]): Classical registers in the current scope.
+        use_symengine (bool): If True, symbolic objects will be de-serialized using symengine's
+            native mechanism. This is a faster serialization alternative, but not supported in all
+            platforms. Please check that your target platform is supported by the symengine library
+            before setting this option, as it will be required by qpy to deserialize the payload.
     Returns:
         any: Deserialized value object.
     """
     type_key, data = common.read_generic_typed_data(file_obj)
 
-    return loads_value(type_key, data, version, vectors, clbits=clbits, cregs=cregs)
+    return loads_value(
+        type_key,
+        data,
+        version,
+        vectors,
+        clbits=clbits,
+        cregs=cregs,
+        use_symengine=use_symengine,
+    )
