@@ -160,12 +160,13 @@ def _loads_instruction_parameter(  # type: ignore[no-untyped-def]
             data_bytes.decode(common.ENCODE), circuit, registers
         )
     else:
+        clbits = circuit.clbits if circuit is not None else ()
         param = value.loads_value(
             type_key,
             data_bytes,
             version,
             vectors,
-            clbits=circuit.clbits,
+            clbits=clbits,
             cregs=registers["c"],
             use_symengine=use_symengine,
         )
@@ -634,8 +635,20 @@ def _write_instruction(  # type: ignore[no-untyped-def]
             custom_operations[instruction.operation.name] = instruction.operation
             custom_operations_list.append(instruction.operation.name)
         gate_class_name = instruction.operation.name
+        # ucr*_dg gates can have different numbers of parameters,
+        # the uuid is appended to avoid storing a single definition
+        # in circuits with multiple ucr*_dg gates.
+        if instruction.operation.name in ["ucrx_dg", "ucry_dg", "ucrz_dg"]:
+            gate_class_name += "_" + str(uuid.uuid4())
+
+        if gate_class_name not in custom_operations:
+            custom_operations[gate_class_name] = instruction.operation
+            custom_operations_list.append(gate_class_name)
 
     elif gate_class_name == "ControlledGate":
+        # controlled gates can have the same name but different parameter
+        # values, the uuid is appended to avoid storing a single definition
+        # in circuits with multiple controlled gates.
         gate_class_name = instruction.operation.name + "_" + str(uuid.uuid4())
         custom_operations[gate_class_name] = instruction.operation
         custom_operations_list.append(gate_class_name)
