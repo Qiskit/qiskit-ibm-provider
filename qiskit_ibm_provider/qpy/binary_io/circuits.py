@@ -29,7 +29,7 @@ from qiskit.circuit import library, controlflow, CircuitInstruction, ControlFlow
 from qiskit.circuit.classical import expr
 from qiskit.circuit.classicalregister import ClassicalRegister, Clbit
 from qiskit.circuit.gate import Gate
-from qiskit.circuit.singleton import SingletonGate
+from qiskit.circuit.singleton import SingletonInstruction, SingletonGate
 from qiskit.circuit.controlledgate import ControlledGate
 from qiskit.circuit.instruction import Instruction
 from qiskit.circuit.quantumcircuit import QuantumCircuit
@@ -350,7 +350,7 @@ def _read_instruction(  # type: ignore[no-untyped-def]
             elif gate_name in {"BreakLoopOp", "ContinueLoopOp"}:
                 params = [len(qargs), len(cargs)]
             if label is not None:
-                if issubclass(gate_class, SingletonGate):
+                if issubclass(gate_class, (SingletonInstruction, SingletonGate)):
                     gate = gate_class(*params, label=label)
                 else:
                     gate = gate_class(*params)
@@ -616,7 +616,7 @@ def _dumps_instruction_parameter(param, index_map, use_symengine):  # type: igno
 def _write_instruction(  # type: ignore[no-untyped-def]
     file_obj, instruction, custom_operations, index_map, use_symengine
 ):
-    gate_class_name = instruction.operation.__class__.__name__
+    gate_class_name = instruction.operation.base_class.__name__
     custom_operations_list = []
     if (
         (
