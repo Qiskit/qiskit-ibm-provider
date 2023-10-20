@@ -21,7 +21,7 @@ import traceback
 import uuid
 from collections import defaultdict
 from concurrent import futures
-from datetime import datetime
+from datetime import datetime as python_datetime
 from functools import wraps
 from typing import Dict, Optional, Tuple, Any, List, Callable, Union
 
@@ -122,7 +122,7 @@ class IBMCompositeJob(IBMJob):
         backend: "ibm_backend.IBMBackend",
         api_client: AccountClient,
         job_id: Optional[str] = None,
-        creation_date: Optional[datetime] = None,
+        creation_date: Optional[python_datetime] = None,
         jobs: Optional[List[IBMCircuitJob]] = None,
         circuits_list: Optional[List[List[QuantumCircuit]]] = None,
         run_config: Optional[Dict] = None,
@@ -373,8 +373,14 @@ class IBMCompositeJob(IBMJob):
                 pass
 
     @_requires_submit
-    def properties(self) -> Optional[Union[List[BackendProperties], BackendProperties]]:
+    def properties(
+        self, refresh: bool = False
+    ) -> Optional[Union[List[BackendProperties], BackendProperties]]:
         """Return the backend properties for this job.
+
+         Args:
+            refresh: If ``True``, re-query the server for the backend properties.
+                Otherwise, return a cached version.
 
         Note:
             This method blocks until all sub-jobs are submitted.
@@ -392,7 +398,7 @@ class IBMCompositeJob(IBMJob):
             self._properties = []
             properties_ts = []
             for job in self._get_circuit_jobs():
-                props = job.properties()
+                props = job.properties(refresh)
                 if props.last_update_date not in properties_ts:
                     self._properties.append(props)
                     properties_ts.append(props.last_update_date)
@@ -752,7 +758,7 @@ class IBMCompositeJob(IBMJob):
             self._queue_info = None
         return self._queue_info
 
-    def creation_date(self) -> Optional[datetime]:
+    def creation_date(self) -> Optional[python_datetime]:
         """Return job creation date, in local time.
 
         Returns:

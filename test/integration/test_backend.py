@@ -20,7 +20,7 @@ from qiskit.providers.models import QasmBackendConfiguration
 from qiskit.providers.exceptions import QiskitBackendNotFoundError
 from qiskit.test.reference_circuits import ReferenceCircuits
 
-from qiskit_ibm_provider import IBMBackend, IBMProvider, least_busy
+from qiskit_ibm_provider import IBMBackend, IBMProvider
 from qiskit_ibm_provider.ibm_qubit_properties import IBMQubitProperties
 from qiskit_ibm_provider.exceptions import IBMBackendValueError
 
@@ -174,19 +174,19 @@ class TestIBMBackend(IBMTestCase):
 
     def test_too_many_qubits_in_circuit(self):
         """Check error message if circuit contains more qubits than supported on the backend."""
-        backends = self.dependencies.provider.backends(
-            instance=self.dependencies.instance, simulator=False
+        num = len(self.backend.properties().qubits)
+        num_qubits = num + 1
+        circuit = QuantumCircuit(num_qubits, num_qubits)
+        with self.assertRaises(IBMBackendValueError) as err:
+            _ = self.backend.run(circuit)
+        self.assertIn(
+            f"Circuit contains {num_qubits} qubits, but backend has only {num}.",
+            str(err.exception),
         )
-        least_busy_backend = least_busy(backends)
-        if least_busy_backend.properties():
-            self.assertTrue(least_busy_backend)
 
-            num = len(least_busy_backend.properties().qubits)
-            num_qubits = num + 1
-            circuit = QuantumCircuit(num_qubits, num_qubits)
-            with self.assertRaises(IBMBackendValueError) as err:
-                _ = least_busy_backend.run(circuit)
-            self.assertIn(
-                f"Circuit contains {num_qubits} qubits, but backend has only {num}.",
-                str(err.exception),
-            )
+    def test_job_backend_properties(self):
+        """Test job backend properties."""
+        job = self.backend.run(ReferenceCircuits.bell())
+        backend_version = self.backend.properties().backend_version
+        job_version = job.properties().backend_version
+        self.assertEqual(job_version, backend_version)

@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    The method :meth:`job.properties()` previously did nothing. Now it
+    returns the backend properties for this job.

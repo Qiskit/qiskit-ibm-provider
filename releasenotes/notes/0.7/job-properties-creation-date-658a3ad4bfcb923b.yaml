@@ -1,0 +1,7 @@
+---
+fixes:
+  - |
+    When retrieving the backend properties of a job with 
+    :meth:`~qiskit_ibm_provider.job.IBMJob.properties`, the job creation date is now
+    used to get the specific backend properties used when the job was run.
+

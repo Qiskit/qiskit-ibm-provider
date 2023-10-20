@@ -14,7 +14,7 @@
 
 import logging
 from abc import ABC, abstractmethod
-from datetime import datetime
+from datetime import datetime as python_datetime
 from typing import Dict, Optional, Any, List, Union
 
 from qiskit.circuit.quantumcircuit import QuantumCircuit
@@ -68,14 +68,18 @@ class IBMJob(Job, ABC):
             # Append suffix to key to avoid conflicts.
             self._data[key + "_"] = value
 
-    def properties(self) -> Optional[BackendProperties]:
+    def properties(self, refresh: bool = False) -> Optional[BackendProperties]:
         """Return the backend properties for this job.
 
+        Args:
+            refresh: If ``True``, re-query the server for the backend properties.
+                Otherwise, return a cached version.
+
         Returns:
-            The backend properties used for this job, or ``None`` if
-            properties are not available.
+            The backend properties used for this job, at the time the job was run,
+            or ``None`` if properties are not available.
         """
-        pass
+        return self._backend.properties(refresh, self.creation_date())
 
     @abstractmethod
     def result(
@@ -166,7 +170,7 @@ class IBMJob(Job, ABC):
         pass
 
     @abstractmethod
-    def creation_date(self) -> datetime:
+    def creation_date(self) -> python_datetime:
         """Return job creation date, in local time.
 
         Returns:

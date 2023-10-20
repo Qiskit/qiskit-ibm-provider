@@ -12,6 +12,7 @@
 
 """Utilities related to conversion."""
 
+import re
 from datetime import datetime, timedelta, timezone
 from math import ceil
 from typing import Union, Tuple, Any, Optional
@@ -200,13 +201,25 @@ def hms_to_seconds(hms: str, msg_prefix: str = "") -> int:
     Raises:
         IBMInputValueError: when the given hms string is in an invalid format
     """
-    try:
-        date_time = parser.parse(hms)
-        hours = date_time.hour
-        minutes = date_time.minute
-        seconds = date_time.second
-        return int(
-            timedelta(hours=hours, minutes=minutes, seconds=seconds).total_seconds()
-        )
-    except parser.ParserError as parser_error:
-        raise IBMInputValueError(msg_prefix + str(parser_error))
+
+    parsed_time = re.findall(r"(\d+[dhms])", hms)
+    total_seconds = 0
+
+    if parsed_time:
+        for time_unit in parsed_time:
+            unit = time_unit[-1]
+            value = int(time_unit[:-1])
+            if unit == "d":
+                total_seconds += value * 86400
+            elif unit == "h":
+                total_seconds += value * 3600
+            elif unit == "m":
+                total_seconds += value * 60
+            elif unit == "s":
+                total_seconds += value
+            else:
+                raise IBMInputValueError(f"{msg_prefix} Invalid input: {unit}")
+    else:
+        raise IBMInputValueError(f"{msg_prefix} Invalid input: {parsed_time}")
+
+    return total_seconds
