@@ -217,9 +217,7 @@ def _read_parameter(file_obj):  # type: ignore[no-untyped-def]
     )
     param_uuid = uuid.UUID(bytes=data.uuid)
     name = file_obj.read(data.name_size).decode(common.ENCODE)
-    param = Parameter.__new__(Parameter, name, uuid=param_uuid)
-    param.__init__(name)  # pylint: disable=unnecessary-dunder-call
-    return param
+    return Parameter(name, uuid=param_uuid)
 
 
 def _read_parameter_vec(file_obj, vectors):  # type: ignore[no-untyped-def]
@@ -236,11 +234,8 @@ def _read_parameter_vec(file_obj, vectors):  # type: ignore[no-untyped-def]
     vector = vectors[name][0]
     if vector[data.index]._uuid != param_uuid:
         vectors[name][1].add(data.index)
-        vector._params[data.index] = ParameterVectorElement.__new__(
-            ParameterVectorElement, vector, data.index, uuid=param_uuid
-        )
-        vector._params[data.index].__init__(  # pylint: disable=unnecessary-dunder-call
-            vector, data.index
+        vector._params[data.index] = ParameterVectorElement(
+            vector, data.index, uuid=param_uuid
         )
     return vector[data.index]
 
