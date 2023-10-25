@@ -14,6 +14,9 @@
 
 import json
 import numpy as np
+
+from ddt import data, ddt
+
 from qiskit import assemble
 from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister
 from qiskit.circuit import Parameter
@@ -23,6 +26,7 @@ from qiskit_ibm_provider.utils.json import RuntimeEncoder
 from ..ibm_test_case import IBMTestCase
 
 
+@ddt
 class TestSerialization(IBMTestCase):
     """Test data serialization."""
 
@@ -67,11 +71,20 @@ class TestSerialization(IBMTestCase):
             IBMJsonEncoder().encode(test_dir),
         )
 
-    def test_circuit_metadata(self):
+    @data(
+        np.arange(0, 10, 1),
+        np.arange(0.0, 10.0, 1),
+        np.int32(1),
+        np.int64(2),
+        np.float64(3.1),
+        complex(1, 1),
+        np.complex64(complex(1, 3)),
+        "TEST",
+    )
+    def test_circuit_metadata(self, metadata_test):
         """Test serializing circuit metadata."""
-
         circ = QuantumCircuit(1)
-        circ.metadata = {"test": np.arange(0, 10)}
+        circ.metadata = {"test": metadata_test}
         payload = {"circuits": [circ]}
 
         self.assertTrue(json.dumps(payload, cls=RuntimeEncoder))

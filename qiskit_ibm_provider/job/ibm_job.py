@@ -14,13 +14,12 @@
 
 import logging
 from abc import ABC, abstractmethod
-from datetime import datetime
+from datetime import datetime as python_datetime
 from typing import Dict, Optional, Any, List, Union
 
 from qiskit.circuit.quantumcircuit import QuantumCircuit
 from qiskit.providers.job import JobV1 as Job
 from qiskit.providers.models import BackendProperties
-from qiskit.pulse import Schedule
 from qiskit.qobj import QasmQobj, PulseQobj
 from qiskit.result import Result
 
@@ -69,14 +68,18 @@ class IBMJob(Job, ABC):
             # Append suffix to key to avoid conflicts.
             self._data[key + "_"] = value
 
-    def properties(self) -> Optional[BackendProperties]:
+    def properties(self, refresh: bool = False) -> Optional[BackendProperties]:
         """Return the backend properties for this job.
 
+        Args:
+            refresh: If ``True``, re-query the server for the backend properties.
+                Otherwise, return a cached version.
+
         Returns:
-            The backend properties used for this job, or ``None`` if
-            properties are not available.
+            The backend properties used for this job, at the time the job was run,
+            or ``None`` if properties are not available.
         """
-        pass
+        return self._backend.properties(refresh, self.creation_date())
 
     @abstractmethod
     def result(
@@ -167,7 +170,7 @@ class IBMJob(Job, ABC):
         pass
 
     @abstractmethod
-    def creation_date(self) -> datetime:
+    def creation_date(self) -> python_datetime:
         """Return job creation date, in local time.
 
         Returns:
@@ -198,11 +201,11 @@ class IBMJob(Job, ABC):
         """Obtain the latest job information from the server."""
         pass
 
-    def circuits(self) -> List[Union[QuantumCircuit, Schedule]]:
-        """Return the circuits or pulse schedules for this job.
+    def circuits(self) -> List[QuantumCircuit]:
+        """Return the circuits for this job.
 
         Returns:
-            The circuits or pulse schedules for this job. An empty list
+            The circuits for this job. An empty list
             is returned if the circuits cannot be retrieved (for example, if
             the job uses an old format that is no longer supported).
         """

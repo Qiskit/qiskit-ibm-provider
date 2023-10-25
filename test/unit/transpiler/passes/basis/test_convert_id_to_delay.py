@@ -68,15 +68,15 @@ class TestConvertIdToDelay(QiskitTestCase):
         """Test if c_if Id gate is converted a c_if delay."""
         qc = QuantumCircuit(1, 1)
 
-        qc.id(0).c_if(0, 1)
+        with qc.if_test((0, 1)):
+            qc.id(0)
 
         pm = PassManager([ConvertIdToDelay(self.durations)])
         transformed = pm.run(qc)
 
         expected = QuantumCircuit(1, 1)
-        expected.delay(160, 0)
-        # Delay does not officially support condition
-        expected.data[0].operation.condition = qc.data[0].operation.condition
+        with expected.if_test((0, 1)):
+            expected.delay(160, 0)
 
         self.assertEqual(expected, transformed)
 

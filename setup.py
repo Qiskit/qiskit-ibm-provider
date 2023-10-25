@@ -69,7 +69,7 @@ setuptools.setup(
         "Programming Language :: Python :: 3.11",
         "Topic :: Scientific/Engineering",
     ],
-    keywords="qiskit sdk quantum api ibmq",
+    keywords="qiskit, quantum",
     packages=setuptools.find_packages(exclude=["test*"]),
     install_requires=REQUIREMENTS,
     include_package_data=True,

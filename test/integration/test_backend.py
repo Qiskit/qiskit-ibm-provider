@@ -12,16 +12,15 @@
 
 """IBMBackend Test."""
 
-from unittest import SkipTest, mock, skip
+from unittest import mock, skip
 from unittest.mock import patch
 
 from qiskit import QuantumCircuit, transpile
 from qiskit.providers.models import QasmBackendConfiguration
 from qiskit.providers.exceptions import QiskitBackendNotFoundError
 from qiskit.test.reference_circuits import ReferenceCircuits
-from qiskit.pulse import Schedule
 
-from qiskit_ibm_provider import IBMBackend, IBMProvider, least_busy
+from qiskit_ibm_provider import IBMBackend, IBMProvider
 from qiskit_ibm_provider.ibm_qubit_properties import IBMQubitProperties
 from qiskit_ibm_provider.exceptions import IBMBackendValueError
 
@@ -31,7 +30,6 @@ from ..decorators import (
     production_only,
 )
 from ..ibm_test_case import IBMTestCase
-from ..utils import get_pulse_schedule, cancel_job
 
 
 class TestIBMBackend(IBMTestCase):
@@ -86,33 +84,6 @@ class TestIBMBackend(IBMTestCase):
                 defaults = backend.defaults()
                 if backend.configuration().open_pulse:
                     self.assertIsNotNone(defaults)
-
-    @skip("See Terra issue #9488")
-    def test_backend_options(self):
-        """Test backend options."""
-        provider: IBMProvider = self.backend.provider
-        backends = provider.backends(
-            open_pulse=True,
-            operational=True,
-            instance=self.dependencies.instance,
-        )
-        if not backends:
-            raise SkipTest("Skipping pulse test since no pulse backend found.")
-
-        backend = backends[0]
-        backend.options.shots = 2048
-        backend.set_options(
-            qubit_lo_freq=[4.9e9, 5.0e9], meas_lo_freq=[6.5e9, 6.6e9], meas_level=2
-        )
-        job = backend.run(get_pulse_schedule(backend), meas_level=1, foo="foo")
-        backend_options = provider.backend.retrieve_job(job.job_id()).backend_options()
-        self.assertEqual(backend_options["shots"], 2048)
-        # Qobj config freq is in GHz.
-        self.assertAlmostEqual(backend_options["qubit_lo_freq"], [4.9e9, 5.0e9])
-        self.assertEqual(backend_options["meas_lo_freq"], [6.5e9, 6.6e9])
-        self.assertEqual(backend_options["meas_level"], 1)
-        self.assertEqual(backend_options["foo"], "foo")
-        cancel_job(job)
 
     def test_sim_backend_options(self):
         """Test simulator backend options."""
@@ -201,33 +172,21 @@ class TestIBMBackend(IBMTestCase):
         with self.assertRaises(QiskitBackendNotFoundError):
             self.dependencies.provider.get_backend("nonexistent_backend")
 
-    def test_schedule_error_message(self):
-        """Test that passing a Schedule as input to Backend.run() raises an error."""
-        backend = self.dependencies.provider.get_backend("ibmq_qasm_simulator")
-        schedule = Schedule()
-        for circuit in [schedule, [schedule]]:
-            with self.assertRaises(IBMBackendValueError) as err:
-                backend.run(circuit)
-            self.assertIn(
-                "Class 'Schedule' is no longer supported as an input circuit",
-                str(err.exception),
-            )
-
     def test_too_many_qubits_in_circuit(self):
         """Check error message if circuit contains more qubits than supported on the backend."""
-        backends = self.dependencies.provider.backends(
-            instance=self.dependencies.instance, simulator=False
+        num = len(self.backend.properties().qubits)
+        num_qubits = num + 1
+        circuit = QuantumCircuit(num_qubits, num_qubits)
+        with self.assertRaises(IBMBackendValueError) as err:
+            _ = self.backend.run(circuit)
+        self.assertIn(
+            f"Circuit contains {num_qubits} qubits, but backend has only {num}.",
+            str(err.exception),
         )
-        least_busy_backend = least_busy(backends)
-        if least_busy_backend.properties():
-            self.assertTrue(least_busy_backend)
 
-            num = len(least_busy_backend.properties().qubits)
-            num_qubits = num + 1
-            circuit = QuantumCircuit(num_qubits, num_qubits)
-            with self.assertRaises(IBMBackendValueError) as err:
-                _ = least_busy_backend.run(circuit)
-            self.assertIn(
-                f"Circuit contains {num_qubits} qubits, but backend has only {num}.",
-                str(err.exception),
-            )
+    def test_job_backend_properties(self):
+        """Test job backend properties."""
+        job = self.backend.run(ReferenceCircuits.bell())
+        backend_version = self.backend.properties().backend_version
+        job_version = job.properties().backend_version
+        self.assertEqual(job_version, backend_version)

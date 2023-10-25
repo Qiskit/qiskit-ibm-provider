@@ -121,6 +121,7 @@ class PadDynamicalDecoupling(BlockBasePadder):
         insert_multiple_cycles: bool = False,
         coupling_map: CouplingMap = None,
         alt_spacings: Optional[Union[List[List[float]], List[float]]] = None,
+        schedule_idle_qubits: bool = False,
     ):
         """Dynamical decoupling initializer.
 
@@ -173,6 +174,9 @@ class PadDynamicalDecoupling(BlockBasePadder):
             alt_spacings: A list of lists of spacings between the DD gates, for the second subcircuit,
                 as determined by the coupling map. If None, a balanced spacing that is staggered with
                 respect to the first subcircuit will be used [d, d, d, ..., d, d, 0].
+            schedule_idle_qubits: Set to true if you'd like a delay inserted on idle qubits.
+                This is useful for timeline visualizations, but may cause issues
+                for execution on large backends.
         Raises:
             TranspilerError: When invalid DD sequence is specified.
             TranspilerError: When pulse gate with the duration which is
@@ -180,7 +184,7 @@ class PadDynamicalDecoupling(BlockBasePadder):
             TranspilerError: When the coupling map is not supported (i.e., if degree > 3)
         """
 
-        super().__init__()
+        super().__init__(schedule_idle_qubits=schedule_idle_qubits)
         self._durations = durations
 
         # Enforce list of DD sequences
@@ -328,7 +332,7 @@ class PadDynamicalDecoupling(BlockBasePadder):
                 if self._qubits and physical_index not in self._qubits:
                     continue
 
-                for gate in seq:
+                for index, gate in enumerate(seq):
                     try:
                         # Check calibration.
                         gate_length = dag.calibrations[gate.name][
@@ -352,6 +356,12 @@ class PadDynamicalDecoupling(BlockBasePadder):
                     seq_length_.append(gate_length)
                     # Update gate duration.
                     # This is necessary for current timeline drawer, i.e. scheduled.
+
+                    if hasattr(
+                        gate, "to_mutable"
+                    ):  # TODO this check can be removed after Qiskit 1.0, as it is always True
+                        gate = gate.to_mutable()
+                        seq[index] = gate
                     gate.duration = gate_length
                 self._dd_sequence_lengths[qubit].append(seq_length_)
 
@@ -497,7 +507,7 @@ class PadDynamicalDecoupling(BlockBasePadder):
                 return self._alignment * np.floor(values / self._alignment)
 
             if self._coupling_map:
-                if self._coupling_coloring[qubit.index] == 0:
+                if self._coupling_coloring[self._dag.qubits.index(qubit)] == 0:
                     sub_spacings = spacings
                 else:
                     sub_spacings = alt_spacings

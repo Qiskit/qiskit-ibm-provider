@@ -138,7 +138,7 @@ def get_account_config_contents(
     verify=None,
     proxies=None,
 ):
-    """Generate qiskitrc content"""
+    """Generate content of account config file"""
     if instance is None:
         instance = "hub/group/project"
     token = token or uuid.uuid4().hex

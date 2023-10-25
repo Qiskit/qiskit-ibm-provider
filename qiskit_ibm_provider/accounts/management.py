@@ -44,7 +44,6 @@ class AccountManager:
         overwrite: Optional[bool] = False,
     ) -> None:
         """Save account on disk."""
-        cls.migrate()
         name = name or cls._default_account_name_ibm_quantum
         return save_config(
             filename=cls._default_account_config_json_file,
@@ -70,7 +69,6 @@ class AccountManager:
         name: Optional[str] = None,
     ) -> Dict[str, Account]:
         """List all accounts saved on disk."""
-        AccountManager.migrate()
 
         def _matching_name(account_name: str) -> bool:
             return name is None or name == account_name
@@ -120,7 +118,7 @@ class AccountManager:
         """Read account from disk.
 
         Args:
-            name: Account name. Takes precedence if `auth` is also specified.
+            name: Account name. Takes precedence.
             channel: Channel type.
 
         Returns:
@@ -129,7 +127,6 @@ class AccountManager:
         Raises:
             AccountNotFoundError: If the input value cannot be found on disk.
         """
-        cls.migrate()
         if name:
             saved_account = read_config(
                 filename=cls._default_account_config_json_file, name=name
@@ -167,36 +164,8 @@ class AccountManager:
         name: Optional[str] = None,
     ) -> bool:
         """Delete account from disk."""
-        cls.migrate()
         name = name or cls._default_account_name_ibm_quantum
         return delete_config(name=name, filename=cls._default_account_config_json_file)
-
-    @classmethod
-    def migrate(cls) -> None:
-        """Migrate accounts on disk by removing `auth` and adding `channel`."""
-        data = read_config(filename=cls._default_account_config_json_file)
-        for key, value in data.items():
-            if key == cls._default_account_name_legacy:
-                value.pop("auth", None)
-                value.update(channel="ibm_quantum")
-                delete_config(filename=cls._default_account_config_json_file, name=key)
-                save_config(
-                    filename=cls._default_account_config_json_file,
-                    name=cls._default_account_name_ibm_quantum,
-                    config=value,
-                    overwrite=False,
-                )
-            else:
-                if hasattr(value, "auth"):
-                    if value["auth"] == "legacy":
-                        value.update(channel="ibm_quantum")
-                    value.pop("auth", None)
-                    save_config(
-                        filename=cls._default_account_config_json_file,
-                        name=key,
-                        config=value,
-                        overwrite=True,
-                    )
 
     @classmethod
     def _from_env_variables(cls, channel: Optional[ChannelType]) -> Optional[Account]:
