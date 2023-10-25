@@ -62,7 +62,7 @@ class BlockBasePadder(TransformationPass):
     which may result in violation of hardware alignment constraints.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, schedule_idle_qubits: bool = False) -> None:
         self._node_start_time = None
         self._node_block_dags = None
         self._idle_after: Optional[Dict[Qubit, int]] = None
@@ -84,7 +84,8 @@ class BlockBasePadder(TransformationPass):
 
         self._dirty_qubits: Set[Qubit] = set()
         # Qubits that are dirty in the circuit.
-
+        self._schedule_idle_qubits = schedule_idle_qubits
+        self._idle_qubits: Set[Qubit] = set()
         super().__init__()
 
     def run(self, dag: DAGCircuit) -> DAGCircuit:
@@ -100,6 +101,10 @@ class BlockBasePadder(TransformationPass):
             TranspilerError: When a particular node is not scheduled, likely some transform pass
                 is inserted before this node is called.
         """
+        if not self._schedule_idle_qubits:
+            self._idle_qubits = set(
+                wire for wire in dag.idle_wires() if isinstance(wire, Qubit)
+            )
         self._pre_runhook(dag)
 
         self._init_run(dag)
@@ -138,6 +143,7 @@ class BlockBasePadder(TransformationPass):
         dag: DAGCircuit,
         pad_wires: bool = True,
         wire_map: Optional[Dict[Qubit, Qubit]] = None,
+        ignore_idle: bool = False,
     ) -> DAGCircuit:
         """Create an empty dag like the input dag."""
         new_dag = DAGCircuit()
@@ -160,11 +166,17 @@ class BlockBasePadder(TransformationPass):
         # trivial wire map if not provided, or if the top-level dag is used
         if not wire_map or pad_wires:
             wire_map = {wire: wire for wire in source_wire_dag.wires}
-        if dag.qregs:
+        if dag.qregs and self._schedule_idle_qubits or not ignore_idle:
             for qreg in source_wire_dag.qregs.values():
                 new_dag.add_qreg(qreg)
         else:
-            new_dag.add_qubits([wire_map[qubit] for qubit in source_wire_dag.qubits])
+            new_dag.add_qubits(
+                [
+                    wire_map[qubit]
+                    for qubit in source_wire_dag.qubits
+                    if qubit not in self._idle_qubits or not ignore_idle
+                ]
+            )
 
         # Don't add root cargs as these will not be padded.
         # Just focus on current block dag.
@@ -306,17 +318,30 @@ class BlockBasePadder(TransformationPass):
 
         if needs_terminating_barrier:
             # Terminate with a barrier to ensure topological ordering does not slide past
+            if self._schedule_idle_qubits:
+                barrier = Barrier(self._block_dag.num_qubits())
+                qubits = self._block_dag.qubits
+            else:
+                barrier = Barrier(self._block_dag.num_qubits() - len(self._idle_qubits))
+                qubits = [
+                    x for x in self._block_dag.qubits if x not in self._idle_qubits
+                ]
+
             barrier_node = self._apply_scheduled_op(
                 block_idx,
                 time,
-                Barrier(self._block_dag.num_qubits()),
-                self._block_dag.qubits,
+                barrier,
+                qubits,
                 [],
             )
             barrier_node.op.duration = 0
 
     def _visit_block(
-        self, block: DAGCircuit, wire_map: Dict[Qubit, Qubit], pad_wires: bool = True
+        self,
+        block: DAGCircuit,
+        wire_map: Dict[Qubit, Qubit],
+        pad_wires: bool = True,
+        ignore_idle: bool = False,
     ) -> DAGCircuit:
         # Push the previous block dag onto the stack
         prev_node = self._prev_node
@@ -325,7 +350,7 @@ class BlockBasePadder(TransformationPass):
 
         prev_block_dag = self._block_dag
         self._block_dag = new_block_dag = self._empty_dag_like(
-            block, pad_wires, wire_map=wire_map
+            block, pad_wires, wire_map=wire_map, ignore_idle=ignore_idle
         )
 
         self._block_duration = 0
@@ -443,7 +468,10 @@ class BlockBasePadder(TransformationPass):
             }
             new_node_block_dags.append(
                 self._visit_block(
-                    block_dag, pad_wires=not fast_path_node, wire_map=inner_wire_map
+                    block_dag,
+                    pad_wires=not fast_path_node,
+                    wire_map=inner_wire_map,
+                    ignore_idle=True,
                 )
             )
 
@@ -455,11 +483,19 @@ class BlockBasePadder(TransformationPass):
         # Enforce that this control-flow operation contains all wires since it has now been padded
         # such that each qubit is scheduled within each block. Don't added all cargs as these will not
         # be padded.
+        if fast_path_node:
+            padded_qubits = node.qargs
+        elif not self._schedule_idle_qubits:
+            padded_qubits = [
+                q for q in self._block_dag.qubits if q not in self._idle_qubits
+            ]
+        else:
+            padded_qubits = self._block_dag.qubits
         self._apply_scheduled_op(
             block_idx,
             t0,
             new_control_flow_op,
-            self._map_wires(node.qargs) if fast_path_node else self._block_dag.qubits,
+            padded_qubits,
             self._map_wires(node.cargs),
         )
 
@@ -503,6 +539,8 @@ class BlockBasePadder(TransformationPass):
         self._block_duration = max(self._block_duration, t1)
 
         for bit in self._map_wires(node.qargs):
+            if bit in self._idle_qubits:
+                continue
             # Fill idle time with some sequence
             if t0 - self._idle_after.get(bit, 0) > 0:
                 # Find previous node on the wire, i.e. always the latest node on the wire
@@ -549,6 +587,8 @@ class BlockBasePadder(TransformationPass):
     def _pad_until_block_end(self, block_duration: int, block_idx: int) -> None:
         # Add delays until the end of circuit.
         for bit in self._block_dag.qubits:
+            if bit in self._idle_qubits:
+                continue
             idle_after = self._idle_after.get(bit, 0)
             if block_duration - idle_after > 0:
                 node = self._block_dag.output_map[bit]
@@ -567,8 +607,8 @@ class BlockBasePadder(TransformationPass):
         block_idx: int,
         t_start: int,
         oper: Instruction,
-        qubits: Union[Qubit, List[Qubit]],
-        clbits: Optional[Union[Clbit, List[Clbit]]] = None,
+        qubits: Union[Qubit, Iterable[Qubit]],
+        clbits: Union[Clbit, Iterable[Clbit]] = (),
     ) -> DAGNode:
         """Add new operation to DAG with scheduled information.
 
@@ -589,9 +629,7 @@ class BlockBasePadder(TransformationPass):
         if isinstance(clbits, Clbit):
             clbits = [clbits]
 
-        new_node = self._block_dag.apply_operation_back(
-            oper, qargs=qubits, cargs=clbits
-        )
+        new_node = self._block_dag.apply_operation_back(oper, qubits, clbits)
         self.property_set["node_start_time"][new_node] = (block_idx, t_start)
         return new_node
 

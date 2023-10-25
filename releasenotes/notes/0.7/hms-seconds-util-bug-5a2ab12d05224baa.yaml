@@ -1,0 +1,6 @@
+---
+fixes:
+  - |
+    The utility function ``hms_to_seconds`` now handles values greater than one day. This means that
+    passing in values greater than one day for the ``max_time`` parameter in ``Sessions`` is 
+    possible.

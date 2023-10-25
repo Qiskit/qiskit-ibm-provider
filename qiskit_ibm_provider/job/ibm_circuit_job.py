@@ -18,7 +18,7 @@ import time
 import queue
 from concurrent import futures
 from datetime import datetime
-from typing import Dict, Optional, Any, List, Union
+from typing import Dict, Optional, Any, List
 import re
 import requests
 
@@ -27,7 +27,6 @@ from qiskit.providers.jobstatus import JOB_FINAL_STATES, JobStatus
 from qiskit.circuit.quantumcircuit import QuantumCircuit
 
 from qiskit.result import Result
-from qiskit.pulse import Schedule
 
 from qiskit_ibm_provider import ibm_backend  # pylint: disable=unused-import
 from .constants import IBM_COMPOSITE_JOB_TAG_PREFIX, IBM_MANAGED_JOB_ID_PREFIX
@@ -611,11 +610,11 @@ class IBMCircuitJob(IBMJob):
             return self._params.get("header")
         return {}
 
-    def circuits(self) -> List[Union[QuantumCircuit, Schedule]]:
-        """Return the circuits or pulse schedules for this job.
+    def circuits(self) -> List[QuantumCircuit]:
+        """Return the circuits for this job.
 
         Returns:
-            The circuits or pulse schedules for this job. An empty list
+            The circuits or for this job. An empty list
             is returned if the circuits cannot be retrieved (for example, if
             the job uses an old format that is no longer supported).
         """

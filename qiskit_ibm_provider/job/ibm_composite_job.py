@@ -21,7 +21,7 @@ import traceback
 import uuid
 from collections import defaultdict
 from concurrent import futures
-from datetime import datetime
+from datetime import datetime as python_datetime
 from functools import wraps
 from typing import Dict, Optional, Tuple, Any, List, Callable, Union
 
@@ -30,7 +30,6 @@ from qiskit.circuit.quantumcircuit import QuantumCircuit
 from qiskit.compiler import assemble
 from qiskit.providers.jobstatus import JOB_FINAL_STATES, JobStatus
 from qiskit.providers.models import BackendProperties
-from qiskit.pulse import Schedule
 from qiskit.qobj import QasmQobj, PulseQobj
 from qiskit.result import Result
 from qiskit.result.models import ExperimentResult
@@ -123,11 +122,9 @@ class IBMCompositeJob(IBMJob):
         backend: "ibm_backend.IBMBackend",
         api_client: AccountClient,
         job_id: Optional[str] = None,
-        creation_date: Optional[datetime] = None,
+        creation_date: Optional[python_datetime] = None,
         jobs: Optional[List[IBMCircuitJob]] = None,
-        circuits_list: Optional[
-            List[Union[List[QuantumCircuit], List[Schedule]]]
-        ] = None,
+        circuits_list: Optional[List[List[QuantumCircuit]]] = None,
         run_config: Optional[Dict] = None,
         name: Optional[str] = None,
         tags: Optional[List[str]] = None,
@@ -259,7 +256,7 @@ class IBMCompositeJob(IBMJob):
 
     def _submit_circuits(
         self,
-        circuit_lists: List[Union[List[QuantumCircuit], List[Schedule]]],
+        circuit_lists: List[List[QuantumCircuit]],
         run_config: Dict,
     ) -> None:
         """Assemble and submit circuits.
@@ -376,8 +373,14 @@ class IBMCompositeJob(IBMJob):
                 pass
 
     @_requires_submit
-    def properties(self) -> Optional[Union[List[BackendProperties], BackendProperties]]:
+    def properties(
+        self, refresh: bool = False
+    ) -> Optional[Union[List[BackendProperties], BackendProperties]]:
         """Return the backend properties for this job.
+
+         Args:
+            refresh: If ``True``, re-query the server for the backend properties.
+                Otherwise, return a cached version.
 
         Note:
             This method blocks until all sub-jobs are submitted.
@@ -395,7 +398,7 @@ class IBMCompositeJob(IBMJob):
             self._properties = []
             properties_ts = []
             for job in self._get_circuit_jobs():
-                props = job.properties()
+                props = job.properties(refresh)
                 if props.last_update_date not in properties_ts:
                     self._properties.append(props)
                     properties_ts.append(props.last_update_date)
@@ -755,7 +758,7 @@ class IBMCompositeJob(IBMJob):
             self._queue_info = None
         return self._queue_info
 
-    def creation_date(self) -> Optional[datetime]:
+    def creation_date(self) -> Optional[python_datetime]:
         """Return job creation date, in local time.
 
         Returns:
@@ -873,11 +876,11 @@ class IBMCompositeJob(IBMJob):
             if job.status() not in JOB_FINAL_STATES:
                 job.refresh()
 
-    def circuits(self) -> List[Union[QuantumCircuit, Schedule]]:
-        """Return the circuits or pulse schedules for this job.
+    def circuits(self) -> List[QuantumCircuit]:
+        """Return the circuits for this job.
 
         Returns:
-            The circuits or pulse schedules for this job.
+            The circuits for this job.
         """
         if not self._circuits:
             qobj = self._get_qobj()

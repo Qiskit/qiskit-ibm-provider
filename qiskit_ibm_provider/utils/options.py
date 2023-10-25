@@ -13,10 +13,8 @@
 """Backend run options."""
 
 from dataclasses import asdict, dataclass
-from typing import Dict, List, Union, Any, Optional
+from typing import Dict, Union, Any, Optional
 from qiskit.circuit import QuantumCircuit
-from qiskit.pulse import LoConfig
-from qiskit.pulse.channels import PulseChannel
 from qiskit.qobj.utils import MeasLevel, MeasReturnType
 
 
@@ -53,14 +51,6 @@ class QASM2Options(CommonOptions):
     """Options for the QASM2 path."""
 
     header: Optional[Dict] = None
-    qubit_lo_freq: Optional[List[int]] = None
-    meas_lo_freq: Optional[List[int]] = None
-    schedule_los: Optional[
-        Union[
-            List[Union[Dict[PulseChannel, float], LoConfig]],
-            Union[Dict[PulseChannel, float], LoConfig],
-        ]
-    ] = None
     init_qubits: bool = True
     use_measure_esp: Optional[bool] = None
     # Simulator only
