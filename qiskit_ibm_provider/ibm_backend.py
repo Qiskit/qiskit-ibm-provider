@@ -891,8 +891,8 @@ class IBMBackend(Backend):
 
     def close_session(self) -> None:
         """Close the session so new jobs will no longer be accepted, but existing
-            queued or running jobs will run to completion. The session will be terminated once there
-            are no more pending jobs."""
+        queued or running jobs will run to completion. The session will be terminated once there
+        are no more pending jobs."""
         if self._session:
             self._session.cancel()
             if self._session.session_id:
