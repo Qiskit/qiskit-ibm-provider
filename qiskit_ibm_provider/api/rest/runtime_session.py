@@ -23,6 +23,7 @@ class RuntimeSession(RestAdapterBase):
     """Rest adapter for session related endpoints."""
 
     URL_MAP = {
+        "self": "",
         "close": "/close",
     }
 
