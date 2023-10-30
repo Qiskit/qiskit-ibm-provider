@@ -14,6 +14,8 @@
 
 
 from qiskit_ibm_provider.api.rest.base import RestAdapterBase
+from qiskit_ibm_provider.exceptions import IBMApiError
+from ..exceptions import RequestsApiError
 from ..session import RetrySession
 
 
@@ -21,6 +23,7 @@ class RuntimeSession(RestAdapterBase):
     """Rest adapter for session related endpoints."""
 
     URL_MAP = {
+        "self": "",
         "close": "/close",
     }
 
@@ -37,6 +40,18 @@ class RuntimeSession(RestAdapterBase):
         super().__init__(session, "{}/sessions/{}".format(url_prefix, session_id))
 
     def close(self) -> None:
-        """Close this session."""
+        """Set accepting_jobs flag to false, so no more jobs can be submitted."""
+        payload = {"accepting_jobs": False}
+        url = self.get_url("self")
+        try:
+            self.session.patch(url, json=payload)
+        except RequestsApiError as ex:
+            if ex.status_code == 404:
+                pass
+            else:
+                raise IBMApiError(f"Error closing session: {ex}")
+
+    def cancel(self) -> None:
+        """Cancel this session."""
         url = self.get_url("close")
         self.session.delete(url)
