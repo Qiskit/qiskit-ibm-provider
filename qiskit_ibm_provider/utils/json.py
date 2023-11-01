@@ -244,8 +244,6 @@ class RuntimeEncoder(json.JSONEncoder):
                 compress=False,
             )
             return {"__type__": "ParameterExpression", "__value__": value}
-        if isinstance(obj, ParameterView):
-            return obj.data
         if isinstance(obj, Instruction):
             # Append instruction to empty circuit
             quantum_register = QuantumRegister(obj.num_qubits)
