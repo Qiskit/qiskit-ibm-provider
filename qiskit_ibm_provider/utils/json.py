@@ -52,7 +52,6 @@ from qiskit.circuit import (
     QuantumCircuit,
     QuantumRegister,
 )
-from qiskit.circuit.parametertable import ParameterView
 from qiskit.result import Result
 from qiskit.version import __version__ as _terra_version_string
 from qiskit.qpy import load
