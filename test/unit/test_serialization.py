@@ -20,8 +20,8 @@ from ddt import data, ddt
 
 from qiskit import assemble, QuantumCircuit, QuantumRegister, ClassicalRegister
 from qiskit.circuit import Parameter
-from qiskit_aer.noise import NoiseModel
 from qiskit.providers.fake_provider import FakeNairobi
+from qiskit_aer.noise import NoiseModel
 
 from qiskit_ibm_provider.utils.json_encoder import IBMJsonEncoder
 from qiskit_ibm_provider.utils.json import RuntimeEncoder, RuntimeDecoder
