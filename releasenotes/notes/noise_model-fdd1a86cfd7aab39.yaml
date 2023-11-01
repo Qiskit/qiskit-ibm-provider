@@ -1,0 +1,6 @@
+---
+features:
+  - |
+    :class:`qiskit_ibm_provider.utils.RuntimeEncoder` and
+    :class:`qiskit_ibm_provider.utils.RuntimeDecoder` now support
+    :class:`qiskit_aer.noise.NoiseModel`.
