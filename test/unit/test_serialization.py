@@ -13,13 +13,12 @@
 """Test serializing and deserializing data sent to the server."""
 
 import json
-import numpy as np
 import warnings
 
+import numpy as np
 from ddt import data, ddt
 
-from qiskit import assemble
-from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister
+from qiskit import assemble, QuantumCircuit, QuantumRegister, ClassicalRegister
 from qiskit.circuit import Parameter
 from qiskit_aer.noise import NoiseModel
 from qiskit.providers.fake_provider import FakeNairobi
