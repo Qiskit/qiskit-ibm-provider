@@ -236,6 +236,12 @@ def load(  # type: ignore[no-untyped-def]
     version = struct.unpack("!6sB", file_obj.read(7))[1]
     file_obj.seek(0)
 
+    if version > common.QPY_VERSION:
+        raise QiskitError(
+            f"The QPY format version being read, {version}, isn't supported by "
+            "this Qiskit version. Please upgrade your version of Qiskit to load this QPY payload"
+        )
+
     if version < 10:
         data = formats.FILE_HEADER._make(  # type: ignore[attr-defined]
             struct.unpack(
