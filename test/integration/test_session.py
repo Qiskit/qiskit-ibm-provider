@@ -62,12 +62,21 @@ class TestIntegrationSession(IBMTestCase):
         )
 
     def test_session_cancel(self):
-        """Test closing a session"""
+        """Test canceling a session"""
         provider = IBMProvider(self.dependencies.token, self.dependencies.url)
         backend = provider.get_backend("ibmq_qasm_simulator")
         backend.open_session()
         self.assertTrue(backend.session.active)
         backend.cancel_session()
+        self.assertIsNone(backend.session)
+
+    def test_session_close(self):
+        """Test closing a session"""
+        provider = IBMProvider(self.dependencies.token, self.dependencies.url)
+        backend = provider.get_backend("ibmq_qasm_simulator")
+        backend.open_session()
+        self.assertTrue(backend.session.active)
+        backend.close_session()
         self.assertIsNone(backend.session)
 
     def test_run_after_cancel(self):
