@@ -19,7 +19,7 @@ import os
 import setuptools
 
 REQUIREMENTS = [
-    "qiskit>=0.45.0rc1",
+    "qiskit>=0.45.0",
     "requests>=2.19",
     "requests-ntlm>=1.1.0",
     "numpy>=1.13",
