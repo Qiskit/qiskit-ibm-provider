@@ -13,16 +13,18 @@
 """Test serializing and deserializing data sent to the server."""
 
 import json
-import numpy as np
+import warnings
 
+import numpy as np
 from ddt import data, ddt
 
-from qiskit import assemble
-from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister
+from qiskit import assemble, QuantumCircuit, QuantumRegister, ClassicalRegister
 from qiskit.circuit import Parameter
+from qiskit.providers.fake_provider import FakeNairobi
+from qiskit_aer.noise import NoiseModel
 
 from qiskit_ibm_provider.utils.json_encoder import IBMJsonEncoder
-from qiskit_ibm_provider.utils.json import RuntimeEncoder
+from qiskit_ibm_provider.utils.json import RuntimeEncoder, RuntimeDecoder
 from ..ibm_test_case import IBMTestCase
 
 
@@ -88,3 +90,19 @@ class TestSerialization(IBMTestCase):
         payload = {"circuits": [circ]}
 
         self.assertTrue(json.dumps(payload, cls=RuntimeEncoder))
+
+    def test_noise_model(self):
+        """Test encoding and decoding a noise model."""
+        noise_model = NoiseModel.from_backend(FakeNairobi())
+        self.assertIsInstance(noise_model, NoiseModel)
+        encoded = json.dumps(noise_model, cls=RuntimeEncoder)
+        self.assertIsInstance(encoded, str)
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore",
+                category=DeprecationWarning,
+            )
+            decoded = json.loads(encoded, cls=RuntimeDecoder)
+        self.assertIsInstance(decoded, NoiseModel)
+        self.assertEqual(noise_model.noise_qubits, decoded.noise_qubits)
+        self.assertEqual(noise_model.noise_instructions, decoded.noise_instructions)

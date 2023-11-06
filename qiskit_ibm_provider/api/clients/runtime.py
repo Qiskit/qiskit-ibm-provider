@@ -317,3 +317,11 @@ class RuntimeClient(BaseClient):
             session_id (str): the id of the session to close
         """
         self._api.runtime_session(session_id=session_id).close()
+
+    def cancel_session(self, session_id: str) -> None:
+        """Cancel session
+
+        Args:
+            session_id (str): the id of the session to cancel
+        """
+        self._api.runtime_session(session_id=session_id).cancel()
