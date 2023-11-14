@@ -13,7 +13,7 @@
 """Client for accessing IBM Quantum runtime service."""
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 from datetime import datetime as python_datetime
 from requests import Response
 
@@ -111,6 +111,7 @@ class RuntimeClient(BaseClient):
         session_id: Optional[str] = None,
         job_tags: Optional[List[str]] = None,
         max_execution_time: Optional[int] = None,
+        session_time: Optional[Union[int, str]] = None,
         start_session: Optional[bool] = False,
     ) -> Dict:
         """Run the specified program.
@@ -144,6 +145,7 @@ class RuntimeClient(BaseClient):
             job_tags=job_tags,
             max_execution_time=max_execution_time,
             start_session=start_session,
+            session_time=session_time,
             **hgp_dict
         )
 

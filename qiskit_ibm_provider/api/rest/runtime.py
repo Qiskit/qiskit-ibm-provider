@@ -81,6 +81,7 @@ class Runtime(RestAdapterBase):
         session_id: Optional[str] = None,
         job_tags: Optional[List[str]] = None,
         max_execution_time: Optional[int] = None,
+        session_time: Optional[Union[int, str]] = None,
         start_session: Optional[bool] = False,
     ) -> Dict:
         """Execute the program.
@@ -121,6 +122,7 @@ class Runtime(RestAdapterBase):
             payload["cost"] = max_execution_time
         if start_session:
             payload["start_session"] = start_session
+            payload["session_time"] = session_time
         if all([hub, group, project]):
             payload["hub"] = hub
             payload["group"] = group
