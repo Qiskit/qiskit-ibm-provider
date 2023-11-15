@@ -146,7 +146,7 @@ We may then schedule the transpiled circuit without further modification.
     )
 
     qc_if_dd = pm.run(qc_c_if, backend)
-    qc_if_dd.draw(output="mpl")
+    qc_if_dd.draw(output="mpl", style="iqp")
 
 
 If you are not using the transpiler plugin stages to
