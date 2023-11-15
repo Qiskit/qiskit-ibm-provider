@@ -127,6 +127,9 @@ class RuntimeClient(BaseClient):
             job_tags: Tags to be assigned to the job.
             max_execution_time: Maximum execution time in seconds.
             start_session: Set to True to explicitly start a runtime session. Defaults to False.
+            session_time: max_time: (EXPERIMENTAL setting, can break between releases without warning)
+                Maximum amount of time, a runtime session can be open before being
+                forcibly closed. Can be specified as seconds (int) or a string like "2h 30m 40s".
 
         Returns:
             JSON response.
