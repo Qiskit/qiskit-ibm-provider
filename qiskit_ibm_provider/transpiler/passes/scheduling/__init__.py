@@ -194,7 +194,7 @@ gates to the same measurement qubit.
         with qc.if_test((1, 1)):
             qc.x(1)
 
-        qc.draw(output="mpl")
+        qc.draw(output="mpl", style="iqp")
 
 
 The circuit below will not use the fast-path as the conditional gate is
@@ -238,7 +238,7 @@ padded out to the duration of the longest block.
         with qc.if_test((1, 1)):
             qc.delay(1600, 1)
 
-        qc.draw(output="mpl")
+        qc.draw(output="mpl", style="iqp")
 
 This behavior is also applied to the else condition of a fast-path eligible branch.
 
@@ -253,7 +253,7 @@ This behavior is also applied to the else condition of a fast-path eligible bran
         with else_:
             qc.delay(1600, 0)
 
-        qc.draw(output="mpl")
+        qc.draw(output="mpl", style="iqp")
 
 
 If a single measurement result is used with several conditional blocks, if there is a fast-path
