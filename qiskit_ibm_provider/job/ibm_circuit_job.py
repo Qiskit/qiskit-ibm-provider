@@ -641,6 +641,7 @@ class IBMCircuitJob(IBMJob):
     def wait_for_final_state(  # pylint: disable=arguments-differ
         self,
         timeout: Optional[float] = None,
+        wait: int = 3,
     ) -> None:
         """Use the websocket server to wait for the final the state of a job. The server
             will remain open if the job is still running and the connection will be terminated
@@ -665,7 +666,7 @@ class IBMCircuitJob(IBMJob):
                     raise IBMJobTimeoutError(
                         f"Timed out waiting for job to complete after {timeout} secs."
                     )
-                time.sleep(3)
+                time.sleep(wait)
                 status = self.status()
         except futures.TimeoutError:
             raise IBMJobTimeoutError(
