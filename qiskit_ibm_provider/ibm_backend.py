@@ -517,11 +517,11 @@ class IBMBackend(Backend):
             if not session.active:
                 raise RuntimeError(f"The session {session.session_id} is closed.")
             session_id = session.session_id
-            max_execution_time = session._max_time
+            session_time = session._max_time
             start_session = session_id is None
         else:
             session_id = None
-            max_execution_time = None
+            session_time = None
             start_session = False
 
         try:
@@ -533,7 +533,7 @@ class IBMBackend(Backend):
                 job_tags=job_tags,
                 session_id=session_id,
                 start_session=start_session,
-                max_execution_time=max_execution_time,
+                session_time=session_time,
                 image=image,
             )
         except RequestsApiError as ex:
