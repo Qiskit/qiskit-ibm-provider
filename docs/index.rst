@@ -1,15 +1,16 @@
-#########################################
-Qiskit IBM Quantum Provider documentation
-#########################################
+############################################
+Qiskit IBM Quantum Provider API docs preview
+############################################
+
+Qiskit Provider docs live at docs.quantum.ibm.com and come from https://github.com/Qiskit/documentation.
+This site is only used to generate our API docs, which then get migrated to
+https://github.com/Qiskit/documentation.
 
 .. toctree::
   :maxdepth: 1
 
-  Tutorials <tutorials>
-  Migration Guide <tutorials/Migration_Guide_from_qiskit-ibmq-provider>
   API References <apidocs/ibm-provider>
   Release Notes <release_notes>
-  GitHub <https://github.com/Qiskit/qiskit-ibm-provider>
 
 .. Hiding - Indices and tables
    :ref:`genindex`

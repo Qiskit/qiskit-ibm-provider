@@ -21,7 +21,7 @@ mypy:
 	mypy --module qiskit_ibm_provider --package test
 
 style:
-	black --check qiskit_ibm_provider test setup.py docs/tutorials
+	black --check qiskit_ibm_provider test setup.py
 
 unit-test:
 	python -m unittest discover --verbose --top-level-directory . --start-directory test/unit
@@ -47,4 +47,4 @@ e2e-test:
 	python -m unittest discover --verbose --top-level-directory . --start-directory test/e2e
 
 black:
-	black qiskit_ibm_provider test setup.py docs/tutorials
+	black qiskit_ibm_provider test setup.py

@@ -10,35 +10,10 @@
 # copyright notice, and modified files need to carry a notice indicating
 # that they have been altered from the originals.
 
-# pylint: disable=invalid-name
-# Configuration file for the Sphinx documentation builder.
-#
-# This file does only contain a selection of the most common options. For a
-# full list see the documentation:
-# http://www.sphinx-doc.org/en/master/config
-
-# -- Path setup --------------------------------------------------------------
-
-# If extensions (or modules to document with autodoc) are in another directory,
-# add these directories to sys.path here. If the directory is relative to the
-# documentation root, use os.path.abspath to make it absolute, like shown here.
-#
-# import os
-# import sys
-# sys.path.insert(0, os.path.abspath('.'))
-
-"""
-Sphinx documentation builder
-"""
-
-import os
-# Set env flag so that we can doc functions that may otherwise not be loaded
-# see for example interactive visualizations in qiskit.visualization.
-os.environ['QISKIT_DOCS'] = 'TRUE'
 
 # -- Project information -----------------------------------------------------
 project = 'Qiskit IBM Quantum Provider'
-copyright = '2022, Qiskit Development Team'  # pylint: disable=redefined-builtin
+project_copyright = '2023, Qiskit Development Team'
 author = 'Qiskit Development Team'
 
 # The short X.Y version
@@ -59,36 +34,12 @@ extensions = [
     'jupyter_sphinx',
     'sphinx_autodoc_typehints',
     'reno.sphinxext',
-    'nbsphinx',
-    "qiskit_sphinx_theme",
 ]
 templates_path = ['_templates']
 
 intersphinx_mapping = {
     "qiskit": ("https://qiskit.org/documentation/", None),
 }
-
-nbsphinx_timeout = 300
-nbsphinx_execute = "never"
-nbsphinx_widgets_path = ''
-
-nbsphinx_thumbnails = {"**": "_static/images/logo.png"}
-
-nbsphinx_prolog = """
-{% set docname = env.doc2path(env.docname, base=None) %}
-.. only:: html
-
-    .. role:: raw-html(raw)
-        :format: html
-
-    .. note::
-        This page was generated from `docs/{{ docname }}`__.
-
-        __"""
-
-vers = release.split(".")
-link_str = f" https://github.com/Qiskit/qiskit-ibm-provider/blob/stable/{vers[0]}.{vers[1]}/docs/"
-nbsphinx_prolog += link_str + "{{ docname }}"
 
 # -----------------------------------------------------------------------------
 # Autosummary & autodoc
@@ -142,17 +93,8 @@ modindex_common_prefix = ['qiskit.']
 
 # -- Options for HTML output -------------------------------------------------
 
-html_theme = "qiskit-ecosystem"
+html_theme = "alabaster"
 html_title = f"{project} {release}"
-
-html_logo = "images/ibm-quantum-logo.png"
-
-html_theme_options = {
-    # Because this is an IBM-focused project, we use a blue color scheme.
-    "light_css_variables": {
-        "color-brand-primary": "var(--qiskit-color-blue)",
-    },
-}
 
 html_last_updated_fmt = '%Y/%m/%d'
 
