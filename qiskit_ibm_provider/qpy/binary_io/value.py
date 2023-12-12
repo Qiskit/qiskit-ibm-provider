@@ -212,8 +212,7 @@ def _read_parameter(file_obj):  # type: ignore[no-untyped-def]
     )
     param_uuid = uuid.UUID(bytes=data.uuid)
     name = file_obj.read(data.name_size).decode(common.ENCODE)
-    param = Parameter.__new__(Parameter, name, uuid=param_uuid)
-    param.__init__(name)  # pylint: disable=unnecessary-dunder-call
+    param = Parameter(name, uuid=param_uuid)
     return param
 
 

@@ -517,11 +517,11 @@ class IBMBackend(Backend):
             if not session.active:
                 raise RuntimeError(f"The session {session.session_id} is closed.")
             session_id = session.session_id
-            max_execution_time = session._max_time
+            session_time = session._max_time
             start_session = session_id is None
         else:
             session_id = None
-            max_execution_time = None
+            session_time = None
             start_session = False
 
         try:
@@ -533,7 +533,7 @@ class IBMBackend(Backend):
                 job_tags=job_tags,
                 session_id=session_id,
                 start_session=start_session,
-                max_execution_time=max_execution_time,
+                session_time=session_time,
                 image=image,
             )
         except RequestsApiError as ex:
@@ -883,6 +883,16 @@ class IBMBackend(Backend):
 
     def cancel_session(self) -> None:
         """Cancel session. All pending jobs will be cancelled."""
+        if self._session:
+            self._session.cancel()
+            if self._session.session_id:
+                self.provider._runtime_client.cancel_session(self._session.session_id)
+        self._session = None
+
+    def close_session(self) -> None:
+        """Close the session so new jobs will no longer be accepted, but existing
+        queued or running jobs will run to completion. The session will be terminated once there
+        are no more pending jobs."""
         if self._session:
             self._session.cancel()
             if self._session.session_id:

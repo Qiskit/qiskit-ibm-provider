@@ -81,6 +81,7 @@ class Runtime(RestAdapterBase):
         session_id: Optional[str] = None,
         job_tags: Optional[List[str]] = None,
         max_execution_time: Optional[int] = None,
+        session_time: Optional[Union[int, str]] = None,
         start_session: Optional[bool] = False,
     ) -> Dict:
         """Execute the program.
@@ -98,6 +99,9 @@ class Runtime(RestAdapterBase):
             job_tags: Tags to be assigned to the job.
             max_execution_time: Maximum execution time in seconds.
             start_session: Set to True to explicitly start a runtime session. Defaults to False.
+            session_time: max_time: (EXPERIMENTAL setting, can break between releases without warning)
+                Maximum amount of time, a runtime session can be open before being
+                forcibly closed. Can be specified as seconds (int) or a string like "2h 30m 40s".
 
         Returns:
             JSON response.
@@ -121,6 +125,7 @@ class Runtime(RestAdapterBase):
             payload["cost"] = max_execution_time
         if start_session:
             payload["start_session"] = start_session
+            payload["session_time"] = session_time
         if all([hub, group, project]):
             payload["hub"] = hub
             payload["group"] = group

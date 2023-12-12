@@ -13,7 +13,7 @@
 """Client for accessing IBM Quantum runtime service."""
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 from datetime import datetime as python_datetime
 from requests import Response
 
@@ -111,6 +111,7 @@ class RuntimeClient(BaseClient):
         session_id: Optional[str] = None,
         job_tags: Optional[List[str]] = None,
         max_execution_time: Optional[int] = None,
+        session_time: Optional[Union[int, str]] = None,
         start_session: Optional[bool] = False,
     ) -> Dict:
         """Run the specified program.
@@ -126,6 +127,9 @@ class RuntimeClient(BaseClient):
             job_tags: Tags to be assigned to the job.
             max_execution_time: Maximum execution time in seconds.
             start_session: Set to True to explicitly start a runtime session. Defaults to False.
+            session_time: max_time: (EXPERIMENTAL setting, can break between releases without warning)
+                Maximum amount of time, a runtime session can be open before being
+                forcibly closed. Can be specified as seconds (int) or a string like "2h 30m 40s".
 
         Returns:
             JSON response.
@@ -144,6 +148,7 @@ class RuntimeClient(BaseClient):
             job_tags=job_tags,
             max_execution_time=max_execution_time,
             start_session=start_session,
+            session_time=session_time,
             **hgp_dict
         )
 
@@ -317,3 +322,11 @@ class RuntimeClient(BaseClient):
             session_id (str): the id of the session to close
         """
         self._api.runtime_session(session_id=session_id).close()
+
+    def cancel_session(self, session_id: str) -> None:
+        """Cancel session
+
+        Args:
+            session_id (str): the id of the session to cancel
+        """
+        self._api.runtime_session(session_id=session_id).cancel()
