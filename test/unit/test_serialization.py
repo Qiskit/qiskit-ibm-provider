@@ -106,3 +106,18 @@ class TestSerialization(IBMTestCase):
         self.assertIsInstance(decoded, NoiseModel)
         self.assertEqual(noise_model.noise_qubits, decoded.noise_qubits)
         self.assertEqual(noise_model.noise_instructions, decoded.noise_instructions)
+
+    def test_param(self):
+        """Test encoding and decoding a parameter."""
+        param = Parameter("a")
+        encoded = json.dumps(param, cls=RuntimeEncoder)
+        self.assertIsInstance(encoded, str)
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore",
+                category=DeprecationWarning,
+            )
+            decoded = json.loads(encoded, cls=RuntimeDecoder)
+        self.assertIsInstance(decoded, Parameter)
+        self.assertEqual(param.name, decoded.name)
+        self.assertEqual(param._uuid, decoded._uuid)
