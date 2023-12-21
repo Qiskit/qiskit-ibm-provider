@@ -115,4 +115,4 @@ project at different levels. If you use Qiskit, please cite as per the included
 [Qiskit]: https://github.com/Qiskit/qiskit-tutorial
 [BibTeX file]: https://github.com/Qiskit/qiskit/blob/master/Qiskit.bib
 [Apache License 2.0]: https://github.com/Qiskit/qiskit-ibm-provider/blob/main/LICENSE.txt
-[migration guide]: https://github.com/Qiskit/qiskit-ibm-provider/blob/main/docs/tutorials/Migration_Guide_from_qiskit-ibmq-provider.ipynb
+[migration guide]: https://github.com/Qiskit/qiskit-ibm-provider/blob/6be5f3297ede75bb062b20601058b55a397668e3/docs/tutorials/Migration_Guide_from_qiskit-ibmq-provider.ipynb
