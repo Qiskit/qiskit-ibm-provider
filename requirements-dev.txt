@@ -26,3 +26,4 @@ jupyter-sphinx
 Sphinx>=6.0.0
 sphinx-autodoc-typehints<=1.19.2
 reno>=2.11.0
+sphinxcontrib-katex==0.9.9
