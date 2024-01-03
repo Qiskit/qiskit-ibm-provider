@@ -102,7 +102,7 @@ QISKIT_IBM_PROVIDER_LOG_FILE = "QISKIT_IBM_PROVIDER_LOG_FILE"
 """The environment variable name that is used to set the file for the IBM Quantum logger."""
 
 # Look for updated version on PyPi
-PACKAGE = 'qiskit-ibm-provider'
+PACKAGE = "qiskit-ibm-provider"
 update, versions = pypi_version_check(PACKAGE)
 if update:
     update_warning(PACKAGE, versions)
