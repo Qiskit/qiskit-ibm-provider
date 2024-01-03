@@ -86,6 +86,7 @@ from .job.ibm_job import IBMJob
 from .exceptions import *
 from .ibm_backend_service import IBMBackendService
 from .utils.utils import setup_logger
+from .utils.version_check import pypi_version_check, update_warning
 from .version import __version__
 
 # Setup the logger for the IBM Quantum Provider package.
@@ -99,6 +100,12 @@ QISKIT_IBM_PROVIDER_LOG_LEVEL = "QISKIT_IBM_PROVIDER_LOG_LEVEL"
 """The environment variable name that is used to set the level for the IBM Quantum logger."""
 QISKIT_IBM_PROVIDER_LOG_FILE = "QISKIT_IBM_PROVIDER_LOG_FILE"
 """The environment variable name that is used to set the file for the IBM Quantum logger."""
+
+# Look for updated version on PyPi
+PACKAGE = 'qiskit-ibm-provider'
+update, versions = pypi_version_check(PACKAGE)
+if update:
+    update_warning(PACKAGE, versions)
 
 
 def least_busy(backends: List[Backend]) -> Backend:
