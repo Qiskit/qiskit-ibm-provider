@@ -19,15 +19,15 @@ from packaging.version import Version, parse
 from packaging.requirements import Requirement
 
 
-def pypi_version_check(package):
+def pypi_version_check(package: str) -> tuple:
     """Check if there is a newer version of a package avaiable via PyPi that is
     compatible with the current version of Python
 
     Parameters:
-        package (str): Package name.
+        package: Package name.
 
     Returns:
-        tuple: Boolean indicating if update avaiable and
+        Boolean indicating if update avaiable and
         tuple of latest and installed versions
 
     Notes:
@@ -52,12 +52,12 @@ def pypi_version_check(package):
     return update_available, (latest_version, installed_version)
 
 
-def update_warning(package, versions):
+def update_warning(package: str, versions: tuple) -> None:
     """Display a warning that an update is available
 
     Parameters:
-        package (str): PyPi package name
-        versions (tuple): Latest and current versions as strings
+        package: PyPi package name
+        versions: Latest and current versions as strings
     """
     warnings.formatwarning = lambda msg, *args, **kwargs: f"{msg}\n"
     warnings.warn(
