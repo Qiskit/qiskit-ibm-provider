@@ -24,6 +24,7 @@ import json
 import re
 import warnings
 import zlib
+
 from datetime import date
 from typing import Any, Callable, Dict, List, Union, Tuple
 
@@ -55,6 +56,7 @@ from qiskit.circuit import (
 from qiskit.result import Result
 from qiskit.version import __version__ as _terra_version_string
 from qiskit.qpy import load
+from qiskit.utils import optionals
 
 from ..qpy import (
     _write_parameter,
@@ -225,7 +227,7 @@ class RuntimeEncoder(json.JSONEncoder):
             value = _serialize_and_encode(
                 data=obj,
                 serializer=lambda buff, data: dump(
-                    data, buff, RuntimeEncoder
+                    data, buff, RuntimeEncoder, use_symengine=optionals.HAS_SYMENGINE
                 ),  # type: ignore[no-untyped-call]
             )
             return {"__type__": "QuantumCircuit", "__value__": value}
@@ -250,7 +252,9 @@ class RuntimeEncoder(json.JSONEncoder):
             quantum_circuit.append(obj, quantum_register)
             value = _serialize_and_encode(
                 data=quantum_circuit,
-                serializer=lambda buff, data: dump(data, buff),  # type: ignore[no-untyped-call]
+                serializer=lambda buff, data: dump(
+                    data, buff, use_symengine=optionals.HAS_SYMENGINE
+                ),  # type: ignore[no-untyped-call]
             )
             return {"__type__": "Instruction", "__value__": value}
         if HAS_AER and isinstance(obj, qiskit_aer.noise.NoiseModel):

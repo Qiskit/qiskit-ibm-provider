@@ -524,3 +524,21 @@ class ExprValue(TypeKeyBase):
     @classmethod
     def retrieve(cls, type_key):  # type: ignore[no-untyped-def]
         raise NotImplementedError
+
+
+class SymExprEncoding(TypeKeyBase):
+    """Type keys for the symbolic encoding field in the file header."""
+
+    SYMPY = b"p"
+    SYMENGINE = b"e"
+
+    @classmethod
+    def assign(cls, obj):  # type: ignore[no-untyped-def]
+        if obj is True:
+            return cls.SYMENGINE
+        else:
+            return cls.SYMPY
+
+    @classmethod
+    def retrieve(cls, type_key):  # type: ignore[no-untyped-def]
+        raise NotImplementedError
