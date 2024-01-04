@@ -91,6 +91,7 @@ class TestSerialization(IBMTestCase):
             "backend_version",
             "rep_delay_range",
             "processor_type.revision",
+            "coords",
         )
         good_keys_prefixes = ("channels",)
 
