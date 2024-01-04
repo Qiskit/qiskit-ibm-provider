@@ -342,9 +342,17 @@ def _read_instruction(  # type: ignore[no-untyped-def]
         if condition:
             gate = gate.c_if(*condition)
     else:
-        if gate_name in {
-            "Initialize",
-            "StatePreparation",
+        if gate_name in {"Initialize", "StatePreparation"}:
+            if isinstance(params[0], str):
+                # the params are the labels of the initial state
+                gate = gate_class("".join(label for label in params))
+            elif instruction.num_parameters == 1:
+                # the params is the integer indicating which qubits to initialize
+                gate = gate_class(int(params[0].real), instruction.num_qargs)
+            else:
+                # the params represent a list of complex amplitudes
+                gate = gate_class(params)
+        elif gate_name in {
             "UCRXGate",
             "UCRYGate",
             "UCRZGate",
