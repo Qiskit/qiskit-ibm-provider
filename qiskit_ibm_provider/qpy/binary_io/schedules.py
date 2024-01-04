@@ -518,7 +518,7 @@ def _write_element(  # type: ignore[no-untyped-def]
 ):
     if isinstance(element, ScheduleBlock):
         common.write_type_key(file_obj, type_keys.Program.SCHEDULE_BLOCK)
-        write_schedule_block(file_obj, element, metadata_serializer)
+        write_schedule_block(file_obj, element, metadata_serializer, use_symengine)
     else:
         type_key = type_keys.ScheduleInstruction.assign(element)
         common.write_type_key(file_obj, type_key)
