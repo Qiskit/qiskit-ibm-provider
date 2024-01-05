@@ -976,6 +976,7 @@ def _write_layout(file_obj, circuit):  # type: ignore[no-untyped-def]
             input_qubit_size,
             final_layout_size,
             len(extra_registers),
+            input_qubit_count,
         )
     )
     _write_registers(
