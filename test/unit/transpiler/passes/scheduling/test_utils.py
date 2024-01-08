@@ -13,11 +13,11 @@
 """Tests for Qiskit scheduling utilities."""
 
 from qiskit.test import QiskitTestCase
+from qiskit.providers.fake_provider import FakeKolkata
 
 from qiskit_ibm_provider.transpiler.passes.scheduling.utils import (
     DynamicCircuitInstructionDurations,
 )
-from qiskit.providers.fake_provider import FakeKolkata
 
 
 class TestDynamicCircuitInstructionDurations(QiskitTestCase):
