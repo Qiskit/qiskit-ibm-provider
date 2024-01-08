@@ -152,7 +152,7 @@ class DynamicCircuitInstructionDurations(InstructionDurations):
         super().__init__(instruction_durations=instruction_durations, dt=dt)
 
     @classmethod
-    def from_backend(cls, backend: Backend):
+    def from_backend(cls, backend: Backend) -> "DynamicCircuitInstructionDurations":
         """Construct a :class:`DynamicInstructionDurations` object from the backend.
 
         Args:
