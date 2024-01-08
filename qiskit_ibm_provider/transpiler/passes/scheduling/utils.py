@@ -21,6 +21,7 @@ from qiskit.transpiler.instruction_durations import (
     InstructionDurations,
     InstructionDurationsType,
 )
+from qiskit.transpiler.target import Target
 from qiskit.transpiler.exceptions import TranspilerError
 from qiskit.providers import Backend, BackendV1
 
@@ -165,12 +166,25 @@ class DynamicCircuitInstructionDurations(InstructionDurations):
             return super(DynamicCircuitInstructionDurations, cls).from_backend(backend)
 
         # Get durations from target if BackendV2
-        instruction_durations_dict = backend.target.durations().duration_by_name_qubits
+        return cls.from_target(backend.target)
+    
+    @classmethod
+    def from_target(cls, target: Target) -> "DynamicCircuitInstructionDurations":
+        """Construct a :class:`DynamicInstructionDurations` object from the target.
+
+        Args:
+            target: target from which durations (gate lengths) and dt are extracted.
+
+        Returns:
+            DynamicInstructionDurations: The InstructionDurations constructed from backend.
+        """
+
+        instruction_durations_dict = target.durations().duration_by_name_qubits
         instruction_durations = []
         for instr_key, instr_value in instruction_durations_dict.items():
             instruction_durations += [(*instr_key, *instr_value)]
         try:
-            dt = backend.dt
+            dt = target.dt
         except AttributeError:
             dt = None
         return cls(instruction_durations, dt=dt)
