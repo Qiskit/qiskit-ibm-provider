@@ -17,6 +17,7 @@ from qiskit.test import QiskitTestCase
 from qiskit_ibm_provider.transpiler.passes.scheduling.utils import (
     DynamicCircuitInstructionDurations,
 )
+from qiskit.providers.fake_provider import FakeKolkata
 
 
 class TestDynamicCircuitInstructionDurations(QiskitTestCase):
@@ -64,3 +65,12 @@ class TestDynamicCircuitInstructionDurations(QiskitTestCase):
         self.assertEqual(durations.get("x", (0,)), 200)
         self.assertEqual(durations.get("measure", (0,)), 1000)
         self.assertEqual(durations.get("measure", (0, 1)), 1200)
+
+    def test_durations_from_backend(self):
+        """Test loading durations from a V1 Backend"""
+
+        durations = DynamicCircuitInstructionDurations.from_backend(FakeKolkata())
+
+        self.assertEqual(durations.get("x", (0,)), 160)
+        self.assertEqual(durations.get("measure", (0,)), 3200)
+        self.assertEqual(durations.get("reset", (0,)), 3200)
