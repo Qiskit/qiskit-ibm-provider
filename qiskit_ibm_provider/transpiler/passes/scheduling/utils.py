@@ -22,6 +22,7 @@ from qiskit.transpiler.instruction_durations import (
     InstructionDurationsType,
 )
 from qiskit.transpiler.exceptions import TranspilerError
+from qiskit.providers import Backend, BackendV1
 
 
 def block_order_op_nodes(dag: DAGCircuit) -> Generator[DAGOpNode, None, None]:
@@ -149,6 +150,30 @@ class DynamicCircuitInstructionDurations(InstructionDurations):
         """Dynamic circuit instruction durations."""
         self._enable_patching = enable_patching
         super().__init__(instruction_durations=instruction_durations, dt=dt)
+
+    @classmethod
+    def from_backend(cls, backend: Backend):
+        """Construct a :class:`DynamicInstructionDurations` object from the backend.
+
+        Args:
+            backend: backend from which durations (gate lengths) and dt are extracted.
+
+        Returns:
+            DynamicInstructionDurations: The InstructionDurations constructed from backend.
+        """
+        if isinstance(backend, BackendV1):
+            return super(DynamicCircuitInstructionDurations, cls).from_backend(backend)
+
+        # Get durations from target if BackendV2
+        instruction_durations_dict = backend.target.durations().duration_by_name_qubits
+        instruction_durations = []
+        for instr_key, instr_value in instruction_durations_dict.items():
+            instruction_durations += [(*instr_key, *instr_value)]
+        try:
+            dt = backend.dt
+        except AttributeError:
+            dt = None
+        return cls(instruction_durations, dt=dt)
 
     def update(
         self, inst_durations: Optional[InstructionDurationsType], dt: float = None
