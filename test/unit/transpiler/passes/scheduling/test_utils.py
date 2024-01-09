@@ -87,7 +87,9 @@ class TestDynamicCircuitInstructionDurations(QiskitTestCase):
     def test_durations_from_target(self):
         """Test loading and patching durations from a target"""
 
-        durations = DynamicCircuitInstructionDurations.from_target(FakeKolkataV2().target)
+        durations = DynamicCircuitInstructionDurations.from_target(
+            FakeKolkataV2().target
+        )
 
         self.assertEqual(durations.get("x", (0,)), 160)
         self.assertEqual(durations.get("measure", (0,)), 3200)

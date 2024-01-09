@@ -167,7 +167,7 @@ class DynamicCircuitInstructionDurations(InstructionDurations):
 
         # Get durations from target if BackendV2
         return cls.from_target(backend.target)
-    
+
     @classmethod
     def from_target(cls, target: Target) -> "DynamicCircuitInstructionDurations":
         """Construct a :class:`DynamicInstructionDurations` object from the target.
