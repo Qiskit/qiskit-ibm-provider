@@ -22,7 +22,6 @@ from qiskit.circuit import QuantumCircuit
 from qiskit.pulse import ScheduleBlock
 from qiskit.exceptions import QiskitError
 from qiskit.version import __version__
-from qiskit.utils.deprecation import deprecate_arg
 
 from . import formats, common, binary_io, type_keys
 from .exceptions import QpyError
@@ -73,11 +72,11 @@ VERSION_PATTERN = (
 VERSION_PATTERN_REGEX = re.compile(VERSION_PATTERN, re.VERBOSE | re.IGNORECASE)
 
 
-@deprecate_arg("circuits", new_alias="programs", since="0.21.0")
 def dump(  # type: ignore[no-untyped-def]
     programs: Union[List[QPY_SUPPORTED_TYPES], QPY_SUPPORTED_TYPES],
     file_obj: BinaryIO,
     metadata_serializer: Optional[Type[JSONEncoder]] = None,
+    use_symengine: bool = False,
 ):
     """Write QPY binary data to a file
 
@@ -123,6 +122,11 @@ def dump(  # type: ignore[no-untyped-def]
         metadata_serializer: An optional JSONEncoder class that
             will be passed the ``.metadata`` attribute for each program in ``programs`` and will be
             used as the ``cls`` kwarg on the `json.dump()`` call to JSON serialize that dictionary.
+        use_symengine: If True, all objects containing symbolic expressions will be serialized
+            using symengine's native mechanism. This is a faster serialization alternative,
+            but not supported in all platforms. Please check that your target platform is supported
+            by the symengine library before setting this option, as it will be required by qpy to
+            deserialize the payload. For this reason, the option defaults to False.
 
     Raises:
         QpyError: When multiple data format is mixed in the output.
@@ -153,21 +157,26 @@ def dump(  # type: ignore[no-untyped-def]
 
     version_match = VERSION_PATTERN_REGEX.search(__version__)
     version_parts = [int(x) for x in version_match.group("release").split(".")]
+    encoding = type_keys.SymExprEncoding.assign(use_symengine)  # type: ignore[no-untyped-call]
     header = struct.pack(
-        formats.FILE_HEADER_PACK,  # type: ignore[attr-defined]
+        formats.FILE_HEADER_V10_PACK,  # type: ignore[attr-defined]
         b"QISKIT",
         common.QPY_VERSION,
         version_parts[0],
         version_parts[1],
         version_parts[2],
         len(programs),  # type: ignore[arg-type]
+        encoding,
     )
     file_obj.write(header)
     common.write_type_key(file_obj, type_key)  # type: ignore[no-untyped-call]
 
     for program in programs:
         writer(  # type: ignore[no-untyped-call]
-            file_obj, program, metadata_serializer=metadata_serializer
+            file_obj,
+            program,
+            metadata_serializer=metadata_serializer,
+            use_symengine=use_symengine,
         )
 
 
@@ -222,12 +231,31 @@ def load(  # type: ignore[no-untyped-def]
         QiskitError: if ``file_obj`` is not a valid QPY file
         TypeError: When invalid data type is loaded.
     """
-    data = formats.FILE_HEADER._make(  # type: ignore[attr-defined]
-        struct.unpack(
-            formats.FILE_HEADER_PACK,  # type: ignore[attr-defined]
-            file_obj.read(formats.FILE_HEADER_SIZE),  # type: ignore[attr-defined]
+
+    # identify file header version
+    version = struct.unpack("!6sB", file_obj.read(7))[1]
+    file_obj.seek(0)
+
+    if version > common.QPY_VERSION:
+        raise QiskitError(
+            f"The QPY format version being read, {version}, isn't supported by "
+            "this Qiskit version. Please upgrade your version of Qiskit to load this QPY payload"
         )
-    )
+
+    if version < 10:
+        data = formats.FILE_HEADER._make(  # type: ignore[attr-defined]
+            struct.unpack(
+                formats.FILE_HEADER_PACK,  # type: ignore[attr-defined]
+                file_obj.read(formats.FILE_HEADER_SIZE),  # type: ignore[attr-defined]
+            )
+        )
+    else:
+        data = formats.FILE_HEADER_V10._make(  # type: ignore[attr-defined]
+            struct.unpack(
+                formats.FILE_HEADER_V10_PACK,  # type: ignore[attr-defined]
+                file_obj.read(formats.FILE_HEADER_V10_SIZE),  # type: ignore[attr-defined]
+            )
+        )
     if data.preface.decode(common.ENCODE) != "QISKIT":
         raise QiskitError("Input file is not a valid QPY file")
     version_match = VERSION_PATTERN_REGEX.search(__version__)
@@ -267,6 +295,11 @@ def load(  # type: ignore[no-untyped-def]
     else:
         raise TypeError(f"Invalid payload format data kind '{type_key}'.")
 
+    if data.qpy_version < 10:
+        use_symengine = False
+    else:
+        use_symengine = data.symbolic_encoding == type_keys.SymExprEncoding.SYMENGINE
+
     programs = []
     for _ in range(data.num_programs):
         programs.append(
@@ -274,6 +307,7 @@ def load(  # type: ignore[no-untyped-def]
                 file_obj,
                 data.qpy_version,
                 metadata_deserializer=metadata_deserializer,
+                use_symengine=use_symengine,
             )
         )
     return programs

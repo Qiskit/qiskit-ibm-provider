@@ -28,3 +28,8 @@ jobs:
         encrypted_rclone_iv: ${{ secrets.encrypted_rclone_iv }}
       run: |
         tools/deploy_documentation.sh
+    - name: Upload artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: html_docs
+        path: docs/_build/html

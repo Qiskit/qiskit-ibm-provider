@@ -19,7 +19,7 @@ author = 'Qiskit Development Team'
 # The short X.Y version
 version = ''
 # The full version, including alpha/beta/rc tags
-release = '0.8.0'
+release = '0.8.1'
 
 # -- General configuration ---------------------------------------------------
 
@@ -27,13 +27,13 @@ extensions = [
     'sphinx.ext.napoleon',
     'sphinx.ext.autodoc',
     'sphinx.ext.autosummary',
-    'sphinx.ext.mathjax',
     'sphinx.ext.viewcode',
     'sphinx.ext.extlinks',
     'sphinx.ext.intersphinx',
     'jupyter_sphinx',
     'sphinx_autodoc_typehints',
     'reno.sphinxext',
+    'sphinxcontrib.katex',
 ]
 templates_path = ['_templates']
 
