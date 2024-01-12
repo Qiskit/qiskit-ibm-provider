@@ -593,7 +593,7 @@ class IBMBackend(Backend):
 
         The schema for backend properties can be found in
         `Qiskit/ibm-quantum-schemas
-        <https://github.com/Qiskit/ibm-quantum-schemas/blob/main/schemas/backend_properties_schema.json>`_.
+        <https://github.com/Qiskit/ibm-quantum-schemas/blob/main/schemas/backend_properties_schema.json>`__.
 
         Args:
             refresh: If ``True``, re-query the server for the backend properties.
@@ -665,7 +665,7 @@ class IBMBackend(Backend):
 
         The schema for default pulse configuration can be found in
         `Qiskit/ibm-quantum-schemas
-        <https://github.com/Qiskit/ibm-quantum-schemas/blob/main/schemas/default_pulse_configuration_schema.json>`_.
+        <https://github.com/Qiskit/ibm-quantum-schemas/blob/main/schemas/default_pulse_configuration_schema.json>`__.
 
         Args:
             refresh: If ``True``, re-query the server for the backend pulse defaults.
@@ -695,7 +695,7 @@ class IBMBackend(Backend):
 
         The schema for backend configuration can be found in
         `Qiskit/ibm-quantum-schemas
-        <https://github.com/Qiskit/ibm-quantum-schemas/blob/main/schemas/backend_configuration_schema.json>`_.
+        <https://github.com/Qiskit/ibm-quantum-schemas/blob/main/schemas/backend_configuration_schema.json>`__.
 
         Returns:
             The configuration for the backend.
