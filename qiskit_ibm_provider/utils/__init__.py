@@ -32,7 +32,9 @@ Misc Functions
 .. autosummary::
     :toctree: ../stubs/
 
+    pypi_version_check
     to_python_identifier
+    update_warning
     validate_job_tags
 
 """
@@ -45,3 +47,4 @@ from .converters import (
 )
 from .utils import to_python_identifier, validate_job_tags, are_circuits_dynamic
 from .json import RuntimeEncoder, RuntimeDecoder
+from .version_check import pypi_version_check, update_warning
