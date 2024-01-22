@@ -38,7 +38,7 @@ extensions = [
 templates_path = ['_templates']
 
 intersphinx_mapping = {
-    "qiskit": ("https://qiskit.org/documentation/", None),
+    "qiskit": ("https://docs.quantum.ibm.com/api/qiskit/", None),
 }
 
 # -----------------------------------------------------------------------------
