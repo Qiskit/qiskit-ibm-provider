@@ -19,10 +19,10 @@ import ipywidgets as wid
 from IPython.core.magic import line_magic, Magics, magics_class
 from IPython.display import display, Javascript
 from qiskit.exceptions import QiskitError
-from qiskit.tools.events.pubsub import Subscriber
 
 from qiskit_ibm_provider.job.exceptions import IBMJobApiError
 from qiskit_ibm_provider.job.ibm_job import IBMJob
+from qiskit_ibm_provider.utils.pubsub import Subscriber
 from .backend_update import update_backend_info
 from .backend_widget import make_backend_widget
 from .job_widgets import make_clear_button, make_labels, create_job_widget
