@@ -1100,7 +1100,7 @@ class TestPadDynamicalDecoupling(ControlFlowTestCase):
                     dd_sequence,
                     pulse_alignment=1,
                     sequence_min_length_ratios=[0.0],
-                    include_clean_qubits=True,
+                    skip_reset_qubits=False,
                 ),
             ]
         )
