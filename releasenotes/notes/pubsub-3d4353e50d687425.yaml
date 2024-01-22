@@ -1,0 +1,6 @@
+---
+upgrade:
+  - |
+    The IBM Provider is now the central broker for IBM-related publisher/subscriber events emitted
+    during job submission.  If you manage a component that subscribes to events from the IBM
+    Provider, you should use :class:`~.pubsub.Subscriber` from this respository.
