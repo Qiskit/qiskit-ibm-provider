@@ -38,7 +38,6 @@ from qiskit.pulse.channels import (
 )
 
 from qiskit.qobj.utils import MeasLevel, MeasReturnType
-from qiskit.tools.events.pubsub import Publisher
 from qiskit.transpiler.passmanager import PassManager
 from qiskit.transpiler.target import Target
 
@@ -60,6 +59,7 @@ from .transpiler.passes.basis.convert_id_to_delay import (
 )
 from .utils import validate_job_tags, are_circuits_dynamic
 from .utils.options import QASM2Options, QASM3Options
+from .utils.pubsub import Publisher
 from .utils.converters import local_to_utc
 from .utils.json_decoder import (
     defaults_from_server_data,
@@ -593,7 +593,7 @@ class IBMBackend(Backend):
 
         The schema for backend properties can be found in
         `Qiskit/ibm-quantum-schemas
-        <https://github.com/Qiskit/ibm-quantum-schemas/blob/main/schemas/backend_properties_schema.json>`_.
+        <https://github.com/Qiskit/ibm-quantum-schemas/blob/main/schemas/backend_properties_schema.json>`__.
 
         Args:
             refresh: If ``True``, re-query the server for the backend properties.
@@ -665,7 +665,7 @@ class IBMBackend(Backend):
 
         The schema for default pulse configuration can be found in
         `Qiskit/ibm-quantum-schemas
-        <https://github.com/Qiskit/ibm-quantum-schemas/blob/main/schemas/default_pulse_configuration_schema.json>`_.
+        <https://github.com/Qiskit/ibm-quantum-schemas/blob/main/schemas/default_pulse_configuration_schema.json>`__.
 
         Args:
             refresh: If ``True``, re-query the server for the backend pulse defaults.
@@ -695,7 +695,7 @@ class IBMBackend(Backend):
 
         The schema for backend configuration can be found in
         `Qiskit/ibm-quantum-schemas
-        <https://github.com/Qiskit/ibm-quantum-schemas/blob/main/schemas/backend_configuration_schema.json>`_.
+        <https://github.com/Qiskit/ibm-quantum-schemas/blob/main/schemas/backend_configuration_schema.json>`__.
 
         Returns:
             The configuration for the backend.
