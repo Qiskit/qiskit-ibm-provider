@@ -1052,7 +1052,7 @@ class TestPadDynamicalDecoupling(ControlFlowTestCase):
         not scheduled. Unused qubits may also have missing durations when
         not operational.
 
-        This ensures that programs don't have unnecessary information for 
+        This ensures that programs don't have unnecessary information for
         unused qubits.
         Which might hurt performance in later executon stages.
         """
