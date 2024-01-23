@@ -1048,10 +1048,12 @@ class TestPadDynamicalDecoupling(ControlFlowTestCase):
         self.assertEqual(delay_dict[0], delay_dict[2])
 
     def test_no_unused_qubits(self):
-        """Test DD with if_test circuit that unused qubits are untouched and not scheduled. Unused qubits may also have missing durations when
-            not operational.
+        """Test DD with if_test circuit that unused qubits are untouched and
+        not scheduled. Unused qubits may also have missing durations when
+        not operational.
 
-        This ensures that programs don't have unnecessary information for unused qubits.
+        This ensures that programs don't have unnecessary information for 
+        unused qubits.
         Which might hurt performance in later executon stages.
         """
 
