@@ -16,7 +16,6 @@ import logging
 import os
 from typing import Optional
 
-from qiskit import QuantumCircuit
 from qiskit.compiler import assemble, transpile
 from qiskit.providers.exceptions import JobError
 from qiskit.providers.jobstatus import JobStatus

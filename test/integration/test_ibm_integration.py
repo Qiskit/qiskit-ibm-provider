@@ -14,7 +14,7 @@
 
 import time
 
-from qiskit import ClassicalRegister, QuantumCircuit, QuantumRegister, execute
+from qiskit import ClassicalRegister, QuantumCircuit, QuantumRegister
 from qiskit.compiler import transpile
 from qiskit.result import Result
 
@@ -57,7 +57,9 @@ class TestIBMIntegration(IBMTestCase):
 
     def test_ibm_result_fields(self):
         """Test components of a result from a remote simulator."""
-        remote_result = execute(self._qc1, self.sim_backend).result()
+        remote_result = self.sim_backend.run(
+            transpile(self._qc1, self.sim_backend)
+        ).result()
         self.assertIsInstance(remote_result, Result)
         self.assertIn(
             remote_result.backend_name, [self.sim_backend.name, "qasm_simulator"]
@@ -115,7 +117,9 @@ class TestIBMIntegration(IBMTestCase):
         quantum_circuit = bell()
         qc_extra = QuantumCircuit(2, 2)
         qc_extra.measure_all()
-        job = execute([quantum_circuit, qc_extra], self.sim_backend)
+        job = self.sim_backend.run(
+            transpile([quantum_circuit, qc_extra], self.sim_backend)
+        )
         results = job.result()
         self.assertIsInstance(results, Result)
 
@@ -128,7 +132,7 @@ class TestIBMIntegration(IBMTestCase):
             "ibmq_qasm_simulator", instance=self.dependencies.instance_private
         )
         quantum_circuit = bell()
-        job = execute(quantum_circuit, backend=backend)
+        job = self.sim_backend.run(transpile(quantum_circuit, backend=backend))
         self.assertIsNotNone(job.circuits())
         self.assertIsNotNone(job.result())
 

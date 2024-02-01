@@ -17,7 +17,7 @@ import logging
 import os
 import time
 from typing import List, Any
-from qiskit.test.base import BaseQiskitTestCase
+from unittest import TestCase
 
 from qiskit_ibm_provider import QISKIT_IBM_PROVIDER_LOGGER_NAME
 from qiskit_ibm_provider.apiconstants import ApiJobStatus, API_JOB_FINAL_STATES
@@ -25,7 +25,7 @@ from qiskit_ibm_provider.job.exceptions import IBMJobNotFoundError
 from .utils import setup_test_logging
 
 
-class IBMTestCase(BaseQiskitTestCase):
+class IBMTestCase(TestCase):
     """Custom TestCase for use with qiskit-ibm-provider."""
 
     @classmethod
