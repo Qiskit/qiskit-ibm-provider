@@ -16,7 +16,6 @@ import time
 from datetime import datetime, timedelta
 
 from qiskit import transpile
-from qiskit.test.reference_circuits import ReferenceCircuits
 
 from qiskit_ibm_provider.exceptions import IBMBackendJobLimitError
 from ..decorators import (
@@ -24,6 +23,7 @@ from ..decorators import (
     integration_test_setup,
 )
 from ..ibm_test_case import IBMTestCase
+from ..utils import bell
 
 
 class TestBasicServerPaths(IBMTestCase):
@@ -45,7 +45,7 @@ class TestBasicServerPaths(IBMTestCase):
                 raise self.skipTest("Skip test because there is no private provider")
             backend = self.dependencies[provider].get_backend(backend_name)
             with self.subTest(provider=provider, backend=backend):
-                job = self._submit_job_with_retry(ReferenceCircuits.bell(), backend)
+                job = self._submit_job_with_retry(bell(), backend)
                 job_id = job.job_id()
 
                 retrieved_jobs = self.dependencies[provider].backend.jobs(

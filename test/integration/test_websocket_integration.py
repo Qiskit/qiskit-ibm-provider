@@ -19,7 +19,6 @@ from unittest import mock
 from qiskit import transpile
 from qiskit.providers import JobTimeoutError
 from qiskit.providers.jobstatus import JobStatus
-from qiskit.test.reference_circuits import ReferenceCircuits
 from qiskit_ibm_provider import IBMBackend
 from qiskit_ibm_provider.api.clients import websocket
 from qiskit_ibm_provider.api.clients.runtime import RuntimeClient
@@ -29,7 +28,7 @@ from ..decorators import (
 )
 from ..ibm_test_case import IBMTestCase
 from ..proxy_server import MockProxyServer, use_proxies
-from ..utils import most_busy_backend, cancel_job
+from ..utils import most_busy_backend, cancel_job, bell
 
 
 class TestWebsocketIntegration(IBMTestCase):
@@ -47,7 +46,7 @@ class TestWebsocketIntegration(IBMTestCase):
         cls.sim_backend = dependencies.provider.get_backend(
             "ibmq_qasm_simulator", instance=dependencies.instance
         )
-        cls.bell = transpile(ReferenceCircuits.bell(), cls.sim_backend)
+        cls.bell = transpile(bell(), cls.sim_backend)
         cls.real_device_backend = backend
 
     def setUp(self):
@@ -163,7 +162,7 @@ class TestWebsocketIntegration(IBMTestCase):
         """Test timeout checking status of a job via websockets."""
         backend = most_busy_backend(self.dependencies.provider)
         job = backend.run(
-            transpile(ReferenceCircuits.bell(), backend),
+            transpile(bell(), backend),
             shots=backend.configuration().max_shots,
         )
 

@@ -26,7 +26,6 @@ from qiskit.circuit.random import random_circuit
 from qiskit.exceptions import QiskitError
 from qiskit.providers.jobstatus import JobStatus, JOB_FINAL_STATES
 from qiskit.providers.models import BackendProperties
-from qiskit.test.reference_circuits import ReferenceCircuits
 
 from qiskit_ibm_provider.apiconstants import ApiJobStatus
 from qiskit_ibm_provider.job import IBMCompositeJob
@@ -52,6 +51,7 @@ from ..fake_account_client import (
     MissingFieldFakeJob,
 )
 from ..ibm_test_case import IBMTestCase
+from ..utils import bell
 
 
 class TestIBMCompositeJob(IBMTestCase):
@@ -70,7 +70,7 @@ class TestIBMCompositeJob(IBMTestCase):
     def setUp(self):
         """Initial test setup."""
         super().setUp()
-        self._qc = ReferenceCircuits.bell()
+        self._qc = bell()
         self.fake_backend = self.sim_backend
         self.fake_provider = self.dependencies.provider
         self._set_fake_client(BaseFakeAccountClient())
@@ -851,7 +851,7 @@ class TestIBMCompositeJobIntegration(IBMTestCase):
         super().setUpClass()
         cls.dependencies = dependencies
         cls.sim_backend = cls.dependencies.provider.get_backend("ibmq_qasm_simulator")
-        cls._qc = transpile(ReferenceCircuits.bell(), backend=cls.sim_backend)
+        cls._qc = transpile(bell(), backend=cls.sim_backend)
         cls.last_week = datetime.now() - timedelta(days=7)
 
     @skip("Until CompositeJob is fixed")

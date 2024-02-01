@@ -21,7 +21,6 @@ from unittest import mock, skip
 from dateutil import tz
 from qiskit.compiler import transpile
 from qiskit.providers.jobstatus import JobStatus, JOB_FINAL_STATES
-from qiskit.test.reference_circuits import ReferenceCircuits
 
 from qiskit_ibm_provider.api.clients.runtime import RuntimeClient
 from qiskit_ibm_provider.exceptions import (
@@ -39,6 +38,7 @@ from ..utils import (
     cancel_job,
     submit_job_bad_shots,
     submit_job_one_bad_instr,
+    bell,
 )
 
 
@@ -55,14 +55,14 @@ class TestIBMJobAttributes(IBMTestCase):
         cls.sim_backend = dependencies.provider.get_backend(
             "ibmq_qasm_simulator", instance=dependencies.instance
         )
-        cls.bell = transpile(ReferenceCircuits.bell(), cls.sim_backend)
+        cls.bell = transpile(bell(), cls.sim_backend)
         cls.sim_job = cls.sim_backend.run(cls.bell)
         cls.last_week = datetime.now() - timedelta(days=7)
 
     def setUp(self):
         """Initial test setup."""
         super().setUp()
-        self._qc = ReferenceCircuits.bell()
+        self._qc = bell()
 
     def test_job_id(self):
         """Test getting a job ID."""

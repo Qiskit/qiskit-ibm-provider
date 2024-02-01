@@ -19,7 +19,6 @@ import numpy as np
 import dateutil.parser
 from qiskit import transpile, schedule, QuantumCircuit
 from qiskit.circuit import Parameter
-from qiskit.test.reference_circuits import ReferenceCircuits
 from qiskit_ibm_provider import least_busy
 from qiskit_ibm_provider.utils.json_encoder import IBMJsonEncoder
 from ..decorators import (
@@ -28,7 +27,7 @@ from ..decorators import (
     production_only,
 )
 from ..ibm_test_case import IBMTestCase
-from ..utils import cancel_job
+from ..utils import cancel_job, bell
 
 
 class TestSerialization(IBMTestCase):
@@ -44,7 +43,7 @@ class TestSerialization(IBMTestCase):
         cls.sim_backend = cls.dependencies.provider.get_backend(
             "ibmq_qasm_simulator",
         )
-        cls.bell = transpile(ReferenceCircuits.bell(), backend=cls.sim_backend)
+        cls.bell = transpile(bell(), backend=cls.sim_backend)
 
     @skip("See Terra issue #9488")
     def test_pulse_qobj(self):

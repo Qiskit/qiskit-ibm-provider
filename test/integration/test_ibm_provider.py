@@ -19,7 +19,6 @@ from qiskit import ClassicalRegister, QuantumCircuit, QuantumRegister
 from qiskit.compiler import transpile
 from qiskit.providers.exceptions import QiskitBackendNotFoundError
 from qiskit.providers.models.backendproperties import BackendProperties
-from qiskit.test.reference_circuits import ReferenceCircuits
 
 from qiskit_ibm_provider import hub_group_project
 from qiskit_ibm_provider.api.clients import AccountClient, RuntimeClient
@@ -37,6 +36,7 @@ from ..decorators import (
     production_only,
 )
 from ..ibm_test_case import IBMTestCase
+from ..utils import bell
 
 API_URL = "https://api.quantum-computing.ibm.com/api"
 AUTH_URL = "https://auth.quantum-computing.ibm.com/api"
@@ -251,8 +251,8 @@ class TestIBMProviderServices(IBMTestCase):
             name=self.backend_name, instance=self.instance
         )
         backends = self.dependencies.provider.backends(instance=self.instance)
-        job = backend.run(ReferenceCircuits.bell())
-        job2 = backends[0].run(ReferenceCircuits.bell())
+        job = backend.run(bell())
+        job2 = backends[0].run(bell())
         self.assertEqual(self.instance, backend._instance)
         self.assertEqual(self.instance, backends[0]._instance)
         self.assertEqual(self.instance, job._backend._instance)

@@ -20,7 +20,6 @@ from qiskit.compiler import transpile
 from qiskit.providers.aer.noise import (  # pylint: disable=import-error,no-name-in-module
     NoiseModel,
 )
-from qiskit.test.reference_circuits import ReferenceCircuits
 
 from qiskit_ibm_provider import IBMBackend
 from ..decorators import (
@@ -28,6 +27,7 @@ from ..decorators import (
     IntegrationTestDependencies,
 )
 from ..ibm_test_case import IBMTestCase
+from ..utils import bell
 
 
 class TestIBMQasmSimulator(IBMTestCase):
@@ -134,7 +134,7 @@ class TestIBMQasmSimulator(IBMTestCase):
         try:
             backend._configuration._data["simulation_method"] = "extended_stabilizer"
             backend._submit_job = _new_submit
-            circ = transpile(ReferenceCircuits.bell(), backend=backend)
+            circ = transpile(bell(), backend=backend)
             backend.run(circ, header={"test": "circuits"})
         finally:
             backend._configuration._data["simulation_method"] = sim_method
@@ -159,7 +159,7 @@ class TestIBMQasmSimulator(IBMTestCase):
         try:
             backend._configuration._data["simulation_method"] = "extended_stabilizer"
             backend._submit_job = _new_submit
-            circ = transpile(ReferenceCircuits.bell(), backend=backend)
+            circ = transpile(bell(), backend=backend)
             backend.run(circ, method="my_method", header={"test": "circuits"})
         finally:
             backend._configuration._data["simulation_method"] = sim_method
@@ -173,7 +173,7 @@ class TestIBMQasmSimulator(IBMTestCase):
         """Test using simulator with a noise model."""
         noise_model = NoiseModel.from_backend(self.real_device_backend)
         result = self.sim_backend.run(
-            transpile(ReferenceCircuits.bell(), backend=self.sim_backend),
+            transpile(bell(), backend=self.sim_backend),
             noise_model=noise_model,
         ).result()
         self.assertTrue(result)

@@ -22,17 +22,13 @@ from qiskit import (
     QuantumCircuit,
     QuantumRegister,
 )
-from qiskit.test.reference_circuits import ReferenceCircuits
 from qiskit.providers.jobstatus import JobStatus
 from qiskit_ibm_provider.job.exceptions import IBMJobFailureError
 
 from qiskit_ibm_provider.ibm_backend import IBMBackend, QOBJRUNNERPROGRAMID
 
 from ..ibm_test_case import IBMTestCase
-from ..utils import (
-    cancel_job,
-    submit_job_one_bad_instr,
-)
+from ..utils import cancel_job, submit_job_one_bad_instr, bell
 from ..decorators import (
     IntegrationTestDependencies,
     integration_test_setup_with_backend,
@@ -63,7 +59,7 @@ class TestRealDevices(IBMTestCase):
                 filters=lambda b: b.configuration().n_qubits >= 5,
             )[0]
             with self.subTest(provider=provider, backend=backend):
-                job = self._submit_job_with_retry(ReferenceCircuits.bell(), backend)
+                job = self._submit_job_with_retry(bell(), backend)
 
                 # Fetch the results.
                 result = job.result()
@@ -88,7 +84,7 @@ class TestRealDevices(IBMTestCase):
                 filters=lambda b: b.configuration().n_qubits >= 5,
             )[0]
             with self.subTest(backend=backend):
-                job = self._submit_job_with_retry(ReferenceCircuits.bell(), backend)
+                job = self._submit_job_with_retry(bell(), backend)
                 self.assertIsNotNone(job.properties())
                 self.assertTrue(job.status())
                 # Cancel job so it doesn't consume more resources.
@@ -98,7 +94,7 @@ class TestRealDevices(IBMTestCase):
         """Test running in a real device."""
         shots = 8192
         job = self.real_device_backend.run(
-            transpile(ReferenceCircuits.bell(), backend=self.real_device_backend),
+            transpile(bell(), backend=self.real_device_backend),
             shots=shots,
             program_id=QOBJRUNNERPROGRAMID,
         )
@@ -197,7 +193,7 @@ class TestRealDevices(IBMTestCase):
     def test_websockets_device(self):
         """Test checking status of a job via websockets for a device."""
         job = self.real_device_backend.run(
-            transpile(ReferenceCircuits.bell(), self.real_device_backend), shots=1
+            transpile(bell(), self.real_device_backend), shots=1
         )
 
         # Manually disable the non-websocket polling.

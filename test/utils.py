@@ -22,7 +22,7 @@ from qiskit.providers.exceptions import JobError
 from qiskit.providers.jobstatus import JobStatus
 from qiskit.pulse import Schedule
 from qiskit.qobj import QasmQobj
-from qiskit.test.reference_circuits import ReferenceCircuits
+from qiskit.circuit import QuantumCircuit, QuantumRegister, ClassicalRegister
 
 from qiskit_ibm_provider.hub_group_project import HubGroupProject
 from qiskit_ibm_provider.ibm_backend import IBMBackend
@@ -111,7 +111,7 @@ def bell_in_qobj(backend: IBMBackend, shots: int = 1024) -> QasmQobj:
         A bell circuit in Qobj format.
     """
     return assemble(
-        transpile(ReferenceCircuits.bell(), backend=backend),
+        transpile(bell(), backend=backend),
         backend=backend,
         shots=shots,
     )
@@ -171,7 +171,7 @@ def submit_job_one_bad_instr(backend: IBMBackend) -> IBMJob:
     Returns:
         Submitted job.
     """
-    qc_new = transpile(ReferenceCircuits.bell(), backend)
+    qc_new = transpile(bell(), backend)
     if backend.configuration().simulator:
         # Specify method so it doesn't fail at method selection.
         qobj = assemble([qc_new] * 2, backend=backend, method="statevector")
@@ -191,7 +191,7 @@ def submit_and_cancel(backend: IBMBackend) -> IBMJob:
     Returns:
         Cancelled job.
     """
-    circuit = transpile(ReferenceCircuits.bell(), backend=backend)
+    circuit = transpile(bell(), backend=backend)
     job = backend.run(circuit)
     cancel_job(job, True)
     return job
@@ -235,3 +235,15 @@ def get_hgp(qe_token: str, qe_url: str, default: bool = True) -> HubGroupProject
                 hgp_to_return = hgp
                 break
     return hgp_to_return
+
+
+def bell():
+    """Return a Bell circuit."""
+    quantum_register = QuantumRegister(2, name="qr")
+    classical_register = ClassicalRegister(2, name="cr")
+    quantum_circuit = QuantumCircuit(quantum_register, classical_register, name="bell")
+    quantum_circuit.h(quantum_register[0])
+    quantum_circuit.cx(quantum_register[0], quantum_register[1])
+    quantum_circuit.measure(quantum_register, classical_register)
+
+    return quantum_circuit
