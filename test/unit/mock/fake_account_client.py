@@ -15,15 +15,19 @@
 from datetime import datetime as python_datetime
 from typing import List, Dict, Any, Optional
 
-from qiskit.providers.fake_provider.backends.lima.fake_lima import FakeLima
 from qiskit.providers.exceptions import QiskitBackendNotFoundError
+
+try:
+    from qiskit.providers.fake_provider import Fake5QV1
+except ImportError:
+    from qiskit.providers.fake_provider import FakeLima as Fake5QV1
 
 
 class FakeApiBackend:
     """Fake backend."""
 
     def __init__(self, config_update=None, status_update=None):
-        fake_backend = FakeLima()
+        fake_backend = Fake5QV1()
         self.properties = fake_backend.properties().to_dict()
         self.defaults = fake_backend.defaults().to_dict()
 
@@ -60,7 +64,7 @@ class BaseFakeAccountClient:
                     ]
         """
         self._hgp = hgp
-        self._fake_backend = FakeLima()
+        self._fake_backend = Fake5QV1()
         self._backends = []
         if not specs:
             specs = [{}] * num_backends
