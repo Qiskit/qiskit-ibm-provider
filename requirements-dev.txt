@@ -27,3 +27,4 @@ Sphinx>=6.0.0
 sphinx-autodoc-typehints<=1.19.2
 reno>=2.11.0
 sphinxcontrib-katex==0.9.9
+qiskit-ibm-runtime>=0.18
