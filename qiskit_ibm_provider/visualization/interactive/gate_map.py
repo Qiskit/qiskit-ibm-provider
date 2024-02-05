@@ -64,15 +64,20 @@ def iplot_gate_map(
             :hide-output:
 
             from qiskit_ibm_provider.test.ibm_provider_mock import mock_get_backend
-            mock_get_backend('FakeVigo')
+            # Generate a mock provider for the sake of this example.
+            # This line will allow the mocked ``IBMProvider`` to return
+            # a fake backend in the following cell.
+            mock_get_backend('FakeOpenPulse2Q')
 
         .. jupyter-execute::
 
             from qiskit_ibm_provider import IBMProvider
             from qiskit_ibm_provider.visualization import iplot_gate_map
 
-            provider = IBMProvider(group='open', project='main')
-            backend = provider.get_backend('ibmq_vigo')
+           provider = IBMProvider(group='open', project='main')
+           # Note that this is a mock provider, replace ``FakeOpenPulse2Q``
+           # with any of the currently available IBM devices.
+           backend = provider.get_backend('FakeOpenPulse2Q')
 
             iplot_gate_map(backend, as_widget=True)
     """
