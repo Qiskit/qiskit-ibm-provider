@@ -34,7 +34,7 @@ Detailed information on a single backend
     :hide-output:
 
     from qiskit_ibm_provider.test.ibm_provider_mock import mock_get_backend
-    mock_get_backend('FakeVigo')
+    mock_get_backend('Fake1Q')
 
 .. jupyter-execute::
 
@@ -71,8 +71,8 @@ import sys
 if "ipykernel" in sys.modules:
 
     from IPython import get_ipython  # pylint: disable=import-error
+    from qiskit.providers import BackendV2
     from .dashboard.dashboard import IBMDashboardMagic
-    from qiskit.providers.fake_provider.fake_backend import FakeBackendV2 as FakeBackend
     from ..ibm_backend import IBMBackend
     from .backend_info import backend_widget
 
@@ -82,4 +82,4 @@ if "ipykernel" in sys.modules:
         HTML_FORMATTER = _IP.display_formatter.formatters["text/html"]
         # Make backend_widget the html repr for IBM Quantum backends
         HTML_FORMATTER.for_type(IBMBackend, backend_widget)
-        HTML_FORMATTER.for_type(FakeBackend, backend_widget)
+        HTML_FORMATTER.for_type(BackendV2, backend_widget)

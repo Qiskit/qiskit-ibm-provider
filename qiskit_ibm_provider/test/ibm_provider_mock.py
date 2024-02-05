@@ -1,6 +1,6 @@
 # This code is part of Qiskit.
 #
-# (C) Copyright IBM 2021.
+# (C) Copyright IBM 2021, 2024.
 #
 # This code is licensed under the Apache License, Version 2.0. You may
 # obtain a copy of this license in the LICENSE.txt file in the root directory
@@ -14,7 +14,7 @@
 
 from unittest.mock import MagicMock
 
-from qiskit.test import mock as backend_mocks
+from qiskit.providers import fake_provider as backend_mocks
 
 import qiskit_ibm_provider
 
@@ -29,15 +29,18 @@ def mock_get_backend(backend):
     value to qiskit_ibm_provider.IBMProvider after you finish using your mock.
     Args:
         backend (str): The class name as a string for the fake device to
-            return. For example, FakeVigo.
+            return. For example, Fake1Q.
     Raises:
         NameError: If the specified value of backend
     """
+    print(backend_mocks)
     mock_ibm_provider = MagicMock()
     if not hasattr(backend_mocks, backend):
         raise NameError(
-            "The specified backend name is not a valid mock from " "qiskit.test.mock"
+            "The specified backend name is not a valid backend from "
+            "qiskit.providers.fake_provider"
         )
+    print(backend_mocks, backend, getattr(backend_mocks, backend))
     fake_backend = getattr(backend_mocks, backend)()
     mock_ibm_provider.get_backend.return_value = fake_backend
     mock_ibm_provider.return_value = mock_ibm_provider

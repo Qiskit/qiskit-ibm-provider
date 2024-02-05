@@ -14,12 +14,10 @@
 """Interactive backend widget."""
 
 import threading
-from typing import Union
 
 import ipyvuetify as vue
 from IPython.display import display  # pylint: disable=import-error
-from qiskit.providers.fake_provider.fake_backend import FakeBackendV2 as FakeBackend
-
+from qiskit.providers import BackendV2
 from qiskit_ibm_provider.ibm_backend import IBMBackend
 from .config_widget import config_tab
 from .gates_widget import gates_tab
@@ -29,9 +27,7 @@ from ..visualization.interactive import iplot_error_map
 from ..utils.hgp import to_instance_format
 
 
-def _async_job_loader(
-    tab: vue.TabItem, backend: Union[IBMBackend, FakeBackend]
-) -> None:
+def _async_job_loader(tab: vue.TabItem, backend: BackendV2) -> None:
     """Asynchronous job loader.
 
     Args:
@@ -41,18 +37,19 @@ def _async_job_loader(
     tab.children = [jobs_tab(backend)]
 
 
-def backend_widget(backend: Union[IBMBackend, FakeBackend]) -> None:
+def backend_widget(backend: BackendV2) -> None:
     """Display backend information as a widget.
 
     Args:
         backend: Display information about this backend.
     """
     vue.theme.dark = False
-    if isinstance(backend, FakeBackend):
+    if isinstance(backend, IBMBackend):
+        instance = backend._api_client._params.instance
+    else:
+        # fake backend
         cred = backend._credentials
         instance = to_instance_format(cred.hub, cred.group, cred.project)
-    else:
-        instance = backend._api_client._params.instance
     last_tab = vue.TabItem(children=[])
     card = vue.Card(
         height=600,
