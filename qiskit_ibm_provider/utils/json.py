@@ -58,7 +58,6 @@ from qiskit.version import __version__ as _terra_version_string
 from qiskit.utils import optionals
 
 from qiskit.qpy import (
-    _write_parameter,
     _write_parameter_expression,
     _read_parameter_expression,
     _read_parameter_expression_v3,
