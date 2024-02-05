@@ -38,7 +38,7 @@ def mock_get_backend(backend):
     if not hasattr(backend_mocks, backend):
         raise NameError(
             "The specified backend name is not a valid backend from "
-            "qiskit.provider.fake_provider"
+            "qiskit.providers.fake_provider"
         )
     print(backend_mocks, backend, getattr(backend_mocks, backend))
     fake_backend = getattr(backend_mocks, backend)()
