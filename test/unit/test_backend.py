@@ -17,8 +17,12 @@ from unittest import mock
 import warnings
 
 from qiskit import transpile, qasm3, QuantumCircuit
-from qiskit.providers.fake_provider import FakeManila
 from qiskit.providers.models import BackendStatus, BackendProperties
+
+try:
+    from qiskit.providers.fake_provider import Fake5QV1
+except ImportError:
+    from qiskit.providers.fake_provider import FakeManila as Fake5QV1
 
 from qiskit_ibm_provider.ibm_backend import IBMBackend
 from qiskit_ibm_provider.exceptions import IBMBackendValueError
@@ -31,7 +35,7 @@ class TestBackend(IBMTestCase):
 
     def test_raise_faulty_qubits(self):
         """Test faulty qubits is raised."""
-        fake_backend = FakeManila()
+        fake_backend = Fake5QV1()
         num_qubits = fake_backend.configuration().num_qubits
         circ = QuantumCircuit(num_qubits, num_qubits)
         for i in range(num_qubits):
@@ -50,7 +54,7 @@ class TestBackend(IBMTestCase):
 
     def test_raise_faulty_qubits_many(self):
         """Test faulty qubits is raised if one circuit uses it."""
-        fake_backend = FakeManila()
+        fake_backend = Fake5QV1()
         num_qubits = fake_backend.configuration().num_qubits
 
         circ1 = QuantumCircuit(1, 1)
@@ -72,7 +76,7 @@ class TestBackend(IBMTestCase):
 
     def test_raise_faulty_edge(self):
         """Test faulty edge is raised."""
-        fake_backend = FakeManila()
+        fake_backend = Fake5QV1()
         num_qubits = fake_backend.configuration().num_qubits
         circ = QuantumCircuit(num_qubits, num_qubits)
         for i in range(num_qubits - 2):
@@ -92,7 +96,7 @@ class TestBackend(IBMTestCase):
 
     def test_faulty_qubit_not_used(self):
         """Test faulty qubit is not raise if not used."""
-        fake_backend = FakeManila()
+        fake_backend = Fake5QV1()
         circ = QuantumCircuit(2, 2)
         for i in range(2):
             circ.x(i)
@@ -111,7 +115,7 @@ class TestBackend(IBMTestCase):
     def test_faulty_edge_not_used(self):
         """Test faulty edge is not raised if not used."""
 
-        fake_backend = FakeManila()
+        fake_backend = Fake5QV1()
         coupling_map = fake_backend.configuration().coupling_map
 
         circ = QuantumCircuit(2, 2)
@@ -186,7 +190,7 @@ class TestBackend(IBMTestCase):
         # pylint: disable=not-context-manager
 
         # backend is not faulty because no faulty parameters given
-        backend = self._create_faulty_backend(model_backend=FakeManila())
+        backend = self._create_faulty_backend(model_backend=Fake5QV1())
 
         circuits = []
         circ = QuantumCircuit(2, 2)
@@ -228,7 +232,7 @@ class TestBackend(IBMTestCase):
 
     def _create_dc_test_backend(self):
         """Create a test backend with an IfElseOp enables."""
-        model_backend = FakeManila()
+        model_backend = Fake5QV1()
         properties = model_backend.properties()
 
         out_backend = IBMBackend(
@@ -344,7 +348,7 @@ class TestBackend(IBMTestCase):
 
     def test_too_many_circuits(self):
         """Test exception when number of circuits exceeds backend._max_circuits"""
-        model_backend = FakeManila()
+        model_backend = Fake5QV1()
         backend = IBMBackend(
             configuration=model_backend.configuration(),
             provider=mock.MagicMock(),

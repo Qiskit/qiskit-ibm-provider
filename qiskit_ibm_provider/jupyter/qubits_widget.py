@@ -13,15 +13,11 @@
 
 """Widget for qubit properties tab."""
 
-from typing import Union
-
 import ipywidgets as wid
-from qiskit.providers.fake_provider.fake_backend import FakeBackendV2 as FakeBackend
-
-from qiskit_ibm_provider.ibm_backend import IBMBackend
+from qiskit.providers import BackendV2
 
 
-def qubits_tab(backend: Union[IBMBackend, FakeBackend]) -> wid.VBox:
+def qubits_tab(backend: BackendV2) -> wid.VBox:
     """The qubit properties widget.
 
     Args:
