@@ -34,8 +34,6 @@ try:
 except ImportError:
     from qiskit.providers.fake_provider import FakeBogota as Fake5QV1
 
-from qiskit.test.reference_circuits import ReferenceCircuits
-
 from qiskit_ibm_provider.api.exceptions import (
     ApiError,
     UserTimeoutExceededError,
@@ -46,6 +44,7 @@ from qiskit_ibm_provider.apiconstants import API_JOB_FINAL_STATES, ApiJobStatus
 from qiskit_ibm_provider.ibm_backend import IBMBackend
 from qiskit_ibm_provider.job.exceptions import IBMJobInvalidStateError
 from ..jobtestcase import JobTestCase
+from ..utils import bell
 
 MOCKED_ERROR_RESULT: Dict[str, Any] = {
     "qObjectResult": {
@@ -322,7 +321,7 @@ class TestIBMJobStates(JobTestCase):
         """Creates a new ``IBMJob`` running with the provided API object."""
         backend = IBMBackend(Fake5QV1().configuration(), MagicMock(), api_client=api)
         backend._provider._runtime_client = api
-        circuit = transpile(ReferenceCircuits.bell())
+        circuit = transpile(bell())
         self._current_api = api
         self._current_qjob = backend.run(circuit)
         self._current_qjob.refresh = MagicMock()

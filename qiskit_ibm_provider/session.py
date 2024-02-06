@@ -32,14 +32,20 @@ class Session:
     and submit one or more jobs.
 
     For example::
-
-        from qiskit.test.reference_circuits import ReferenceCircuits
         from qiskit_ibm_provider import IBMProvider
 
-        circ = ReferenceCircuits.bell()
+        # Bell Circuit
+        qr = QuantumRegister(2, name="qr")
+        cr = ClassicalRegister(2, name="cr")
+        qc = QuantumCircuit(qr, cr, name="bell")
+        qc.h(qr[0])
+        qc.cx(qr[0], qr[1])
+        qc.measure(qr, cr)
+
         backend = IBMProvider().get_backend("ibmq_qasm_simulator")
         backend.open_session()
-        job = backend.run(circ)
+
+        job = backend.run(qc)
         print(f"Job ID: {job.job_id()}")
         print(f"Result: {job.result()}")
         # Close the session only if all jobs are finished and
@@ -49,7 +55,7 @@ class Session:
     Session can also be used as a context manager::
 
         with backend.open_session() as session:
-            job = backend.run(ReferenceCircuits.bell())
+            job = backend.run(qc)
             assert job.job_id() == session.session_id
 
     """
