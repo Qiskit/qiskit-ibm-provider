@@ -20,6 +20,7 @@ coverage>=6.3
 scikit-learn>=0.20.0
 ddt>=1.2.0,!=1.4.0,!=1.4.3
 pylatexenc>=1.4
+qiskit-ibm-runtime>=0.19.0
 
 # Documentation
 jupyter-sphinx

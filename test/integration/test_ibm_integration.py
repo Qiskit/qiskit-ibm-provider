@@ -14,10 +14,9 @@
 
 import time
 
-from qiskit import ClassicalRegister, QuantumCircuit, QuantumRegister, execute
+from qiskit import ClassicalRegister, QuantumCircuit, QuantumRegister
 from qiskit.compiler import transpile
 from qiskit.result import Result
-from qiskit.test.reference_circuits import ReferenceCircuits
 
 from qiskit_ibm_provider import IBMBackend
 from qiskit_ibm_provider.job.exceptions import IBMJobApiError
@@ -26,6 +25,7 @@ from ..decorators import (
     integration_test_setup_with_backend,
 )
 from ..ibm_test_case import IBMTestCase
+from ..utils import bell
 
 
 class TestIBMIntegration(IBMTestCase):
@@ -57,7 +57,9 @@ class TestIBMIntegration(IBMTestCase):
 
     def test_ibm_result_fields(self):
         """Test components of a result from a remote simulator."""
-        remote_result = execute(self._qc1, self.sim_backend).result()
+        remote_result = self.sim_backend.run(
+            transpile(self._qc1, self.sim_backend)
+        ).result()
         self.assertIsInstance(remote_result, Result)
         self.assertIn(
             remote_result.backend_name, [self.sim_backend.name, "qasm_simulator"]
@@ -112,10 +114,12 @@ class TestIBMIntegration(IBMTestCase):
 
     def test_execute_two_remote(self):
         """Test executing two circuits on a remote backend."""
-        quantum_circuit = ReferenceCircuits.bell()
+        quantum_circuit = bell()
         qc_extra = QuantumCircuit(2, 2)
         qc_extra.measure_all()
-        job = execute([quantum_circuit, qc_extra], self.sim_backend)
+        job = self.sim_backend.run(
+            transpile([quantum_circuit, qc_extra], self.sim_backend)
+        )
         results = job.result()
         self.assertIsInstance(results, Result)
 
@@ -127,8 +131,8 @@ class TestIBMIntegration(IBMTestCase):
         backend = self.dependencies.provider.get_backend(
             "ibmq_qasm_simulator", instance=self.dependencies.instance_private
         )
-        quantum_circuit = ReferenceCircuits.bell()
-        job = execute(quantum_circuit, backend=backend)
+        quantum_circuit = bell()
+        job = self.sim_backend.run(transpile(quantum_circuit, backend=backend))
         self.assertIsNotNone(job.circuits())
         self.assertIsNotNone(job.result())
 

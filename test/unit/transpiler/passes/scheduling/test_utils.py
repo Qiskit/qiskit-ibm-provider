@@ -12,15 +12,15 @@
 
 """Tests for Qiskit scheduling utilities."""
 
-from qiskit.test import QiskitTestCase
-from qiskit.providers.fake_provider import FakeKolkata, FakeKolkataV2
-
+from qiskit_ibm_runtime.fake_provider import FakeKolkata, FakeKolkataV2
 from qiskit_ibm_provider.transpiler.passes.scheduling.utils import (
     DynamicCircuitInstructionDurations,
 )
 
+from .....ibm_test_case import IBMTestCase
 
-class TestDynamicCircuitInstructionDurations(QiskitTestCase):
+
+class TestDynamicCircuitInstructionDurations(IBMTestCase):
     """Tests the DynamicCircuitInstructionDurations patching"""
 
     def test_patch_measure(self):

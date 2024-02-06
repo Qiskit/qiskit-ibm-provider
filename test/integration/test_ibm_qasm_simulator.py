@@ -17,10 +17,7 @@ from unittest import skip
 
 from qiskit import ClassicalRegister, QuantumCircuit, QuantumRegister
 from qiskit.compiler import transpile
-from qiskit.providers.aer.noise import (  # pylint: disable=import-error,no-name-in-module
-    NoiseModel,
-)
-from qiskit.test.reference_circuits import ReferenceCircuits
+from qiskit_aer.noise import NoiseModel
 
 from qiskit_ibm_provider import IBMBackend
 from ..decorators import (
@@ -28,6 +25,7 @@ from ..decorators import (
     IntegrationTestDependencies,
 )
 from ..ibm_test_case import IBMTestCase
+from ..utils import bell
 
 
 class TestIBMQasmSimulator(IBMTestCase):
@@ -62,7 +60,7 @@ class TestIBMQasmSimulator(IBMTestCase):
         counts = result.get_counts(quantum_circuit)
         target = {"0": shots / 2, "1": shots / 2}
         threshold = 0.1 * shots
-        self.assertDictAlmostEqual(counts, target, threshold)
+        self.assert_dict_almost_equal(counts, target, threshold)
 
     def test_execute_several_circuits_simulator_online(self):
         """Test execute_several_circuits_simulator_online."""
@@ -86,8 +84,8 @@ class TestIBMQasmSimulator(IBMTestCase):
         target1 = {"00": shots / 4, "01": shots / 4, "10": shots / 4, "11": shots / 4}
         target2 = {"00": shots / 2, "11": shots / 2}
         threshold = 0.1 * shots
-        self.assertDictAlmostEqual(counts1, target1, threshold)
-        self.assertDictAlmostEqual(counts2, target2, threshold)
+        self.assert_dict_almost_equal(counts1, target1, threshold)
+        self.assert_dict_almost_equal(counts2, target2, threshold)
 
     def test_online_qasm_simulator_two_registers(self):
         """Test online_qasm_simulator_two_registers."""
@@ -134,7 +132,7 @@ class TestIBMQasmSimulator(IBMTestCase):
         try:
             backend._configuration._data["simulation_method"] = "extended_stabilizer"
             backend._submit_job = _new_submit
-            circ = transpile(ReferenceCircuits.bell(), backend=backend)
+            circ = transpile(bell(), backend=backend)
             backend.run(circ, header={"test": "circuits"})
         finally:
             backend._configuration._data["simulation_method"] = sim_method
@@ -159,7 +157,7 @@ class TestIBMQasmSimulator(IBMTestCase):
         try:
             backend._configuration._data["simulation_method"] = "extended_stabilizer"
             backend._submit_job = _new_submit
-            circ = transpile(ReferenceCircuits.bell(), backend=backend)
+            circ = transpile(bell(), backend=backend)
             backend.run(circ, method="my_method", header={"test": "circuits"})
         finally:
             backend._configuration._data["simulation_method"] = sim_method
@@ -173,7 +171,7 @@ class TestIBMQasmSimulator(IBMTestCase):
         """Test using simulator with a noise model."""
         noise_model = NoiseModel.from_backend(self.real_device_backend)
         result = self.sim_backend.run(
-            transpile(ReferenceCircuits.bell(), backend=self.sim_backend),
+            transpile(bell(), backend=self.sim_backend),
             noise_model=noise_model,
         ).result()
         self.assertTrue(result)

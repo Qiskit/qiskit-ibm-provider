@@ -16,7 +16,6 @@ from datetime import datetime, timedelta
 from unittest import mock
 
 from qiskit import transpile
-from qiskit.test.reference_circuits import ReferenceCircuits
 
 from qiskit_ibm_provider.jupyter.config_widget import config_tab
 from qiskit_ibm_provider.jupyter.dashboard.backend_widget import make_backend_widget
@@ -32,6 +31,7 @@ from ..decorators import (
     integration_test_setup,
 )
 from ..ibm_test_case import IBMTestCase
+from ..utils import bell
 
 
 class TestBackendInfo(IBMTestCase):
@@ -110,7 +110,7 @@ class TestIBMDashboard(IBMTestCase):
     def test_job_widget(self):
         """Test jobs tab."""
         backend = self.dependencies.provider.get_backend("ibmq_qasm_simulator")
-        job = backend.run(transpile(ReferenceCircuits.bell(), backend))
+        job = backend.run(transpile(bell(), backend))
         create_job_widget(
             mock.MagicMock(), job, backend=backend.name, status=job.status().value
         )
@@ -118,7 +118,7 @@ class TestIBMDashboard(IBMTestCase):
     def test_watcher_monitor(self):
         """Test job watcher."""
         backend = self.dependencies.provider.get_backend("ibmq_qasm_simulator")
-        job = backend.run(transpile(ReferenceCircuits.bell(), backend))
+        job = backend.run(transpile(bell(), backend))
         _job_checker(job=job, status=job.status(), watcher=mock.MagicMock())
 
 
