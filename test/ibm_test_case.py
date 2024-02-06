@@ -18,15 +18,24 @@ import os
 import time
 from typing import List, Any
 from unittest import TestCase
-
-from qiskit_ibm_provider import QISKIT_IBM_PROVIDER_LOGGER_NAME
+from qiskit import QuantumCircuit
+from qiskit_ibm_provider import QISKIT_IBM_PROVIDER_LOGGER_NAME, IBMBackend, IBMJob
 from qiskit_ibm_provider.apiconstants import ApiJobStatus, API_JOB_FINAL_STATES
 from qiskit_ibm_provider.job.exceptions import IBMJobNotFoundError
 from .utils import setup_test_logging
+from .decorators import IntegrationTestDependencies
 
 
 class IBMTestCase(TestCase):
     """Custom TestCase for use with qiskit-ibm-provider."""
+
+    log: logging.Logger
+    dependencies: IntegrationTestDependencies
+    sim_backend: IBMBackend
+    backend: IBMBackend
+    bell: QuantumCircuit
+    real_device_backend: IBMBackend
+    sim_job: IBMJob
 
     @classmethod
     def setUpClass(cls):
@@ -80,8 +89,8 @@ class IBMTestCase(TestCase):
         failed = False
         # It's surprisingly difficult to find out whether the test failed.
         # Using a private attribute is not ideal but it'll have to do.
-        if self._outcome and hasattr(self._outcome, "errors"):
-            for _, exc_info in self._outcome.errors:
+        if self._outcome and hasattr(self._outcome, "errors"):  # type: ignore[attr-defined]
+            for _, exc_info in self._outcome.errors:  # type: ignore[attr-defined]
                 if exc_info is not None:
                     failed = True
 

@@ -29,6 +29,8 @@ from ..utils import bell
 class TestBasicServerPaths(IBMTestCase):
     """Test the basic server endpoints using both a public and premium provider."""
 
+    last_week: datetime
+
     @classmethod
     @integration_test_setup()
     def setUpClass(cls, dependencies: IntegrationTestDependencies) -> None:

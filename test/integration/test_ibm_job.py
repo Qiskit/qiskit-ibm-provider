@@ -23,7 +23,7 @@ from qiskit import ClassicalRegister, QuantumCircuit, QuantumRegister
 from qiskit.compiler import transpile
 from qiskit.providers.jobstatus import JobStatus, JOB_FINAL_STATES
 
-from qiskit_ibm_provider import IBMBackend
+from qiskit_ibm_provider import IBMBackend, IBMProvider
 from qiskit_ibm_provider.api.exceptions import RequestsApiError
 from qiskit_ibm_provider.api.rest.job import Job as RestJob
 from qiskit_ibm_provider.exceptions import IBMBackendApiError
@@ -40,6 +40,9 @@ from ..utils import most_busy_backend, cancel_job, submit_and_cancel, bell
 
 class TestIBMJob(IBMTestCase):
     """Test ibm_job module."""
+
+    provider: IBMProvider
+    last_month: datetime
 
     @classmethod
     @integration_test_setup_with_backend(simulator=False, min_num_qubits=2)

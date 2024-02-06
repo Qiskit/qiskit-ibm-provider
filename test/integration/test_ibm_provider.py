@@ -158,6 +158,7 @@ class TestIBMProviderServices(IBMTestCase):
 
     provider_cls = IBMProvider
     backend_name = "ibmq_qasm_simulator"
+    instance: str
 
     @classmethod
     @integration_test_setup_with_backend(simulator=False)

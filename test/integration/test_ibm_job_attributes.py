@@ -22,6 +22,7 @@ from dateutil import tz
 from qiskit.compiler import transpile
 from qiskit.providers.jobstatus import JobStatus, JOB_FINAL_STATES
 
+from qiskit_ibm_provider import IBMJob
 from qiskit_ibm_provider.api.clients.runtime import RuntimeClient
 from qiskit_ibm_provider.exceptions import (
     IBMBackendValueError,
@@ -44,6 +45,9 @@ from ..utils import (
 
 class TestIBMJobAttributes(IBMTestCase):
     """Test IBMJob instance attributes."""
+
+    sim_job: IBMJob
+    last_week: datetime
 
     @classmethod
     @integration_test_setup()
