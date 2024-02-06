@@ -103,7 +103,7 @@ class TestRealDevices(IBMTestCase):
         result = job.result()
         counts_qx = result.get_counts(0)
         counts_ex = {"00": shots / 2, "11": shots / 2}
-        self.assertDictAlmostEqual(counts_qx, counts_ex, shots * 0.2)
+        self.assert_dict_almost_equal(counts_qx, counts_ex, shots * 0.2)
 
     def test_run_multiple_device(self):
         """Test running multiple jobs in a real device."""
