@@ -28,7 +28,11 @@ from typing import List, Any, Dict
 from qiskit import transpile
 from qiskit.providers import JobTimeoutError
 from qiskit.providers.jobstatus import JobStatus
-from qiskit.providers.fake_provider.backends.bogota.fake_bogota import FakeBogota
+
+try:
+    from qiskit.providers.fake_provider import Fake5QV1
+except ImportError:
+    from qiskit.providers.fake_provider import FakeBogota as Fake5QV1
 
 from qiskit_ibm_provider.api.exceptions import (
     ApiError,
@@ -315,7 +319,7 @@ class TestIBMJobStates(JobTestCase):
 
     def run_with_api(self, api):
         """Creates a new ``IBMJob`` running with the provided API object."""
-        backend = IBMBackend(FakeBogota().configuration(), MagicMock(), api_client=api)
+        backend = IBMBackend(Fake5QV1().configuration(), MagicMock(), api_client=api)
         backend._provider._runtime_client = api
         circuit = transpile(bell())
         self._current_api = api

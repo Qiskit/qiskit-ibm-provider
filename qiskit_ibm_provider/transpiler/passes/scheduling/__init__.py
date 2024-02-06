@@ -33,6 +33,13 @@ Below we demonstrate how to schedule and pad a teleportation circuit with delays
 for a dynamic circuit backend's execution model:
 
 .. jupyter-execute::
+    :hide-code:
+    :hide-output:
+
+    import warnings
+    warnings.filterwarnings("ignore", category=DeprecationWarning)
+
+.. jupyter-execute::
 
     from qiskit.circuit import ClassicalRegister, QuantumCircuit, QuantumRegister
     from qiskit.transpiler.preset_passmanagers import generate_preset_pass_manager
@@ -41,10 +48,13 @@ for a dynamic circuit backend's execution model:
     from qiskit_ibm_provider.transpiler.passes.scheduling import DynamicCircuitInstructionDurations
     from qiskit_ibm_provider.transpiler.passes.scheduling import ALAPScheduleAnalysis
     from qiskit_ibm_provider.transpiler.passes.scheduling import PadDelay
-    from qiskit.providers.fake_provider import FakeJakarta
+    try:
+        from qiskit.providers.fake_provider import Fake7QPulseV1
+    except ImportError:
+        from qiskit.providers.fake_provider import FakeJakarta as Fake7QPulseV1
 
 
-    backend = FakeJakarta()
+    backend = Fake7QPulseV1()
 
     # Temporary workaround for mock backends. For real backends this is not required.
     backend.configuration().basis_gates.append("if_else")

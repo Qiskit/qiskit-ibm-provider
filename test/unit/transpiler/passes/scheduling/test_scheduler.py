@@ -15,11 +15,15 @@
 from unittest.mock import patch
 
 from qiskit import ClassicalRegister, QuantumCircuit, QuantumRegister, transpile
-from qiskit.providers.fake_provider import FakeJakarta
 from qiskit.pulse import Schedule, Play, Constant, DriveChannel
 from qiskit.transpiler.passes import ConvertConditionsToIfOps
 from qiskit.transpiler.passmanager import PassManager
 from qiskit.transpiler.exceptions import TranspilerError
+
+try:
+    from qiskit.providers.fake_provider import Fake7QPulseV1
+except ImportError:
+    from qiskit.providers.fake_provider import FakeJakarta as Fake7QPulseV1
 
 from qiskit_ibm_provider.transpiler.passes.scheduling.pad_delay import PadDelay
 from qiskit_ibm_provider.transpiler.passes.scheduling.scheduler import (
@@ -846,12 +850,12 @@ class TestASAPSchedulingAndPaddingPass(IBMTestCase):
         after transpilation with the plugin."""
         # Patch the test backend with the plugin
         with patch.object(
-            FakeJakarta,
+            Fake7QPulseV1,
             "get_translation_stage_plugin",
             return_value="ibm_dynamic_circuits",
             create=True,
         ):
-            backend = FakeJakarta()
+            backend = Fake7QPulseV1()
             # Temporary workaround for mock backends. For real backends this is not required.
             backend.configuration().basis_gates.append("if_else")
 
@@ -1863,7 +1867,7 @@ class TestALAPSchedulingAndPaddingPass(IBMTestCase):
 
     def test_transpile_mock_backend(self):
         """Test scheduling works with transpilation."""
-        backend = FakeJakarta()
+        backend = Fake7QPulseV1()
         # Temporary workaround for mock backends. For real backends this is not required.
         backend.configuration().basis_gates.append("if_else")
         backend.configuration().basis_gates.append("while_loop")
@@ -1911,7 +1915,7 @@ class TestALAPSchedulingAndPaddingPass(IBMTestCase):
 
     def test_transpile_both_paths(self):
         """Test scheduling works with both fast- and standard path after transpiling."""
-        backend = FakeJakarta()
+        backend = Fake7QPulseV1()
         # Temporary workaround for mock backends. For real backends this is not required.
         backend.configuration().basis_gates.append("if_else")
 
@@ -1960,12 +1964,12 @@ class TestALAPSchedulingAndPaddingPass(IBMTestCase):
         transpilation with the plugin."""
         # Patch the test backend with the plugin
         with patch.object(
-            FakeJakarta,
+            Fake7QPulseV1,
             "get_translation_stage_plugin",
             return_value="ibm_dynamic_circuits",
             create=True,
         ):
-            backend = FakeJakarta()
+            backend = Fake7QPulseV1()
             # Temporary workaround for mock backends. For real backends this is not required.
             backend.configuration().basis_gates.append("if_else")
 

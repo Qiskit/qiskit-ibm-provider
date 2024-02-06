@@ -23,9 +23,10 @@ from datetime import timedelta, datetime
 from random import randrange
 from typing import Dict, Any
 
-from qiskit.providers.fake_provider.backends.poughkeepsie.fake_poughkeepsie import (
-    FakePoughkeepsie,
-)
+try:
+    from qiskit.providers.fake_provider import Fake20QV1
+except ImportError:
+    from qiskit.providers.fake_provider import FakePoughkeepsie as Fake20QV1
 
 from qiskit_ibm_provider.api.exceptions import (
     RequestsApiError,
@@ -452,7 +453,7 @@ class BaseFakeAccountClient:
 
     def job_properties(self, *_args, **_kwargs):
         """Return the backend properties of a job."""
-        props = FakePoughkeepsie().properties().to_dict()
+        props = Fake20QV1().properties().to_dict()
         if self._props_count > 0:
             self._props_count -= 1
             new_dt = datetime.now() + timedelta(hours=randrange(300))
