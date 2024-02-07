@@ -181,7 +181,10 @@ class DynamicCircuitInstructionDurations(InstructionDurations):
                                 instruction_durations.append(
                                     (gate, qubits, gate_length, "s")
                                 )
-                    for q, props in backend.properties()._qubits.items():
+                    for (
+                        q,  # pylint: disable=invalid-name
+                        props,
+                    ) in backend.properties()._qubits.items():
                         if "readout_length" in props:
                             readout_length = props["readout_length"][
                                 0
