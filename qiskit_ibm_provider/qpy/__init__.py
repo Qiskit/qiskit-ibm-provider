@@ -70,7 +70,7 @@ work.
 QPY Format
 **********
 
-https://qiskit.org/documentation/apidoc/qpy.html#qpy-format
+https://docs.quantum.ibm.com/api/qiskit/qpy#qpy-format
 """
 
 from .interface import dump, load
