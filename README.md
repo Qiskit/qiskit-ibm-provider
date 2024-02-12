@@ -85,9 +85,8 @@ If you'd like to contribute to qiskit-ibm-provider, please take a look at our
 By participating, you are expect to uphold to this code.
 
 We use [GitHub issues] for tracking requests and bugs. Please use our [slack]
-for discussion and simple questions. To join our Slack community use the
-invite link at [Qiskit.org]. For questions that are more suited for a forum we
-use the `Qiskit` tag in [Stack Exchange].
+for discussion and simple questions. To join our Slack community, use the
+invite link [here](https://docs.quantum.ibm.com/support#qiskit).
 
 ## Authors and Citation
 
@@ -107,9 +106,6 @@ project at different levels. If you use Qiskit, please cite as per the included
 [code of conduct]: https://github.com/Qiskit/qiskit-ibm-provider/blob/main/CODE_OF_CONDUCT.md
 [GitHub issues]: https://github.com/Qiskit/qiskit-ibm-provider/issues
 [slack]: https://qiskit.slack.com
-[Qiskit.org]: https://qiskit.org
-[Stack Exchange]: https://quantumcomputing.stackexchange.com/questions/tagged/qiskit
-[Qiskit Tutorial]: https://github.com/Qiskit/qiskit-tutorial
 [many people]: https://github.com/Qiskit/qiskit-ibm-provider/graphs/contributors
 [IBM Quantum Learning]: https://learning.quantum.ibm.com/catalog/tutorials
 [Qiskit]: https://github.com/Qiskit/qiskit-tutorial
