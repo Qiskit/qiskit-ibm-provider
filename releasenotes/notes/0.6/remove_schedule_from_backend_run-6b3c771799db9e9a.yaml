@@ -2,5 +2,5 @@
 deprecations:
   - |
     Removed support for input circuit as Schedule to IBMBackend.run(). Use ``pulse gates`` instead.
-    See `here <https://docs.quantum.ibm.com/build/pulse>`_
+    See `here <https://docs.quantum.ibm.com/build/pulse>`__
     for how to use pulse gates.
