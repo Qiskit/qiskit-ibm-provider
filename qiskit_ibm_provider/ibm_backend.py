@@ -873,7 +873,13 @@ class IBMBackend(Backend):
 
     def open_session(self, max_time: Optional[Union[int, str]] = None) -> Session:
         """Open session"""
-        self._session = Session(max_time)
+        if not self._configuration.simulator:
+            result = self.provider._runtime_client.create_session(
+                backend=self.name, instance=self._instance
+            )
+            self._session = Session(max_time, result.get("id"))
+        else:
+            self._session = Session(max_time)
         return self._session
 
     @property
