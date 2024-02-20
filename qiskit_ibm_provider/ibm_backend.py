@@ -866,7 +866,7 @@ class IBMBackend(Backend):
             new_session = self.provider._runtime_client.create_session(
                 self.name, self._instance, max_time
             )
-            self._session = Session(session_id=new_session.get("id"))
+            self._session = Session(max_time=max_time, session_id=new_session.get("id"))
         else:
             self._session = Session()
         return self._session

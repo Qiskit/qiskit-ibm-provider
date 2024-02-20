@@ -29,7 +29,8 @@ class FakeApiBackend:
     def __init__(self, config_update=None, status_update=None):
         fake_backend = Fake5QV1()
         self.properties = fake_backend.properties().to_dict()
-        self.defaults = fake_backend.defaults().to_dict()
+        if hasattr(fake_backend, "defaults"):
+            self.defaults = fake_backend.defaults().to_dict()
 
         self.configuration = fake_backend.configuration().to_dict()
         self.configuration["online_date"] = python_datetime.now().isoformat()
