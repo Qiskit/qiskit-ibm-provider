@@ -63,6 +63,7 @@ class Session:
     def __init__(
         self,
         max_time: Optional[Union[int, str]] = None,
+        session_id: Optional[str] = None,
     ):
         """Session constructor.
 
@@ -78,7 +79,7 @@ class Session:
             ValueError: If an input value is invalid.
         """
         self._instance = None
-        self._session_id: Optional[str] = None
+        self._session_id = session_id
         self._active = True
 
         self._max_time = (
