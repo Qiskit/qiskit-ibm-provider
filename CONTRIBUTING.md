@@ -4,7 +4,7 @@ Contributing
 First read the overall project contributing guidelines. These are all
 included in the qiskit documentation:
 
-https://qiskit.org/documentation/contributing_to_qiskit.html
+https://github.com/Qiskit/qiskit/blob/main/CONTRIBUTING.md
 
 
 Contributing to qiskit-ibm-provider
@@ -201,12 +201,6 @@ notes will look like for the current state of the repo you can run:
 `tox -edocs` which will build all the documentation into `docs/_build/html`
 and the release notes in particular will be located at
 `docs/_build/html/release_notes.html`
-
-## Installing Qiskit IBM Provider from source
-Please see the [Getting started - Installation](https://qiskit.org/documentation/getting_started.html#installation)
-section of the Qiskit documentation.
-Select the _Install from source_ tab and scroll down to _Installing IBM Quantum Provider from Source_.
-
 
 ### Test
 
