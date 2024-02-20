@@ -511,18 +511,11 @@ class IBMBackend(Backend):
         """Runs the runtime program and returns the corresponding job object"""
         hgp_name = self._instance or self.provider._get_hgp().name
 
-        session = self._session
-
-        if session:
-            if not session.active:
-                raise RuntimeError(f"The session {session.session_id} is closed.")
-            session_id = session.session_id
-            session_time = session._max_time
-            start_session = session_id is None
-        else:
-            session_id = None
-            session_time = None
-            start_session = False
+        session_id = None
+        if self._session:
+            if not self._session.active:
+                raise RuntimeError(f"The session {self._session.session_id} is closed.")
+            session_id = self._session.session_id
 
         try:
             response = self.provider._runtime_client.program_run(
@@ -532,15 +525,11 @@ class IBMBackend(Backend):
                 hgp=hgp_name,
                 job_tags=job_tags,
                 session_id=session_id,
-                start_session=start_session,
-                session_time=session_time,
+                start_session=False,
                 image=image,
             )
         except RequestsApiError as ex:
             raise IBMBackendApiError("Error submitting job: {}".format(str(ex))) from ex
-        session_id = response.get("session_id")
-        if self._session:
-            self._session._session_id = session_id
         try:
             job = IBMCircuitJob(
                 backend=self,
@@ -874,12 +863,12 @@ class IBMBackend(Backend):
     def open_session(self, max_time: Optional[Union[int, str]] = None) -> Session:
         """Open session"""
         if not self._configuration.simulator:
-            result = self.provider._runtime_client.create_session(
-                backend=self.name, instance=self._instance
+            new_session = self.provider._runtime_client.create_session(
+                self.name, self._instance, max_time
             )
-            self._session = Session(max_time, result.get("id"))
+            self._session = Session(session_id=new_session.get("id"))
         else:
-            self._session = Session(max_time)
+            self._session = Session()
         return self._session
 
     @property

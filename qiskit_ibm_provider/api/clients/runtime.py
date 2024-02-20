@@ -316,7 +316,11 @@ class RuntimeClient(BaseClient):
         return self._api.program_job(job_id).update_tags(tags)
 
     def create_session(
-        self, backend: str, instance: str, mode: str = None
+        self,
+        backend: Optional[str] = None,
+        instance: Optional[str] = None,
+        max_time: Optional[int] = None,
+        mode: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Create a new runtime session.
 
@@ -328,9 +332,7 @@ class RuntimeClient(BaseClient):
         Returns:
             The created session.
         """
-        return self._api.runtime_session().create(
-            backend=backend, instance=instance, mode=mode
-        )
+        return self._api.runtime_session().create(backend, instance, max_time, mode)
 
     def close_session(self, session_id: str) -> None:
         """Close session
