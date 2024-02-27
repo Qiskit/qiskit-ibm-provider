@@ -135,6 +135,7 @@ def determine_github_branch() -> str:
         else ref_name
     )
 
+
 GITHUB_BRANCH = determine_github_branch()
 
 
@@ -144,7 +145,7 @@ def linkcode_resolve(domain, info):
 
     module_name = info["module"]
     module = sys.modules.get(module_name)
-    if module is None or "qiskit" not in module_name:
+    if module is None or "qiskit_ibm_provider" not in module_name:
         return None
 
     obj = module
@@ -164,7 +165,7 @@ def linkcode_resolve(domain, info):
         return None
     if full_file_name is None:
         return None
-    file_name = full_file_name.split("/qiskit-ibm-provider/")[-1]
+    file_name = full_file_name.split("/qiskit_ibm_provider/")[-1]
 
     try:
         source, lineno = inspect.getsourcelines(obj)
@@ -173,4 +174,4 @@ def linkcode_resolve(domain, info):
     else:
         ending_lineno = lineno + len(source) - 1
         linespec = f"#L{lineno}-L{ending_lineno}"
-    return f"https://github.com/Qiskit/qiskit-ibm-provider/tree/{GITHUB_BRANCH}/qiskit-ibm-provider/{file_name}{linespec}"
+    return f"https://github.com/Qiskit/qiskit-ibm-provider/tree/{GITHUB_BRANCH}/qiskit_ibm_provider/{file_name}{linespec}"
