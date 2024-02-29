@@ -5,8 +5,8 @@ prelude: >
 
   This new package is built upon the work already done in `qiskit.providers.ibmq.backend`
   module in the `qiskit-ibmq-provider` package and replaces it going forward. The `backend`
-  module in `qiskit-ibmq-provider` package is now deprecated. Please take a look at the mirgraion guide
-  `here <https://github.com/Qiskit/qiskit-ibm-provider/blob/main/docs/tutorials/Migration_Guide_from_qiskit-ibmq-provider.ipynb>`_.
+  module in `qiskit-ibmq-provider` package is now deprecated. Please take a look at the migration guide
+  `here <https://github.com/Qiskit/qiskit-ibm-provider/blob/stable/0.6/docs/tutorials/Migration_Guide_from_qiskit-ibmq-provider.ipynb>`__.
 
   `qiskit-ibm-provider` is not included as part of `Qiskit` meta package and thereby you have to
   install it separately using ``pip install qiskit-ibm-provider``.
