@@ -1,6 +1,5 @@
 ---
 upgrade:
   - |
-    The provider now requires `Qiskit 0.45.0 <https://docs.quantum.ibm.com/api/qiskit/release-notes/0.45>_`
+    The provider now requires `Qiskit 0.45.0 <https://docs.quantum.ibm.com/api/qiskit/release-notes/0.45>`__
     and supports new features from this version of Qiskit. 
-
