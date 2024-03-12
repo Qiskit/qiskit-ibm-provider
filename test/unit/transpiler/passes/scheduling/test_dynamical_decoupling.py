@@ -185,8 +185,17 @@ class TestPadDynamicalDecoupling(IBMTestCase):
         expected = expected.compose(YGate(), [1])
         expected = expected.compose(Delay(50), [1])
 
-        expected = expected.compose(Delay(750), [2], front=True)
-        expected = expected.compose(Delay(950), [3], front=True)
+        expected = expected.compose(Delay(162), [2], front=True)
+        expected = expected.compose(YGate(), [2], front=True)
+        expected = expected.compose(Delay(326), [2], front=True)
+        expected = expected.compose(YGate(), [2], front=True)
+        expected = expected.compose(Delay(162), [2], front=True)
+
+        expected = expected.compose(Delay(212), [3], front=True)
+        expected = expected.compose(YGate(), [3], front=True)
+        expected = expected.compose(Delay(426), [3], front=True)
+        expected = expected.compose(YGate(), [3], front=True)
+        expected = expected.compose(Delay(212), [3], front=True)
 
         self.assertEqual(ghz4_dd, expected)
 
@@ -1095,3 +1104,91 @@ class TestPadDynamicalDecoupling(IBMTestCase):
         dont_use = qc_dd.qubits[-2:]
         for op in qc_dd.data:
             self.assertNotIn(dont_use, op.qubits)
+
+    def test_dd_include_clean_qubits(self):
+        """Test DD applied to all non-idle qubits, including those
+        that are clean"""
+
+        qc = QuantumCircuit(3, 1)
+        qc.delay(800, 1)
+        with qc.if_test((0, True)):
+            qc.x(1)
+        qc.delay(1000, 2)
+
+        dd_sequence = [XGate(), XGate()]
+        pm = PassManager(
+            [
+                ASAPScheduleAnalysis(self.durations),
+                PadDynamicalDecoupling(
+                    self.durations,
+                    dd_sequence,
+                    pulse_alignment=1,
+                    sequence_min_length_ratios=[0.0],
+                    skip_reset_qubits=False,
+                ),
+            ]
+        )
+
+        qc_dd = pm.run(qc)
+
+        expected = qc.copy_empty_like()
+        for ind in range(1, 3):
+            expected.compose(Delay(175), [ind], front=True, inplace=True)
+            expected.compose(XGate(), [ind], inplace=True)
+            expected.compose(Delay(350), [ind], inplace=True)
+            expected.compose(XGate(), [ind], inplace=True)
+            expected.compose(Delay(175), [ind], inplace=True)
+        expected.barrier([1, 2])
+        with expected.if_test((0, True)):
+            expected.x(1)
+            expected.delay(50, 2)
+        expected.barrier([1, 2])
+        for ind in range(1, 3):
+            expected.compose(Delay(225), [ind], inplace=True)
+            expected.compose(XGate(), [ind], inplace=True)
+            expected.compose(Delay(450), [ind], inplace=True)
+            expected.compose(XGate(), [ind], inplace=True)
+            expected.compose(Delay(225), [ind], inplace=True)
+
+        self.assertEqual(qc_dd, expected)
+
+    def test_dd_exclude_clean_qubits(self):
+        """Exclude DD on clean qubits (default)"""
+
+        qc = QuantumCircuit(3, 1)
+        qc.delay(800, 1)
+        with qc.if_test((0, True)):
+            qc.x(1)
+        qc.delay(1000, 2)
+
+        dd_sequence = [XGate(), XGate()]
+        pm = PassManager(
+            [
+                ASAPScheduleAnalysis(self.durations),
+                PadDynamicalDecoupling(
+                    self.durations,
+                    dd_sequence,
+                    pulse_alignment=1,
+                    sequence_min_length_ratios=[0.0],
+                ),
+            ]
+        )
+
+        qc_dd = pm.run(qc)
+
+        expected = qc.copy_empty_like()
+        expected.compose(Delay(800), [1], front=True, inplace=True)
+        expected.compose(Delay(800), [2], inplace=True)
+        expected.barrier([1, 2])
+        with expected.if_test((0, True)):
+            expected.x(1)
+            expected.delay(50, 2)
+        expected.barrier([1, 2])
+        expected.compose(Delay(225), [1], inplace=True)
+        expected.compose(XGate(), [1], inplace=True)
+        expected.compose(Delay(450), [1], inplace=True)
+        expected.compose(XGate(), [1], inplace=True)
+        expected.compose(Delay(225), [1], inplace=True)
+        expected.compose(Delay(1000), [2], inplace=True)
+
+        self.assertEqual(qc_dd, expected)
