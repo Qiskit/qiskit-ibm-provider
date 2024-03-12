@@ -20,7 +20,12 @@ from ddt import data, ddt
 
 from qiskit import assemble, QuantumCircuit, QuantumRegister, ClassicalRegister
 from qiskit.circuit import Parameter
-from qiskit.providers.fake_provider import FakeNairobi
+
+try:
+    from qiskit.providers.fake_provider import Fake7QPulseV1
+except ImportError:
+    from qiskit.providers.fake_provider import FakeNairobi as Fake7QPulseV1
+
 from qiskit_aer.noise import NoiseModel
 
 from qiskit_ibm_provider.utils.json_encoder import IBMJsonEncoder
@@ -93,7 +98,7 @@ class TestSerialization(IBMTestCase):
 
     def test_noise_model(self):
         """Test encoding and decoding a noise model."""
-        noise_model = NoiseModel.from_backend(FakeNairobi())
+        noise_model = NoiseModel.from_backend(Fake7QPulseV1())
         self.assertIsInstance(noise_model, NoiseModel)
         encoded = json.dumps(noise_model, cls=RuntimeEncoder)
         self.assertIsInstance(encoded, str)

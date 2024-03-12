@@ -14,13 +14,11 @@
 """Interactive Jobs widget."""
 
 import datetime
-from typing import Any, Union
+from typing import Any
 
 import ipywidgets as wid
 import plotly.graph_objects as go
-from qiskit.providers.fake_provider.fake_backend import FakeBackendV2 as FakeBackend
-
-from ..ibm_backend import IBMBackend
+from qiskit.providers import BackendV2
 from ..visualization.interactive.plotly_wrapper import PlotlyWidget
 
 MONTH_NAMES = {
@@ -104,9 +102,7 @@ tr:nth-child(even) {background-color: #f6f6f6 !important;}
     return table_html
 
 
-def _job_summary(
-    backend: Union[IBMBackend, FakeBackend], **kwargs: Any
-) -> PlotlyWidget:
+def _job_summary(backend: BackendV2, **kwargs: Any) -> PlotlyWidget:
     """Interactive jobs summary for a backend.
 
     Args:
@@ -280,7 +276,7 @@ def _job_summary(
     return sun_wid
 
 
-def jobs_tab(backend: Union[IBMBackend, FakeBackend], **kwargs: Any) -> wid.HBox:
+def jobs_tab(backend: BackendV2, **kwargs: Any) -> wid.HBox:
     """Construct a widget containing job information for an input backend.
 
     Args:

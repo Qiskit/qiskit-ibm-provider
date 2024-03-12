@@ -13,16 +13,12 @@
 
 """Widget for the backend configuration tab."""
 
-from typing import Union
-
 import ipywidgets as wid
-from qiskit.providers.fake_provider.fake_backend import FakeBackendV2 as FakeBackend
-
-from qiskit_ibm_provider.ibm_backend import IBMBackend
+from qiskit.providers import BackendV2
 from qiskit_ibm_provider.visualization.interactive import iplot_gate_map
 
 
-def config_tab(backend: Union[IBMBackend, FakeBackend]) -> wid.GridBox:
+def config_tab(backend: BackendV2) -> wid.GridBox:
     """The backend configuration widget.
 
     Args:

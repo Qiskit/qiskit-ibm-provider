@@ -22,9 +22,8 @@ from dateutil import tz
 from qiskit import ClassicalRegister, QuantumCircuit, QuantumRegister
 from qiskit.compiler import transpile
 from qiskit.providers.jobstatus import JobStatus, JOB_FINAL_STATES
-from qiskit.test.reference_circuits import ReferenceCircuits
 
-from qiskit_ibm_provider import IBMBackend
+from qiskit_ibm_provider import IBMBackend, IBMProvider
 from qiskit_ibm_provider.api.exceptions import RequestsApiError
 from qiskit_ibm_provider.api.rest.job import Job as RestJob
 from qiskit_ibm_provider.exceptions import IBMBackendApiError
@@ -36,15 +35,14 @@ from ..decorators import (
 )
 from ..fake_account_client import BaseFakeAccountClient, CancelableFakeJob
 from ..ibm_test_case import IBMTestCase
-from ..utils import (
-    most_busy_backend,
-    cancel_job,
-    submit_and_cancel,
-)
+from ..utils import most_busy_backend, cancel_job, submit_and_cancel, bell
 
 
 class TestIBMJob(IBMTestCase):
     """Test ibm_job module."""
+
+    provider: IBMProvider
+    last_month: datetime
 
     @classmethod
     @integration_test_setup_with_backend(simulator=False, min_num_qubits=2)
@@ -60,7 +58,7 @@ class TestIBMJob(IBMTestCase):
         )
         cls.real_device_backend = backend
         cls.dependencies = dependencies
-        cls.bell = transpile(ReferenceCircuits.bell(), cls.sim_backend)
+        cls.bell = transpile(bell(), cls.sim_backend)
         cls.sim_job = cls.sim_backend.run(cls.bell)
         cls.last_month = datetime.now() - timedelta(days=30)
 
@@ -210,8 +208,8 @@ class TestIBMJob(IBMTestCase):
         if not backend_2:
             raise SkipTest("Skipping test that requires multiple backends")
 
-        job_1 = backend_1.run(transpile(ReferenceCircuits.bell()))
-        job_2 = backend_2.run(transpile(ReferenceCircuits.bell()))
+        job_1 = backend_1.run(transpile(bell()))
+        job_2 = backend_2.run(transpile(bell()))
 
         # test a retrieved job's backend is the same as the queried backend
         self.assertEqual(
@@ -434,7 +432,7 @@ class TestIBMJob(IBMTestCase):
     def test_wait_for_final_state_timeout(self):
         """Test waiting for job to reach final state times out."""
         backend = most_busy_backend(self.provider, instance=self.dependencies.instance)
-        job = backend.run(transpile(ReferenceCircuits.bell(), backend=backend))
+        job = backend.run(transpile(bell(), backend=backend))
         try:
             self.assertRaises(IBMJobTimeoutError, job.wait_for_final_state, timeout=0.1)
         finally:

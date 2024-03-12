@@ -15,11 +15,12 @@
 from unittest.mock import patch
 
 from qiskit import ClassicalRegister, QuantumCircuit, QuantumRegister, transpile
-from qiskit.providers.fake_provider import FakeJakarta
 from qiskit.pulse import Schedule, Play, Constant, DriveChannel
 from qiskit.transpiler.passes import ConvertConditionsToIfOps
 from qiskit.transpiler.passmanager import PassManager
 from qiskit.transpiler.exceptions import TranspilerError
+
+from qiskit_ibm_runtime.fake_provider import FakeJakarta
 
 from qiskit_ibm_provider.transpiler.passes.scheduling.pad_delay import PadDelay
 from qiskit_ibm_provider.transpiler.passes.scheduling.scheduler import (
@@ -30,12 +31,12 @@ from qiskit_ibm_provider.transpiler.passes.scheduling.utils import (
     DynamicCircuitInstructionDurations,
 )
 
-from .control_flow_test_case import ControlFlowTestCase
+from .....ibm_test_case import IBMTestCase
 
 # pylint: disable=invalid-name,not-context-manager
 
 
-class TestASAPSchedulingAndPaddingPass(ControlFlowTestCase):
+class TestASAPSchedulingAndPaddingPass(IBMTestCase):
     """Tests the ASAP Scheduling passes"""
 
     def test_if_test_gate_after_measure(self):
@@ -884,7 +885,7 @@ class TestASAPSchedulingAndPaddingPass(ControlFlowTestCase):
         self.assertEqual(expected, scheduled)
 
 
-class TestALAPSchedulingAndPaddingPass(ControlFlowTestCase):
+class TestALAPSchedulingAndPaddingPass(IBMTestCase):
     """Tests the ALAP Scheduling passes"""
 
     def test_alap(self):
@@ -1936,23 +1937,16 @@ class TestALAPSchedulingAndPaddingPass(ControlFlowTestCase):
 
         qr = QuantumRegister(7, name="q")
         expected = QuantumCircuit(qr, cr)
-        expected.delay(24080, qr[1])
-        expected.delay(24080, qr[2])
-        expected.delay(24080, qr[3])
-        expected.delay(24080, qr[4])
-        expected.delay(24080, qr[5])
-        expected.delay(24080, qr[6])
+        for q_ind in range(1, 7):
+            expected.delay(24240, qr[q_ind])
         expected.measure(qr[0], cr[0])
         with expected.if_test((cr[0], 1)):
             expected.x(qr[0])
         with expected.if_test((cr[0], 1)):
-            expected.delay(160, qr[0])
             expected.x(qr[1])
-            expected.delay(160, qr[2])
-            expected.delay(160, qr[3])
-            expected.delay(160, qr[4])
-            expected.delay(160, qr[5])
-            expected.delay(160, qr[6])
+            for q_ind in range(7):
+                if q_ind != 1:
+                    expected.delay(160, qr[q_ind])
         self.assertEqual(expected, scheduled)
 
     def test_c_if_plugin_conversion_with_transpile(self):

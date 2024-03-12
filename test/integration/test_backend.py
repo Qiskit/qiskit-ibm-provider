@@ -18,7 +18,6 @@ from unittest.mock import patch
 from qiskit import QuantumCircuit, transpile
 from qiskit.providers.models import QasmBackendConfiguration
 from qiskit.providers.exceptions import QiskitBackendNotFoundError
-from qiskit.test.reference_circuits import ReferenceCircuits
 
 from qiskit_ibm_provider import IBMBackend, IBMProvider
 from qiskit_ibm_provider.ibm_qubit_properties import IBMQubitProperties
@@ -30,6 +29,7 @@ from ..decorators import (
     production_only,
 )
 from ..ibm_test_case import IBMTestCase
+from ..utils import bell
 
 
 class TestIBMBackend(IBMTestCase):
@@ -91,7 +91,7 @@ class TestIBMBackend(IBMTestCase):
         backend = provider.get_backend("ibmq_qasm_simulator")
         backend.options.shots = 2048
         backend.set_options(memory=True)
-        job = backend.run(ReferenceCircuits.bell(), shots=1024, foo="foo")
+        job = backend.run(bell(), shots=1024, foo="foo")
         backend_options = provider.backend.retrieve_job(job.job_id()).backend_options()
         self.assertEqual(backend_options["shots"], 1024)
         self.assertTrue(backend_options["memory"])
@@ -105,7 +105,7 @@ class TestIBMBackend(IBMTestCase):
         paused_status.status_msg = "internal"
         backend.status = mock.MagicMock(return_value=paused_status)
         with self.assertWarns(Warning):
-            backend.run(ReferenceCircuits.bell())
+            backend.run(bell())
 
     def test_deprecate_id_instruction(self):
         """Test replacement of 'id' Instructions with 'Delay' instructions."""
@@ -186,7 +186,7 @@ class TestIBMBackend(IBMTestCase):
 
     def test_job_backend_properties(self):
         """Test job backend properties."""
-        job = self.backend.run(ReferenceCircuits.bell())
+        job = self.backend.run(bell())
         backend_version = self.backend.properties().backend_version
         job_version = job.properties().backend_version
         self.assertEqual(job_version, backend_version)

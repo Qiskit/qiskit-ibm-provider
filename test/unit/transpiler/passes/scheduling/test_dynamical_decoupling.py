@@ -35,13 +35,13 @@ from qiskit_ibm_provider.transpiler.passes.scheduling.utils import (
     DynamicCircuitInstructionDurations,
 )
 
-from .control_flow_test_case import ControlFlowTestCase
+from .....ibm_test_case import IBMTestCase
 
 # pylint: disable=invalid-name,not-context-manager
 
 
 @ddt
-class TestPadDynamicalDecoupling(ControlFlowTestCase):
+class TestPadDynamicalDecoupling(IBMTestCase):
     """Tests PadDynamicalDecoupling pass."""
 
     def setUp(self):
@@ -1057,18 +1057,33 @@ class TestPadDynamicalDecoupling(ControlFlowTestCase):
         self.assertEqual(delay_dict[0], delay_dict[2])
 
     def test_no_unused_qubits(self):
-        """Test DD with if_test circuit that unused qubits are untouched and not scheduled.
+        """Test DD with if_test circuit that unused qubits are untouched and
+        not scheduled. Unused qubits may also have missing durations when
+        not operational.
 
-        This ensures that programs don't have unnecessary information for unused qubits.
+        This ensures that programs don't have unnecessary information for
+        unused qubits.
         Which might hurt performance in later executon stages.
         """
+
+        # Here "x" on qubit 3 is not defined
+        durations = DynamicCircuitInstructionDurations(
+            [
+                ("h", 0, 50),
+                ("x", 0, 50),
+                ("x", 1, 50),
+                ("x", 2, 50),
+                ("measure", 0, 840),
+                ("reset", 0, 1340),
+            ]
+        )
 
         dd_sequence = [XGate(), XGate()]
         pm = PassManager(
             [
                 ASAPScheduleAnalysis(self.durations),
                 PadDynamicalDecoupling(
-                    self.durations,
+                    durations,
                     dd_sequence,
                     pulse_alignment=1,
                     sequence_min_length_ratios=[0.0],
@@ -1076,7 +1091,7 @@ class TestPadDynamicalDecoupling(ControlFlowTestCase):
             ]
         )
 
-        qc = QuantumCircuit(3, 1)
+        qc = QuantumCircuit(4, 1)
         qc.measure(0, 0)
         qc.x(1)
         with qc.if_test((0, True)):
@@ -1086,7 +1101,7 @@ class TestPadDynamicalDecoupling(ControlFlowTestCase):
             qc.x(0)
         qc.x(1)
         qc_dd = pm.run(qc)
-        dont_use = qc_dd.qubits[-1]
+        dont_use = qc_dd.qubits[-2:]
         for op in qc_dd.data:
             self.assertNotIn(dont_use, op.qubits)
 

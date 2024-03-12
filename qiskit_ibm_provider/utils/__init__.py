@@ -35,6 +35,10 @@ Misc Functions
     to_python_identifier
     validate_job_tags
 
+Publisher/subscriber model
+==========================
+
+.. automodule:: qiskit_ibm_provider.utils.pubsub
 """
 
 from .converters import (
@@ -45,3 +49,4 @@ from .converters import (
 )
 from .utils import to_python_identifier, validate_job_tags, are_circuits_dynamic
 from .json import RuntimeEncoder, RuntimeDecoder
+from . import pubsub
