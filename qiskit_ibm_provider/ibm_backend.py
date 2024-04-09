@@ -290,7 +290,7 @@ class IBMBackend(Backend):
     @property
     def dtm(self) -> float:
         """Return the system time resolution of output signals
-        
+
         Returns:
             dtm: The output signal timestep in seconds.
         """
@@ -309,7 +309,7 @@ class IBMBackend(Backend):
         """Return the grouping of measurements which are multiplexed
         This is required to be implemented if the backend supports Pulse
         scheduling.
-        
+
         Returns:
             meas_map: The grouping of measurements which are multiplexed
         """
@@ -318,7 +318,7 @@ class IBMBackend(Backend):
     @property
     def target(self) -> Target:
         """A :class:`qiskit.transpiler.Target` object for the backend.
-        
+
         Returns:
             Target
         """
@@ -326,7 +326,7 @@ class IBMBackend(Backend):
 
     def target_history(self, datetime: Optional[python_datetime] = None) -> Target:
         """A :class:`qiskit.transpiler.Target` object for the backend.
-        
+
         Returns:
             Target with properties found on `datetime`
         """
