@@ -32,14 +32,14 @@ of measurement results.
 Below we demonstrate how to schedule and pad a teleportation circuit with delays
 for a dynamic circuit backend's execution model:
 
-.. jupyter-execute::
+.. code-block:: python
     :hide-code:
     :hide-output:
 
     import warnings
     warnings.filterwarnings("ignore", category=DeprecationWarning)
 
-.. jupyter-execute::
+.. code-block:: python
 
     from qiskit.circuit import ClassicalRegister, QuantumCircuit, QuantumRegister
     from qiskit.transpiler.preset_passmanagers import generate_preset_pass_manager
@@ -96,7 +96,7 @@ for a dynamic circuit backend's execution model:
 Instead of padding with delays we may also insert a dynamical decoupling sequence
 using the :class:`PadDynamicalDecoupling` pass as shown below:
 
-.. jupyter-execute::
+.. code-block:: python
 
     from qiskit.circuit.library import XGate
 
@@ -129,7 +129,7 @@ Scheduling old format ``c_if`` conditioned gates
 
 Scheduling with old format ``c_if`` conditioned gates is not supported.
 
-.. jupyter-execute::
+.. code-block:: python
 
     qc_c_if = QuantumCircuit(1, 1)
     qc_c_if.x(0).c_if(0, 1)
@@ -142,7 +142,7 @@ apply transformations and optimizations for IBM hardware backends when invoking
 conditioned gates to new-style control-flow.
 We may then schedule the transpiled circuit without further modification.
 
-.. jupyter-execute::
+.. code-block:: python
 
     # Temporary workaround for mock backends. For real backends this is not required.
     backend.get_translation_stage_plugin = lambda: "ibm_dynamic_circuits"
@@ -164,7 +164,7 @@ work around this please manually run the pass
 :class:`qiskit.transpiler.passes.ConvertConditionsToIfOps`
 prior to your scheduling pass.
 
-.. jupyter-execute::
+.. code-block:: python
 
     from qiskit.transpiler.passes import ConvertConditionsToIfOps
 
@@ -193,7 +193,7 @@ For example, the conditional gates below are performed in parallel with lower la
 as the measurements flow directly into the conditional blocks which in turn only apply
 gates to the same measurement qubit.
 
-.. jupyter-execute::
+.. code-block:: python
 
         qc = QuantumCircuit(2, 2)
         qc.measure(0, 0)
@@ -210,7 +210,7 @@ gates to the same measurement qubit.
 The circuit below will not use the fast-path as the conditional gate is
 on a different qubit than the measurement qubit.
 
-.. jupyter-execute::
+.. code-block:: python
 
         qc = QuantumCircuit(2, 2)
         qc.measure(0, 0)
@@ -222,7 +222,7 @@ on a different qubit than the measurement qubit.
 Similarly, the circuit below contains gates on multiple qubits
 and will not be performed using the fast-path.
 
-.. jupyter-execute::
+.. code-block:: python
 
         qc = QuantumCircuit(2, 2)
         qc.measure(0, 0)
@@ -236,7 +236,7 @@ A fast-path block may contain multiple gates as long as they are on the fast-pat
 If there are multiple fast-path blocks being performed in parallel each block will be
 padded out to the duration of the longest block.
 
-.. jupyter-execute::
+.. code-block:: python
 
         qc = QuantumCircuit(2, 2)
         qc.measure(0, 0)
@@ -252,7 +252,7 @@ padded out to the duration of the longest block.
 
 This behavior is also applied to the else condition of a fast-path eligible branch.
 
-.. jupyter-execute::
+.. code-block:: python
 
         qc = QuantumCircuit(1, 1)
         qc.measure(0, 0)
@@ -270,7 +270,7 @@ If a single measurement result is used with several conditional blocks, if there
 eligible block it will be applied followed by the non-fast-path blocks which will execute with
 the standard higher latency conditional branch.
 
-.. jupyter-execute::
+.. code-block:: python
 
         qc = QuantumCircuit(2, 2)
         qc.measure(0, 0)
@@ -287,7 +287,7 @@ the standard higher latency conditional branch.
 If you wish to prevent the usage of the fast-path you may insert a barrier between the measurement and
 the conditional branch.
 
-.. jupyter-execute::
+.. code-block:: python
 
         qc = QuantumCircuit(1, 2)
         qc.measure(0, 0)
@@ -300,7 +300,7 @@ the conditional branch.
 
 Conditional measurements are not eligible for the fast-path.
 
-.. jupyter-execute::
+.. code-block:: python
 
         qc = QuantumCircuit(1, 2)
         qc.measure(0, 0)
@@ -312,7 +312,7 @@ Conditional measurements are not eligible for the fast-path.
 
 Similarly nested control-flow is not eligible.
 
-.. jupyter-execute::
+.. code-block:: python
 
         qc = QuantumCircuit(1, 1)
         qc.measure(0, 0)
@@ -331,7 +331,7 @@ compiler from performing the necessary optimizations to utilize the fast-path. I
 there are fast-path blocks that will be performed in parallel they currently *will not*
 be padded out by the scheduler to ensure they are of the same duration in Qiskit
 
-.. jupyter-execute::
+.. code-block:: python
 
     dd_sequence = [XGate(), XGate()]
 
@@ -369,7 +369,7 @@ be padded out by the scheduler to ensure they are of the same duration in Qiskit
 
     For example:
 
-    .. jupyter-execute::
+    .. code-block:: python
 
         qc = QuantumCircuit(3, 2)
         qc.x(1)

@@ -55,7 +55,7 @@ def iplot_error_map(
         VisualizationTypeError: If the specified `backend` is a simulator.
 
     Example:
-        .. jupyter-execute::
+        .. code-block:: python
             :hide-code:
             :hide-output:
 
@@ -65,7 +65,7 @@ def iplot_error_map(
             # a fake backend in the following cell.
             mock_get_backend('FakeOpenPulse2Q')
 
-        .. jupyter-execute::
+        .. code-block:: python
 
            from qiskit_ibm_provider import IBMProvider
            from qiskit_ibm_provider.visualization import iplot_error_map
