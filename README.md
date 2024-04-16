@@ -1,4 +1,4 @@
-# Qiskit IBM Quantum Provider
+# Qiskit IBM Quantum Provider (_NOW DEPRECATED_)
 
 [![License](https://img.shields.io/github/license/Qiskit/qiskit-ibm-provider.svg?style=popout-square)](https://opensource.org/licenses/Apache-2.0)
 [![CI](https://github.com/Qiskit/qiskit-ibm-provider/actions/workflows/ci.yml/badge.svg)](https://github.com/Qiskit/qiskit-ibm-provider/actions/workflows/ci.yml)
