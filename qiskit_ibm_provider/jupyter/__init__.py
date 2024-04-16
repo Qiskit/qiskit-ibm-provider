@@ -30,8 +30,6 @@ Detailed information on a single backend
 ========================================
 
 .. code-block:: python
-    :hide-code:
-    :hide-output:
 
     from qiskit_ibm_provider.test.ibm_provider_mock import mock_get_backend
     mock_get_backend('Fake1Q')
@@ -45,8 +43,6 @@ Detailed information on a single backend
     backend = provider.get_backend('ibmq_vigo')
 
 .. code-block:: python
-    :hide-code:
-    :hide-output:
 
     backend.jobs = lambda *args, **kwargs: []
 

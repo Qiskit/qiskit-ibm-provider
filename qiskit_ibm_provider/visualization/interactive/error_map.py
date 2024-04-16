@@ -56,8 +56,6 @@ def iplot_error_map(
 
     Example:
         .. code-block:: python
-            :hide-code:
-            :hide-output:
 
             from qiskit_ibm_provider.test.ibm_provider_mock import mock_get_backend
             # Generate a mock provider for the sake of this example.

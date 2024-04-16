@@ -33,8 +33,6 @@ Below we demonstrate how to schedule and pad a teleportation circuit with delays
 for a dynamic circuit backend's execution model:
 
 .. code-block:: python
-    :hide-code:
-    :hide-output:
 
     import warnings
     warnings.filterwarnings("ignore", category=DeprecationWarning)
