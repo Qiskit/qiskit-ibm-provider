@@ -19,7 +19,7 @@ Dashboard (:mod:`qiskit_ibm_provider.dashboard`)
 
 The dashboard can be instantiated using
 
-.. jupyter-execute::
+.. code-block:: python
 
     from qiskit_ibm_provider import IBMProvider
     import qiskit_ibm_provider.jupyter

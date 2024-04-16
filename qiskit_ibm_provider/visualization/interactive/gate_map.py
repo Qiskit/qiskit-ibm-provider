@@ -59,9 +59,7 @@ def iplot_gate_map(
 
     Example:
 
-        .. jupyter-execute::
-            :hide-code:
-            :hide-output:
+        .. code-block:: python
 
             from qiskit_ibm_provider.test.ibm_provider_mock import mock_get_backend
             # Generate a mock provider for the sake of this example.
@@ -69,7 +67,7 @@ def iplot_gate_map(
             # a fake backend in the following cell.
             mock_get_backend('FakeOpenPulse2Q')
 
-        .. jupyter-execute::
+        .. code-block:: python
 
             from qiskit_ibm_provider import IBMProvider
             from qiskit_ibm_provider.visualization import iplot_gate_map

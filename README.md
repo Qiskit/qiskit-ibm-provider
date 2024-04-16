@@ -1,4 +1,4 @@
-# Qiskit IBM Quantum Provider
+# Qiskit IBM Quantum Provider (_NOW DEPRECATED_)
 
 [![License](https://img.shields.io/github/license/Qiskit/qiskit-ibm-provider.svg?style=popout-square)](https://opensource.org/licenses/Apache-2.0)
 [![CI](https://github.com/Qiskit/qiskit-ibm-provider/actions/workflows/ci.yml/badge.svg)](https://github.com/Qiskit/qiskit-ibm-provider/actions/workflows/ci.yml)
@@ -6,6 +6,16 @@
 [![](https://img.shields.io/pypi/dm/qiskit-ibm-provider.svg?style=popout-square)](https://pypi.org/project/qiskit-ibm-provider/)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![Coverage Status](https://coveralls.io/repos/github/Qiskit/qiskit-ibm-provider/badge.svg?branch=main)](https://coveralls.io/github/Qiskit/qiskit-ibm-provider?branch=main)
+
+---
+
+**_PLEASE NOTE:_** _As of version 0.11.0, released in April 2024, `qiskit-ibm-provider` has been deprecated
+with its support ending and eventual archival being no sooner than 3 months from that date. The
+function provided by `qiskit-ibm-provider` has been moved to [qiskit-ibm-runtime](https://github.com/Qiskit/qiskit-ibm-runtime).
+Please see the [Runtime migration Guide] for more details. We encourage you
+to migrate over at your earliest convenience._
+
+---
 
 **Qiskit** is an open-source SDK for working with quantum computers at the level of circuits, algorithms, and application modules.
 
@@ -112,3 +122,4 @@ project at different levels. If you use Qiskit, please cite as per the included
 [BibTeX file]: https://github.com/Qiskit/qiskit/blob/master/Qiskit.bib
 [Apache License 2.0]: https://github.com/Qiskit/qiskit-ibm-provider/blob/main/LICENSE.txt
 [migration guide]: https://github.com/Qiskit/qiskit-ibm-provider/blob/6be5f3297ede75bb062b20601058b55a397668e3/docs/tutorials/Migration_Guide_from_qiskit-ibmq-provider.ipynb
+[Runtime migration guide]: https://docs.quantum.ibm.com/api/migration-guides/qiskit-runtime

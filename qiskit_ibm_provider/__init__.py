@@ -74,6 +74,7 @@ Exceptions
 """
 
 import logging
+import warnings
 from typing import List, Optional, Union
 from datetime import datetime, timedelta
 
@@ -99,6 +100,16 @@ QISKIT_IBM_PROVIDER_LOG_LEVEL = "QISKIT_IBM_PROVIDER_LOG_LEVEL"
 """The environment variable name that is used to set the level for the IBM Quantum logger."""
 QISKIT_IBM_PROVIDER_LOG_FILE = "QISKIT_IBM_PROVIDER_LOG_FILE"
 """The environment variable name that is used to set the file for the IBM Quantum logger."""
+
+warnings.warn(
+    f"The package {__name__} is being deprecated. "
+    "Please see "
+    "https://docs.quantum.ibm.com/api/migration-guides/qiskit-runtime"
+    " to get instructions on how to migrate to "
+    "qiskit-ibm-runtime (https://github.com/Qiskit/qiskit-ibm-runtime).",
+    DeprecationWarning,
+    stacklevel=2,
+)
 
 
 def least_busy(backends: List[Backend]) -> Backend:
