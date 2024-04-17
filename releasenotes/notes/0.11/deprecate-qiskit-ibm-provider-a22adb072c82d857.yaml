@@ -1,0 +1,7 @@
+---
+deprecations:
+  - |
+    ``qiskit-ibm-provider`` has been deprecated with its support ending and eventual archival being no sooner 
+     than 3 months from the release date of version 0.11.0. The function provided by `qiskit-ibm-provider` 
+     has been moved to ``qiskit-ibm-runtime``. Please see the migration guide for more information 
+     https://docs.quantum.ibm.com/api/migration-guides/qiskit-runtime.
